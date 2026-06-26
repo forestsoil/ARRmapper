@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="google-site-verification" content="PASTE_VERIFICATION_CODE_HERE"/>
+<title>ARRMapper Field Tool</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:system-ui,-apple-system,sans-serif;
+  background:#f0fdf4;color:#1f2937;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;
+}
+.card{
+  background:#fff;border-radius:16px;
+  box-shadow:0 4px 24px rgba(0,0,0,.08);
+  max-width:480px;width:100%;padding:40px 32px;
+  display:flex;flex-direction:column;align-items:center;gap:20px;
+  text-align:center;
+}
+.logo{width:120px;height:120px;object-fit:contain}
+h1{font-size:26px;font-weight:700;color:#14532d;line-height:1.2}
+.tagline{font-size:14px;color:#6b7280;line-height:1.6;max-width:360px}
+.divider{width:48px;height:3px;background:#16a34a;border-radius:2px}
+.features{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  width:100%;text-align:left;margin:4px 0;
+}
+.feat{
+  background:#f0fdf4;border-radius:8px;padding:12px;
+  font-size:12px;color:#374151;line-height:1.5;
+}
+.feat strong{display:block;color:#15803d;font-size:13px;margin-bottom:2px}
+.launch{
+  display:inline-block;background:#16a34a;color:#fff;
+  text-decoration:none;font-weight:700;font-size:16px;
+  padding:14px 40px;border-radius:10px;width:100%;
+  transition:background .15s;letter-spacing:.01em;
+}
+.launch:hover{background:#15803d}
+.links{display:flex;gap:20px;font-size:11px}
+.links a{color:#9ca3af;text-decoration:none}
+.links a:hover{color:#16a34a}
+footer{margin-top:32px;font-size:11px;color:#9ca3af;text-align:center;line-height:1.8}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <img class="logo" src="logo.png" alt="ARRMapper Field Tool logo"
+       onerror="this.style.display='none'"/>
+
+  <h1>ARRMapper Field Tool</h1>
+
+  <div class="divider"></div>
+
+  <p class="tagline">
+    A mobile-ready web application for field data collection on
+    Afforestation, Reforestation &amp; Revegetation (ARR) carbon projects.
+    Map plantation saplings, assess soil types, capture GPS boundaries,
+    and sync field data directly to project Google Drive — all from a phone.
+  </p>
+
+  <div class="features">
+    <div class="feat"><strong>🌱 Plantation Mapper</strong>Species-based sapling placement on a grid with shapefile &amp; map export</div>
+    <div class="feat"><strong>🧪 Soil Mapper</strong>Hand-drawn soil type polygons with area calculation and classified export</div>
+    <div class="feat"><strong>📐 Vector Tool</strong>GPS &amp; manual POI, path, and polygon capture with KML export</div>
+    <div class="feat"><strong>☁️ Drive Sync</strong>Automatic upload to project Google Drive on every export</div>
+  </div>
+
+  <a class="launch" href="app.html">Launch ARRMapper →</a>
+
+  <div class="links">
+    <a href="privacy_policy.html">Privacy Policy</a>
+    <a href="terms_of_service.html">Terms of Service</a>
+  </div>
+</div>
+
+<footer>
+  ARRMapper Field Tool &nbsp;·&nbsp;
+  Developed by Nirmalya Chatterjee<br>
+  For Tomorrow's Foundation, Tomorrow's Skills and Livelihoods Plc.,
+  and authorised project partners
+</footer>
+
+</body>
+</html>
