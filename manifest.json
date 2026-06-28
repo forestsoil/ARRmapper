@@ -1,0 +1,21 @@
+{
+  "name": "ARRMapper Field Tool",
+  "short_name": "ARRMapper",
+  "description": "Field data collection for ARR carbon projects — plantation mapping, soil assessment, GPS vector capture.",
+  "start_url": "/ARRmapper/app.html",
+  "scope": "/ARRmapper/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#1f2937",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "en"
+}
