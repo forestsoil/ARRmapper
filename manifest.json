@@ -1,7 +1,7 @@
 {
   "name": "ARRMapper Field Tool",
   "short_name": "ARRMapper",
-  "description": "Field data collection for ARR carbon projects — plantation mapping, soil assessment, GPS vector capture.",
+  "description": "Field data collection for ARR carbon projects.",
   "start_url": "/ARRmapper/app.html",
   "scope": "/ARRmapper/",
   "display": "standalone",
@@ -9,11 +9,15 @@
   "background_color": "#0f172a",
   "theme_color": "#1f2937",
   "icons": [
+    { "src": "logo.png", "sizes": "any", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "file_handlers": [
     {
-      "src": "logo.png",
-      "sizes": "any",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "action": "/ARRmapper/app.html",
+      "accept": {
+        "application/vnd.google-earth.kml+xml": [".kml"],
+        "application/vnd.google-earth.kmz": [".kmz"]
+      }
     }
   ],
   "categories": ["productivity", "utilities"],
