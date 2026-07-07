@@ -1,4 +1,4 @@
-# ARRMapper Field Tool
+# ARRMapper Field Tool 
 
 A mobile-first offline-capable progressive web app (PWA) for field data collection on Afforestation, Reforestation and Revegetation (ARR) carbon projects in India.
 
