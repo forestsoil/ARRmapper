@@ -5,80 +5,294 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <meta name="google-site-verification" content="Apib7-x98H0j5cPqHWwSMm6dNU4GmODRoqxLiDzdx9I" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ARRMapper Field Tool</title>
+<title>ARR Project Suite</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --forest:  #1a3d2b;
+  --canopy:  #2d6a4f;
+  --leaf:    #52b788;
+  --mist:    #d8f3dc;
+  --soil:    #8b5e3c;
+  --sky:     #e8f4f8;
+  --ink:     #1c2b20;
+  --mid:     #4a6741;
+  --pale:    #f4faf6;
+  --rule:    rgba(82,183,136,.25);
+}
+
 body{
-  font-family:system-ui,-apple-system,sans-serif;
-  background:#f0fdf4;color:#1f2937;min-height:100vh;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:24px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--pale);
+  color: var(--ink);
+  min-height: 100vh;
 }
-.card{
-  background:#fff;border-radius:16px;
-  box-shadow:0 4px 24px rgba(0,0,0,.08);
-  max-width:480px;width:100%;padding:40px 32px;
-  display:flex;flex-direction:column;align-items:center;gap:20px;
-  text-align:center;
+
+/* ── Header ── */
+header{
+  background: var(--forest);
+  padding: 28px 32px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border-bottom: 3px solid var(--leaf);
 }
-.logo{width:120px;height:120px;object-fit:contain}
-h1{font-size:26px;font-weight:700;color:#14532d;line-height:1.2}
-.tagline{font-size:14px;color:#6b7280;line-height:1.6;max-width:360px}
-.divider{width:48px;height:3px;background:#16a34a;border-radius:2px}
-.features{
-  display:grid;grid-template-columns:1fr 1fr;gap:12px;
-  width:100%;text-align:left;margin:4px 0;
+header img{
+  width: 52px; height: 52px; object-fit: contain;
+  filter: brightness(1.1);
 }
-.feat{
-  background:#f0fdf4;border-radius:8px;padding:12px;
-  font-size:12px;color:#374151;line-height:1.5;
+.hdr-text h1{
+  font-size: 22px; font-weight: 700;
+  color: #fff; letter-spacing: -.01em; line-height: 1.2;
 }
-.feat strong{display:block;color:#15803d;font-size:13px;margin-bottom:2px}
-.launch{
-  display:inline-block;background:#16a34a;color:#fff;
-  text-decoration:none;font-weight:700;font-size:16px;
-  padding:14px 40px;border-radius:10px;width:100%;
-  transition:background .15s;letter-spacing:.01em;
+.hdr-text p{
+  font-size: 12px; color: var(--mist);
+  margin-top: 3px; line-height: 1.5;
 }
-.launch:hover{background:#15803d}
-.links{display:flex;gap:20px;font-size:11px}
-.links a{color:#9ca3af;text-decoration:none}
-.links a:hover{color:#16a34a}
-footer{margin-top:32px;font-size:11px;color:#9ca3af;text-align:center;line-height:1.8}
+.hdr-right{
+  margin-left: auto;
+  text-align: right;
+  font-size: 10px;
+  color: var(--leaf);
+  line-height: 1.8;
+}
+
+/* ── Grid ── */
+main{
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+.section-label{
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 36px;
+}
+
+/* ── App card ── */
+.app-card{
+  background: #fff;
+  border: 1.5px solid var(--rule);
+  border-radius: 12px;
+  padding: 20px 18px 16px;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow .15s, border-color .15s, transform .1s;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.app-card::before{
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent, var(--leaf));
+  opacity: 0;
+  transition: opacity .15s;
+}
+.app-card:hover{
+  box-shadow: 0 6px 24px rgba(0,0,0,.09);
+  border-color: var(--accent, var(--leaf));
+  transform: translateY(-2px);
+}
+.app-card:hover::before{ opacity: 1; }
+
+.app-card.coming-soon{
+  opacity: .6;
+  cursor: default;
+  pointer-events: none;
+}
+
+.card-icon{
+  font-size: 28px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.card-name{
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--forest);
+  line-height: 1.2;
+}
+.card-sub{
+  font-size: 11px;
+  color: var(--mid);
+  line-height: 1.4;
+}
+.card-tags{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.tag{
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--mist);
+  color: var(--canopy);
+}
+.tag.new{ background: #fef9c3; color: #854d0e; }
+.tag.soon{ background: #f3f4f6; color: #9ca3af; }
+.tag.field{ background: #dbeafe; color: #1e40af; }
+
+.card-arrow{
+  position: absolute;
+  bottom: 16px; right: 16px;
+  font-size: 16px;
+  color: var(--accent, var(--leaf));
+  opacity: 0;
+  transition: opacity .15s, transform .15s;
+}
+.app-card:hover .card-arrow{
+  opacity: 1;
+  transform: translateX(3px);
+}
+
+/* ── Footer ── */
+footer{
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+  padding: 20px;
+  border-top: 1px solid var(--rule);
+  line-height: 1.8;
+}
+footer a{ color: var(--mid); text-decoration: none; }
+footer a:hover{ color: var(--canopy); }
+
+@media(max-width:600px){
+  header{ padding: 18px 16px; }
+  main{ padding: 20px 12px 40px; }
+  .grid{ grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
-<div class="card">
-  <img class="logo" src="logo2.png" alt="ARRMapper Field Tool logo"
-       onerror="this.style.display='none'"/>
-  <h1>ARRMapper Field Tool</h1>
-  <div class="divider"></div>
-  <p class="tagline">
-    A mobile-ready web application for field data collection on
-    Afforestation, Reforestation &amp; Revegetation (ARR) carbon projects.
-    Map plantation saplings, assess soil types, capture GPS boundaries,
-    run MRV monitoring visits, and sync field data directly to project
-    Google Drive — all from a phone.
-  </p>
-  <div class="features">
-    <div class="feat"><strong>📐 Make Vector</strong>GPS &amp; manual POI, path, and polygon capture with KML export</div>
-    <div class="feat"><strong>🧪 Soil Mapper</strong>Hand-drawn soil type polygons with area calculation and classified export</div>
-    <div class="feat"><strong>🌱 Plantation Mapper</strong>Species-based sapling placement on a grid with shapefile &amp; KML export</div>
-    <div class="feat"><strong>📋 MRV Tool</strong>Monthly walk-along and annual exhaustive monitoring visits with A+→D grading, height, DBH and Drive upload</div>
-    <div class="feat"><strong>📁 Browse Files</strong>View, toggle and manage locally cached KML, GeoJSON and photo files</div>
-    <div class="feat"><strong>☁️ Drive Sync</strong>Automatic upload to project Google Drive on every export</div>
+
+<header>
+  <img src="logo2.png" alt="ARR Suite logo" onerror="this.style.display='none'"/>
+  <div class="hdr-text">
+    <h1>ARR Project Suite</h1>
+    <p>Field tools, monitoring and management for ARR carbon projects</p>
   </div>
-  <a class="launch" href="app.html">Launch ARRMapper →</a>
-  <div class="links">
-    <a href="privacy_policy.html">Privacy Policy</a>
-    <a href="terms_of_service.html">Terms of Service</a>
+
+</header>
+
+<main>
+
+  <!-- Field tools -->
+  <div class="section-label">Field tools</div>
+  <div class="grid">
+
+    <a class="app-card" href="appARRmapper.html" style="--accent:#2d6a4f">
+      <div class="card-icon">🗺️</div>
+      <div class="card-name">ARR Mapper</div>
+      <div class="card-sub">Vector capture, plantation mapping, soil classification, MRV monitoring visits — offline-first, Drive sync</div>
+      <div class="card-tags">
+        <span class="tag field">Field</span>
+        <span class="tag">Offline</span>
+        <span class="tag new">MRV</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a class="app-card coming-soon" href="#" style="--accent:#0369a1">
+      <div class="card-icon">📋</div>
+      <div class="card-name">Survey Manager</div>
+      <div class="card-sub">Beneficiary details, FGD records, event forms — linked to plot LPCs and project data</div>
+      <div class="card-tags">
+        <span class="tag field">Field</span>
+        <span class="tag soon">Coming soon</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
   </div>
-</div>
+
+  <!-- Analysis & monitoring -->
+  <div class="section-label">Analysis &amp; monitoring</div>
+  <div class="grid">
+
+    <a class="app-card coming-soon" href="#" style="--accent:#0f766e">
+      <div class="card-icon">🌡️</div>
+      <div class="card-name">Dashboard</div>
+      <div class="card-sub">Plantation status, MRV grades, species breakdown and year-on-year area tracking across all projects</div>
+      <div class="card-tags">
+        <span class="tag soon">Coming soon</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a class="app-card coming-soon" href="#" style="--accent:#7c3aed">
+      <div class="card-icon">🔥</div>
+      <div class="card-name">Land Hotspotter</div>
+      <div class="card-sub">Village-level restoration suitability scoring — NDVI trends, soil, flood and drought risk — to prioritise land acquisition</div>
+      <div class="card-tags">
+        <span class="tag soon">Coming soon</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+  </div>
+
+  <!-- Operations -->
+  <div class="section-label">Operations</div>
+  <div class="grid">
+
+    <a class="app-card coming-soon" href="#" style="--accent:#b45309">
+      <div class="card-icon">🌿</div>
+      <div class="card-name">Inventory &amp; Resources</div>
+      <div class="card-sub">Plot-linked material calculator — fencing, pits, fertiliser, planting labour — and nursery raising schedule</div>
+      <div class="card-tags">
+        <span class="tag soon">Coming soon</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a class="app-card coming-soon" href="#" style="--accent:#be185d">
+      <div class="card-icon">📄</div>
+      <div class="card-name">Documents &amp; Reports</div>
+      <div class="card-sub">Land document store, project agreements, beneficiary records and one-page plot report generator</div>
+      <div class="card-tags">
+        <span class="tag soon">Coming soon</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+  </div>
+
+</main>
+
 <footer>
-  ARRMapper Field Tool &nbsp;·&nbsp;
+  ARR Project Suite &nbsp;·&nbsp;
   Developed by Nirmalya Chatterjee<br>
-  For Tomorrow's Foundation, Tomorrow's Skills and Livelihoods Plc.,
-  and authorised project partners
+  For <a href="#">Tomorrow's Foundation</a>, Tomorrow's Skills and Livelihoods Plc.,
+  and authorised project partners &nbsp;·&nbsp;
+  <a href="privacy_policy.html">Privacy</a> &nbsp;·&nbsp;
+  <a href="terms_of_service.html">Terms</a>
 </footer>
+
 </body>
 </html>
