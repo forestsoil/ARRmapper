@@ -8,184 +8,48 @@
 <title>ARR Project Suite</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-
 :root{
-  --forest:  #1a3d2b;
-  --canopy:  #2d6a4f;
-  --leaf:    #52b788;
-  --mist:    #d8f3dc;
-  --soil:    #8b5e3c;
-  --sky:     #e8f4f8;
-  --ink:     #1c2b20;
-  --mid:     #4a6741;
-  --pale:    #f4faf6;
-  --rule:    rgba(82,183,136,.25);
+  --forest:#1a3d2b;--canopy:#2d6a4f;--leaf:#52b788;--mist:#d8f3dc;
+  --ink:#1c2b20;--mid:#4a6741;--pale:#f4faf6;--rule:rgba(82,183,136,.25);
 }
-
-body{
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: var(--pale);
-  color: var(--ink);
-  min-height: 100vh;
-}
-
-/* ── Header ── */
-header{
-  background: var(--forest);
-  padding: 28px 32px 24px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  border-bottom: 3px solid var(--leaf);
-}
-header img{
-  width: 52px; height: 52px; object-fit: contain;
-  filter: brightness(1.1);
-}
-.hdr-text h1{
-  font-size: 22px; font-weight: 700;
-  color: #fff; letter-spacing: -.01em; line-height: 1.2;
-}
-.hdr-text p{
-  font-size: 12px; color: var(--mist);
-  margin-top: 3px; line-height: 1.5;
-}
-.hdr-right{
-  margin-left: auto;
-  text-align: right;
-  font-size: 10px;
-  color: var(--leaf);
-  line-height: 1.8;
-}
-
-/* ── Grid ── */
-main{
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 32px 20px 48px;
-}
-
-.section-label{
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--mid);
-  margin-bottom: 14px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--rule);
-}
-
-.grid{
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
-  margin-bottom: 36px;
-}
-
-/* ── App card ── */
-.app-card{
-  background: #fff;
-  border: 1.5px solid var(--rule);
-  border-radius: 12px;
-  padding: 20px 18px 16px;
-  text-decoration: none;
-  color: inherit;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  transition: box-shadow .15s, border-color .15s, transform .1s;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-.app-card::before{
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--accent, var(--leaf));
-  opacity: 0;
-  transition: opacity .15s;
-}
-.app-card:hover{
-  box-shadow: 0 6px 24px rgba(0,0,0,.09);
-  border-color: var(--accent, var(--leaf));
-  transform: translateY(-2px);
-}
-.app-card:hover::before{ opacity: 1; }
-
-.app-card.coming-soon{
-  opacity: .6;
-  cursor: default;
-  pointer-events: none;
-}
-
-.card-icon{
-  font-size: 28px;
-  line-height: 1;
-  margin-bottom: 2px;
-}
-.card-name{
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--forest);
-  line-height: 1.2;
-}
-.card-sub{
-  font-size: 11px;
-  color: var(--mid);
-  line-height: 1.4;
-}
-.card-tags{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 4px;
-}
-.tag{
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  padding: 2px 7px;
-  border-radius: 20px;
-  background: var(--mist);
-  color: var(--canopy);
-}
-.tag.new{ background: #fef9c3; color: #854d0e; }
-.tag.soon{ background: #f3f4f6; color: #9ca3af; }
-.tag.field{ background: #dbeafe; color: #1e40af; }
-
-.card-arrow{
-  position: absolute;
-  bottom: 16px; right: 16px;
-  font-size: 16px;
-  color: var(--accent, var(--leaf));
-  opacity: 0;
-  transition: opacity .15s, transform .15s;
-}
-.app-card:hover .card-arrow{
-  opacity: 1;
-  transform: translateX(3px);
-}
-
-/* ── Footer ── */
-footer{
-  text-align: center;
-  font-size: 11px;
-  color: #9ca3af;
-  padding: 20px;
-  border-top: 1px solid var(--rule);
-  line-height: 1.8;
-}
-footer a{ color: var(--mid); text-decoration: none; }
-footer a:hover{ color: var(--canopy); }
-
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--pale);color:var(--ink);min-height:100vh}
+header{background:var(--forest);padding:28px 32px 24px;display:flex;flex-direction:column;
+  align-items:center;gap:10px;border-bottom:3px solid var(--leaf);text-align:center}
+header img{width:52px;height:52px;object-fit:contain;filter:brightness(1.1)}
+.hdr-text h1{font-size:24px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.2}
+.hdr-text p{font-size:12px;color:var(--mist);margin-top:4px;line-height:1.5}
+main{max-width:960px;margin:0 auto;padding:32px 20px 48px}
+.section-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--mid);margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:36px}
+.app-card{background:#fff;border:1.5px solid var(--rule);border-radius:12px;padding:20px 18px 16px;
+  text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:8px;
+  transition:box-shadow .15s,border-color .15s,transform .1s;cursor:pointer;position:relative;overflow:hidden}
+.app-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--accent,var(--leaf));opacity:0;transition:opacity .15s}
+.app-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.09);border-color:var(--accent,var(--leaf));transform:translateY(-2px)}
+.app-card:hover::before{opacity:1}
+.app-card.coming-soon{opacity:.6;cursor:default;pointer-events:none}
+.card-icon{font-size:28px;line-height:1;margin-bottom:2px}
+.card-name{font-size:15px;font-weight:700;color:var(--forest);line-height:1.2}
+.card-sub{font-size:11px;color:var(--mid);line-height:1.4}
+.card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.tag{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 7px;border-radius:20px;background:var(--mist);color:var(--canopy)}
+.tag.new{background:#fef9c3;color:#854d0e}
+.tag.soon{background:#f3f4f6;color:#9ca3af}
+.tag.field{background:#dbeafe;color:#1e40af}
+.card-arrow{position:absolute;bottom:16px;right:16px;font-size:16px;
+  color:var(--accent,var(--leaf));opacity:0;transition:opacity .15s,transform .15s}
+.app-card:hover .card-arrow{opacity:1;transform:translateX(3px)}
+footer{text-align:center;font-size:11px;color:#9ca3af;padding:20px;
+  border-top:1px solid var(--rule);line-height:1.8}
+footer a{color:var(--mid);text-decoration:none}
+footer a:hover{color:var(--canopy)}
 @media(max-width:600px){
-  header{ padding: 18px 16px; }
-  main{ padding: 20px 12px 40px; }
-  .grid{ grid-template-columns: 1fr; }
+  header{padding:18px 16px}
+  main{padding:20px 12px 40px}
+  .grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -197,12 +61,10 @@ footer a:hover{ color: var(--canopy); }
     <h1>ARR Project Suite</h1>
     <p>Field tools, monitoring and management for ARR carbon projects</p>
   </div>
-
 </header>
 
 <main>
 
-  <!-- Field tools -->
   <div class="section-label">Field tools</div>
   <div class="grid">
 
@@ -231,16 +93,15 @@ footer a:hover{ color: var(--canopy); }
 
   </div>
 
-  <!-- Analysis & monitoring -->
   <div class="section-label">Analysis &amp; monitoring</div>
   <div class="grid">
 
-    <a class="app-card coming-soon" href="#" style="--accent:#0f766e">
+    <a class="app-card" href="appDashboard.html" style="--accent:#0f766e">
       <div class="card-icon">🌡️</div>
       <div class="card-name">Dashboard</div>
-      <div class="card-sub">Plantation status, MRV grades, species breakdown and year-on-year area tracking across all projects</div>
+      <div class="card-sub">Plantation status, species breakdown and year-on-year area tracking — 2024–2026 Asha project data</div>
       <div class="card-tags">
-        <span class="tag soon">Coming soon</span>
+        <span class="tag new">Live</span>
       </div>
       <div class="card-arrow">→</div>
     </a>
@@ -257,7 +118,6 @@ footer a:hover{ color: var(--canopy); }
 
   </div>
 
-  <!-- Operations -->
   <div class="section-label">Operations</div>
   <div class="grid">
 
@@ -286,10 +146,8 @@ footer a:hover{ color: var(--canopy); }
 </main>
 
 <footer>
-  ARR Project Suite &nbsp;·&nbsp;
-  Developed by Nirmalya Chatterjee<br>
-  For <a href="#">Tomorrow's Foundation</a>, Tomorrow's Skills and Livelihoods Plc.,
-  and authorised project partners &nbsp;·&nbsp;
+  ARR Project Suite &nbsp;·&nbsp; Developed by Nirmalya Chatterjee<br>
+  For use by authorised project partners, funders &amp; clients only &nbsp;·&nbsp;
   <a href="privacy_policy.html">Privacy</a> &nbsp;·&nbsp;
   <a href="terms_of_service.html">Terms</a>
 </footer>

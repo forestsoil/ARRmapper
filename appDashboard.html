@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asha ARR Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+
+// ── Theme toggle ──────────────────────────────────────────────────────
+let _lightTheme = false;
+function toggleTheme() {
+  _lightTheme = !_lightTheme;
+  document.documentElement.classList.toggle('light', _lightTheme);
+  document.getElementById('theme-toggle').textContent = _lightTheme ? '🌙' : '☀️';
+  localStorage.setItem('dashTheme', _lightTheme ? 'light' : 'dark');
+}
+// Restore saved theme
+(function(){
+  const saved = localStorage.getItem('dashTheme');
+  if (saved === 'light') { _lightTheme=true; document.documentElement.classList.add('light'); 
+    document.addEventListener('DOMContentLoaded', ()=>{ const b=document.getElementById('theme-toggle'); if(b) b.textContent='🌙'; }); }
+})();
+
+// ── About panel ──────────────────────────────────────────────────────
+const ABOUT_CONTENT = {
+  about: `<h3 style="color:var(--leaf);margin:0 0 10px;font-size:13px">About this Dashboard</h3>
+<p>An interactive plantation monitoring dashboard for the <strong>Asha ARR carbon project</strong>, covering 2024–2026 planting cycles across Jalpaiguri, Alipurduar, Coochbehar and Kalimpong districts, West Bengal.</p>
+<p style="margin-top:10px"><strong>Data pipeline:</strong></p>
+<ul class="abt-ul">
+  <li>Plantation polygons from field-verified GeoPackages (EPSG:24345 → WGS84)</li>
+  <li>Beneficiary, species and sapling data from annual plantation databases</li>
+  <li>Unified as a single GeoJSON (LPC-keyed, one feature per parcel)</li>
+</ul>
+<p style="margin-top:10px"><strong>Credits</strong></p>
+<div style="background:rgba(0,0,0,.3);border-radius:6px;padding:10px 12px;margin-top:4px">
+  <div style="margin-bottom:6px">
+    <span style="color:var(--mist);font-weight:700">Python dashboard script</span><br>
+    <span style="color:var(--dim)">Satyajit Chakraborty</span>
+  </div>
+  <div>
+    <span style="color:var(--mist);font-weight:700">Web application &amp; data pipeline</span><br>
+    <span style="color:var(--dim)">Nirmalya Chatterjee</span>
+  </div>
+</div>
+<p style="margin-top:10px;color:var(--dim)">For Tomorrow&rsquo;s Foundation, Tomorrow&rsquo;s Skills and Livelihoods Plc.,<br>and authorised project partners</p>
+<p style="margin-top:6px;color:var(--dim);font-size:10px">Contact: <a href="mailto:tfcarbondata@gmail.com">tfcarbondata@gmail.com</a></p>`,
+
+  log: `<h3 style="color:var(--leaf);margin:0 0 10px;font-size:13px">Changelog</h3>
+<div class="abt-ver">v5 <span class="abt-date">Jul 2026</span></div>
+<ul class="abt-ul">
+  <li>Light theme (☀️/🌙 toggle) — #d0ffd0 background, black text; preference saved in localStorage</li>
+  <li>Dark theme leaf/text brightened (#6ee7b7, #e8f4e8) for improved readability</li>
+</ul>
+<div class="abt-ver">v4 <span class="abt-date">Jul 2026</span></div>
+<ul class="abt-ul">
+  <li>Diversity indices (Richness, Shannon H', Simpson 1-D, Pielou J') — pooled selection in sidebar, per-plot in LPC panel</li>
+  <li>Selection species bars added to sidebar</li>
+  <li>Topbar removed — all KPIs and stats moved into sidebar</li>
+  <li>Sidebar widened to 300px</li>
+</ul>
+<div class="abt-ver">v3 <span class="abt-date">Jul 2026</span></div>
+<ul class="abt-ul">
+  <li>Species color bars matched to ARRMapper species color palette</li>
+  <li>About panel added (this screen) — credits, changelog, licence, terms</li>
+  <li>Block and GP name normalisation (Roman numeral suffixes, spelling variants)</li>
+</ul>
+<div class="abt-ver">v2 <span class="abt-date">Jul 2026</span></div>
+<ul class="abt-ul">
+  <li>Full rebuild as offline-capable HTML/JS/Leaflet web app</li>
+  <li>Unified GeoJSON from 2024 + 2025 GPKGs merged with 3-year XLSX databases</li>
+  <li>Cascading filters: Year → District → Block → GP → Gender → SSCAT</li>
+  <li>Live search by LPC, beneficiary name, or DBC with dropdown</li>
+  <li>Right slide-in LPC panel: species bars, per-DBC cards, Drive links</li>
+  <li>Results table with sortable columns</li>
+  <li>Auto-opens LPC panel on single-result filter</li>
+  <li>2026 parcels loaded as table records (no geometry yet)</li>
+</ul>
+<div class="abt-ver">v1 <span class="abt-date">Jun 2026</span></div>
+<ul class="abt-ul">
+  <li>Original Streamlit dashboard — Satyajit Chakraborty</li>
+  <li>GPKG file selector, satellite map, polygon popups, district bar chart</li>
+  <li>Year-wise colour coding, CSV export</li>
+</ul>`,
+
+  lic: `<h3 style="color:var(--leaf);margin:0 0 10px;font-size:13px">Proprietary Licence</h3>
+<p><strong>Asha ARR Dashboard</strong><br>
+Copyright &copy; 2025&ndash;2026 Nirmalya Chatterjee. All rights reserved.</p>
+<p>This software is proprietary and confidential. It is licensed for use exclusively by Tomorrow&rsquo;s Foundation, Tomorrow&rsquo;s Skills and Livelihoods Plc., and other organisations authorised in writing by the developer.</p>
+<p>Unauthorised copying, redistribution, reverse-engineering, or modification of this software, in whole or in part, is strictly prohibited without the express written permission of the developer.</p>
+<p style="color:var(--dim);font-size:10px;margin-top:12px">Contact: <a href="mailto:tfcarbondata@gmail.com">tfcarbondata@gmail.com</a></p>`,
+
+  terms: `<h3 style="color:var(--leaf);margin:0 0 10px;font-size:13px">Terms of Use</h3>
+<ul class="abt-ul">
+  <li>Authorised project personnel and funders only</li>
+  <li>Data displayed is for internal monitoring and reporting purposes</li>
+  <li>Do not share access or data with unauthorised persons</li>
+  <li>Plantation data is subject to field verification — use with appropriate context</li>
+  <li>The developers accept no liability for decisions made based on this data without independent verification</li>
+  <li>Access may be revoked at any time by project administrators</li>
+</ul>
+<p style="margin-top:10px">Full terms and privacy policy:<br>
+<a href="https://forestsoil.github.io/ARRmapper/terms_of_service.html" target="_blank">forestsoil.github.io/ARRmapper/terms_of_service.html</a><br>
+<a href="https://forestsoil.github.io/ARRmapper/privacy_policy.html" target="_blank">forestsoil.github.io/ARRmapper/privacy_policy.html</a></p>`,
+};
+
+let _abtCurrentTab = 'about';
+function openAbout() {
+  const el = document.getElementById('about-overlay');
+  el.style.display = 'flex';
+  abtTab('about');
+}
+function closeAbout() {
+  document.getElementById('about-overlay').style.display = 'none';
+}
+function abtTab(t) {
+  _abtCurrentTab = t;
+  ['about','log','lic','terms'].forEach(k => {
+    const btn = document.getElementById('abt-tab-' + k);
+    if (btn) btn.className = 'abt-tab' + (k===t ? ' abt-tab-sel' : '');
+  });
+  document.getElementById('abt-body').innerHTML = ABOUT_CONTENT[t] || '';
+}
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeAbout(); });
+
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1c14;--surface:#162010;--card:#1c2a17;--border:#2a3d20;
+  --leaf:#6ee7b7;--canopy:#2d6a4f;--mist:#d8f3dc;--ink:#e8f4e8;
+  --mid:#a0ccaa;--dim:#5a8060;--red:#e05252;--amber:#e8a838;--blue:#5a9ec9;
+  --font:'Segoe UI',system-ui,sans-serif;
+}
+html.light{
+  --bg:#e8ffe8;--surface:#d0ffd0;--card:#b8f0b8;--border:#88cc88;
+  --leaf:#1a7a3a;--canopy:#2d6a4f;--mist:#0a3a1a;--ink:#0a2010;
+  --mid:#2a5a2a;--dim:#4a7a4a;--red:#cc2222;--amber:#996600;--blue:#1a4a88;
+}
+html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--ink)}
+
+/* ── Layout ── */
+#app{display:grid;grid-template-columns:300px 1fr;grid-template-rows:1fr;height:100vh}
+#topbar{display:none}
+#topbar h1{font-size:14px;font-weight:700;color:var(--mist);letter-spacing:.04em;white-space:nowrap}
+#topbar .sep{width:1px;height:20px;background:var(--border)}
+#topbar .kpi{display:flex;flex-direction:column;align-items:flex-start}
+#topbar .kpi-val{font-size:15px;font-weight:700;color:var(--leaf);line-height:1}
+#topbar .kpi-lbl{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em}
+#topbar .spacer{flex:1}
+#topbar a{font-size:11px;color:var(--dim);text-decoration:none}
+#topbar a:hover{color:var(--leaf)}
+
+#sidebar{background:var(--surface);border-right:1px solid var(--border);
+  overflow-y:auto;padding:12px 10px;display:flex;flex-direction:column;gap:10px}
+#content{position:relative;overflow:hidden}
+
+/* ── Filter panel ── */
+.filter-group{display:flex;flex-direction:column;gap:4px}
+.filter-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:0 2px}
+select,input[type=text]{
+  width:100%;background:#0f1c14;border:1px solid var(--border);border-radius:5px;
+  color:var(--ink);font-size:11px;padding:5px 8px;font-family:var(--font);
+  appearance:none;-webkit-appearance:none;
+}
+select:focus,input:focus{outline:none;border-color:var(--leaf)}
+.search-wrap{position:relative}
+.search-wrap input{padding-right:24px}
+.search-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;line-height:1}
+.search-clear:hover{color:var(--leaf)}
+#search-dropdown{position:absolute;left:0;right:0;top:calc(100% + 2px);background:#1c2a17;
+  border:1px solid var(--border);border-radius:5px;max-height:180px;overflow-y:auto;
+  z-index:2000;display:none}
+#search-dropdown .sd-item{padding:6px 10px;font-size:11px;cursor:pointer;border-bottom:1px solid var(--border)}
+#search-dropdown .sd-item:last-child{border-bottom:none}
+#search-dropdown .sd-item:hover{background:var(--card)}
+#search-dropdown .sd-lpc{color:var(--leaf);font-weight:700;margin-right:6px}
+#search-dropdown .sd-name{color:var(--mid)}
+
+.btn-row{display:flex;gap:6px}
+.btn{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  border:none;border-radius:5px;padding:5px 10px;cursor:pointer;flex:1;font-family:var(--font)}
+.btn-green{background:var(--canopy);color:#fff}
+.btn-green:hover{background:var(--leaf);color:#0f1c14}
+.btn-gray{background:var(--border);color:var(--mid)}
+.btn-gray:hover{background:var(--dim);color:#fff}
+
+.divider{height:1px;background:var(--border);margin:2px 0}
+
+/* ── Tabs ── */
+#tabs{position:absolute;top:10px;left:10px;z-index:500;display:flex;gap:4px}
+.tab{background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  padding:5px 12px;font-size:11px;font-weight:700;color:var(--mid);cursor:pointer;
+  letter-spacing:.04em;transition:all .15s}
+.tab.active{background:var(--canopy);border-color:var(--leaf);color:#fff}
+.tab:hover:not(.active){color:var(--leaf)}
+
+/* ── Map ── */
+#map{position:absolute;inset:0}
+#map .leaflet-popup-content-wrapper{background:var(--card);border:1px solid var(--border);
+  border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);color:var(--ink)}
+#map .leaflet-popup-tip{background:var(--card)}
+.pop-head{font-size:13px;font-weight:700;color:var(--mist);margin-bottom:8px;
+  border-bottom:1px solid var(--border);padding-bottom:6px}
+.pop-row{display:flex;justify-content:space-between;gap:12px;font-size:11px;
+  padding:2px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.pop-row:last-child{border-bottom:none}
+.pop-key{color:var(--dim)}
+.pop-val{color:var(--ink);text-align:right;max-width:180px;word-break:break-word}
+.pop-link{color:var(--leaf);text-decoration:none}
+.pop-link:hover{text-decoration:underline}
+.pop-species{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.sp-chip{background:var(--border);border-radius:10px;padding:2px 7px;font-size:9px;color:var(--mist)}
+.pop-dbcs{margin-top:8px}
+.dbc-item{background:rgba(0,0,0,.3);border-radius:5px;padding:5px 8px;margin-top:4px;font-size:10px}
+.dbc-name{color:var(--mist);font-weight:700}
+.dbc-meta{color:var(--dim);margin-top:1px}
+
+/* ── Results panel ── */
+#results-panel{position:absolute;bottom:0;left:0;right:0;background:var(--surface);
+  border-top:1px solid var(--border);max-height:240px;overflow-y:auto;
+  transform:translateY(100%);transition:transform .25s;z-index:400}
+#results-panel.open{transform:translateY(0)}
+#results-table{width:100%;border-collapse:collapse;font-size:11px}
+#results-table th{background:var(--card);color:var(--mid);font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;padding:6px 10px;position:sticky;top:0;text-align:left;
+  border-bottom:1px solid var(--border);font-size:9px}
+#results-table td{padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.04)}
+#results-table tr:hover td{background:var(--card)}
+#results-table .lpc-cell{color:var(--leaf);font-weight:700;cursor:pointer}
+#results-table .lpc-cell:hover{text-decoration:underline}
+
+/* ── Summary stats bar ── */
+#stats-bar{position:absolute;top:0;left:0;right:0;background:rgba(15,28,20,.92);
+  backdrop-filter:blur(4px);border-bottom:1px solid var(--border);
+  display:flex;gap:0;z-index:450;height:44px}
+.stat-cell{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-right:1px solid var(--border);padding:4px}
+.stat-cell:last-child{border-right:none}
+.stat-v{font-size:16px;font-weight:700;color:var(--leaf);line-height:1}
+.stat-l{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin-top:1px}
+
+/* ── Single LPC panel ── */
+#lpc-panel{position:absolute;top:0;right:0;bottom:0;width:320px;
+  background:var(--surface);border-left:1px solid var(--border);
+  overflow-y:auto;transform:translateX(100%);transition:transform .25s;z-index:450;padding:14px}
+#lpc-panel.open{transform:translateX(0)}
+#lpc-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:16px;float:right}
+#lpc-close:hover{color:var(--leaf)}
+.lpc-section{margin-top:12px}
+.lpc-section-title{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.info-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;
+  border-bottom:1px solid rgba(255,255,255,.04)}
+.info-row:last-child{border-bottom:none}
+.info-key{color:var(--dim)}
+.info-val{color:var(--ink);text-align:right}
+.sp-bar-wrap{margin-top:6px}
+.sp-bar-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:10px}
+.sp-name{width:80px;color:var(--mid);text-align:right;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex-shrink:0}
+.sp-bar{height:8px;border-radius:4px;background:var(--canopy);transition:width .4s;min-width:2px}
+.sp-count{color:var(--dim);white-space:nowrap}
+.sscat-tag{display:inline-block;background:var(--border);border-radius:10px;
+  padding:1px 7px;font-size:9px;color:var(--mist);margin:1px}
+.sscat-tribal{background:#2d3b1a;color:#a8d080}
+.sscat-sc{background:#1a2a3b;color:#80b0d0}
+.sscat-obc{background:#3b2a1a;color:#d0a880}
+.sscat-general{background:#2a2a2a;color:#a0a0a0}
+
+.abt-tab{flex:1;background:none;border:none;border-bottom:2px solid transparent;
+  color:var(--mid);font-size:10px;padding:8px 4px;cursor:pointer;white-space:nowrap;font-family:var(--font)}
+.abt-tab-sel{color:var(--leaf);border-bottom-color:var(--leaf)}
+.abt-tab:hover:not(.abt-tab-sel){color:var(--ink)}
+.abt-ver{font-weight:700;color:var(--mist);font-size:11px;margin:12px 0 4px}
+.abt-date{font-weight:400;color:var(--dim);font-size:10px;margin-left:6px}
+.abt-ul{padding-left:16px;margin:4px 0 8px}
+.abt-ul li{margin-bottom:3px;color:var(--mid)}
+#abt-body p{margin-bottom:8px}
+#abt-body h3{margin-bottom:10px}
+#abt-body a{color:var(--leaf)}
+
+/* ── Sidebar sections ── */
+.sb-section{display:flex;flex-direction:column;gap:4px}
+.sb-section-title{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--dim);padding:0 2px}
+.sb-kpi-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:4px}
+.sb-kpi{background:var(--card);border-radius:5px;padding:5px 6px;text-align:center}
+.sb-kpi-v{display:block;font-size:14px;font-weight:700;color:var(--leaf);line-height:1}
+.sb-kpi-l{display:block;font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
+
+/* ── Diversity grid ── */
+.div-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px}
+.div-cell{background:var(--card);border-radius:5px;padding:6px 8px;text-align:center}
+.div-val{display:block;font-size:15px;font-weight:700;color:#a78bfa;line-height:1}
+.div-lbl{display:block;font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+
+/* ── LPC diversity in right panel ── */
+.lpc-div-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px}
+.lpc-div-cell{background:rgba(0,0,0,.3);border-radius:5px;padding:5px 8px;text-align:center}
+.lpc-div-val{display:block;font-size:14px;font-weight:700;color:#a78bfa;line-height:1}
+.lpc-div-lbl{display:block;font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-top:1px}
+
+html.light #map .leaflet-popup-content-wrapper{background:#d0ffd0;border-color:#88cc88;color:#0a2010}
+html.light #map .leaflet-popup-tip{background:#d0ffd0}
+html.light .pop-key{color:#4a7a4a}
+html.light #results-panel{background:#d0ffd0;border-color:#88cc88}
+html.light #results-table th{background:#b8f0b8;color:#2a5a2a;border-color:#88cc88}
+html.light #results-table td{border-color:rgba(0,0,0,.06)}
+html.light #results-table tr:hover td{background:#c8f8c8}
+html.light #lpc-panel{background:#d0ffd0;border-color:#88cc88}
+html.light .lpc-section-title{border-color:#88cc88}
+html.light .info-row{border-color:rgba(0,0,0,.08)}
+html.light .dbc-item{background:rgba(0,0,0,.07)}
+html.light .sp-bar-wrap .sp-count{color:#4a7a4a}
+html.light .sb-kpi{background:#b8f0b8}
+html.light .div-cell{background:#b8f0b8}
+html.light .lpc-div-cell{background:rgba(0,0,0,.08)}
+html.light #search-dropdown{background:#d0ffd0;border-color:#88cc88}
+html.light #search-dropdown .sd-item{border-color:#88cc88}
+html.light #search-dropdown .sd-item:hover{background:#c0f0c0}
+html.light #about-overlay > div{background:#d0ffd0;border-color:#88cc88}
+html.light .abt-tab{color:#4a7a4a}
+html.light .abt-tab-sel{color:#1a7a3a;border-bottom-color:#1a7a3a}
+html.light #abt-body{color:#0a2010}
+html.light select,html.light input[type=text]{background:#e8ffe8;border-color:#88cc88;color:#0a2010}
+html.light .tab{background:#d0ffd0;border-color:#88cc88;color:#4a7a4a}
+html.light .tab.active{background:#2d6a4f;border-color:#1a5a3a;color:#fff}
+html.light .leaflet-control-zoom a{background:#d0ffd0;color:#1a7a3a;border-color:#88cc88}
+</style>
+</head>
+<body>
+<div id="app">
+
+
+
+  <!-- Sidebar filters -->
+  <div id="sidebar">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)">Filters</span>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark theme"
+          style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--mid);cursor:pointer;font-size:11px;padding:2px 6px;line-height:1.4">☀️</button>
+        <button onclick="openAbout()" title="About this dashboard"
+          style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1">ℹ️</button>
+      </div>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Year</div>
+      <select id="f-year" onchange="applyFilters()">
+        <option value="">All years</option>
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026">2026</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">District</div>
+      <select id="f-district" onchange="applyFilters();populateBlock()">
+        <option value="">All districts</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">Block</div>
+      <select id="f-block" onchange="applyFilters();populateGP()">
+        <option value="">All blocks</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">Gram Panchayat</div>
+      <select id="f-gp" onchange="applyFilters()">
+        <option value="">All GPs</option>
+      </select>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="filter-group">
+      <div class="filter-label">Gender</div>
+      <select id="f-gender" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Mixed">Mixed</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">Stakeholder Category</div>
+      <select id="f-sscat" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="Tribal">Tribal</option>
+        <option value="SC">SC</option>
+        <option value="OBC">OBC</option>
+        <option value="Minority">Minority</option>
+        <option value="General">General</option>
+        <option value="Mixed">Mixed</option>
+      </select>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="filter-group">
+      <div class="filter-label">Search LPC / Name / DBC</div>
+      <div class="search-wrap" style="position:relative">
+        <input type="text" id="f-search" placeholder="Type LPC, name or DBC…"
+          oninput="onSearchInput()" autocomplete="off"/>
+        <button class="search-clear" onclick="clearSearch()">✕</button>
+        <div id="search-dropdown"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-green" onclick="applyFilters()">Apply</button>
+      <button class="btn btn-gray"  onclick="resetFilters()">Reset</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Suite link -->
+    <a href="index.html" style="font-size:10px;color:var(--dim);text-decoration:none;display:block;text-align:center">← ARR Suite</a>
+
+    <div class="divider"></div>
+
+    <!-- Selection summary -->
+    <div class="sb-section">
+      <div class="sb-section-title">Selection summary</div>
+      <div class="sb-kpi-grid">
+        <div class="sb-kpi"><span class="sb-kpi-v" id="kpi-plots">—</span><span class="sb-kpi-l">Plots</span></div>
+        <div class="sb-kpi"><span class="sb-kpi-v" id="kpi-area">—</span><span class="sb-kpi-l">Hectares</span></div>
+        <div class="sb-kpi"><span class="sb-kpi-v" id="kpi-bens">—</span><span class="sb-kpi-l">Beneficiaries</span></div>
+        <div class="sb-kpi"><span class="sb-kpi-v" id="kpi-plants">—</span><span class="sb-kpi-l">Saplings</span></div>
+        <div class="sb-kpi"><span class="sb-kpi-v" id="st-tribal">—</span><span class="sb-kpi-l">Tribal</span></div>
+        <div class="sb-kpi"><span class="sb-kpi-v" id="st-female">—</span><span class="sb-kpi-l">Female %</span></div>
+      </div>
+      <div id="sb-filtered-count" style="font-size:9px;color:var(--dim);margin-top:4px"></div>
+      <div id="sb-area-sum"       style="font-size:9px;color:var(--dim)"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Selection species pool -->
+    <div class="sb-section">
+      <div class="sb-section-title">Species pool (selection)</div>
+      <div id="sb-sp-bars" style="margin-top:4px"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Diversity indices — selection -->
+    <div class="sb-section">
+      <div class="sb-section-title">Diversity indices (pooled selection)</div>
+      <div class="div-grid">
+        <div class="div-cell">
+          <span class="div-val" id="dv-richness">—</span>
+          <span class="div-lbl">Richness (S)</span>
+        </div>
+        <div class="div-cell">
+          <span class="div-val" id="dv-shannon">—</span>
+          <span class="div-lbl">Shannon (H')</span>
+        </div>
+        <div class="div-cell">
+          <span class="div-val" id="dv-simpson">—</span>
+          <span class="div-lbl">Simpson (1-D)</span>
+        </div>
+        <div class="div-cell">
+          <span class="div-val" id="dv-pielou">—</span>
+          <span class="div-lbl">Pielou (J')</span>
+        </div>
+      </div>
+      <div style="font-size:9px;color:var(--dim);margin-top:6px;line-height:1.5">
+        Based on sapling counts across all filtered plots with species data.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Main content -->
+  <div id="content">
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Tabs -->
+    <div id="tabs">
+      <div class="tab active" id="tab-map" onclick="switchTab('map')">Map</div>
+      <div class="tab" id="tab-results" onclick="switchTab('results')">Results</div>
+    </div>
+
+
+
+    <!-- Results table panel -->
+    <div id="results-panel">
+      <table id="results-table">
+        <thead>
+          <tr>
+            <th>LPC</th><th>Year</th><th>District</th><th>Block</th><th>GP</th>
+            <th>Beneficiary(ies)</th><th>Gender</th><th>SSCAT</th>
+            <th>Area (ha)</th><th>Saplings</th><th>Planted</th>
+          </tr>
+        </thead>
+        <tbody id="results-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Single LPC detail panel -->
+    <div id="lpc-panel">
+      <button id="lpc-close" onclick="closeLPCPanel()">✕</button>
+      <div id="lpc-content"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// ── Diversity indices ────────────────────────────────────────────────
+function calcDiversity(counts) {
+  // counts = array of positive integers
+  const vals = counts.filter(v => v > 0);
+  const S = vals.length;
+  if (!S) return {S:0, H:0, D:0, J:0};
+  const N = vals.reduce((a,b)=>a+b, 0);
+  // Shannon H'
+  let H = 0;
+  vals.forEach(n => { const p=n/N; H -= p*Math.log(p); });
+  // Simpson 1-D
+  let sumSq = 0;
+  vals.forEach(n => sumSq += n*(n-1));
+  const D = 1 - sumSq/(N*(N-1));
+  // Pielou J'
+  const J = S > 1 ? H / Math.log(S) : 1;
+  return {S, H:+H.toFixed(3), D:+D.toFixed(3), J:+J.toFixed(3)};
+}
+
+function pooledSpecies(features) {
+  const pool = {};
+  features.forEach(f => {
+    const sp = f.properties.species || {};
+    Object.entries(sp).forEach(([k,v]) => { pool[k] = (pool[k]||0) + v; });
+  });
+  return pool;
+}
+
+function updateDiversityPanel(pool, prefix) {
+  const counts = Object.values(pool).filter(v=>v>0);
+  const idx = calcDiversity(counts);
+  document.getElementById(prefix+'richness').textContent = idx.S;
+  document.getElementById(prefix+'shannon').textContent  = idx.H;
+  document.getElementById(prefix+'simpson').textContent  = idx.D;
+  document.getElementById(prefix+'pielou').textContent   = idx.J;
+}
+
+function updateSidebarSpeciesBars(pool) {
+  const maxV = Math.max(1, ...Object.values(pool));
+  const el = document.getElementById('sb-sp-bars');
+  const sorted = Object.entries(pool).filter(([,v])=>v>0).sort(([,a],[,b])=>b-a);
+  if (!sorted.length) { el.innerHTML = '<span style="color:var(--dim);font-size:10px">No species data in selection</span>'; return; }
+  el.innerHTML = sorted.map(([k,v]) =>
+    `<div class="sp-bar-row">
+      <span class="sp-name">${SPECIES_LABELS[k]||k}</span>
+      <div class="sp-bar" style="width:${Math.round(v/maxV*100)}px;background:${SPECIES_COLORS[k]||'var(--canopy)'}"></div>
+      <span class="sp-count">${v.toLocaleString()}</span>
+    </div>`
+  ).join('');
+}
+
+// ── Data ─────────────────────────────────────────────────────────────
+let ALL_FEATURES = [];
+let filteredFeatures = [];
+let map, layerGroup;
+
+const YEAR_COLORS = {2024:'#5a9ec9', 2025:'#52b788', 2026:'#e8a838'};
+const SPECIES_COLORS = {
+  MAHAGONI:   '#880000',  // S. mahagoni
+  GAMAR:      '#FF8800',  // G. arborea
+  TEAK:       '#00FF00',  // T. grandis (shegun)
+  NEEM:       '#7B9E3A',  // A. indica
+  JAM:        '#8800FF',  // S. cumini
+  CHIKRASSI:  '#FF0000',  // C. tabularis
+  JARUL:      '#DD88FF',  // L. speciosa
+  PANISAL:    '#7DC3E1',  // T. myriocarpa
+  KHAYER:     '#FFBB88',  // S. catechu
+  SHIMUL:     '#888888',  // B. ceiba
+  KALOSHIRISH:'#FFDDFF',  // A. lebbeck
+  KATHAL:     '#006600',  // A. heterophyllus
+  CHAMP:      '#FFDD66',  // M. champaca
+  BOYRA:      '#0000FF',  // T. bellirica
+};
+const SPECIES_LABELS = {
+  MAHAGONI:'Mahagoni', GAMAR:'Gamar', TEAK:'Teak', NEEM:'Neem',
+  JAM:'Jam', CHIKRASSI:'Chikrassi', JARUL:'Jarul', PANISAL:'Panisal',
+  KHAYER:'Khayer', SHIMUL:'Shimul', KALOSHIRISH:'Kalo Sirish',
+  KATHAL:'Kathal', CHAMP:'Champ', BOYRA:'Boyra'
+};
+const SSCAT_CLASS = {Tribal:'sscat-tribal', SC:'sscat-sc', OBC:'sscat-obc', General:'sscat-general', Minority:'sscat-sc'};
+
+// ── Init ──────────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  initMap();
+  await loadData();
+  populateDistrict();
+  applyFilters();
+});
+
+function initMap() {
+  map = L.map('map', {zoomControl:false}).setView([26.8, 89.3], 9);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {attribution:'Esri', maxZoom:19}).addTo(map);
+  L.control.zoom({position:'bottomright'}).addTo(map);
+  layerGroup = L.layerGroup().addTo(map);
+}
+
+async function loadData() {
+  try {
+    // Try to load from same directory as the HTML
+    const res = await fetch('asha_plantation.geojson');
+    const gj  = await res.json();
+    ALL_FEATURES = gj.features || [];
+    updateTopbarKPIs(ALL_FEATURES);
+  } catch(e) {
+    console.error('Failed to load GeoJSON:', e);
+    document.getElementById('kpi-plots').textContent = 'Error';
+  }
+}
+
+// ── KPIs ──────────────────────────────────────────────────────────────
+function updateTopbarKPIs(features) { updateSidebarKPIs(features); }
+function updateSidebarKPIs(features) {
+  const withGeom = features.filter(f => f.geometry);
+  const area  = withGeom.reduce((s,f) => s + (f.properties.AREA_HA || 0), 0);
+  const bens  = features.reduce((s,f) => s + (f.properties.dbcs || []).length, 0);
+  const plants= features.reduce((s,f) => s + (f.properties.TOTALPLANT || 0), 0);
+  document.getElementById('kpi-plots').textContent  = features.length;
+  document.getElementById('kpi-area').textContent   = area.toFixed(1);
+  document.getElementById('kpi-bens').textContent   = bens;
+  document.getElementById('kpi-plants').textContent = plants > 0 ? plants.toLocaleString() : '—';
+}
+
+function updateStats(features) {
+  const withGeom = features.filter(f => f.geometry);
+  const area = withGeom.reduce((s,f) => s + (f.properties.AREA_HA||0), 0);
+  const bens = features.reduce((s,f) => s + (f.properties.dbcs||[]).length, 0);
+  const plants = features.reduce((s,f) => s + (f.properties.TOTALPLANT||0), 0);
+  // Count tribal and female across all DBCs
+  let tribal=0, female=0, totalBen=0;
+  features.forEach(f => {
+    (f.properties.dbcs||[]).forEach(d => {
+      totalBen++;
+      if(d.SSCAT==='Tribal') tribal++;
+      if(d.GENDER==='Female') female++;
+    });
+  });
+  const femPct = totalBen > 0 ? Math.round(female/totalBen*100) : 0;
+  document.getElementById('kpi-plots').textContent  = features.length;
+  document.getElementById('kpi-area').textContent   = area.toFixed(1);
+  document.getElementById('kpi-bens').textContent   = bens;
+  document.getElementById('kpi-plants').textContent = plants > 0 ? plants.toLocaleString() : '—';
+  document.getElementById('st-tribal').textContent  = tribal;
+  document.getElementById('st-female').textContent  = femPct + '%';
+  document.getElementById('sb-filtered-count').textContent =
+    features.length + ' of ' + ALL_FEATURES.length + ' plots selected';
+  document.getElementById('sb-area-sum').textContent =
+    withGeom.length + ' mapped · ' + area.toFixed(1) + ' ha';
+  // Species pool + diversity
+  const pool = pooledSpecies(features);
+  updateSidebarSpeciesBars(pool);
+  updateDiversityPanel(pool, 'dv-');
+}
+
+// ── Filters ───────────────────────────────────────────────────────────
+function populateDistrict() {
+  const sel = document.getElementById('f-district');
+  const dists = [...new Set(ALL_FEATURES.map(f=>f.properties.DISTRICT).filter(Boolean))].sort();
+  dists.forEach(d => { const o=document.createElement('option'); o.value=d; o.textContent=d; sel.appendChild(o); });
+}
+function populateBlock() {
+  const dist = document.getElementById('f-district').value;
+  const sel  = document.getElementById('f-block');
+  sel.innerHTML = '<option value="">All blocks</option>';
+  const blocks = [...new Set(ALL_FEATURES
+    .filter(f => !dist || f.properties.DISTRICT===dist)
+    .map(f=>f.properties.BLOCK).filter(Boolean))].sort();
+  blocks.forEach(b => { const o=document.createElement('option'); o.value=b; o.textContent=b; sel.appendChild(o); });
+  document.getElementById('f-gp').innerHTML = '<option value="">All GPs</option>';
+}
+function populateGP() {
+  const dist  = document.getElementById('f-district').value;
+  const block = document.getElementById('f-block').value;
+  const sel   = document.getElementById('f-gp');
+  sel.innerHTML = '<option value="">All GPs</option>';
+  const gps = [...new Set(ALL_FEATURES
+    .filter(f => (!dist || f.properties.DISTRICT===dist) && (!block || f.properties.BLOCK===block))
+    .map(f=>f.properties.GP).filter(Boolean))].sort();
+  gps.forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; sel.appendChild(o); });
+}
+
+function getFilters() {
+  return {
+    year:    document.getElementById('f-year').value,
+    district:document.getElementById('f-district').value,
+    block:   document.getElementById('f-block').value,
+    gp:      document.getElementById('f-gp').value,
+    gender:  document.getElementById('f-gender').value,
+    sscat:   document.getElementById('f-sscat').value,
+    search:  document.getElementById('f-search').value.trim().toLowerCase(),
+  };
+}
+
+function applyFilters() {
+  const f = getFilters();
+  filteredFeatures = ALL_FEATURES.filter(feat => {
+    const p = feat.properties;
+    if (f.year     && String(p.YEAR) !== f.year)      return false;
+    if (f.district && p.DISTRICT     !== f.district)   return false;
+    if (f.block    && p.BLOCK        !== f.block)      return false;
+    if (f.gp       && p.GP           !== f.gp)         return false;
+    if (f.gender   && p.GENDER       !== f.gender)     return false;
+    if (f.sscat    && p.SSCAT        !== f.sscat)      return false;
+    if (f.search) {
+      const q = f.search;
+      const matchLPC  = String(p.LPC).includes(q);
+      const matchName = (p.BENNAMES||'').toLowerCase().includes(q);
+      const matchDBC  = (p.DBC_LIST||[]).some(d=>String(d).includes(q));
+      if (!matchLPC && !matchName && !matchDBC) return false;
+    }
+    return true;
+  });
+  renderMap();
+  updateStats(filteredFeatures);
+  renderResultsTable();
+  // Auto-open single LPC panel
+  if (filteredFeatures.length === 1) openLPCPanel(filteredFeatures[0].properties);
+  else closeLPCPanel();
+}
+
+function resetFilters() {
+  ['f-year','f-district','f-block','f-gp','f-gender','f-sscat'].forEach(id =>
+    document.getElementById(id).value = '');
+  document.getElementById('f-search').value = '';
+  document.getElementById('f-block').innerHTML = '<option value="">All blocks</option>';
+  document.getElementById('f-gp').innerHTML    = '<option value="">All GPs</option>';
+  populateDistrict();
+  document.getElementById('search-dropdown').style.display='none';
+  applyFilters();
+}
+
+// ── Search ─────────────────────────────────────────────────────────────
+function onSearchInput() {
+  const q = document.getElementById('f-search').value.trim().toLowerCase();
+  const dd = document.getElementById('search-dropdown');
+  if (!q || q.length < 2) { dd.style.display='none'; return; }
+  const matches = ALL_FEATURES.filter(f => {
+    const p=f.properties;
+    return String(p.LPC).includes(q) ||
+      (p.BENNAMES||'').toLowerCase().includes(q) ||
+      (p.DBC_LIST||[]).some(d=>String(d).includes(q));
+  }).slice(0,15);
+  if (!matches.length) { dd.style.display='none'; return; }
+  dd.innerHTML = matches.map(f => {
+    const p=f.properties;
+    return `<div class="sd-item" onclick="selectSearch(${p.LPC},${p.YEAR})">
+      <span class="sd-lpc">${p.LPC}</span>
+      <span class="sd-name">${(p.BENNAMES||'').slice(0,40)}</span>
+    </div>`;
+  }).join('');
+  dd.style.display='block';
+}
+function selectSearch(lpc, year) {
+  document.getElementById('f-search').value = lpc;
+  document.getElementById('search-dropdown').style.display='none';
+  document.getElementById('f-year').value = year;
+  applyFilters();
+}
+function clearSearch() {
+  document.getElementById('f-search').value='';
+  document.getElementById('search-dropdown').style.display='none';
+  applyFilters();
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) document.getElementById('search-dropdown').style.display='none';
+});
+
+// ── Map rendering ──────────────────────────────────────────────────────
+function renderMap() {
+  layerGroup.clearLayers();
+  const geomFeatures = filteredFeatures.filter(f => f.geometry);
+  if (!geomFeatures.length) return;
+  const gj = L.geoJSON({type:'FeatureCollection', features: geomFeatures}, {
+    style: f => ({
+      fillColor: YEAR_COLORS[f.properties.YEAR] || '#aaa',
+      color: YEAR_COLORS[f.properties.YEAR] || '#aaa',
+      weight: 1.5, fillOpacity: 0.35, opacity: 0.8
+    }),
+    onEachFeature: (f, layer) => {
+      layer.on({
+        click: () => openLPCPanel(f.properties),
+        mouseover: e => { e.target.setStyle({fillOpacity:.6,weight:2.5}); },
+        mouseout:  e => { gj.resetStyle(e.target); },
+      });
+      layer.bindTooltip(`<strong>${f.properties.LPC}</strong> · ${f.properties.YEAR}<br>${f.properties.BENNAMES||''}`, 
+        {sticky:true, className:'leaflet-tooltip', opacity:.95});
+    }
+  }).addTo(layerGroup);
+  if (filteredFeatures.length < ALL_FEATURES.length && geomFeatures.length > 0) {
+    try { map.fitBounds(gj.getBounds(), {padding:[20,20]}); } catch(e){}
+  }
+}
+
+// ── Results table ──────────────────────────────────────────────────────
+function renderResultsTable() {
+  const tbody = document.getElementById('results-tbody');
+  tbody.innerHTML = filteredFeatures.map(f => {
+    const p = f.properties;
+    return `<tr>
+      <td class="lpc-cell" onclick="openLPCPanel(${JSON.stringify(p).replace(/"/g,'&quot;')})">${p.LPC}</td>
+      <td>${p.YEAR}</td>
+      <td>${p.DISTRICT||'—'}</td>
+      <td>${p.BLOCK||'—'}</td>
+      <td>${p.GP||'—'}</td>
+      <td>${(p.BENNAMES||'—').slice(0,40)}${(p.BENNAMES||'').length>40?'…':''}</td>
+      <td>${p.GENDER||'—'}</td>
+      <td>${p.SSCAT||'—'}</td>
+      <td>${p.AREA_HA ? p.AREA_HA.toFixed(2) : '—'}</td>
+      <td>${p.TOTALPLANT ? p.TOTALPLANT.toLocaleString() : '—'}</td>
+      <td>${p.DATEPLANT||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.getElementById('tab-map').classList.toggle('active', t==='map');
+  document.getElementById('tab-results').classList.toggle('active', t==='results');
+  document.getElementById('results-panel').classList.toggle('open', t==='results');
+}
+
+// ── Single LPC panel ──────────────────────────────────────────────────
+function openLPCPanel(p) {
+  if (typeof p === 'string') p = JSON.parse(p);
+  const panel = document.getElementById('lpc-panel');
+  // Zoom to feature if it has geometry
+  const feat = filteredFeatures.find(f => f.properties.LPC===p.LPC && f.properties.YEAR===p.YEAR);
+  if (feat && feat.geometry) {
+    try {
+      const gl = L.geoJSON(feat);
+      map.fitBounds(gl.getBounds(), {padding:[30,340]});
+    } catch(e){}
+  }
+  // Species bar chart
+  const sp = p.species || {};
+  const maxSp = Math.max(1, ...Object.values(sp));
+  const spHtml = Object.entries(sp).filter(([,v])=>v>0)
+    .sort(([,a],[,b])=>b-a)
+    .map(([k,v]) => `<div class="sp-bar-row">
+      <span class="sp-name">${SPECIES_LABELS[k]||k}</span>
+      <div class="sp-bar" style="width:${Math.round(v/maxSp*120)}px;background:${SPECIES_COLORS[k]||'var(--canopy)'}"></div>
+      <span class="sp-count">${v.toLocaleString()}</span>
+    </div>`).join('') || '<span style="color:var(--dim);font-size:10px">No species data</span>';
+
+  // DBC cards
+  const dbcHtml = (p.dbcs||[]).map(d => {
+    const sc = SSCAT_CLASS[d.SSCAT] || '';
+    return `<div class="dbc-item">
+      <div class="dbc-name">${d.BENNAME||'Unknown'} <span class="sscat-tag ${sc}">${d.SSCAT||''}</span></div>
+      <div class="dbc-meta">DBC: ${d.DBC||'—'} · ${d.GENDER||'—'} · ${d.OCCUP||'—'}</div>
+      ${d.AGMT ? `<div style="margin-top:3px"><a class="pop-link" href="${d.AGMT}" target="_blank">📄 Agreement</a></div>` : ''}
+      ${d.LANDDOC ? `<div><a class="pop-link" href="${d.LANDDOC}" target="_blank">📋 Land Doc</a></div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Per-LPC diversity
+  const lpcCounts = Object.values(sp).filter(v=>v>0);
+  const lpcIdx = calcDiversity(lpcCounts);
+  const lpcDivHtml = lpcCounts.length ? `<div class="lpc-div-grid">
+    <div class="lpc-div-cell"><span class="lpc-div-val">${lpcIdx.S}</span><span class="lpc-div-lbl">Richness (S)</span></div>
+    <div class="lpc-div-cell"><span class="lpc-div-val">${lpcIdx.H}</span><span class="lpc-div-lbl">Shannon (H')</span></div>
+    <div class="lpc-div-cell"><span class="lpc-div-val">${lpcIdx.D}</span><span class="lpc-div-lbl">Simpson (1-D)</span></div>
+    <div class="lpc-div-cell"><span class="lpc-div-val">${lpcIdx.J}</span><span class="lpc-div-lbl">Pielou (J')</span></div>
+  </div>` : '<span style="color:var(--dim);font-size:10px">No species data</span>';
+
+  document.getElementById('lpc-content').innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div>
+        <div style="font-size:18px;font-weight:700;color:var(--mist)">${p.LPC}</div>
+        <div style="font-size:11px;color:var(--dim)">${p.YEAR} · ${p.DISTRICT||''}</div>
+      </div>
+      <span style="background:${YEAR_COLORS[p.YEAR]||'#aaa'};color:#0f1c14;
+        font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px">${p.YEAR}</span>
+    </div>
+
+    <div class="lpc-section">
+      <div class="lpc-section-title">Location</div>
+      ${infoRow('District', p.DISTRICT)}
+      ${infoRow('Block', p.BLOCK)}
+      ${infoRow('Gram Panchayat', p.GP)}
+      ${infoRow('Village', p.VILLAGE)}
+      ${infoRow('Field Exec.', p.FVNAME)}
+    </div>
+
+    <div class="lpc-section">
+      <div class="lpc-section-title">Plantation</div>
+      ${infoRow('Area', p.AREA_HA ? p.AREA_HA.toFixed(4) + ' ha (' + (p.AREA_SQM||'').toLocaleString() + ' m²)' : '—')}
+      ${infoRow('Date planted', p.DATEPLANT||'—')}
+      ${infoRow('Total saplings', p.TOTALPLANT ? p.TOTALPLANT.toLocaleString() : '—')}
+      ${p.PMAP ? `<div style="margin-top:6px"><a class="pop-link" href="${p.PMAP}" target="_blank">🗺️ Plantation map</a></div>` : ''}
+      ${p.SMAP ? `<div><a class="pop-link" href="${p.SMAP}" target="_blank">🧪 Soil map</a></div>` : ''}
+      ${p.KML  ? `<div><a class="pop-link" href="${p.KML}"  target="_blank">📐 KML polygon</a></div>` : ''}
+    </div>
+
+    <div class="lpc-section">
+      <div class="lpc-section-title">Species breakdown</div>
+      <div class="sp-bar-wrap">${spHtml}</div>
+    </div>
+
+    <div class="lpc-section">
+      <div class="lpc-section-title">Diversity indices (this plot)</div>
+      ${lpcDivHtml}
+    </div>
+
+    <div class="lpc-section">
+      <div class="lpc-section-title">Beneficiaries (${(p.dbcs||[]).length})</div>
+      <div class="pop-dbcs">${dbcHtml||'<span style="color:var(--dim);font-size:10px">No DBC data</span>'}</div>
+    </div>
+  `;
+  panel.classList.add('open');
+}
+
+function infoRow(k,v) {
+  return `<div class="info-row"><span class="info-key">${k}</span><span class="info-val">${v||'—'}</span></div>`;
+}
+
+function closeLPCPanel() {
+  document.getElementById('lpc-panel').classList.remove('open');
+}
+
+
+// ── Theme toggle ──────────────────────────────────────────────────────
+let _lightTheme = false;
+function toggleTheme() {
+  _lightTheme = !_lightTheme;
+  document.documentElement.classList.toggle('light', _lightTheme);
+  document.getElementById('theme-toggle').textContent = _lightTheme ? '🌙' : '☀️';
+  localStorage.setItem('dashTheme', _lightTheme ? 'light' : 'dark');
+}
+// Restore saved theme
+(function(){
+  const saved = localStorage.getItem('dashTheme');
+  if (saved === 'light') { _lightTheme=true; document.documentElement.classList.add('light'); 
+    document.addEventListener('DOMContentLoaded', ()=>{ const b=document.getElementById('theme-toggle'); if(b) b.textContent='🌙'; }); }
+})();
+
+// ── About panel ──────────────────────────────────────────────────────
+const ABOUT_CONTENT = {
+  about: `<h3 style="color:var(--leaf);margin:0 0 10px;font-size:13px">About this Dashboard</h3>
+<p>An interactive plantation monitoring dashboard for the <strong>Asha ARR carbon project</strong>, covering 2024–2026 planting cycles across Jalpaiguri, Alipurduar, Coochbehar and Kalimpong districts, West Bengal.</p>
+<p style="margin-top:10px"><strong>Data pipeline:</strong></p>
+<ul class="abt-ul">
+  <li>Plantation polygons from field-verified GeoPackages (EPSG:24345 → WGS84)</li>
+  <li>Beneficiary, species and sapling data from annual plantation databases</li>
+  <li>Unified as a single GeoJSON (LPC-keyed, one feature per parcel)</li>
+</ul>
+<p style="margin-top:10px"><strong>Credits</strong></p>
+<div style="background:rgba(0,0,0,.3);border-radius:6px;padding:10px 12px;margin-top:4px">
+  <div style="margin-bottom:6px">
+    <span style="color:var(--mist);font-weight:700">Python dashboard script</span><br>
+    <span style="color:var(--dim)">Satyajit Chakraborty</span>
+  </div>
+  <div>
+    <span style="color:var(--mist);font-weight:700">Web application &amp; data pipeline</span><br>
+    <span style="color:var(--dim)">Nirmalya Chatterjee</span>
+  </div>
+</div>
+<p style="margin-top:10px;color:var(--dim)">For Tomorrow&rsquo;s Foundation, Tomorrow&rsquo;s Skills and Livelihoods Plc.,<br>and authorised project partners</p>
+<p style="margin-top:6px;color:var(--dim);font-size:10px">Contact: <a href="mailto:tfcarbondata@gmail.com">tfcarbondata@gmail.com</a></p>`,
+
+  log: `<h3 style="color:var(--leaf);margin:0 0 10px;font-size:13px">Changelog</h3>
+<div class="abt-ver">v5 <span class="abt-date">Jul 2026</span></div>
+<ul class="abt-ul">
+  <li>Light theme (☀️/🌙 toggle) — #d0ffd0 background, black text; preference saved in localStorage</li>
+  <li>Dark theme leaf/text brightened (#6ee7b7, #e8f4e8) for improved readability</li>
+</ul>
+<div class="abt-ver">v4 <span class="abt-date">Jul 2026</span></div>
+<ul class="abt-ul">
+  <li>Diversity indices (Richness, Shannon H', Simpson 1-D, Pielou J') — pooled selection in sidebar, per-plot in LPC panel</li>
+  <li>Selection species bars added to sidebar</li>
+  <li>Topbar removed — all KPIs and stats moved into sidebar</li>
+  <li>Sidebar widened to 300px</li>
+</ul>
+<div class="abt-ver">v3 <span class="abt-date">Jul 2026</span></div>
+<ul class="abt-ul">
+  <li>Species color bars matched to ARRMapper species color palette</li>
+  <li>About panel added (this screen) — credits, changelog, licence, terms</li>
+  <li>Block and GP name normalisation (Roman numeral suffixes, spelling variants)</li>
+</ul>
+<div class="abt-ver">v2 <span class="abt-date">Jul 2026</span></div>
+<ul class="abt-ul">
+  <li>Full rebuild as offline-capable HTML/JS/Leaflet web app</li>
+  <li>Unified GeoJSON from 2024 + 2025 GPKGs merged with 3-year XLSX databases</li>
+  <li>Cascading filters: Year → District → Block → GP → Gender → SSCAT</li>
+  <li>Live search by LPC, beneficiary name, or DBC with dropdown</li>
+  <li>Right slide-in LPC panel: species bars, per-DBC cards, Drive links</li>
+  <li>Results table with sortable columns</li>
+  <li>Auto-opens LPC panel on single-result filter</li>
+  <li>2026 parcels loaded as table records (no geometry yet)</li>
+</ul>
+<div class="abt-ver">v1 <span class="abt-date">Jun 2026</span></div>
+<ul class="abt-ul">
+  <li>Original Streamlit dashboard — Satyajit Chakraborty</li>
+  <li>GPKG file selector, satellite map, polygon popups, district bar chart</li>
+  <li>Year-wise colour coding, CSV export</li>
+</ul>`,
+
+  lic: `<h3 style="color:var(--leaf);margin:0 0 10px;font-size:13px">Proprietary Licence</h3>
+<p><strong>Asha ARR Dashboard</strong><br>
+Copyright &copy; 2025&ndash;2026 Nirmalya Chatterjee. All rights reserved.</p>
+<p>This software is proprietary and confidential. It is licensed for use exclusively by Tomorrow&rsquo;s Foundation, Tomorrow&rsquo;s Skills and Livelihoods Plc., and other organisations authorised in writing by the developer.</p>
+<p>Unauthorised copying, redistribution, reverse-engineering, or modification of this software, in whole or in part, is strictly prohibited without the express written permission of the developer.</p>
+<p style="color:var(--dim);font-size:10px;margin-top:12px">Contact: <a href="mailto:tfcarbondata@gmail.com">tfcarbondata@gmail.com</a></p>`,
+
+  terms: `<h3 style="color:var(--leaf);margin:0 0 10px;font-size:13px">Terms of Use</h3>
+<ul class="abt-ul">
+  <li>Authorised project personnel and funders only</li>
+  <li>Data displayed is for internal monitoring and reporting purposes</li>
+  <li>Do not share access or data with unauthorised persons</li>
+  <li>Plantation data is subject to field verification — use with appropriate context</li>
+  <li>The developers accept no liability for decisions made based on this data without independent verification</li>
+  <li>Access may be revoked at any time by project administrators</li>
+</ul>
+<p style="margin-top:10px">Full terms and privacy policy:<br>
+<a href="https://forestsoil.github.io/ARRmapper/terms_of_service.html" target="_blank">forestsoil.github.io/ARRmapper/terms_of_service.html</a><br>
+<a href="https://forestsoil.github.io/ARRmapper/privacy_policy.html" target="_blank">forestsoil.github.io/ARRmapper/privacy_policy.html</a></p>`,
+};
+
+let _abtCurrentTab = 'about';
+function openAbout() {
+  const el = document.getElementById('about-overlay');
+  el.style.display = 'flex';
+  abtTab('about');
+}
+function closeAbout() {
+  document.getElementById('about-overlay').style.display = 'none';
+}
+function abtTab(t) {
+  _abtCurrentTab = t;
+  ['about','log','lic','terms'].forEach(k => {
+    const btn = document.getElementById('abt-tab-' + k);
+    if (btn) btn.className = 'abt-tab' + (k===t ? ' abt-tab-sel' : '');
+  });
+  document.getElementById('abt-body').innerHTML = ABOUT_CONTENT[t] || '';
+}
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeAbout(); });
+
+</script>
+
+<!-- About overlay -->
+<div id="about-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#1c2a17;border:1px solid var(--border);border-radius:12px;
+    width:480px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      padding:14px 16px;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--mist)">🌳 Asha ARR Dashboard</div>
+        <div style="font-size:10px;color:var(--dim);margin-top:2px">v3 &nbsp;·&nbsp; &copy; 2025&ndash;2026</div>
+      </div>
+      <button onclick="closeAbout()"
+        style="background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div style="display:flex;border-bottom:1px solid var(--border)">
+      <button class="abt-tab abt-tab-sel" id="abt-tab-about" onclick="abtTab('about')">ℹ️ About</button>
+      <button class="abt-tab" id="abt-tab-log"   onclick="abtTab('log')">📋 Changelog</button>
+      <button class="abt-tab" id="abt-tab-lic"   onclick="abtTab('lic')">📜 Licence</button>
+      <button class="abt-tab" id="abt-tab-terms" onclick="abtTab('terms')">📄 Terms</button>
+    </div>
+    <div id="abt-body" style="padding:16px;overflow-y:auto;flex:1;font-size:11px;
+      color:var(--ink);line-height:1.7"></div>
+  </div>
+</div>
+</body>
+</html>
