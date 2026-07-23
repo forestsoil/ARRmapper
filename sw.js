@@ -1,14 +1,19 @@
-// ARRMapper Field Tool — Service Worker
-// Caches the app shell (HTML + CDN scripts) on install so the tool
-// loads offline. Network-first for all API calls (Google Maps, Apps Script,
-// Google Identity) so live data always comes from the network when available.
+// ARRMapper Field Tool — Service Worker v3
+// Caching strategy:
+//   index.html        → network-first (always serve fresh launcher)
+//   appDashboard.html → network-first (data-dependent, stale is misleading)
+//   appARRmapper.html → stale-while-revalidate (serve cached for speed,
+//                       update in background — preserves offline capability)
+//   CDN assets        → cache-first (immutable versioned URLs)
+//   Google APIs       → network-only (auth, Maps, Apps Script)
 
-const CACHE_NAME = 'arrm-shell-v2';
+const CACHE_NAME = 'arrm-shell-v3';
 
 const SHELL_URLS = [
-  '/ARRmapper/app.html',
+  '/ARRmapper/appARRmapper.html',
   '/ARRmapper/manifest.json',
   '/ARRmapper/logo.png',
+  '/ARRmapper/logo2.png',
   // Leaflet
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -16,22 +21,35 @@ const SHELL_URLS = [
   'https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js',
   // JSZip
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
-  // Google Identity (cache the loader; actual auth still needs network)
+  // Google Identity
   'https://accounts.google.com/gsi/client',
+];
+
+// Never cache these — always network
+const NETWORK_ONLY_HOSTS = [
+  'maps.googleapis.com',
+  'accounts.google.com',
+  'script.google.com',
+  'oauth2.googleapis.com',
+];
+
+// Always fetch fresh from network (fall back to cache if offline)
+const NETWORK_FIRST_PATHS = [
+  '/ARRmapper/index.html',
+  '/ARRmapper/',
+  '/ARRmapper/appDashboard.html',
 ];
 
 // ── Install: pre-cache app shell ─────────────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      // Cache what we can — ignore failures for CDN resources that may
-      // have CORS restrictions on cache storage
-      return Promise.allSettled(
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.allSettled(
         SHELL_URLS.map(url =>
           cache.add(url).catch(e => console.warn('SW cache skip:', url, e.message))
         )
-      );
-    }).then(() => self.skipWaiting())
+      )
+    ).then(() => self.skipWaiting())
   );
 });
 
@@ -50,37 +68,60 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Always network-first for:
-  // - Google APIs (Maps Static, Identity, Apps Script)
-  // - Drive uploads
-  const networkFirst = [
-    'maps.googleapis.com',
-    'accounts.google.com',
-    'script.google.com',
-    'oauth2.googleapis.com',
-  ].some(host => url.hostname.includes(host));
+  // Network-only for Google APIs
+  if (NETWORK_ONLY_HOSTS.some(h => url.hostname.includes(h))) return;
 
-  if (networkFirst) {
-    // Network only — don't cache API responses
+  // Network-first for index + dashboard
+  if (NETWORK_FIRST_PATHS.some(p => url.pathname === p || url.pathname.endsWith(p))) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME)
+              .then(cache => cache.put(event.request, clone))
+              .catch(() => {});
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
     return;
   }
 
-  // Cache-first for app shell assets
+  // Stale-while-revalidate for appARRmapper.html
+  if (url.pathname.includes('appARRmapper.html')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(cache =>
+        cache.match(event.request).then(cached => {
+          const networkFetch = fetch(event.request).then(response => {
+            if (response && response.status === 200) {
+              cache.put(event.request, response.clone()).catch(() => {});
+            }
+            return response;
+          }).catch(() => cached);
+          return cached || networkFetch;
+        })
+      )
+    );
+    return;
+  }
+
+  // Cache-first for everything else (CDN assets, images, etc.)
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
-        // Cache successful GET responses for shell assets
         if (response && response.status === 200 && event.request.method === 'GET') {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone))
-            .catch(() => {}); // ignore cache write failures
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, clone))
+            .catch(() => {});
         }
         return response;
       }).catch(() => {
-        // Offline and not cached — for navigation requests return app.html
         if (event.request.mode === 'navigate') {
-          return caches.match('/ARRmapper/app.html');
+          return caches.match('/ARRmapper/appARRmapper.html');
         }
       });
     })
