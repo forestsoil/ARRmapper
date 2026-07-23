@@ -146,6 +146,12 @@ footer a:hover{color:var(--canopy)}
 
 </main>
 
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/ARRmapper/sw.js');
+}
+</script>
+
 <footer>
   ARR Project Suite &nbsp;·&nbsp; Developed by Nirmalya Chatterjee<br>
   For use by authorised project partners, funders &amp; clients only &nbsp;·&nbsp;
