@@ -1,70 +1,110 @@
-# ARRMapper Field Tool
-A mobile-first offline-capable progressive web app (PWA) for field data collection on Afforestation, Reforestation and Revegetation (ARR) carbon projects in India.
+# arrm-cog
 
-Deployed at: **https://forestsoil.github.io/ARRmapper/app.html**
-
----
-
-## Tools
-
-### 🌱 Plantation Mapper
-Draw species blocks over a loaded KML boundary, auto-generate a sapling grid at configurable spacing, and export as KML + Shapefile ZIP. Supports 14+ native species with Hindi and Bengali display names.
-
-### 🧪 Soil Mapper
-Assign soil type classifications (Sandy through Lowland/Organic) to spatial blocks within a plot boundary. Export as KML + Shapefile.
-
-### 📐 Vector Tool
-Capture GPS walk polygons, manual polygons, point-of-interest markers, and track lines. All polygon exports include a **stage** property (eligibility / negotiated / surveyed / cleared / final / revised) and an optional **revision_reason** (flood hazard, fire hazard, bank erosion, beneficiary dropout, encroachment, other) to track iterative boundary refinement through the full plot lifecycle. Exports as KML + GeoJSON sidecar.
-
-### 📋 MRV Tool
-Monitoring, Reporting and Verification field visits aligned to VM0047. Loads sapling points from device storage (Plantation Mapper exports or synced legacy plots) and draws a stratified random sample (density-tiered: 15/25/35 pts/ha, min 10). Records per-point grade (A+→D), height, DBH, and notes. Six plot-level metrics (survival, fencing condition, threat/encroachment, watering/irrigation, owner engagement, wildlife damage) contribute a weighted composite score (0–100) mapped to A+→D. Quarterly photo capture per species block. Uploads visit records as GeoJSON to Google Drive.
-
-### 📁 Files
-Manage the local OPFS file cache — view, download, or delete stored KML, GeoJSON, and photo files. Includes **Sync Legacy Plots** to pull 2024–2026 fencing polygons from the Drive `_legacy/` folder into OPFS for use in the MRV Tool.
+Data hosting repo for the **ARRmapper suite** — serving Cloud-Optimised GeoTIFFs (COGs) and simplified village boundary GeoJSONs via GitHub Pages.
 
 ---
 
-## Architecture
-- Single-file HTML/JS PWA — no build step, no framework
-- **Offline-first**: all data written to OPFS and IndexedDB; Drive upload queued when offline
-- **Google Sign-In (GIS)** for user identity; uploads routed to project-specific Google Drive accounts via Apps Script endpoints
-- **Leaflet** for mapping; **Google Static Maps** for thumbnail previews
-- Trilingual UI: English / বাংলা (Bengali) / हिंदी (Hindi)
-- Minified production build (`app.html`) generated locally via Terser
+## Contents
 
-## Drive Folder Structure
+### `/cogs` — Pre-computed Cloud-Optimised GeoTIFFs
+
+Raster layers for land suitability hotspotting in `appHotspot.html`.
+
+| File | Project | Layer | Period |
+|---|---|---|---|
+| `asha1_flood_freq.tif` | Asha 1 (Alipurduar, Jalpaiguri, Coochbehar) | Flood frequency (NDWI) | 2013–present |
+| `asha1_drought_stress.tif` | Asha 1 | Drought / barrenness stress (BSI) | 2013–present |
+| `asha1_soil_suit.tif` | Asha 1 | Soil suitability | 2013–present |
+| `asha2_flood_freq.tif` | Asha 2 Tea (Darjeeling, Kalimpong + Asha1 districts) | Flood frequency (NDWI) | 2013–present |
+| `asha2_drought_stress.tif` | Asha 2 Tea | Drought / barrenness stress (BSI) | 2013–present |
+| `asha2_soil_suit.tif` | Asha 2 Tea | Soil suitability | 2013–present |
+| `arun_flood_freq.tif` | Arun (Namsai, Changlang, Lohit, Lower Dibang Valley, East Siang) | Flood frequency (NDWI) | 2015–present |
+| `arun_drought_stress.tif` | Arun | Drought / barrenness stress (BSI) | 2015–present |
+| `arun_soil_suit.tif` | Arun | Soil suitability | 2015–present |
+| `banani_flood_freq.tif` | Banani (Birbhum, Bankura, Purulia, Jhargram, Paschim Bardhaman) | Flood frequency (NDWI) | 2015–present |
+| `banani_drought_stress.tif` | Banani | Drought / barrenness stress (BSI) | 2015–present |
+| `banani_soil_suit.tif` | Banani | Soil suitability | 2015–present |
+
+**Resolution:** 30m (Landsat 8/9)  
+**CRS:** EPSG:4326  
+**Source:** Google Earth Engine via `geemap` + `geedim`; converted to COG with `rio-cogeo`  
+**HTTP range requests:** COG tile structure allows clients to fetch only the window covering a plot — not the full raster
+
+Accessible at:
 ```
-ARRmapper/
-  PlantationMapper/{username}/
-  SoilMapper/{username}/
-  VectorTool/{username}/
-  MRVTool/{username}/
-  VectorTool/_legacy/          ← legacy fencing polygons (2024–2026, read-only)
+https://forestsoil.github.io/arrm-cog/cogs/{filename}
 ```
 
-## Projects
-| Key | Label | Districts | Drive Account |
-|-----|-------|-----------|---------------|
-| Asha1 | Asha 1 (2023) | Jalpaiguri, Alipurduar, Coochbehar, West Bengal | asha1.data@tomorrowsfoundation.in |
-| Asha2 | Asha 2 Tea (2027) | Darjeeling, Kalimpong, West Bengal | asha2.data@tomorrowsfoundation.in |
-| Arun | Arun (2025) | Namsai, Changlang, Lohit, Lower Dibang Valley, East Siang, Arunachal Pradesh | arun.data@tomorrowsfoundation.in |
-| Banani | Banani (2025) | Birbhum, Bankura, Purulia, Jhargram, Paschim Bardhaman, West Bengal | banani.data@tomorrowsfoundation.in |
+---
+
+### `/villages` — Simplified Village Boundary GeoJSONs
+
+Point-in-polygon GPS lookup for `appSurveyManager` and `appHotspot`. One file per district, covering ARR project areas in West Bengal.
+
+| File | District | Project(s) | Approx. size |
+|---|---|---|---|
+| `alipurduar_villages.geojson` | Alipurduar | Asha1, Asha2 | ~0.2 MB |
+| `darjiling_villages.geojson` | Darjeeling | Asha1, Asha2 | ~0.3 MB |
+| `jalpaiguri_villages.geojson` | Jalpaiguri | Asha1, Asha2 | ~0.3 MB |
+| `kalimpong_villages.geojson` | Kalimpong | Asha1, Asha2 | ~0.1 MB |
+| `koch_bihar_villages.geojson` | Cooch Behar | Asha1, Asha2 | ~0.7 MB |
+| `bankura_villages.geojson` | Bankura | Banani | ~1.5 MB |
+| `birbhum_villages.geojson` | Birbhum | Banani | ~1.2 MB |
+| `jhargram_villages.geojson` | Jhargram | Banani | ~0.6 MB |
+| `paschim_bardhaman_villages.geojson` | Paschim Bardhaman | Banani | ~0.2 MB |
+| `puruliya_villages.geojson` | Purulia | Banani | ~1.0 MB |
+
+**Properties per feature:** `District`, `Dist_LGD`, `Sub_dist` (Block), `Subdis_LGD`, `Subdis_Typ`, `Vill_name`, `Vill_Cat`, `Vill_LGD`, `arr_project`  
+**Simplification:** 10% weighted (mapshaper), `keep-shapes`, `snap` — ~10–15m equivalent resolution, safe for GPS point-in-polygon  
+**CRS:** EPSG:4326  
+**Source:** Survey of India / LGD via QGIS pipeline  
+**Note:** Arunachal Pradesh (Arun project) not included — SOI data restricted under ILP; Nominatim fallback used in-app
+
+Accessible at:
+```
+https://raw.githubusercontent.com/forestsoil/arrm-cog/main/villages/{district}_villages.geojson
+```
+
+GPS lookup uses `Vill_name` as GP proxy and `Sub_dist` for block auto-selection. Actual village name is free-text / Nominatim suggestion in-app.
 
 ---
 
-## Development
-- `app.html` — minified production file (deploy this)
-- `plantationMapper_field_vXX_mobileLS_DEVX.html` — unminified source of truth
-- Minify: `terser --compress --mangle --mangle-props 'regex=/^_/'` on the script block only
-- Always patch via targeted `must_replace()` with assertion guards; avoid structural refactors
+### `/villages_soi` — Original SOI Village Boundaries (master)
 
-## Apps Script
-Two versions in use:
-- `FieldTool_AppsScript_v4.js` — base64 POST upload handler; deploy once per project Drive account (Execute as: Me, Access: Anyone)
-- `FieldTool_AppsScript_v5.js` — v4 + additive GET routes: `?action=listLegacy` and `?action=getLegacyFile&name=xxx` for legacy plot sync
+Full-resolution originals (~65MB total). Not fetched by apps. Preserved for future high-precision use or re-simplification.
 
 ---
 
-## License
-Internal use — Tomorrow's Foundation / EcoAct ARR carbon projects, India.  
-© 2025–2026 Nirmalya Chatterjee. All rights reserved.
+### `simplify_villages.py`
+
+Simplification script. Run from repo root after updating `/villages_soi`:
+
+```bash
+npm install -g mapshaper   # one-time
+python3 simplify_villages.py
+git add villages/
+git commit -m "update simplified villages"
+git push
+```
+
+---
+
+### `appHotspot.html`
+
+Land suitability hotspotter app. Reads COGs via HTTP range requests, overlays on Leaflet map, filters by project and suitability layer.
+
+---
+
+## Update cadence
+
+**COGs:** Re-run `arr_cog_export_v2.py` annually (or post wet-season) and commit replacements. Script end-date auto-sets to run date.  
+**Villages:** Re-simplify from `/villages_soi` if source boundaries are updated.
+
+---
+
+## Related
+
+- [forestsoil/ARRmapper](https://github.com/forestsoil/ARRmapper) — main field tool suite (ARRmapper, appSurveyManager, appDashboard)
+- **Projects:** Asha1 (North Bengal ARR, 2023), Asha2 Tea (2027), Arun (Arunachal Pradesh ARR, 2025), Banani (Malbhum ARR, 2025)
+- **Carbon methodology:** Verra VCS VM0047 ARR
+- **Implementing org:** Tomorrows Foundation (TF) / TSLPL; Carbon developer: EcoAct / Schneider Electric France
