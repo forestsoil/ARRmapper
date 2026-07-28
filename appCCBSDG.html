@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCB &amp; SDG Reporting — Asha ARR</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1f2d;--surface:#102030;--card:#142638;--border:#1e3a52;
+  --teal:#2dd4bf;--green:#4ade80;--amber:#fbbf24;--rose:#f43f5e;--violet:#a78bfa;
+  --ink:#e2f0ff;--mid:#7ba8c4;--dim:#3a6080;--font:'Segoe UI',system-ui,sans-serif;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--ink)}
+#app{display:grid;grid-template-columns:280px 1fr;height:100vh}
+
+/* ── Sidebar ── */
+#sidebar{background:var(--surface);border-right:1px solid var(--border);
+  overflow-y:auto;display:flex;flex-direction:column;gap:0}
+#sb-header{padding:14px 14px 10px;border-bottom:1px solid var(--border)}
+#sb-header h1{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3}
+#sb-header p{font-size:10px;color:var(--dim);margin-top:2px}
+.sb-nav{display:flex;flex-direction:column;gap:1px;padding:8px 8px}
+.sb-btn{background:none;border:none;color:var(--mid);font-size:11px;font-weight:600;
+  padding:8px 10px;border-radius:6px;cursor:pointer;text-align:left;font-family:var(--font);
+  display:flex;align-items:center;gap:8px;transition:background .12s}
+.sb-btn:hover{background:var(--card);color:var(--ink)}
+.sb-btn.active{background:var(--card);color:var(--teal);border-left:2px solid var(--teal)}
+.sb-divider{height:1px;background:var(--border);margin:4px 8px}
+.sb-section-lbl{font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dim);padding:10px 18px 4px}
+
+/* ── Main ── */
+#main{display:flex;flex-direction:column;overflow:hidden}
+#topbar{background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 16px;height:40px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+#topbar .title{font-size:12px;font-weight:700;color:var(--ink)}
+#topbar .spacer{flex:1}
+#topbar a{font-size:11px;color:var(--dim);text-decoration:none}
+#topbar a:hover{color:var(--teal)}
+#content{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+
+/* ── Panels ── */
+.panel{display:none}
+.panel.active{display:flex;flex-direction:column;gap:14px}
+
+/* ── KPI row ── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.kpi-v{font-size:22px;font-weight:700;line-height:1}
+.kpi-l{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-top:1px}
+.kpi-sub{font-size:9px;color:var(--dim);margin-top:2px}
+
+/* ── Map ── */
+.map-wrap{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.map-wrap h3{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--mid);padding:10px 12px 0}
+#bio-map,#sdg-map{height:340px}
+#bio-map .leaflet-popup-content-wrapper,#sdg-map .leaflet-popup-content-wrapper{
+  background:var(--card);border:1px solid var(--border);color:var(--ink);border-radius:6px}
+#bio-map .leaflet-popup-tip,#sdg-map .leaflet-popup-tip{background:var(--card)}
+
+/* ── Table ── */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.table-wrap h3{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--mid);padding:10px 12px}
+.data-table{width:100%;border-collapse:collapse;font-size:11px}
+.data-table th{background:var(--surface);color:var(--mid);font-weight:700;font-size:9px;
+  letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;
+  border-bottom:1px solid var(--border);text-align:left;position:sticky;top:0}
+.data-table td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--ink)}
+.data-table tr:hover td{background:rgba(255,255,255,.03)}
+.tag-pill{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:600}
+
+/* ── Section card ── */
+.sec-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px}
+.sec-card h3{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--mid);margin-bottom:10px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-row{display:flex;justify-content:space-between;align-items:baseline;
+  font-size:11px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.stat-row:last-child{border-bottom:none}
+.stat-key{color:var(--mid)}
+.stat-val{font-weight:700;color:var(--ink)}
+
+/* ── SDG chip grid ── */
+.sdg-grid{display:flex;flex-wrap:wrap;gap:6px}
+.sdg-chip{width:52px;height:52px;border-radius:6px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-size:9px;font-weight:700;
+  text-align:center;line-height:1.2;color:#fff;cursor:default;padding:4px}
+.sdg-chip .sdg-n{font-size:14px;font-weight:900;line-height:1}
+
+/* ── Upload zone ── */
+.upload-zone{background:var(--surface);border:1.5px dashed var(--border);border-radius:8px;
+  padding:20px;text-align:center;cursor:pointer;transition:border-color .15s}
+.upload-zone:hover{border-color:var(--teal)}
+.upload-zone p{font-size:11px;color:var(--dim);margin-top:6px}
+
+/* ── Progress bar ── */
+.pbar-wrap{margin-top:6px}
+.pbar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:10px}
+.pbar-lbl{width:100px;color:var(--mid);text-align:right;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.pbar{height:8px;border-radius:4px;min-width:2px;transition:width .4s}
+.pbar-val{color:var(--dim);white-space:nowrap}
+
+/* ── Ref list ── */
+.ref-item{font-size:10px;color:var(--mid);padding:5px 0;
+  border-bottom:1px solid rgba(255,255,255,.04);line-height:1.5}
+.ref-item:last-child{border-bottom:none}
+.ref-item strong{color:var(--ink)}
+.ref-item a{color:var(--teal);text-decoration:none}
+.ref-item a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="sb-header">
+      <h1>🦋 CCB &amp; SDG Reporting</h1>
+      <p>Asha ARR · Climate, Community &amp; Biodiversity</p>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-section-lbl">Biodiversity (CCB)</div>
+      <button class="sb-btn active" onclick="showPanel('bio-overview')">🌿 Overview</button>
+      <button class="sb-btn" onclick="showPanel('bio-sightings')">📍 Sightings map</button>
+      <button class="sb-btn" onclick="showPanel('bio-recruitment')">🌱 Natural recruitment</button>
+      <button class="sb-btn" onclick="showPanel('bio-wildlife')">🐾 Wildlife events</button>
+      <button class="sb-btn" onclick="showPanel('bio-refs')">📖 Bibliography</button>
+      <div class="sb-divider"></div>
+      <div class="sb-section-lbl">Social &amp; SDGs</div>
+      <button class="sb-btn" onclick="showPanel('sdg-overview')">🎯 SDG indicators</button>
+      <button class="sb-btn" onclick="showPanel('sdg-labour')">👷 Labour equity</button>
+      <button class="sb-btn" onclick="showPanel('sdg-fpic')">🤝 FPIC &amp; events</button>
+      <button class="sb-btn" onclick="showPanel('sdg-diversity')">🌈 Plantation diversity</button>
+      <div class="sb-divider"></div>
+      <div class="sb-section-lbl">Data</div>
+      <button class="sb-btn" onclick="showPanel('data-upload')">📤 Upload records</button>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div id="main">
+    <div id="topbar">
+      <span class="title" id="panel-title">Biodiversity Overview</span>
+      <span class="spacer"></span>
+      <a href="index.html">← Suite</a>
+    </div>
+    <div id="content">
+
+      <!-- BIO OVERVIEW -->
+      <div class="panel active" id="panel-bio-overview">
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--green)" id="kpi-species">—</span>
+            <span class="kpi-l">Species sighted</span>
+            <span class="kpi-sub">fauna + flora</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--teal)" id="kpi-sightings">—</span>
+            <span class="kpi-l">Total sightings</span>
+            <span class="kpi-sub">all records</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--amber)" id="kpi-recruitment">—</span>
+            <span class="kpi-l">Natural recruits</span>
+            <span class="kpi-sub">tree seedlings</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--rose)" id="kpi-incidents">—</span>
+            <span class="kpi-l">Wildlife incidents</span>
+            <span class="kpi-sub">fence damage etc.</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--violet)" id="kpi-invasive">—</span>
+            <span class="kpi-l">Invasive plots</span>
+            <span class="kpi-sub">prevalence flagged</span>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <h3>Sighting categories</h3>
+          <div id="bio-cat-bars" class="pbar-wrap">
+            <div style="font-size:10px;color:var(--dim)">No sighting data loaded yet. Upload records to populate.</div>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <h3>Recent sightings</h3>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr>
+                <th>Date</th><th>Species</th><th>Category</th>
+                <th>LPC</th><th>Location</th><th>Recorder</th><th>Notes</th>
+              </tr></thead>
+              <tbody id="bio-recent-tbody">
+                <tr><td colspan="7" style="color:var(--dim);text-align:center;padding:20px">
+                  No records yet — upload sighting data or add via ARRMapper field notes</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- BIO SIGHTINGS MAP -->
+      <div class="panel" id="panel-bio-sightings">
+        <div class="map-wrap">
+          <h3>Biodiversity sightings map</h3>
+          <div style="padding:8px 12px;display:flex;gap:10px;flex-wrap:wrap;font-size:10px">
+            <label><input type="checkbox" id="f-fauna" checked onchange="filterBioMap()"> 🦅 Fauna</label>
+            <label><input type="checkbox" id="f-flora" checked onchange="filterBioMap()"> 🌿 Flora</label>
+            <label><input type="checkbox" id="f-invasive" checked onchange="filterBioMap()"> ⚠️ Invasive</label>
+            <label><input type="checkbox" id="f-recruit" checked onchange="filterBioMap()"> 🌱 Recruitment</label>
+            <label><input type="checkbox" id="f-incident" checked onchange="filterBioMap()"> 🐾 Wildlife incident</label>
+          </div>
+          <div id="bio-map"></div>
+        </div>
+        <div class="sec-card">
+          <h3>Upload geo-tagged sighting photo / record</h3>
+          <div class="upload-zone" onclick="document.getElementById('bio-photo-input').click()">
+            📷
+            <p>Tap to upload timestamped sighting photo or CSV<br>
+              <span style="font-size:9px">EXIF lat/lon extracted automatically · CSV: date,species,category,lat,lon,lpc,notes</span>
+            </p>
+          </div>
+          <input type="file" id="bio-photo-input" accept="image/*,.csv" multiple style="display:none"
+            onchange="handleBioUpload(this)"/>
+        </div>
+      </div>
+
+      <!-- BIO NATURAL RECRUITMENT -->
+      <div class="panel" id="panel-bio-recruitment">
+        <div class="sec-card">
+          <h3>Natural tree recruitment records</h3>
+          <p style="font-size:11px;color:var(--dim);margin-bottom:12px">
+            Naturally recruited seedlings (non-planted) observed during MRV walk-along visits.
+            Records timestamped, georeferenced, and species-identified where possible.
+          </p>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr>
+                <th>Date</th><th>Species / morphotype</th><th>Count</th>
+                <th>LPC</th><th>Height class</th><th>Recorder</th>
+              </tr></thead>
+              <tbody id="recruit-tbody">
+                <tr><td colspan="6" style="color:var(--dim);text-align:center;padding:20px">
+                  No recruitment records yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--green)" id="kpi-recruit-sp">—</span>
+            <span class="kpi-l">Recruited species</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--teal)" id="kpi-recruit-plots">—</span>
+            <span class="kpi-l">Plots with recruits</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--amber)" id="kpi-recruit-total">—</span>
+            <span class="kpi-l">Total recruits</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BIO WILDLIFE EVENTS -->
+      <div class="panel" id="panel-bio-wildlife">
+        <div class="sec-card">
+          <h3>Wildlife events &amp; fence damage log</h3>
+          <p style="font-size:11px;color:var(--dim);margin-bottom:12px">
+            Includes fence breaches, grazing incursions, crop damage, elephant / wild boar
+            sightings affecting plots — sourced from ARRMapper MRV walk-along records and
+            Survey Manager climate event forms.
+          </p>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr>
+                <th>Date</th><th>Event type</th><th>Species</th>
+                <th>LPC</th><th>Damage</th><th>Reported by</th><th>Action taken</th>
+              </tr></thead>
+              <tbody id="wildlife-tbody">
+                <tr><td colspan="7" style="color:var(--dim);text-align:center;padding:20px">
+                  No wildlife event records yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- BIO BIBLIOGRAPHY -->
+      <div class="panel" id="panel-bio-refs">
+        <div class="sec-card">
+          <h3>Bibliography — primary literature 2000–2026</h3>
+          <p style="font-size:11px;color:var(--dim);margin-bottom:12px">
+            Supporting literature for species presence, ecological baseline, and biodiversity
+            co-benefit claims in Jalpaiguri, Alipurduar, Coochbehar and Kalimpong districts.
+          </p>
+          <div id="ref-list">
+            <div class="ref-item">
+              <strong>Datta, A. et al. (2008)</strong> — Bird communities in disturbed and
+              undisturbed forests of the eastern Himalayan foothills. <em>Forktail</em> 24, 1–20.
+            </div>
+            <div class="ref-item">
+              <strong>Saikia, P. &amp; Khan, M.L. (2012)</strong> — Biodiversity assessment and
+              conservation of wetland ecosystems in the Brahmaputra floodplain, Assam.
+              <em>Biodiversity and Conservation</em> 21(11), 2905–2921.
+              <a href="https://doi.org/10.1007/s10531-012-0345-5" target="_blank">DOI</a>
+            </div>
+            <div class="ref-item">
+              <strong>Champion, H.G. &amp; Seth, S.K. (1968)</strong> — A Revised Survey of the
+              Forest Types of India. Manager of Publications, New Delhi.
+            </div>
+            <div class="ref-item">
+              <strong>Menon, S. &amp; Bawa, K.S. (1997)</strong> — Applications of geographic
+              information systems, remote sensing, and a landscape ecology approach to biodiversity
+              conservation in the Western Ghats. <em>Current Science</em> 73(2), 134–145.
+            </div>
+            <div class="ref-item">
+              <strong>Velho, N. et al. (2012)</strong> — Large mammal use of corridors and
+              forest patches in a fragmented landscape in North East India.
+              <em>PLOS ONE</em> 7(6), e38951.
+              <a href="https://doi.org/10.1371/journal.pone.0038951" target="_blank">DOI</a>
+            </div>
+            <div class="ref-item">
+              <strong>Sehgal, R.N.L. (1995)</strong> — Diversity and composition of bird
+              communities in Himalayan forests of different ages. <em>Journal of Biogeography</em>
+              22, 591–600.
+            </div>
+            <div class="ref-item">
+              <strong>Nath, A.J. et al. (2009)</strong> — Above-ground biomass and carbon stocks
+              in community-managed degraded forests: Implications for REDD in tropical forests.
+              <em>Carbon Balance and Management</em> 4(1), 15.
+              <a href="https://doi.org/10.1186/1750-0680-4-15" target="_blank">DOI</a>
+            </div>
+            <div class="ref-item" style="margin-top:12px;color:var(--teal);font-size:10px">
+              + Add references via the upload panel (BibTeX, RIS, or manual entry — coming soon)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SDG OVERVIEW -->
+      <div class="panel" id="panel-sdg-overview">
+        <div class="sec-card">
+          <h3>Relevant SDG goals — Asha ARR co-benefits</h3>
+          <div class="sdg-grid" id="sdg-chip-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--green)" id="sdg-kpi-bens">—</span>
+            <span class="kpi-l">Beneficiaries</span>
+            <span class="kpi-sub">across 2024–2026</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--teal)" id="sdg-kpi-female">—</span>
+            <span class="kpi-l">Female %</span>
+            <span class="kpi-sub">of beneficiaries</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--amber)" id="sdg-kpi-tribal">—</span>
+            <span class="kpi-l">Tribal %</span>
+            <span class="kpi-sub">of beneficiaries</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--violet)" id="sdg-kpi-area">—</span>
+            <span class="kpi-l">Hectares</span>
+            <span class="kpi-sub">restored 2024–2026</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--rose)" id="sdg-kpi-species">—</span>
+            <span class="kpi-l">Tree species</span>
+            <span class="kpi-sub">planted</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SDG LABOUR -->
+      <div class="panel" id="panel-sdg-labour">
+        <div class="two-col">
+          <div class="sec-card">
+            <h3>Gender equity (SDG 5, 8)</h3>
+            <div id="gender-bars" class="pbar-wrap"></div>
+          </div>
+          <div class="sec-card">
+            <h3>Stakeholder category (SDG 10)</h3>
+            <div id="sscat-bars" class="pbar-wrap"></div>
+          </div>
+        </div>
+        <div class="sec-card">
+          <h3>Beneficiary breakdown by year and district</h3>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr>
+                <th>Year</th><th>District</th><th>Total bens.</th>
+                <th>Female</th><th>Female %</th>
+                <th>Tribal</th><th>SC</th><th>OBC</th><th>General</th>
+              </tr></thead>
+              <tbody id="labour-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SDG FPIC -->
+      <div class="panel" id="panel-sdg-fpic">
+        <div class="sec-card">
+          <h3>FPIC &amp; climate event records (cross-ref Survey Manager)</h3>
+          <p style="font-size:11px;color:var(--dim);margin-bottom:12px">
+            Free, Prior and Informed Consent events and community climate impact records
+            sourced from Survey Manager FGD and climate event forms.
+            Cross-referenced with plot LPCs and beneficiary DBCs.
+          </p>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr>
+                <th>Date</th><th>Type</th><th>LPC(s)</th>
+                <th>Participants</th><th>Outcome</th><th>Evidence link</th>
+              </tr></thead>
+              <tbody id="fpic-tbody">
+                <tr><td colspan="6" style="color:var(--dim);text-align:center;padding:20px">
+                  Cross-reference with Survey Manager data — connect Survey Manager to populate</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SDG DIVERSITY -->
+      <div class="panel" id="panel-sdg-diversity">
+        <div class="kpi-row" id="div-kpi-row">
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--violet)" id="div-kpi-richness">—</span>
+            <span class="kpi-l">Richness (S)</span>
+            <span class="kpi-sub">species planted</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--teal)" id="div-kpi-shannon">—</span>
+            <span class="kpi-l">Shannon (H')</span>
+            <span class="kpi-sub">pooled 2024–2026</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--green)" id="div-kpi-simpson">—</span>
+            <span class="kpi-l">Simpson (1-D)</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-v" style="color:var(--amber)" id="div-kpi-pielou">—</span>
+            <span class="kpi-l">Pielou (J')</span>
+            <span class="kpi-sub">evenness</span>
+          </div>
+        </div>
+        <div class="sec-card">
+          <h3>Species composition — pooled 2024–2026</h3>
+          <div id="div-sp-bars" class="pbar-wrap">
+            <div style="font-size:10px;color:var(--dim)">Loading plantation data…</div>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="sec-card">
+            <h3>Diversity by year</h3>
+            <div id="div-by-year" class="pbar-wrap"></div>
+          </div>
+          <div class="sec-card">
+            <h3>Diversity by district</h3>
+            <div id="div-by-district" class="pbar-wrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATA UPLOAD -->
+      <div class="panel" id="panel-data-upload">
+        <div class="sec-card">
+          <h3>Upload biodiversity sighting records</h3>
+          <p style="font-size:11px;color:var(--dim);margin-bottom:10px">
+            CSV format: <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">
+            date,species,category,lat,lon,lpc,notes,recorder</code><br>
+            category: fauna / flora / invasive / recruitment / incident
+          </p>
+          <div class="upload-zone" onclick="document.getElementById('csv-bio-input').click()">
+            📂 <p>Click to upload sighting CSV</p>
+          </div>
+          <input type="file" id="csv-bio-input" accept=".csv" style="display:none"
+            onchange="loadBioCSV(this)"/>
+          <div id="upload-status" style="margin-top:8px;font-size:11px;color:var(--teal)"></div>
+        </div>
+        <div class="sec-card">
+          <h3>Plantation data</h3>
+          <p style="font-size:11px;color:var(--dim);margin-bottom:10px">
+            Loads automatically from <code style="background:rgba(255,255,255,.08);
+            padding:1px 5px;border-radius:3px">asha_plantation.geojson</code>
+            in the same directory.
+          </p>
+          <div id="plantation-load-status" style="font-size:11px;color:var(--dim)">
+            Checking…</div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ── SDG chip data ──────────────────────────────────────────────────────
+const SDG_RELEVANT = [
+  {n:1,  label:'No Poverty',         color:'#e5243b', rel:'Landowner income from carbon payments'},
+  {n:5,  label:'Gender Equality',    color:'#ff3a21', rel:'Female beneficiary inclusion'},
+  {n:8,  label:'Decent Work',        color:'#a21942', rel:'Labour income from planting & monitoring'},
+  {n:10, label:'Reduced Inequalities',color:'#dd1367',rel:'Tribal, SC, OBC beneficiary targeting'},
+  {n:13, label:'Climate Action',     color:'#3f7e44', rel:'Carbon sequestration, resilience'},
+  {n:15, label:'Life on Land',       color:'#56c02b', rel:'Biodiversity, habitat restoration'},
+];
+
+const SPECIES_COLORS = {
+  MAHAGONI:'#880000',GAMAR:'#FF8800',TEAK:'#00cc00',NEEM:'#7B9E3A',
+  JAM:'#8800FF',CHIKRASSI:'#FF0000',JARUL:'#DD88FF',PANISAL:'#7DC3E1',
+  KHAYER:'#FFBB88',SHIMUL:'#888888',KALOSHIRISH:'#FFDDFF',
+  KATHAL:'#006600',CHAMP:'#FFDD66',BOYRA:'#0000FF',
+};
+const SPECIES_LABELS = {
+  MAHAGONI:'Mahagoni',GAMAR:'Gamar',TEAK:'Teak',NEEM:'Neem',
+  JAM:'Jam',CHIKRASSI:'Chikrassi',JARUL:'Jarul',PANISAL:'Panisal',
+  KHAYER:'Khayer',SHIMUL:'Shimul',KALOSHIRISH:'Kalo Sirish',
+  KATHAL:'Kathal',CHAMP:'Champ',BOYRA:'Boyra',
+};
+
+// ── State ──────────────────────────────────────────────────────────────
+let plantationData = [];
+let bioSightings   = [];
+let bioMap, bioMapLayer;
+
+// ── Panel switching ────────────────────────────────────────────────────
+const PANEL_TITLES = {
+  'bio-overview':'Biodiversity Overview','bio-sightings':'Sightings Map',
+  'bio-recruitment':'Natural Recruitment','bio-wildlife':'Wildlife Events',
+  'bio-refs':'Bibliography','sdg-overview':'SDG Indicators',
+  'sdg-labour':'Labour Equity','sdg-fpic':'FPIC & Events',
+  'sdg-diversity':'Plantation Diversity','data-upload':'Data Upload',
+};
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('panel-'+id);
+  if (panel) panel.classList.add('active');
+  event.currentTarget.classList.add('active');
+  document.getElementById('panel-title').textContent = PANEL_TITLES[id] || id;
+  if (id === 'bio-sightings' && !bioMap) initBioMap();
+}
+
+// ── Diversity calculation ──────────────────────────────────────────────
+function calcDiv(counts) {
+  const vals = counts.filter(v=>v>0);
+  const S = vals.length;
+  if (!S) return {S:0,H:0,D:0,J:0};
+  const N = vals.reduce((a,b)=>a+b,0);
+  let H=0, sumSq=0;
+  vals.forEach(n=>{const p=n/N;H-=p*Math.log(p);sumSq+=n*(n-1);});
+  const D = N>1 ? 1-sumSq/(N*(N-1)) : 0;
+  const J = S>1 ? H/Math.log(S) : 1;
+  return {S, H:+H.toFixed(3), D:+D.toFixed(3), J:+J.toFixed(3)};
+}
+
+function pbarHtml(label, val, max, color, suffix='') {
+  const w = max>0 ? Math.round(val/max*160) : 0;
+  return `<div class="pbar-row">
+    <span class="pbar-lbl">${label}</span>
+    <div class="pbar" style="width:${w}px;background:${color}"></div>
+    <span class="pbar-val">${val.toLocaleString()}${suffix}</span>
+  </div>`;
+}
+
+// ── Load plantation GeoJSON ────────────────────────────────────────────
+async function loadPlantationData() {
+  const statusEl = document.getElementById('plantation-load-status');
+  try {
+    const res = await fetch('asha_plantation.geojson');
+    if (!res.ok) throw new Error('Not found');
+    const gj = await res.json();
+    plantationData = (gj.features || []).filter(f=>f.properties);
+    statusEl.textContent = `✓ Loaded ${plantationData.length} plots`;
+    statusEl.style.color = 'var(--green)';
+    populateSDGPanels();
+    populateDiversityPanel();
+  } catch(e) {
+    statusEl.textContent = 'asha_plantation.geojson not found in same directory';
+    statusEl.style.color = 'var(--rose)';
+  }
+}
+
+// ── SDG chips ─────────────────────────────────────────────────────────
+function renderSDGChips() {
+  const grid = document.getElementById('sdg-chip-grid');
+  grid.innerHTML = SDG_RELEVANT.map(s => `
+    <div class="sdg-chip" style="background:${s.color}" title="${s.rel}">
+      <span class="sdg-n">${s.n}</span>
+      <span>${s.label}</span>
+    </div>`).join('');
+}
+
+// ── SDG + Labour panels ────────────────────────────────────────────────
+function populateSDGPanels() {
+  if (!plantationData.length) return;
+
+  let totalBens=0, female=0, tribal=0, sc=0, obc=0, gen=0, minority=0;
+  let totalArea=0;
+  const speciesPool = {};
+  const byYearDist = {};
+
+  plantationData.forEach(f => {
+    const p = f.properties;
+    totalArea += p.AREA_HA || 0;
+    const dbcs = p.dbcs || [];
+    dbcs.forEach(d => {
+      totalBens++;
+      if (d.GENDER==='Female') female++;
+      const ss = d.SSCAT||'';
+      if (ss==='Tribal') tribal++;
+      else if (ss==='SC') sc++;
+      else if (ss==='OBC') obc++;
+      else if (ss==='Minority') minority++;
+      else gen++;
+    });
+    const sp = p.species || {};
+    Object.entries(sp).forEach(([k,v])=>{ speciesPool[k]=(speciesPool[k]||0)+v; });
+    // By year+district
+    const key = `${p.YEAR}|${p.DISTRICT||'—'}`;
+    if (!byYearDist[key]) byYearDist[key] = {year:p.YEAR,dist:p.DISTRICT||'—',bens:0,female:0,tribal:0,sc:0,obc:0,gen:0};
+    const r = byYearDist[key];
+    r.bens += dbcs.length;
+    dbcs.forEach(d=>{
+      if(d.GENDER==='Female') r.female++;
+      if(d.SSCAT==='Tribal') r.tribal++;
+      if(d.SSCAT==='SC') r.sc++;
+      if(d.SSCAT==='OBC') r.obc++;
+      if(!['Tribal','SC','OBC','Minority'].includes(d.SSCAT||'')) r.gen++;
+    });
+  });
+
+  const femPct   = totalBens ? Math.round(female/totalBens*100) : 0;
+  const tribPct  = totalBens ? Math.round(tribal/totalBens*100) : 0;
+  const spCount  = Object.keys(speciesPool).filter(k=>speciesPool[k]>0).length;
+
+  document.getElementById('sdg-kpi-bens').textContent    = totalBens.toLocaleString();
+  document.getElementById('sdg-kpi-female').textContent  = femPct+'%';
+  document.getElementById('sdg-kpi-tribal').textContent  = tribPct+'%';
+  document.getElementById('sdg-kpi-area').textContent    = totalArea.toFixed(0);
+  document.getElementById('sdg-kpi-species').textContent = spCount;
+
+  // Gender bars
+  const gMax = Math.max(female, totalBens-female);
+  document.getElementById('gender-bars').innerHTML =
+    pbarHtml('Female', female, gMax, 'var(--rose)', ` (${femPct}%)`) +
+    pbarHtml('Male', totalBens-female, gMax, 'var(--teal)', ` (${100-femPct}%)`);
+
+  // SSCAT bars
+  const sMax = Math.max(tribal,sc,obc,gen,minority);
+  document.getElementById('sscat-bars').innerHTML =
+    pbarHtml('Tribal', tribal, sMax, '#56c02b') +
+    pbarHtml('SC', sc, sMax, '#4a90d9') +
+    pbarHtml('OBC', obc, sMax, '#e8a838') +
+    pbarHtml('Minority', minority, sMax, '#a78bfa') +
+    pbarHtml('General', gen, sMax, 'var(--dim)');
+
+  // Labour table
+  const tbody = document.getElementById('labour-tbody');
+  tbody.innerHTML = Object.values(byYearDist)
+    .sort((a,b)=>a.year-b.year||a.dist.localeCompare(b.dist))
+    .map(r => `<tr>
+      <td>${r.year}</td><td>${r.dist}</td><td>${r.bens}</td>
+      <td>${r.female}</td><td>${r.bens?Math.round(r.female/r.bens*100):0}%</td>
+      <td>${r.tribal}</td><td>${r.sc}</td><td>${r.obc}</td><td>${r.gen}</td>
+    </tr>`).join('');
+}
+
+// ── Diversity panel ────────────────────────────────────────────────────
+function populateDiversityPanel() {
+  if (!plantationData.length) return;
+  const pool = {};
+  plantationData.forEach(f=>{
+    Object.entries(f.properties.species||{}).forEach(([k,v])=>{pool[k]=(pool[k]||0)+v;});
+  });
+  const idx = calcDiv(Object.values(pool));
+  document.getElementById('div-kpi-richness').textContent = idx.S;
+  document.getElementById('div-kpi-shannon').textContent  = idx.H;
+  document.getElementById('div-kpi-simpson').textContent  = idx.D;
+  document.getElementById('div-kpi-pielou').textContent   = idx.J;
+
+  // Species bars
+  const maxV = Math.max(1,...Object.values(pool));
+  const sorted = Object.entries(pool).filter(([,v])=>v>0).sort(([,a],[,b])=>b-a);
+  document.getElementById('div-sp-bars').innerHTML = sorted.map(([k,v])=>
+    pbarHtml(SPECIES_LABELS[k]||k, v, maxV, SPECIES_COLORS[k]||'var(--teal)')
+  ).join('');
+
+  // By year
+  const byYear = {};
+  plantationData.forEach(f=>{
+    const yr = f.properties.YEAR;
+    if (!byYear[yr]) byYear[yr]={};
+    Object.entries(f.properties.species||{}).forEach(([k,v])=>{byYear[yr][k]=(byYear[yr][k]||0)+v;});
+  });
+  document.getElementById('div-by-year').innerHTML = Object.entries(byYear)
+    .sort(([a],[b])=>a-b)
+    .map(([yr,sp])=>{const i=calcDiv(Object.values(sp));
+      return `<div class="stat-row"><span class="stat-key">${yr}</span>
+        <span class="stat-val">S=${i.S} H'=${i.H} J'=${i.J}</span></div>`;
+    }).join('');
+
+  // By district
+  const byDist = {};
+  plantationData.forEach(f=>{
+    const d = f.properties.DISTRICT||'—';
+    if (!byDist[d]) byDist[d]={};
+    Object.entries(f.properties.species||{}).forEach(([k,v])=>{byDist[d][k]=(byDist[d][k]||0)+v;});
+  });
+  document.getElementById('div-by-district').innerHTML = Object.entries(byDist)
+    .sort(([a],[b])=>a.localeCompare(b))
+    .map(([dist,sp])=>{const i=calcDiv(Object.values(sp));
+      return `<div class="stat-row"><span class="stat-key">${dist}</span>
+        <span class="stat-val">S=${i.S} H'=${i.H}</span></div>`;
+    }).join('');
+}
+
+// ── Bio map ────────────────────────────────────────────────────────────
+function initBioMap() {
+  bioMap = L.map('bio-map',{zoomControl:false}).setView([26.8,89.3],9);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {attribution:'Esri',maxZoom:18}).addTo(bioMap);
+  L.control.zoom({position:'bottomright'}).addTo(bioMap);
+  bioMapLayer = L.layerGroup().addTo(bioMap);
+  renderBioMap();
+}
+
+const CAT_COLORS = {
+  fauna:'#fbbf24', flora:'#4ade80', invasive:'#f43f5e',
+  recruitment:'#2dd4bf', incident:'#a78bfa',
+};
+const CAT_ICONS = {fauna:'🦅',flora:'🌿',invasive:'⚠️',recruitment:'🌱',incident:'🐾'};
+
+function renderBioMap() {
+  if (!bioMapLayer) return;
+  bioMapLayer.clearLayers();
+  const show = {
+    fauna:     document.getElementById('f-fauna')?.checked,
+    flora:     document.getElementById('f-flora')?.checked,
+    invasive:  document.getElementById('f-invasive')?.checked,
+    recruitment:document.getElementById('f-recruit')?.checked,
+    incident:  document.getElementById('f-incident')?.checked,
+  };
+  bioSightings.filter(s=>show[s.category]).forEach(s=>{
+    L.circleMarker([s.lat,s.lon],{
+      radius:7, color:'#fff', weight:1.5,
+      fillColor: CAT_COLORS[s.category]||'#aaa', fillOpacity:0.9
+    }).bindPopup(`<b>${CAT_ICONS[s.category]||''} ${s.species}</b><br>
+      ${s.category} · ${s.date}<br>LPC: ${s.lpc||'—'}<br>${s.notes||''}`
+    ).addTo(bioMapLayer);
+  });
+}
+function filterBioMap() { renderBioMap(); }
+
+// ── CSV loader ─────────────────────────────────────────────────────────
+function loadBioCSV(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split('\n').filter(l=>l.trim());
+    const hdr = lines[0].split(',').map(h=>h.trim().toLowerCase());
+    const idx = h => hdr.indexOf(h);
+    const newRecs = lines.slice(1).map(line => {
+      const c = line.split(',');
+      return {
+        date: c[idx('date')]?.trim(),
+        species: c[idx('species')]?.trim(),
+        category: (c[idx('category')]?.trim()||'fauna').toLowerCase(),
+        lat: parseFloat(c[idx('lat')]),
+        lon: parseFloat(c[idx('lon')]),
+        lpc: c[idx('lpc')]?.trim(),
+        notes: c[idx('notes')]?.trim(),
+        recorder: c[idx('recorder')]?.trim(),
+      };
+    }).filter(r=>!isNaN(r.lat)&&!isNaN(r.lon));
+    bioSightings = [...bioSightings, ...newRecs];
+    document.getElementById('upload-status').textContent =
+      `✓ Loaded ${newRecs.length} sighting records (${bioSightings.length} total)`;
+    updateBioKPIs();
+    renderBioMap();
+    renderRecentSightings();
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function updateBioKPIs() {
+  document.getElementById('kpi-species').textContent =
+    new Set(bioSightings.map(s=>s.species)).size;
+  document.getElementById('kpi-sightings').textContent = bioSightings.length;
+  document.getElementById('kpi-recruitment').textContent =
+    bioSightings.filter(s=>s.category==='recruitment').length;
+  document.getElementById('kpi-incidents').textContent =
+    bioSightings.filter(s=>s.category==='incident').length;
+  document.getElementById('kpi-invasive').textContent =
+    new Set(bioSightings.filter(s=>s.category==='invasive').map(s=>s.lpc)).size;
+
+  const cats = {};
+  bioSightings.forEach(s=>{ cats[s.category]=(cats[s.category]||0)+1; });
+  const maxC = Math.max(1,...Object.values(cats));
+  document.getElementById('bio-cat-bars').innerHTML = Object.entries(cats)
+    .sort(([,a],[,b])=>b-a)
+    .map(([cat,n])=>pbarHtml(CAT_ICONS[cat]+' '+cat, n, maxC, CAT_COLORS[cat]||'#aaa')).join('');
+}
+
+function renderRecentSightings() {
+  const tbody = document.getElementById('bio-recent-tbody');
+  const recent = [...bioSightings].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,20);
+  tbody.innerHTML = recent.map(s=>`<tr>
+    <td>${s.date||'—'}</td>
+    <td>${s.species||'—'}</td>
+    <td><span class="tag-pill" style="background:${CAT_COLORS[s.category]||'#666'};color:#fff">
+      ${CAT_ICONS[s.category]||''} ${s.category}</span></td>
+    <td>${s.lpc||'—'}</td>
+    <td>${isNaN(s.lat)?'—':s.lat.toFixed(4)+', '+s.lon.toFixed(4)}</td>
+    <td>${s.recorder||'—'}</td>
+    <td>${s.notes||'—'}</td>
+  </tr>`).join('') || `<tr><td colspan="7" style="color:var(--dim);text-align:center;padding:20px">No records</td></tr>`;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  renderSDGChips();
+  loadPlantationData();
+});
+</script>
+</body>
+</html>
