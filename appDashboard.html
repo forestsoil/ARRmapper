@@ -609,7 +609,7 @@ window.addEventListener('load', async () => {
 function initMap() {
   map = L.map('map', {zoomControl:false}).setView([26.8, 89.3], 9);
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    {attribution:'Esri', maxZoom:19}).addTo(map);
+    {attribution:'Esri', maxZoom:18}).addTo(map);
   L.control.zoom({position:'bottomright'}).addTo(map);
   layerGroup = L.layerGroup().addTo(map);
 }
@@ -806,7 +806,7 @@ function renderMap() {
     }
   }).addTo(layerGroup);
   if (filteredFeatures.length < ALL_FEATURES.length && geomFeatures.length > 0) {
-    try { map.fitBounds(gj.getBounds(), {padding:[20,20]}); } catch(e){}
+    try { map.fitBounds(gj.getBounds(), {padding:[20,20], maxZoom:18}); } catch(e){}
   }
 }
 
@@ -847,7 +847,7 @@ function openLPCPanel(p) {
   if (feat && feat.geometry) {
     try {
       const gl = L.geoJSON(feat);
-      map.fitBounds(gl.getBounds(), {padding:[30,340]});
+      map.fitBounds(gl.getBounds(), {padding:[30,340], maxZoom:18});
     } catch(e){}
   }
   // Species bar chart
