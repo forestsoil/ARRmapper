@@ -3,36 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CCB &amp; SDG Dashboard v5 — Asha ARR</title>
+<title>CCB &amp; SDG Dashboard v7 — Asha ARR</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 
 // ── Bibliography / BibTeX ─────────────────────────────────────────────
-let _refs = [
-  {key:'Datta2008',author:'Datta, A. et al.',year:'2008',
-   title:'Bird communities in disturbed and undisturbed forests of the eastern Himalayan foothills',
-   journal:'Forktail',volume:'24',pages:'1–20',doi:''},
-  {key:'Saikia2012',author:'Saikia, P. & Khan, M.L.',year:'2012',
-   title:'Biodiversity assessment and conservation of wetland ecosystems in the Brahmaputra floodplain, Assam',
-   journal:'Biodiversity and Conservation',volume:'21',number:'11',pages:'2905–2921',
-   doi:'10.1007/s10531-012-0345-5'},
-  {key:'Champion1968',author:'Champion, H.G. & Seth, S.K.',year:'1968',
-   title:'A Revised Survey of the Forest Types of India',
-   publisher:'Manager of Publications, New Delhi',doi:''},
-  {key:'Menon1997',author:'Menon, S. & Bawa, K.S.',year:'1997',
-   title:'Applications of GIS, remote sensing, and a landscape ecology approach to biodiversity conservation in the Western Ghats',
-   journal:'Current Science',volume:'73',number:'2',pages:'134–145',doi:''},
-  {key:'Velho2012',author:'Velho, N. et al.',year:'2012',
-   title:'Large mammal use of corridors and forest patches in a fragmented landscape in North East India',
-   journal:'PLOS ONE',volume:'7',number:'6',pages:'e38951',doi:'10.1371/journal.pone.0038951'},
-  {key:'Sehgal1995',author:'Sehgal, R.N.L.',year:'1995',
-   title:'Diversity and composition of bird communities in Himalayan forests of different ages',
-   journal:'Journal of Biogeography',volume:'22',pages:'591–600',doi:''},
-  {key:'Nath2009',author:'Nath, A.J. et al.',year:'2009',
-   title:'Above-ground biomass and carbon stocks in community-managed degraded forests',
-   journal:'Carbon Balance and Management',volume:'4',number:'1',pages:'15',
-   doi:'10.1186/1750-0680-4-15'},
-];
+let _refs = [];
 let _refSort = 'year';
 
 function renderRefs() {
@@ -59,9 +35,65 @@ function renderRefs() {
 
 function sortRefs(by) { _refSort=by; renderRefs(); }
 
+// ── Bibliography Drive sync ───────────────────────────────────────────
+async function loadBibFromDrive() {
+  if (!CCB_CONFIG.scriptUrl) return;
+  const status = document.getElementById('bib-status');
+  if (status) { status.textContent = '☁️ Loading bibliography…'; status.style.color='var(--teal)'; }
+  try {
+    const url = CCB_CONFIG.scriptUrl +
+      '?action=getFile&folder=Bibliography&filename=asha_arr_bibliography.bib';
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.success && data.content) {
+      const entries = parseBibTeXString(data.content);
+      // Merge — don't overwrite local additions
+      let added = 0;
+      entries.forEach(e => { if (!_refs.find(r=>r.key===e.key)) { _refs.push(e); added++; } });
+      renderRefs();
+      if (status) {
+        status.textContent = `☁️ Loaded ${entries.length} refs from Drive (${added} new)`;
+        setTimeout(()=>{ if(status) status.textContent=''; }, 3000);
+      }
+    } else if (status) {
+      status.textContent = ''; // not found yet — that's ok
+    }
+  } catch(e) {
+    if (status) { status.textContent = ''; } // silent fail
+  }
+}
+
+async function saveBibToDrive() {
+  if (!CCB_CONFIG.scriptUrl) return;
+  const status = document.getElementById('bib-status');
+  const bibtex = _refs.map(r => {
+    const type = r.journal ? 'article' : (r.publisher ? 'book' : 'misc');
+    const fields = Object.entries({
+      author:r.author, title:r.title, journal:r.journal||r.booktitle,
+      year:r.year, volume:r.volume, number:r.number,
+      pages:r.pages, publisher:r.publisher, doi:r.doi
+    }).filter(([,v])=>v).map(([k,v])=>`  ${k} = {${v}}`).join(',\n');
+    return `@${type}{${r.key},\n${fields}\n}`;
+  }).join('\n\n');
+  try {
+    await fetch(CCB_CONFIG.scriptUrl, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'putFile', folder:'Bibliography',
+        filename:'asha_arr_bibliography.bib', content:bibtex})
+    });
+    if (status) {
+      status.textContent = '☁️ Saved to Drive'; status.style.color='var(--teal)';
+      setTimeout(()=>{ if(status) status.textContent=''; }, 2000);
+    }
+  } catch(e) {}
+}
+
+
 function deleteRef(key) {
   _refs = _refs.filter(r=>r.key!==key);
   renderRefs();
+  saveBibToDrive();
 }
 
 // ── BibTeX parser ─────────────────────────────────────────────────────
@@ -110,6 +142,7 @@ function parseBibTeX() {
   document.getElementById('bibtex-input').value='';
   status.textContent=`✓ Added ${added} reference${added!==1?'s':''}`; status.style.color='var(--teal)';
   renderRefs();
+  saveBibToDrive();
   setTimeout(()=>{ status.textContent=''; }, 3000);
 }
 
@@ -124,6 +157,7 @@ function loadBibFile(input) {
     status.textContent=`✓ Imported ${added} of ${entries.length} references from file`;
     status.style.color='var(--teal)';
     renderRefs();
+    saveBibToDrive();
     input.value='';
   };
   reader.readAsText(file);
@@ -236,6 +270,7 @@ function extractEXIF(arrayBuffer) {
 
 async function handleSubmitPhoto(input) {
   const file=input.files[0];if(!file)return;
+  input.value=''; // allow re-selecting same file
   _photoBlob=file;
   const ab=await file.arrayBuffer();
   const exif=extractEXIF(ab);
@@ -930,7 +965,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 // ── Config ────────────────────────────────────────────────────────────
 const CCB_CONFIG = {
   visionApiKey: 'AIzaSyA0yiR28GzzeNoaWxtLNgrF14Q8L3XzZIk',
-  scriptUrl: '',  // TODO: paste Apps Script /exec URL here
+  scriptUrl: 'https://script.google.com/macros/s/AKfycbwLfbyg-C2CgYi7cfxjBZrGaYrKkuD2I1SQXIBecqyfWVdtJkWQVG9Sb1F7s45i1u5R/exec',
 };
 
 // ── SDG chip data ──────────────────────────────────────────────────────
@@ -1261,11 +1296,12 @@ window.addEventListener('load', () => {
   renderSDGChips();
   loadPlantationData();
   renderRefs();
+  loadBibFromDrive();
 });
 
 
 // ── Bibliography / BibTeX ─────────────────────────────────────────────
-let _refs = [
+let _refs = [ // seeded refs cleared — loaded from Drive on init
   {key:'Datta2008',author:'Datta, A. et al.',year:'2008',
    title:'Bird communities in disturbed and undisturbed forests of the eastern Himalayan foothills',
    journal:'Forktail',volume:'24',pages:'1–20',doi:''},
@@ -1316,9 +1352,65 @@ function renderRefs() {
 
 function sortRefs(by) { _refSort=by; renderRefs(); }
 
+// ── Bibliography Drive sync ───────────────────────────────────────────
+async function loadBibFromDrive() {
+  if (!CCB_CONFIG.scriptUrl) return;
+  const status = document.getElementById('bib-status');
+  if (status) { status.textContent = '☁️ Loading bibliography…'; status.style.color='var(--teal)'; }
+  try {
+    const url = CCB_CONFIG.scriptUrl +
+      '?action=getFile&folder=Bibliography&filename=asha_arr_bibliography.bib';
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.success && data.content) {
+      const entries = parseBibTeXString(data.content);
+      // Merge — don't overwrite local additions
+      let added = 0;
+      entries.forEach(e => { if (!_refs.find(r=>r.key===e.key)) { _refs.push(e); added++; } });
+      renderRefs();
+      if (status) {
+        status.textContent = `☁️ Loaded ${entries.length} refs from Drive (${added} new)`;
+        setTimeout(()=>{ if(status) status.textContent=''; }, 3000);
+      }
+    } else if (status) {
+      status.textContent = ''; // not found yet — that's ok
+    }
+  } catch(e) {
+    if (status) { status.textContent = ''; } // silent fail
+  }
+}
+
+async function saveBibToDrive() {
+  if (!CCB_CONFIG.scriptUrl) return;
+  const status = document.getElementById('bib-status');
+  const bibtex = _refs.map(r => {
+    const type = r.journal ? 'article' : (r.publisher ? 'book' : 'misc');
+    const fields = Object.entries({
+      author:r.author, title:r.title, journal:r.journal||r.booktitle,
+      year:r.year, volume:r.volume, number:r.number,
+      pages:r.pages, publisher:r.publisher, doi:r.doi
+    }).filter(([,v])=>v).map(([k,v])=>`  ${k} = {${v}}`).join(',\n');
+    return `@${type}{${r.key},\n${fields}\n}`;
+  }).join('\n\n');
+  try {
+    await fetch(CCB_CONFIG.scriptUrl, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'putFile', folder:'Bibliography',
+        filename:'asha_arr_bibliography.bib', content:bibtex})
+    });
+    if (status) {
+      status.textContent = '☁️ Saved to Drive'; status.style.color='var(--teal)';
+      setTimeout(()=>{ if(status) status.textContent=''; }, 2000);
+    }
+  } catch(e) {}
+}
+
+
 function deleteRef(key) {
   _refs = _refs.filter(r=>r.key!==key);
   renderRefs();
+  saveBibToDrive();
 }
 
 // ── BibTeX parser ─────────────────────────────────────────────────────
@@ -1367,6 +1459,7 @@ function parseBibTeX() {
   document.getElementById('bibtex-input').value='';
   status.textContent=`✓ Added ${added} reference${added!==1?'s':''}`; status.style.color='var(--teal)';
   renderRefs();
+  saveBibToDrive();
   setTimeout(()=>{ status.textContent=''; }, 3000);
 }
 
@@ -1381,6 +1474,7 @@ function loadBibFile(input) {
     status.textContent=`✓ Imported ${added} of ${entries.length} references from file`;
     status.style.color='var(--teal)';
     renderRefs();
+    saveBibToDrive();
     input.value='';
   };
   reader.readAsText(file);
@@ -1493,6 +1587,7 @@ function extractEXIF(arrayBuffer) {
 
 async function handleSubmitPhoto(input) {
   const file=input.files[0];if(!file)return;
+  input.value=''; // allow re-selecting same file
   _photoBlob=file;
   const ab=await file.arrayBuffer();
   const exif=extractEXIF(ab);
@@ -1651,11 +1746,25 @@ async function submitSighting() {
     <div id="submit-body">
       <div class="form-row">
         <label class="form-label">Photo (optional — triggers AI species ID)</label>
-        <div class="upload-zone" onclick="document.getElementById('s-photo').click()"
-          style="padding:12px;text-align:center;cursor:pointer">
-          📷 <span style="font-size:11px;color:var(--dim)">Tap to take photo or choose from gallery</span>
+        <div style="display:flex;gap:8px">
+          <button onclick="document.getElementById('s-photo-camera').click()"
+            style="flex:1;background:var(--surface);border:1.5px solid var(--border);
+              border-radius:7px;padding:10px;cursor:pointer;color:var(--mid);font-size:12px;
+              font-family:var(--font);display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="font-size:22px">📷</span>
+            <span>Camera</span>
+          </button>
+          <button onclick="document.getElementById('s-photo-gallery').click()"
+            style="flex:1;background:var(--surface);border:1.5px solid var(--border);
+              border-radius:7px;padding:10px;cursor:pointer;color:var(--mid);font-size:12px;
+              font-family:var(--font);display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="font-size:22px">🖼️</span>
+            <span>Gallery / File</span>
+          </button>
         </div>
-        <input type="file" id="s-photo" accept="image/*"
+        <input type="file" id="s-photo-camera" accept="image/*" capture="environment"
+          style="display:none" onchange="handleSubmitPhoto(this)"/>
+        <input type="file" id="s-photo-gallery" accept="image/*"
           style="display:none" onchange="handleSubmitPhoto(this)"/>
         <img id="s-photo-preview" class="photo-preview"/>
         <div id="s-ai-result" class="ai-result">
