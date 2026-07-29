@@ -214,6 +214,147 @@ async function loadSightingsFromSheet() {
   }
 }
 
+
+// ── Know Your Invasives ───────────────────────────────────────────────
+const INVASIVES = [
+  // Page 1
+  {name:'Mile-a-minute',sci:'Mikania micrantha',threat:'high',
+   img:'invasiveImages/mikania_micrantha.jpg',
+   tip:'Fast-growing vine, smothers sapling canopy. Arrow-shaped leaves, white flower clusters.',
+   tag:'invasive'},
+  {name:'Siam weed',sci:'Chromolaena odorata',threat:'high',
+   img:'invasiveImages/chromolaena_odorata.jpg',
+   tip:'Shrubby herb, dense monocultures. Triangular toothed leaves, purple-white flowers.',
+   tag:'invasive'},
+  {name:'Lantana',sci:'Lantana camara',threat:'high',
+   img:'invasiveImages/lantana_camara.jpg',
+   tip:'Woody shrub, toxic to livestock. Multi-coloured flower clusters, rough toothed leaves.',
+   tag:'invasive'},
+  {name:'Congress grass',sci:'Parthenium hysterophorus',threat:'high',
+   img:'invasiveImages/parthenium_hysterophorus.jpg',
+   tip:'Erect herb, white tiny flowers. Highly allergenic — avoid skin contact.',
+   tag:'invasive'},
+  {name:'Billy goat weed',sci:'Ageratum conyzoides',threat:'med',
+   img:'invasiveImages/ageratum_conyzoides.jpg',
+   tip:'Low herb, blue-purple flowers. Common in disturbed ground around plantations.',
+   tag:'invasive'},
+  {name:'Crofton weed',sci:'Ageratina adenophora',threat:'high',
+   img:'invasiveImages/ageratina_adenophora.jpg',
+   tip:'Shrub 1–2m tall, white flowers. Toxic to horses. Dense stands at forest edges.',
+   tag:'invasive'},
+  // Page 2
+  {name:'Water hyacinth',sci:'Eichhornia crassipes',threat:'high',
+   img:'invasiveImages/ponteria_crassipes.jpg',
+   tip:'Free-floating rosette, purple flowers. Chokes wetlands near flood-prone plots.',
+   tag:'invasive'},
+  {name:'Giant salvinia',sci:'Salvinia molesta',threat:'high',
+   img:'invasiveImages/salvinia_molesta.jpg',
+   tip:'Floating fern, velvety leaves. Covers water surface completely.',
+   tag:'invasive'},
+  {name:'Giant sensitive plant',sci:'Mimosa invisa',threat:'med',
+   img:'invasiveImages/mimosa_invisa.webp',
+   tip:'Prickly sprawling shrub, pink pompom flowers. Forms impenetrable thickets.',
+   tag:'invasive'},
+  {name:'Pink morning glory',sci:'Ipomoea carnea',threat:'med',
+   img:'invasiveImages/ipomoea_carnea.jpg',
+   tip:'Woody shrub on riverbanks, large pink trumpet flowers. Toxic to livestock.',
+   tag:'invasive'},
+  {name:'Senna / Whitebark',sci:'Senna spectabilis',threat:'high',
+   img:'invasiveImages/senna_spectabilis.jpg',
+   tip:'Fast-growing tree 5–10m, yellow flowers. Naturalising in disturbed forest edges.',
+   tag:'invasive'},
+  {name:'Mexican sunflower',sci:'Tithonia diversifolia',threat:'med',
+   img:'invasiveImages/tithonia_diversifolia.jpg',
+   tip:'Tall herb 2–3m, bright orange daisy flowers. Spreading along road margins.',
+   tag:'invasive'},
+];
+
+const INV_PER_PAGE = 6;
+let _invPageIdx = 0;
+const _invTotalPages = 2; // 12 species, 2 pages of 6
+
+function openInvasivesModal() {
+  _invPageIdx = 0;
+  renderInvasivesPages();
+  document.getElementById('invasives-modal').classList.add('open');
+}
+function closeInvasivesModal() {
+  document.getElementById('invasives-modal').classList.remove('open');
+}
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') { closeInvasivesModal(); closeSubmitModal(); }
+});
+
+function renderInvasivesPages() {
+  const container = document.getElementById('invasives-pages');
+  const dots = document.getElementById('inv-dots');
+  // Set width
+  container.style.width = (600 * _invTotalPages) + 'px';
+  // Render pages
+  container.innerHTML = '';
+  for (let p=0; p<_invTotalPages; p++) {
+    const page = document.createElement('div');
+    page.className = 'inv-page';
+    page.style.width = '600px';
+    page.style.maxWidth = '95vw';
+    const items = INVASIVES.slice(p*INV_PER_PAGE, (p+1)*INV_PER_PAGE);
+    items.forEach(inv => {
+      const card = document.createElement('div');
+      card.className = 'inv-card';
+      card.innerHTML = `
+        ${inv.img ? `<img src="${inv.img}" alt="${inv.name}"
+          style="width:100%;height:80px;object-fit:cover;border-radius:5px;margin-bottom:4px"
+          onerror="this.style.display='none'"/>` : ''}
+        <div class="inv-card-name">${inv.name}</div>
+        <div class="inv-card-sci">${inv.sci}</div>
+        <span class="inv-card-threat threat-${inv.threat}">
+          ${inv.threat==='high'?'⚠️ High threat':'🟡 Medium threat'}
+        </span>
+        <div class="inv-card-tip">${inv.tip}</div>
+        <div class="inv-card-submit" onclick="quickSubmitInvasive('${inv.name}','${inv.sci}','${inv.tag}')">
+          + Submit sighting →
+        </div>`;
+      page.appendChild(card);
+    });
+    container.appendChild(page);
+  }
+  // Dots
+  dots.innerHTML = '';
+  for (let i=0;i<_invTotalPages;i++) {
+    const dot = document.createElement('div');
+    dot.className = 'inv-dot' + (i===_invPageIdx?' active':'');
+    dot.onclick = () => { _invPageIdx=i; updateInvasivesPage(); };
+    dots.appendChild(dot);
+  }
+  updateInvasivesPage();
+}
+
+function updateInvasivesPage() {
+  const container = document.getElementById('invasives-pages');
+  // Get actual rendered width
+  const pageW = document.querySelector('.inv-page')?.offsetWidth || 600;
+  container.style.transform = `translateX(-${_invPageIdx * pageW}px)`;
+  document.querySelectorAll('.inv-dot').forEach((d,i)=>
+    d.classList.toggle('active', i===_invPageIdx));
+  document.getElementById('inv-prev').disabled = _invPageIdx===0;
+  document.getElementById('inv-next').disabled = _invPageIdx===_invTotalPages-1;
+}
+
+function invPage(dir) {
+  _invPageIdx = Math.max(0, Math.min(_invTotalPages-1, _invPageIdx+dir));
+  updateInvasivesPage();
+}
+
+function quickSubmitInvasive(name, sci, tag) {
+  closeInvasivesModal();
+  document.getElementById('s-species').value = name;
+  document.getElementById('s-sci').value = sci;
+  document.querySelectorAll('.tag-btn').forEach(b=>{
+    if(b.dataset.tag===tag){b.classList.add('sel');_submitTag=tag;}
+  });
+  openSubmitModal();
+}
+
 // ── Submit modal ──────────────────────────────────────────────────────
 let _submitTag=null,_browserCoord=null,_exifCoord=null,_photoBase64=null,_photoBlob=null;
 
@@ -562,6 +703,41 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 .submit-btn:disabled{opacity:.5;cursor:default}
 .cancel-btn{background:var(--border);border:none;border-radius:6px;color:var(--mid);
   font-size:12px;padding:8px 16px;cursor:pointer;font-family:var(--font)}
+
+/* ── Know Invasives modal ── */
+#invasives-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);
+  z-index:9100;align-items:center;justify-content:center}
+#invasives-modal.open{display:flex}
+#invasives-box{background:#0d1f2d;border:1px solid #1e3a52;border-radius:14px;
+  width:600px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+#invasives-head{padding:14px 16px 10px;border-bottom:1px solid #1e3a52;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#invasives-head h2{font-size:14px;font-weight:700;color:#e2f0ff}
+#invasives-close{background:none;border:none;color:#3a6080;font-size:20px;cursor:pointer}
+#invasives-pages{display:flex;transition:transform .35s ease;flex-shrink:0}
+.inv-page{width:600px;max-width:95vw;padding:14px 16px;display:grid;
+  grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr 1fr;gap:10px;flex-shrink:0}
+.inv-card{background:#102030;border:1px solid #1e3a52;border-radius:8px;
+  padding:10px;display:flex;flex-direction:column;gap:4px;cursor:pointer;
+  transition:border-color .15s}
+.inv-card:hover{border-color:#2dd4bf}
+.inv-card-name{font-size:11px;font-weight:700;color:#e2f0ff;line-height:1.2}
+.inv-card-sci{font-size:9px;font-style:italic;color:#7ba8c4}
+.inv-card-threat{font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;
+  display:inline-block;margin-top:2px}
+.threat-high{background:rgba(244,63,94,.15);color:#f43f5e}
+.threat-med{background:rgba(251,191,36,.12);color:#fbbf24}
+.inv-card-tip{font-size:9px;color:#3a6080;margin-top:2px;line-height:1.4}
+.inv-card-submit{font-size:9px;color:#2dd4bf;margin-top:auto;cursor:pointer}
+#invasives-footer{padding:10px 16px;border-top:1px solid #1e3a52;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.inv-dot{width:8px;height:8px;border-radius:50%;background:#1e3a52;
+  cursor:pointer;transition:background .15s}
+.inv-dot.active{background:#2dd4bf}
+.inv-nav-btn{background:none;border:1px solid #1e3a52;border-radius:5px;
+  color:#7ba8c4;font-size:12px;padding:4px 12px;cursor:pointer}
+.inv-nav-btn:hover{border-color:#2dd4bf;color:#2dd4bf}
+.inv-nav-btn:disabled{opacity:.3;cursor:default}
 </style>
 </head>
 <body>
@@ -573,12 +749,20 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
       <h1>🦋 CCB &amp; SDG Reporting</h1>
       <p>Asha ARR · Climate, Community &amp; Biodiversity</p>
     </div>
-    <div style="padding:10px 10px 4px">
+    <div style="padding:10px 10px 2px">
       <button onclick="openSubmitModal()" style="width:100%;background:#be185d;border:none;
         border-radius:7px;color:#fff;font-size:13px;font-weight:700;padding:9px 14px;
         cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;
         font-family:var(--font);letter-spacing:.02em">
         📍 Submit Sighting / Event
+      </button>
+    </div>
+    <div style="padding:2px 10px 6px">
+      <button onclick="openInvasivesModal()" style="width:100%;background:transparent;
+        border:1.5px solid #2dd4bf;border-radius:7px;color:#2dd4bf;font-size:12px;
+        font-weight:700;padding:7px 14px;cursor:pointer;font-family:var(--font);
+        letter-spacing:.02em">
+        🌿 Know Your Invasives
       </button>
     </div>
     <div class="sb-nav">
@@ -1530,6 +1714,147 @@ async function loadSightingsFromSheet() {
   }
 }
 
+
+// ── Know Your Invasives ───────────────────────────────────────────────
+const INVASIVES = [
+  // Page 1
+  {name:'Mile-a-minute',sci:'Mikania micrantha',threat:'high',
+   img:'invasiveImages/mikania_micrantha.jpg',
+   tip:'Fast-growing vine, smothers sapling canopy. Arrow-shaped leaves, white flower clusters.',
+   tag:'invasive'},
+  {name:'Siam weed',sci:'Chromolaena odorata',threat:'high',
+   img:'invasiveImages/chromolaena_odorata.jpg',
+   tip:'Shrubby herb, dense monocultures. Triangular toothed leaves, purple-white flowers.',
+   tag:'invasive'},
+  {name:'Lantana',sci:'Lantana camara',threat:'high',
+   img:'invasiveImages/lantana_camara.jpg',
+   tip:'Woody shrub, toxic to livestock. Multi-coloured flower clusters, rough toothed leaves.',
+   tag:'invasive'},
+  {name:'Congress grass',sci:'Parthenium hysterophorus',threat:'high',
+   img:'invasiveImages/parthenium_hysterophorus.jpg',
+   tip:'Erect herb, white tiny flowers. Highly allergenic — avoid skin contact.',
+   tag:'invasive'},
+  {name:'Billy goat weed',sci:'Ageratum conyzoides',threat:'med',
+   img:'invasiveImages/ageratum_conyzoides.jpg',
+   tip:'Low herb, blue-purple flowers. Common in disturbed ground around plantations.',
+   tag:'invasive'},
+  {name:'Crofton weed',sci:'Ageratina adenophora',threat:'high',
+   img:'invasiveImages/ageratina_adenophora.jpg',
+   tip:'Shrub 1–2m tall, white flowers. Toxic to horses. Dense stands at forest edges.',
+   tag:'invasive'},
+  // Page 2
+  {name:'Water hyacinth',sci:'Eichhornia crassipes',threat:'high',
+   img:'invasiveImages/ponteria_crassipes.jpg',
+   tip:'Free-floating rosette, purple flowers. Chokes wetlands near flood-prone plots.',
+   tag:'invasive'},
+  {name:'Giant salvinia',sci:'Salvinia molesta',threat:'high',
+   img:'invasiveImages/salvinia_molesta.jpg',
+   tip:'Floating fern, velvety leaves. Covers water surface completely.',
+   tag:'invasive'},
+  {name:'Giant sensitive plant',sci:'Mimosa invisa',threat:'med',
+   img:'invasiveImages/mimosa_invisa.webp',
+   tip:'Prickly sprawling shrub, pink pompom flowers. Forms impenetrable thickets.',
+   tag:'invasive'},
+  {name:'Pink morning glory',sci:'Ipomoea carnea',threat:'med',
+   img:'invasiveImages/ipomoea_carnea.jpg',
+   tip:'Woody shrub on riverbanks, large pink trumpet flowers. Toxic to livestock.',
+   tag:'invasive'},
+  {name:'Senna / Whitebark',sci:'Senna spectabilis',threat:'high',
+   img:'invasiveImages/senna_spectabilis.jpg',
+   tip:'Fast-growing tree 5–10m, yellow flowers. Naturalising in disturbed forest edges.',
+   tag:'invasive'},
+  {name:'Mexican sunflower',sci:'Tithonia diversifolia',threat:'med',
+   img:'invasiveImages/tithonia_diversifolia.jpg',
+   tip:'Tall herb 2–3m, bright orange daisy flowers. Spreading along road margins.',
+   tag:'invasive'},
+];
+
+const INV_PER_PAGE = 6;
+let _invPageIdx = 0;
+const _invTotalPages = 2; // 12 species, 2 pages of 6
+
+function openInvasivesModal() {
+  _invPageIdx = 0;
+  renderInvasivesPages();
+  document.getElementById('invasives-modal').classList.add('open');
+}
+function closeInvasivesModal() {
+  document.getElementById('invasives-modal').classList.remove('open');
+}
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') { closeInvasivesModal(); closeSubmitModal(); }
+});
+
+function renderInvasivesPages() {
+  const container = document.getElementById('invasives-pages');
+  const dots = document.getElementById('inv-dots');
+  // Set width
+  container.style.width = (600 * _invTotalPages) + 'px';
+  // Render pages
+  container.innerHTML = '';
+  for (let p=0; p<_invTotalPages; p++) {
+    const page = document.createElement('div');
+    page.className = 'inv-page';
+    page.style.width = '600px';
+    page.style.maxWidth = '95vw';
+    const items = INVASIVES.slice(p*INV_PER_PAGE, (p+1)*INV_PER_PAGE);
+    items.forEach(inv => {
+      const card = document.createElement('div');
+      card.className = 'inv-card';
+      card.innerHTML = `
+        ${inv.img ? `<img src="${inv.img}" alt="${inv.name}"
+          style="width:100%;height:80px;object-fit:cover;border-radius:5px;margin-bottom:4px"
+          onerror="this.style.display='none'"/>` : ''}
+        <div class="inv-card-name">${inv.name}</div>
+        <div class="inv-card-sci">${inv.sci}</div>
+        <span class="inv-card-threat threat-${inv.threat}">
+          ${inv.threat==='high'?'⚠️ High threat':'🟡 Medium threat'}
+        </span>
+        <div class="inv-card-tip">${inv.tip}</div>
+        <div class="inv-card-submit" onclick="quickSubmitInvasive('${inv.name}','${inv.sci}','${inv.tag}')">
+          + Submit sighting →
+        </div>`;
+      page.appendChild(card);
+    });
+    container.appendChild(page);
+  }
+  // Dots
+  dots.innerHTML = '';
+  for (let i=0;i<_invTotalPages;i++) {
+    const dot = document.createElement('div');
+    dot.className = 'inv-dot' + (i===_invPageIdx?' active':'');
+    dot.onclick = () => { _invPageIdx=i; updateInvasivesPage(); };
+    dots.appendChild(dot);
+  }
+  updateInvasivesPage();
+}
+
+function updateInvasivesPage() {
+  const container = document.getElementById('invasives-pages');
+  // Get actual rendered width
+  const pageW = document.querySelector('.inv-page')?.offsetWidth || 600;
+  container.style.transform = `translateX(-${_invPageIdx * pageW}px)`;
+  document.querySelectorAll('.inv-dot').forEach((d,i)=>
+    d.classList.toggle('active', i===_invPageIdx));
+  document.getElementById('inv-prev').disabled = _invPageIdx===0;
+  document.getElementById('inv-next').disabled = _invPageIdx===_invTotalPages-1;
+}
+
+function invPage(dir) {
+  _invPageIdx = Math.max(0, Math.min(_invTotalPages-1, _invPageIdx+dir));
+  updateInvasivesPage();
+}
+
+function quickSubmitInvasive(name, sci, tag) {
+  closeInvasivesModal();
+  document.getElementById('s-species').value = name;
+  document.getElementById('s-sci').value = sci;
+  document.querySelectorAll('.tag-btn').forEach(b=>{
+    if(b.dataset.tag===tag){b.classList.add('sel');_submitTag=tag;}
+  });
+  openSubmitModal();
+}
+
 // ── Submit modal ──────────────────────────────────────────────────────
 let _submitTag=null,_browserCoord=null,_exifCoord=null,_photoBase64=null,_photoBlob=null;
 
@@ -1848,6 +2173,25 @@ async function submitSighting() {
     <div id="submit-footer">
       <button class="cancel-btn" onclick="closeSubmitModal()">Cancel</button>
       <button class="submit-btn" id="s-submit-btn" onclick="submitSighting()">Submit &amp; Save</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Know Your Invasives modal -->
+<div id="invasives-modal">
+  <div id="invasives-box">
+    <div id="invasives-head">
+      <h2>🌿 Know Your Invasives — North Bengal</h2>
+      <button id="invasives-close" onclick="closeInvasivesModal()">✕</button>
+    </div>
+    <div style="overflow:hidden;flex:1">
+      <div id="invasives-pages"></div>
+    </div>
+    <div id="invasives-footer">
+      <button class="inv-nav-btn" id="inv-prev" onclick="invPage(-1)" disabled>← Prev</button>
+      <div style="display:flex;gap:6px" id="inv-dots"></div>
+      <button class="inv-nav-btn" id="inv-next" onclick="invPage(1)">Next →</button>
     </div>
   </div>
 </div>
