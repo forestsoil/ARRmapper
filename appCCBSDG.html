@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CCB &amp; SDG Dashboard v4 — Asha ARR</title>
+<title>CCB &amp; SDG Dashboard v5 — Asha ARR</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 
@@ -1653,9 +1653,9 @@ async function submitSighting() {
         <label class="form-label">Photo (optional — triggers AI species ID)</label>
         <div class="upload-zone" onclick="document.getElementById('s-photo').click()"
           style="padding:12px;text-align:center;cursor:pointer">
-          📷 <span style="font-size:11px;color:var(--dim)">Tap to capture or upload photo</span>
+          📷 <span style="font-size:11px;color:var(--dim)">Tap to take photo or choose from gallery</span>
         </div>
-        <input type="file" id="s-photo" accept="image/*" capture="environment"
+        <input type="file" id="s-photo" accept="image/*"
           style="display:none" onchange="handleSubmitPhoto(this)"/>
         <img id="s-photo-preview" class="photo-preview"/>
         <div id="s-ai-result" class="ai-result">
