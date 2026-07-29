@@ -3,9 +3,387 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CCB &amp; SDG Reporting — Asha ARR</title>
+<title>CCB &amp; SDG Dashboard v3 — Asha ARR</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+
+// ── Bibliography / BibTeX ─────────────────────────────────────────────
+let _refs = [
+  {key:'Datta2008',author:'Datta, A. et al.',year:'2008',
+   title:'Bird communities in disturbed and undisturbed forests of the eastern Himalayan foothills',
+   journal:'Forktail',volume:'24',pages:'1–20',doi:''},
+  {key:'Saikia2012',author:'Saikia, P. & Khan, M.L.',year:'2012',
+   title:'Biodiversity assessment and conservation of wetland ecosystems in the Brahmaputra floodplain, Assam',
+   journal:'Biodiversity and Conservation',volume:'21',number:'11',pages:'2905–2921',
+   doi:'10.1007/s10531-012-0345-5'},
+  {key:'Champion1968',author:'Champion, H.G. & Seth, S.K.',year:'1968',
+   title:'A Revised Survey of the Forest Types of India',
+   publisher:'Manager of Publications, New Delhi',doi:''},
+  {key:'Menon1997',author:'Menon, S. & Bawa, K.S.',year:'1997',
+   title:'Applications of GIS, remote sensing, and a landscape ecology approach to biodiversity conservation in the Western Ghats',
+   journal:'Current Science',volume:'73',number:'2',pages:'134–145',doi:''},
+  {key:'Velho2012',author:'Velho, N. et al.',year:'2012',
+   title:'Large mammal use of corridors and forest patches in a fragmented landscape in North East India',
+   journal:'PLOS ONE',volume:'7',number:'6',pages:'e38951',doi:'10.1371/journal.pone.0038951'},
+  {key:'Sehgal1995',author:'Sehgal, R.N.L.',year:'1995',
+   title:'Diversity and composition of bird communities in Himalayan forests of different ages',
+   journal:'Journal of Biogeography',volume:'22',pages:'591–600',doi:''},
+  {key:'Nath2009',author:'Nath, A.J. et al.',year:'2009',
+   title:'Above-ground biomass and carbon stocks in community-managed degraded forests',
+   journal:'Carbon Balance and Management',volume:'4',number:'1',pages:'15',
+   doi:'10.1186/1750-0680-4-15'},
+];
+let _refSort = 'year';
+
+function renderRefs() {
+  const list = document.getElementById('ref-list');
+  const count = document.getElementById('ref-count');
+  if (!list) return;
+  const sorted = [..._refs].sort((a,b)=>{
+    if (_refSort==='year') return (b.year||'0').localeCompare(a.year||'0');
+    return (a.author||'').localeCompare(b.author||'');
+  });
+  list.innerHTML = sorted.map((r,i) => {
+    const venue = r.journal ? `<em>${r.journal}</em>${r.volume?' '+r.volume:''}${r.number?'('+r.number+')':''}${r.pages?', '+r.pages:'.'}` :
+      (r.publisher||'');
+    const doi = r.doi ? ` <a href="https://doi.org/${r.doi}" target="_blank" class="pop-link">DOI</a>` : '';
+    return `<div class="ref-item">
+      <button class="ref-del" onclick="deleteRef('${r.key}')" title="Remove">✕</button>
+      <strong>${r.author} (${r.year})</strong> — ${r.title}. ${venue}${doi}
+    </div>`;
+  }).join('');
+  if (count) count.textContent = _refs.length + ' reference' + (_refs.length!==1?'s':'');
+  document.querySelectorAll('.ref-sort-btn').forEach(b=>
+    b.classList.toggle('active', b.dataset.sort===_refSort));
+}
+
+function sortRefs(by) { _refSort=by; renderRefs(); }
+
+function deleteRef(key) {
+  _refs = _refs.filter(r=>r.key!==key);
+  renderRefs();
+}
+
+// ── BibTeX parser ─────────────────────────────────────────────────────
+function parseBibTeXString(text) {
+  const entries = [];
+  const entryRe = /@(\w+)\s*\{\s*([^,]+),([^@]*)\}/gs;
+  let m;
+  while ((m = entryRe.exec(text)) !== null) {
+    const type = m[1].toLowerCase();
+    const key  = m[2].trim();
+    const body = m[3];
+    const fields = {};
+    const fieldRe = /(\w+)\s*=\s*[{"]([\s\S]*?)[}"],?\s*(?=\w+\s*=|$)/g;
+    let fm;
+    while ((fm = fieldRe.exec(body)) !== null) {
+      fields[fm[1].toLowerCase()] = fm[2].replace(/\s+/g,' ').trim();
+    }
+    // Also try simpler {value} or "value" without nested braces
+    const simpleRe = /(\w+)\s*=\s*\{([^{}]*)\}/g;
+    while ((fm = simpleRe.exec(body)) !== null) {
+      if (!fields[fm[1].toLowerCase()]) fields[fm[1].toLowerCase()] = fm[2].trim();
+    }
+    entries.push({key, type, ...fields,
+      author: fields.author||fields.editor||'',
+      year:   fields.year||'',
+      title:  fields.title||'',
+      journal:fields.journal||fields.booktitle||'',
+      volume: fields.volume||'', number:fields.number||'',
+      pages:  fields.pages||'', publisher:fields.publisher||'',
+      doi:    fields.doi||'',
+    });
+  }
+  return entries;
+}
+
+function parseBibTeX() {
+  const text = document.getElementById('bibtex-input').value.trim();
+  const status = document.getElementById('bib-status');
+  if (!text) { status.textContent='Paste a BibTeX entry first'; return; }
+  const entries = parseBibTeXString(text);
+  if (!entries.length) { status.textContent='⚠️ No valid BibTeX entries found'; status.style.color='var(--rose)'; return; }
+  let added=0;
+  entries.forEach(e=>{
+    if (!_refs.find(r=>r.key===e.key)) { _refs.push(e); added++; }
+  });
+  document.getElementById('bibtex-input').value='';
+  status.textContent=`✓ Added ${added} reference${added!==1?'s':''}`; status.style.color='var(--teal)';
+  renderRefs();
+  setTimeout(()=>{ status.textContent=''; }, 3000);
+}
+
+function loadBibFile(input) {
+  const file=input.files[0]; if(!file) return;
+  const status=document.getElementById('bib-status');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const entries=parseBibTeXString(e.target.result);
+    let added=0;
+    entries.forEach(en=>{if(!_refs.find(r=>r.key===en.key)){_refs.push(en);added++;}});
+    status.textContent=`✓ Imported ${added} of ${entries.length} references from file`;
+    status.style.color='var(--teal)';
+    renderRefs();
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+function exportBibTeX() {
+  const bibtex = _refs.map(r=>{
+    const type = r.journal ? 'article' : (r.publisher ? 'book' : 'misc');
+    const fields = Object.entries({
+      author:r.author, title:r.title, journal:r.journal, booktitle:r.booktitle,
+      year:r.year, volume:r.volume, number:r.number, pages:r.pages,
+      publisher:r.publisher, doi:r.doi
+    }).filter(([,v])=>v).map(([k,v])=>`  ${k} = {${v}}`).join(',\n');
+    return `@${type}{${r.key},\n${fields}\n}`;
+  }).join('\n\n');
+  const blob=new Blob([bibtex],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='asha_arr_bibliography.bib';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ── Submit modal ──────────────────────────────────────────────────────
+let _submitTag=null,_browserCoord=null,_exifCoord=null,_photoBase64=null,_photoBlob=null;
+
+function openSubmitModal() {
+  document.getElementById('submit-modal').classList.add('open');
+  document.getElementById('s-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('s-status').textContent='';
+  getBrowserGPS();
+  populateSubmitDistrict();
+}
+function closeSubmitModal() {
+  document.getElementById('submit-modal').classList.remove('open');
+  resetSubmitForm();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSubmitModal();});
+
+function resetSubmitForm() {
+  _submitTag=null;_browserCoord=null;_exifCoord=null;_photoBase64=null;_photoBlob=null;
+  ['s-species','s-sci','s-notes','s-name','s-lat','s-lon'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('s-photo-preview').style.display='none';
+  document.getElementById('s-ai-result').style.display='none';
+  document.getElementById('s-browser-coord').textContent='getting…';
+  document.getElementById('s-exif-coord').textContent='—';
+  document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('s-status').textContent='';
+}
+
+function getBrowserGPS() {
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    _browserCoord={lat:pos.coords.latitude,lon:pos.coords.longitude};
+    document.getElementById('s-browser-coord').textContent=
+      _browserCoord.lat.toFixed(5)+', '+_browserCoord.lon.toFixed(5);
+    if(!_exifCoord){
+      document.getElementById('s-lat').value=_browserCoord.lat.toFixed(6);
+      document.getElementById('s-lon').value=_browserCoord.lon.toFixed(6);
+    }
+  },()=>{document.getElementById('s-browser-coord').textContent='unavailable';});
+}
+
+function extractEXIF(arrayBuffer) {
+  try {
+    const view=new DataView(arrayBuffer);
+    if(view.getUint16(0)!==0xFFD8)return null;
+    let offset=2;
+    while(offset<view.byteLength-2){
+      const marker=view.getUint16(offset);
+      if(marker===0xFFE1){
+        const exifOffset=offset+4;
+        const header=String.fromCharCode(...new Uint8Array(arrayBuffer,exifOffset,4));
+        if(header!=='Exif')break;
+        const tiffOffset=exifOffset+6;
+        const le=view.getUint16(tiffOffset)===0x4949;
+        const r16=o=>le?view.getUint16(tiffOffset+o,true):view.getUint16(tiffOffset+o);
+        const r32=o=>le?view.getUint32(tiffOffset+o,true):view.getUint32(tiffOffset+o);
+        const ifdOff=r32(4);
+        const entries=r16(ifdOff);
+        for(let i=0;i<entries;i++){
+          const e=ifdOff+2+i*12;
+          if(r16(e)===0x8825){
+            const gOff=r32(e+8);
+            const gEntries=r16(gOff);
+            let latRef='N',lat=null,lonRef='E',lon=null;
+            for(let j=0;j<gEntries;j++){
+              const g=gOff+2+j*12;
+              const tag=r16(g);
+              const valOff=r32(g+8);
+              if(tag===1)latRef=String.fromCharCode(view.getUint8(tiffOffset+valOff));
+              if(tag===3)lonRef=String.fromCharCode(view.getUint8(tiffOffset+valOff));
+              if(tag===2||tag===4){
+                const dN=r32(valOff),dD=r32(valOff+4),mN=r32(valOff+8),
+                      mD=r32(valOff+12),sN=r32(valOff+16),sD=r32(valOff+20);
+                const dd=dN/dD+mN/mD/60+sN/sD/3600;
+                if(tag===2)lat=dd;else lon=dd;
+              }
+            }
+            if(lat!==null&&lon!==null)return{lat:latRef==='S'?-lat:lat,lon:lonRef==='W'?-lon:lon};
+          }
+        }
+        break;
+      }
+      const segLen=view.getUint16(offset+2);offset+=2+segLen;
+    }
+  }catch(e){}
+  return null;
+}
+
+async function handleSubmitPhoto(input) {
+  const file=input.files[0];if(!file)return;
+  _photoBlob=file;
+  const ab=await file.arrayBuffer();
+  const exif=extractEXIF(ab);
+  if(exif){
+    _exifCoord=exif;
+    document.getElementById('s-exif-coord').textContent=exif.lat.toFixed(5)+', '+exif.lon.toFixed(5);
+    document.getElementById('s-lat').value=exif.lat.toFixed(6);
+    document.getElementById('s-lon').value=exif.lon.toFixed(6);
+  }
+  const url=URL.createObjectURL(file);
+  const prev=document.getElementById('s-photo-preview');
+  prev.src=url;prev.style.display='block';
+  const reader=new FileReader();
+  reader.onload=async e=>{_photoBase64=e.target.result.split(',')[1];await callVisionAPI(_photoBase64);};
+  reader.readAsDataURL(file);
+}
+
+async function callVisionAPI(base64) {
+  const status=document.getElementById('s-status');
+  status.textContent='🔍 Identifying species…';status.style.color='var(--teal)';
+  try{
+    const res=await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${CCB_CONFIG.visionApiKey}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({requests:[{image:{content:base64},
+        features:[{type:'LABEL_DETECTION',maxResults:10},{type:'WEB_DETECTION',maxResults:5}]}]})
+    });
+    const data=await res.json();
+    const resp=data.responses?.[0];
+    const webEntities=resp?.webDetection?.webEntities||[];
+    const bestEntity=webEntities.find(e=>e.score>0.5&&e.description)||webEntities[0];
+    const labels=resp?.labelAnnotations||[];
+    const labelDesc=labels.map(l=>l.description.toLowerCase());
+    let category='fauna',tag=null;
+    if(labelDesc.some(l=>['bird','avian','raptor','songbird'].some(x=>l.includes(x)))){category='fauna';tag='bird';}
+    else if(labelDesc.some(l=>['mammal','wildlife'].some(x=>l.includes(x)))){category='fauna';tag='mammal';}
+    else if(labelDesc.some(l=>['reptile','snake','lizard'].some(x=>l.includes(x)))){category='fauna';tag='reptile';}
+    else if(labelDesc.some(l=>['fish','aquatic'].some(x=>l.includes(x)))){category='fauna';tag='fish';}
+    else if(labelDesc.some(l=>['insect','butterfly','moth'].some(x=>l.includes(x)))){category='fauna';tag='insect';}
+    else if(labelDesc.some(l=>['invasive','lantana','mikania','chromolaena'].some(x=>l.includes(x)))){category='invasive';tag='invasive';}
+    else if(labelDesc.some(l=>['plant','tree','flower','shrub','vegetation'].some(x=>l.includes(x)))){category='flora';tag='native tree';}
+    const notable=labels.some(l=>['endangered','threatened','protected'].includes(l.description.toLowerCase()));
+    const confidence=bestEntity?.score?Math.round(bestEntity.score*100)+'%':
+      (labels[0]?.score?Math.round(labels[0].score*100)+'%':'—');
+    const spName=bestEntity?.description||labels[0]?.description||'—';
+    const sciName=webEntities.find(e=>e.description?.match(/^[A-Z][a-z]+ [a-z]+$/))?.description||'';
+    document.getElementById('s-ai-species').textContent=spName;
+    document.getElementById('s-ai-sci').textContent=sciName;
+    document.getElementById('s-ai-cat').textContent=category;
+    document.getElementById('s-ai-conf').textContent=confidence;
+    document.getElementById('s-ai-notable').textContent=notable?'⚠️ Notable species':'';
+    document.getElementById('s-ai-result').style.display='block';
+    if(!document.getElementById('s-species').value)document.getElementById('s-species').value=spName;
+    if(!document.getElementById('s-sci').value)document.getElementById('s-sci').value=sciName;
+    if(tag){document.querySelectorAll('.tag-btn').forEach(b=>{
+      if(b.dataset.tag===tag){b.classList.add('sel');_submitTag=tag;}
+    });}
+    status.textContent='✓ Species identified';status.style.color='var(--green)';
+  }catch(e){status.textContent='Vision API error — fill manually';status.style.color='var(--rose)';}
+}
+
+const TAG_CATEGORY={bird:'fauna',mammal:'fauna',reptile:'fauna',fish:'fauna',insect:'fauna',
+  'native tree':'flora','recruitment':'flora',invasive:'invasive',incident:'incident'};
+
+function setTag(btn) {
+  document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');_submitTag=btn.dataset.tag;
+}
+
+function populateSubmitDistrict() {
+  const sel=document.getElementById('s-district');
+  if(sel.options.length>1)return;
+  const dists=[...new Set(plantationData.map(f=>f.properties.DISTRICT).filter(Boolean))].sort();
+  dists.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
+}
+function filterSubmitBlock() {
+  const dist=document.getElementById('s-district').value;
+  const sel=document.getElementById('s-block');
+  sel.innerHTML='<option value="">— all blocks —</option>';
+  [...new Set(plantationData.filter(f=>!dist||f.properties.DISTRICT===dist)
+    .map(f=>f.properties.BLOCK).filter(Boolean))].sort()
+    .forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;sel.appendChild(o);});
+  filterSubmitLPC();
+}
+function filterSubmitLPC() {
+  const dist=document.getElementById('s-district').value;
+  const block=document.getElementById('s-block').value;
+  const sel=document.getElementById('s-lpc');
+  sel.innerHTML='<option value="">— select LPC —</option>';
+  plantationData.filter(f=>(!dist||f.properties.DISTRICT===dist)&&(!block||f.properties.BLOCK===block))
+    .sort((a,b)=>a.properties.LPC-b.properties.LPC)
+    .forEach(f=>{const p=f.properties;const o=document.createElement('option');
+      o.value=p.LPC;o.textContent=(p.LPC+' — '+(p.BENNAMES||'')).slice(0,60);sel.appendChild(o);});
+}
+
+async function submitSighting() {
+  const btn=document.getElementById('s-submit-btn');
+  const status=document.getElementById('s-status');
+  const species=document.getElementById('s-species').value.trim();
+  const lat=parseFloat(document.getElementById('s-lat').value);
+  const lon=parseFloat(document.getElementById('s-lon').value);
+  if(!species){status.textContent='⚠️ Species/description required';status.style.color='var(--rose)';return;}
+  if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ Coordinates required';status.style.color='var(--rose)';return;}
+  btn.disabled=true;btn.textContent='Submitting…';
+  const category=TAG_CATEGORY[_submitTag]||'fauna';
+  const record={
+    timestamp:new Date().toISOString(),
+    submitter:document.getElementById('s-name').value.trim(),
+    date:document.getElementById('s-date').value,
+    species,sci:document.getElementById('s-sci').value.trim(),
+    tag:_submitTag||'',category,
+    lat_used:lat,lon_used:lon,
+    lat_browser:_browserCoord?.lat||'',lon_browser:_browserCoord?.lon||'',
+    lat_exif:_exifCoord?.lat||'',lon_exif:_exifCoord?.lon||'',
+    coord_source:_exifCoord?'EXIF':(_browserCoord?'GPS':'manual'),
+    lpc:document.getElementById('s-lpc').value,
+    district:document.getElementById('s-district').value,
+    block:document.getElementById('s-block').value,
+    notes:document.getElementById('s-notes').value.trim(),
+    ai_species:document.getElementById('s-ai-species').textContent,
+    notable:document.getElementById('s-ai-notable').textContent.includes('Notable'),
+    photo_url:'',
+  };
+  if(_photoBase64&&CCB_CONFIG.scriptUrl){
+    try{
+      const ts=new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
+      const fname=`CCB_${record.lpc||'noLPC'}_${record.tag||'sighting'}_${ts}.jpg`;
+      await fetch(CCB_CONFIG.scriptUrl,{method:'POST',mode:'no-cors',
+        headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({username:record.submitter||'ccb',toolFolder:'CCBSightings',
+          filename:fname,fileData:_photoBase64,mimeType:'image/jpeg'})});
+      record.photo_url=`CCBSightings/${fname}`;
+    }catch(e){}
+  }
+  if(CCB_CONFIG.scriptUrl){
+    try{await fetch(CCB_CONFIG.scriptUrl,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'ccb_sighting',data:record})});}catch(e){}
+  }
+  bioSightings.push({date:record.date,species:record.species,category:record.category,
+    lat,lon,lpc:record.lpc,notes:record.notes,recorder:record.submitter});
+  updateBioKPIs();renderRecentSightings();if(bioMap)renderBioMap();
+  status.textContent='✅ Submitted'+(CCB_CONFIG.scriptUrl?'':' (local only — set scriptUrl to save to Sheet)');
+  status.style.color='var(--green)';
+  btn.disabled=false;btn.textContent='Submit & Save';
+  setTimeout(()=>closeSubmitModal(),1800);
+}
+
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -114,6 +492,48 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 .ref-item strong{color:var(--ink)}
 .ref-item a{color:var(--teal);text-decoration:none}
 .ref-item a:hover{text-decoration:underline}
+.ref-sort-btn{background:var(--surface);border:1px solid var(--border);border-radius:4px;
+  color:var(--mid);font-size:9px;padding:2px 8px;cursor:pointer}
+.ref-sort-btn.active{background:var(--teal);border-color:var(--teal);color:#0d1f2d;font-weight:700}
+.ref-del{background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;
+  float:right;padding:0 2px;line-height:1}
+.ref-del:hover{color:var(--rose)}
+
+/* ── Submit modal ── */
+#submit-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:9000;align-items:center;justify-content:center}
+#submit-modal.open{display:flex}
+#submit-box{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  width:520px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column}
+#submit-box-head{padding:14px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between}
+#submit-box-head h2{font-size:14px;font-weight:700;color:var(--ink)}
+#submit-close{background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;line-height:1}
+#submit-body{padding:14px 16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px}
+#submit-footer{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.form-row{display:flex;flex-direction:column;gap:3px}
+.form-label{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.form-input{background:var(--surface);border:1px solid var(--border);border-radius:5px;
+  color:var(--ink);font-size:12px;padding:6px 9px;font-family:var(--font);width:100%}
+.form-input:focus{outline:none;border-color:var(--teal)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tag-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.tag-btn{background:var(--surface);border:1.5px solid var(--border);border-radius:6px;
+  color:var(--mid);font-size:11px;padding:4px 10px;cursor:pointer;transition:all .12s}
+.tag-btn.sel{background:#be185d;border-color:#be185d;color:#fff}
+.photo-preview{width:100%;max-height:160px;object-fit:cover;border-radius:6px;margin-top:4px;display:none}
+.ai-result{background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.2);
+  border-radius:6px;padding:8px 10px;font-size:11px;color:var(--teal);display:none}
+.ai-result .ai-sp{font-size:13px;font-weight:700;color:var(--ink)}
+.ai-result .ai-sci{font-style:italic;color:var(--mid);font-size:10px}
+.coord-row{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--dim);flex-wrap:wrap}
+.coord-pill{background:var(--surface);border:1px solid var(--border);border-radius:4px;
+  padding:2px 7px;font-size:9px;font-family:monospace}
+.submit-btn{background:#be185d;border:none;border-radius:6px;color:#fff;font-size:12px;
+  font-weight:700;padding:8px 20px;cursor:pointer;font-family:var(--font)}
+.submit-btn:disabled{opacity:.5;cursor:default}
+.cancel-btn{background:var(--border);border:none;border-radius:6px;color:var(--mid);
+  font-size:12px;padding:8px 16px;cursor:pointer;font-family:var(--font)}
 </style>
 </head>
 <body>
@@ -149,7 +569,12 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
     <div id="topbar">
       <span class="title" id="panel-title">Biodiversity Overview</span>
       <span class="spacer"></span>
-      <a href="index.html">← Suite</a>
+      <button onclick="openSubmitModal()" style="background:#be185d;border:none;border-radius:6px;
+        color:#fff;font-size:12px;font-weight:700;padding:6px 14px;cursor:pointer;
+        display:flex;align-items:center;gap:6px">
+        📍 Submit Sighting
+      </button>
+      <a href="index.html" style="margin-left:10px">← Suite</a>
     </div>
     <div id="content">
 
@@ -298,51 +723,41 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
       <div class="panel" id="panel-bio-refs">
         <div class="sec-card">
           <h3>Bibliography — primary literature 2000–2026</h3>
-          <p style="font-size:11px;color:var(--dim);margin-bottom:12px">
+          <p style="font-size:11px;color:var(--dim);margin-bottom:10px">
             Supporting literature for species presence, ecological baseline, and biodiversity
-            co-benefit claims in Jalpaiguri, Alipurduar, Coochbehar and Kalimpong districts.
+            co-benefit claims. Paste or upload BibTeX to add references.
           </p>
-          <div id="ref-list">
-            <div class="ref-item">
-              <strong>Datta, A. et al. (2008)</strong> — Bird communities in disturbed and
-              undisturbed forests of the eastern Himalayan foothills. <em>Forktail</em> 24, 1–20.
-            </div>
-            <div class="ref-item">
-              <strong>Saikia, P. &amp; Khan, M.L. (2012)</strong> — Biodiversity assessment and
-              conservation of wetland ecosystems in the Brahmaputra floodplain, Assam.
-              <em>Biodiversity and Conservation</em> 21(11), 2905–2921.
-              <a href="https://doi.org/10.1007/s10531-012-0345-5" target="_blank">DOI</a>
-            </div>
-            <div class="ref-item">
-              <strong>Champion, H.G. &amp; Seth, S.K. (1968)</strong> — A Revised Survey of the
-              Forest Types of India. Manager of Publications, New Delhi.
-            </div>
-            <div class="ref-item">
-              <strong>Menon, S. &amp; Bawa, K.S. (1997)</strong> — Applications of geographic
-              information systems, remote sensing, and a landscape ecology approach to biodiversity
-              conservation in the Western Ghats. <em>Current Science</em> 73(2), 134–145.
-            </div>
-            <div class="ref-item">
-              <strong>Velho, N. et al. (2012)</strong> — Large mammal use of corridors and
-              forest patches in a fragmented landscape in North East India.
-              <em>PLOS ONE</em> 7(6), e38951.
-              <a href="https://doi.org/10.1371/journal.pone.0038951" target="_blank">DOI</a>
-            </div>
-            <div class="ref-item">
-              <strong>Sehgal, R.N.L. (1995)</strong> — Diversity and composition of bird
-              communities in Himalayan forests of different ages. <em>Journal of Biogeography</em>
-              22, 591–600.
-            </div>
-            <div class="ref-item">
-              <strong>Nath, A.J. et al. (2009)</strong> — Above-ground biomass and carbon stocks
-              in community-managed degraded forests: Implications for REDD in tropical forests.
-              <em>Carbon Balance and Management</em> 4(1), 15.
-              <a href="https://doi.org/10.1186/1750-0680-4-15" target="_blank">DOI</a>
-            </div>
-            <div class="ref-item" style="margin-top:12px;color:var(--teal);font-size:10px">
-              + Add references via the upload panel (BibTeX, RIS, or manual entry — coming soon)
+          <!-- BibTeX input -->
+          <div style="display:flex;gap:8px;margin-bottom:10px;align-items:flex-start">
+            <textarea id="bibtex-input" rows="4"
+              placeholder="Paste BibTeX entry here, e.g.:&#10;@article{Velho2012,&#10;  author={Velho, N. et al.},&#10;  title={Large mammal use...},&#10;  journal={PLOS ONE},&#10;  year={2012},&#10;  doi={10.1371/journal.pone.0038951}&#10;}"
+              style="flex:1;background:var(--surface);border:1px solid var(--border);
+                border-radius:5px;color:var(--ink);font-size:10px;padding:7px 9px;
+                font-family:monospace;resize:vertical"></textarea>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <button onclick="parseBibTeX()" style="background:var(--teal);border:none;
+                border-radius:5px;color:#0d1f2d;font-size:11px;font-weight:700;
+                padding:6px 12px;cursor:pointer;white-space:nowrap">+ Add</button>
+              <button onclick="document.getElementById('bib-file-input').click()"
+                style="background:var(--border);border:none;border-radius:5px;color:var(--mid);
+                font-size:11px;padding:6px 12px;cursor:pointer;white-space:nowrap">📂 .bib file</button>
+              <input type="file" id="bib-file-input" accept=".bib,.txt" style="display:none"
+                onchange="loadBibFile(this)"/>
             </div>
           </div>
+          <div id="bib-status" style="font-size:10px;min-height:14px;color:var(--teal);margin-bottom:8px"></div>
+          <!-- Sort/filter -->
+          <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+            <span style="font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">Sort:</span>
+            <button onclick="sortRefs('year')" class="ref-sort-btn" data-sort="year">Year ↓</button>
+            <button onclick="sortRefs('author')" class="ref-sort-btn" data-sort="author">Author</button>
+            <span style="flex:1"></span>
+            <span id="ref-count" style="font-size:9px;color:var(--dim)"></span>
+            <button onclick="exportBibTeX()" style="background:none;border:1px solid var(--border);
+              border-radius:4px;color:var(--dim);font-size:9px;padding:2px 8px;cursor:pointer">
+              Export .bib</button>
+          </div>
+          <div id="ref-list"></div>
         </div>
       </div>
 
@@ -508,6 +923,13 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 </div><!-- /app -->
 
 <script>
+
+// ── Config ────────────────────────────────────────────────────────────
+const CCB_CONFIG = {
+  visionApiKey: 'AIzaSyA0yiR28GzzeNoaWxtLNgrF14Q8L3XzZIk',
+  scriptUrl: '',  // TODO: paste Apps Script /exec URL here
+};
+
 // ── SDG chip data ──────────────────────────────────────────────────────
 const SDG_RELEVANT = [
   {n:1,  label:'No Poverty',         color:'#e5243b', rel:'Landowner income from carbon payments'},
@@ -835,7 +1257,496 @@ function renderRecentSightings() {
 window.addEventListener('load', () => {
   renderSDGChips();
   loadPlantationData();
+  renderRefs();
 });
+
+
+// ── Bibliography / BibTeX ─────────────────────────────────────────────
+let _refs = [
+  {key:'Datta2008',author:'Datta, A. et al.',year:'2008',
+   title:'Bird communities in disturbed and undisturbed forests of the eastern Himalayan foothills',
+   journal:'Forktail',volume:'24',pages:'1–20',doi:''},
+  {key:'Saikia2012',author:'Saikia, P. & Khan, M.L.',year:'2012',
+   title:'Biodiversity assessment and conservation of wetland ecosystems in the Brahmaputra floodplain, Assam',
+   journal:'Biodiversity and Conservation',volume:'21',number:'11',pages:'2905–2921',
+   doi:'10.1007/s10531-012-0345-5'},
+  {key:'Champion1968',author:'Champion, H.G. & Seth, S.K.',year:'1968',
+   title:'A Revised Survey of the Forest Types of India',
+   publisher:'Manager of Publications, New Delhi',doi:''},
+  {key:'Menon1997',author:'Menon, S. & Bawa, K.S.',year:'1997',
+   title:'Applications of GIS, remote sensing, and a landscape ecology approach to biodiversity conservation in the Western Ghats',
+   journal:'Current Science',volume:'73',number:'2',pages:'134–145',doi:''},
+  {key:'Velho2012',author:'Velho, N. et al.',year:'2012',
+   title:'Large mammal use of corridors and forest patches in a fragmented landscape in North East India',
+   journal:'PLOS ONE',volume:'7',number:'6',pages:'e38951',doi:'10.1371/journal.pone.0038951'},
+  {key:'Sehgal1995',author:'Sehgal, R.N.L.',year:'1995',
+   title:'Diversity and composition of bird communities in Himalayan forests of different ages',
+   journal:'Journal of Biogeography',volume:'22',pages:'591–600',doi:''},
+  {key:'Nath2009',author:'Nath, A.J. et al.',year:'2009',
+   title:'Above-ground biomass and carbon stocks in community-managed degraded forests',
+   journal:'Carbon Balance and Management',volume:'4',number:'1',pages:'15',
+   doi:'10.1186/1750-0680-4-15'},
+];
+let _refSort = 'year';
+
+function renderRefs() {
+  const list = document.getElementById('ref-list');
+  const count = document.getElementById('ref-count');
+  if (!list) return;
+  const sorted = [..._refs].sort((a,b)=>{
+    if (_refSort==='year') return (b.year||'0').localeCompare(a.year||'0');
+    return (a.author||'').localeCompare(b.author||'');
+  });
+  list.innerHTML = sorted.map((r,i) => {
+    const venue = r.journal ? `<em>${r.journal}</em>${r.volume?' '+r.volume:''}${r.number?'('+r.number+')':''}${r.pages?', '+r.pages:'.'}` :
+      (r.publisher||'');
+    const doi = r.doi ? ` <a href="https://doi.org/${r.doi}" target="_blank" class="pop-link">DOI</a>` : '';
+    return `<div class="ref-item">
+      <button class="ref-del" onclick="deleteRef('${r.key}')" title="Remove">✕</button>
+      <strong>${r.author} (${r.year})</strong> — ${r.title}. ${venue}${doi}
+    </div>`;
+  }).join('');
+  if (count) count.textContent = _refs.length + ' reference' + (_refs.length!==1?'s':'');
+  document.querySelectorAll('.ref-sort-btn').forEach(b=>
+    b.classList.toggle('active', b.dataset.sort===_refSort));
+}
+
+function sortRefs(by) { _refSort=by; renderRefs(); }
+
+function deleteRef(key) {
+  _refs = _refs.filter(r=>r.key!==key);
+  renderRefs();
+}
+
+// ── BibTeX parser ─────────────────────────────────────────────────────
+function parseBibTeXString(text) {
+  const entries = [];
+  const entryRe = /@(\w+)\s*\{\s*([^,]+),([^@]*)\}/gs;
+  let m;
+  while ((m = entryRe.exec(text)) !== null) {
+    const type = m[1].toLowerCase();
+    const key  = m[2].trim();
+    const body = m[3];
+    const fields = {};
+    const fieldRe = /(\w+)\s*=\s*[{"]([\s\S]*?)[}"],?\s*(?=\w+\s*=|$)/g;
+    let fm;
+    while ((fm = fieldRe.exec(body)) !== null) {
+      fields[fm[1].toLowerCase()] = fm[2].replace(/\s+/g,' ').trim();
+    }
+    // Also try simpler {value} or "value" without nested braces
+    const simpleRe = /(\w+)\s*=\s*\{([^{}]*)\}/g;
+    while ((fm = simpleRe.exec(body)) !== null) {
+      if (!fields[fm[1].toLowerCase()]) fields[fm[1].toLowerCase()] = fm[2].trim();
+    }
+    entries.push({key, type, ...fields,
+      author: fields.author||fields.editor||'',
+      year:   fields.year||'',
+      title:  fields.title||'',
+      journal:fields.journal||fields.booktitle||'',
+      volume: fields.volume||'', number:fields.number||'',
+      pages:  fields.pages||'', publisher:fields.publisher||'',
+      doi:    fields.doi||'',
+    });
+  }
+  return entries;
+}
+
+function parseBibTeX() {
+  const text = document.getElementById('bibtex-input').value.trim();
+  const status = document.getElementById('bib-status');
+  if (!text) { status.textContent='Paste a BibTeX entry first'; return; }
+  const entries = parseBibTeXString(text);
+  if (!entries.length) { status.textContent='⚠️ No valid BibTeX entries found'; status.style.color='var(--rose)'; return; }
+  let added=0;
+  entries.forEach(e=>{
+    if (!_refs.find(r=>r.key===e.key)) { _refs.push(e); added++; }
+  });
+  document.getElementById('bibtex-input').value='';
+  status.textContent=`✓ Added ${added} reference${added!==1?'s':''}`; status.style.color='var(--teal)';
+  renderRefs();
+  setTimeout(()=>{ status.textContent=''; }, 3000);
+}
+
+function loadBibFile(input) {
+  const file=input.files[0]; if(!file) return;
+  const status=document.getElementById('bib-status');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const entries=parseBibTeXString(e.target.result);
+    let added=0;
+    entries.forEach(en=>{if(!_refs.find(r=>r.key===en.key)){_refs.push(en);added++;}});
+    status.textContent=`✓ Imported ${added} of ${entries.length} references from file`;
+    status.style.color='var(--teal)';
+    renderRefs();
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+function exportBibTeX() {
+  const bibtex = _refs.map(r=>{
+    const type = r.journal ? 'article' : (r.publisher ? 'book' : 'misc');
+    const fields = Object.entries({
+      author:r.author, title:r.title, journal:r.journal, booktitle:r.booktitle,
+      year:r.year, volume:r.volume, number:r.number, pages:r.pages,
+      publisher:r.publisher, doi:r.doi
+    }).filter(([,v])=>v).map(([k,v])=>`  ${k} = {${v}}`).join(',\n');
+    return `@${type}{${r.key},\n${fields}\n}`;
+  }).join('\n\n');
+  const blob=new Blob([bibtex],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='asha_arr_bibliography.bib';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ── Submit modal ──────────────────────────────────────────────────────
+let _submitTag=null,_browserCoord=null,_exifCoord=null,_photoBase64=null,_photoBlob=null;
+
+function openSubmitModal() {
+  document.getElementById('submit-modal').classList.add('open');
+  document.getElementById('s-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('s-status').textContent='';
+  getBrowserGPS();
+  populateSubmitDistrict();
+}
+function closeSubmitModal() {
+  document.getElementById('submit-modal').classList.remove('open');
+  resetSubmitForm();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSubmitModal();});
+
+function resetSubmitForm() {
+  _submitTag=null;_browserCoord=null;_exifCoord=null;_photoBase64=null;_photoBlob=null;
+  ['s-species','s-sci','s-notes','s-name','s-lat','s-lon'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('s-photo-preview').style.display='none';
+  document.getElementById('s-ai-result').style.display='none';
+  document.getElementById('s-browser-coord').textContent='getting…';
+  document.getElementById('s-exif-coord').textContent='—';
+  document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('s-status').textContent='';
+}
+
+function getBrowserGPS() {
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    _browserCoord={lat:pos.coords.latitude,lon:pos.coords.longitude};
+    document.getElementById('s-browser-coord').textContent=
+      _browserCoord.lat.toFixed(5)+', '+_browserCoord.lon.toFixed(5);
+    if(!_exifCoord){
+      document.getElementById('s-lat').value=_browserCoord.lat.toFixed(6);
+      document.getElementById('s-lon').value=_browserCoord.lon.toFixed(6);
+    }
+  },()=>{document.getElementById('s-browser-coord').textContent='unavailable';});
+}
+
+function extractEXIF(arrayBuffer) {
+  try {
+    const view=new DataView(arrayBuffer);
+    if(view.getUint16(0)!==0xFFD8)return null;
+    let offset=2;
+    while(offset<view.byteLength-2){
+      const marker=view.getUint16(offset);
+      if(marker===0xFFE1){
+        const exifOffset=offset+4;
+        const header=String.fromCharCode(...new Uint8Array(arrayBuffer,exifOffset,4));
+        if(header!=='Exif')break;
+        const tiffOffset=exifOffset+6;
+        const le=view.getUint16(tiffOffset)===0x4949;
+        const r16=o=>le?view.getUint16(tiffOffset+o,true):view.getUint16(tiffOffset+o);
+        const r32=o=>le?view.getUint32(tiffOffset+o,true):view.getUint32(tiffOffset+o);
+        const ifdOff=r32(4);
+        const entries=r16(ifdOff);
+        for(let i=0;i<entries;i++){
+          const e=ifdOff+2+i*12;
+          if(r16(e)===0x8825){
+            const gOff=r32(e+8);
+            const gEntries=r16(gOff);
+            let latRef='N',lat=null,lonRef='E',lon=null;
+            for(let j=0;j<gEntries;j++){
+              const g=gOff+2+j*12;
+              const tag=r16(g);
+              const valOff=r32(g+8);
+              if(tag===1)latRef=String.fromCharCode(view.getUint8(tiffOffset+valOff));
+              if(tag===3)lonRef=String.fromCharCode(view.getUint8(tiffOffset+valOff));
+              if(tag===2||tag===4){
+                const dN=r32(valOff),dD=r32(valOff+4),mN=r32(valOff+8),
+                      mD=r32(valOff+12),sN=r32(valOff+16),sD=r32(valOff+20);
+                const dd=dN/dD+mN/mD/60+sN/sD/3600;
+                if(tag===2)lat=dd;else lon=dd;
+              }
+            }
+            if(lat!==null&&lon!==null)return{lat:latRef==='S'?-lat:lat,lon:lonRef==='W'?-lon:lon};
+          }
+        }
+        break;
+      }
+      const segLen=view.getUint16(offset+2);offset+=2+segLen;
+    }
+  }catch(e){}
+  return null;
+}
+
+async function handleSubmitPhoto(input) {
+  const file=input.files[0];if(!file)return;
+  _photoBlob=file;
+  const ab=await file.arrayBuffer();
+  const exif=extractEXIF(ab);
+  if(exif){
+    _exifCoord=exif;
+    document.getElementById('s-exif-coord').textContent=exif.lat.toFixed(5)+', '+exif.lon.toFixed(5);
+    document.getElementById('s-lat').value=exif.lat.toFixed(6);
+    document.getElementById('s-lon').value=exif.lon.toFixed(6);
+  }
+  const url=URL.createObjectURL(file);
+  const prev=document.getElementById('s-photo-preview');
+  prev.src=url;prev.style.display='block';
+  const reader=new FileReader();
+  reader.onload=async e=>{_photoBase64=e.target.result.split(',')[1];await callVisionAPI(_photoBase64);};
+  reader.readAsDataURL(file);
+}
+
+async function callVisionAPI(base64) {
+  const status=document.getElementById('s-status');
+  status.textContent='🔍 Identifying species…';status.style.color='var(--teal)';
+  try{
+    const res=await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${CCB_CONFIG.visionApiKey}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({requests:[{image:{content:base64},
+        features:[{type:'LABEL_DETECTION',maxResults:10},{type:'WEB_DETECTION',maxResults:5}]}]})
+    });
+    const data=await res.json();
+    const resp=data.responses?.[0];
+    const webEntities=resp?.webDetection?.webEntities||[];
+    const bestEntity=webEntities.find(e=>e.score>0.5&&e.description)||webEntities[0];
+    const labels=resp?.labelAnnotations||[];
+    const labelDesc=labels.map(l=>l.description.toLowerCase());
+    let category='fauna',tag=null;
+    if(labelDesc.some(l=>['bird','avian','raptor','songbird'].some(x=>l.includes(x)))){category='fauna';tag='bird';}
+    else if(labelDesc.some(l=>['mammal','wildlife'].some(x=>l.includes(x)))){category='fauna';tag='mammal';}
+    else if(labelDesc.some(l=>['reptile','snake','lizard'].some(x=>l.includes(x)))){category='fauna';tag='reptile';}
+    else if(labelDesc.some(l=>['fish','aquatic'].some(x=>l.includes(x)))){category='fauna';tag='fish';}
+    else if(labelDesc.some(l=>['insect','butterfly','moth'].some(x=>l.includes(x)))){category='fauna';tag='insect';}
+    else if(labelDesc.some(l=>['invasive','lantana','mikania','chromolaena'].some(x=>l.includes(x)))){category='invasive';tag='invasive';}
+    else if(labelDesc.some(l=>['plant','tree','flower','shrub','vegetation'].some(x=>l.includes(x)))){category='flora';tag='native tree';}
+    const notable=labels.some(l=>['endangered','threatened','protected'].includes(l.description.toLowerCase()));
+    const confidence=bestEntity?.score?Math.round(bestEntity.score*100)+'%':
+      (labels[0]?.score?Math.round(labels[0].score*100)+'%':'—');
+    const spName=bestEntity?.description||labels[0]?.description||'—';
+    const sciName=webEntities.find(e=>e.description?.match(/^[A-Z][a-z]+ [a-z]+$/))?.description||'';
+    document.getElementById('s-ai-species').textContent=spName;
+    document.getElementById('s-ai-sci').textContent=sciName;
+    document.getElementById('s-ai-cat').textContent=category;
+    document.getElementById('s-ai-conf').textContent=confidence;
+    document.getElementById('s-ai-notable').textContent=notable?'⚠️ Notable species':'';
+    document.getElementById('s-ai-result').style.display='block';
+    if(!document.getElementById('s-species').value)document.getElementById('s-species').value=spName;
+    if(!document.getElementById('s-sci').value)document.getElementById('s-sci').value=sciName;
+    if(tag){document.querySelectorAll('.tag-btn').forEach(b=>{
+      if(b.dataset.tag===tag){b.classList.add('sel');_submitTag=tag;}
+    });}
+    status.textContent='✓ Species identified';status.style.color='var(--green)';
+  }catch(e){status.textContent='Vision API error — fill manually';status.style.color='var(--rose)';}
+}
+
+const TAG_CATEGORY={bird:'fauna',mammal:'fauna',reptile:'fauna',fish:'fauna',insect:'fauna',
+  'native tree':'flora','recruitment':'flora',invasive:'invasive',incident:'incident'};
+
+function setTag(btn) {
+  document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');_submitTag=btn.dataset.tag;
+}
+
+function populateSubmitDistrict() {
+  const sel=document.getElementById('s-district');
+  if(sel.options.length>1)return;
+  const dists=[...new Set(plantationData.map(f=>f.properties.DISTRICT).filter(Boolean))].sort();
+  dists.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
+}
+function filterSubmitBlock() {
+  const dist=document.getElementById('s-district').value;
+  const sel=document.getElementById('s-block');
+  sel.innerHTML='<option value="">— all blocks —</option>';
+  [...new Set(plantationData.filter(f=>!dist||f.properties.DISTRICT===dist)
+    .map(f=>f.properties.BLOCK).filter(Boolean))].sort()
+    .forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;sel.appendChild(o);});
+  filterSubmitLPC();
+}
+function filterSubmitLPC() {
+  const dist=document.getElementById('s-district').value;
+  const block=document.getElementById('s-block').value;
+  const sel=document.getElementById('s-lpc');
+  sel.innerHTML='<option value="">— select LPC —</option>';
+  plantationData.filter(f=>(!dist||f.properties.DISTRICT===dist)&&(!block||f.properties.BLOCK===block))
+    .sort((a,b)=>a.properties.LPC-b.properties.LPC)
+    .forEach(f=>{const p=f.properties;const o=document.createElement('option');
+      o.value=p.LPC;o.textContent=(p.LPC+' — '+(p.BENNAMES||'')).slice(0,60);sel.appendChild(o);});
+}
+
+async function submitSighting() {
+  const btn=document.getElementById('s-submit-btn');
+  const status=document.getElementById('s-status');
+  const species=document.getElementById('s-species').value.trim();
+  const lat=parseFloat(document.getElementById('s-lat').value);
+  const lon=parseFloat(document.getElementById('s-lon').value);
+  if(!species){status.textContent='⚠️ Species/description required';status.style.color='var(--rose)';return;}
+  if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ Coordinates required';status.style.color='var(--rose)';return;}
+  btn.disabled=true;btn.textContent='Submitting…';
+  const category=TAG_CATEGORY[_submitTag]||'fauna';
+  const record={
+    timestamp:new Date().toISOString(),
+    submitter:document.getElementById('s-name').value.trim(),
+    date:document.getElementById('s-date').value,
+    species,sci:document.getElementById('s-sci').value.trim(),
+    tag:_submitTag||'',category,
+    lat_used:lat,lon_used:lon,
+    lat_browser:_browserCoord?.lat||'',lon_browser:_browserCoord?.lon||'',
+    lat_exif:_exifCoord?.lat||'',lon_exif:_exifCoord?.lon||'',
+    coord_source:_exifCoord?'EXIF':(_browserCoord?'GPS':'manual'),
+    lpc:document.getElementById('s-lpc').value,
+    district:document.getElementById('s-district').value,
+    block:document.getElementById('s-block').value,
+    notes:document.getElementById('s-notes').value.trim(),
+    ai_species:document.getElementById('s-ai-species').textContent,
+    notable:document.getElementById('s-ai-notable').textContent.includes('Notable'),
+    photo_url:'',
+  };
+  if(_photoBase64&&CCB_CONFIG.scriptUrl){
+    try{
+      const ts=new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
+      const fname=`CCB_${record.lpc||'noLPC'}_${record.tag||'sighting'}_${ts}.jpg`;
+      await fetch(CCB_CONFIG.scriptUrl,{method:'POST',mode:'no-cors',
+        headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({username:record.submitter||'ccb',toolFolder:'CCBSightings',
+          filename:fname,fileData:_photoBase64,mimeType:'image/jpeg'})});
+      record.photo_url=`CCBSightings/${fname}`;
+    }catch(e){}
+  }
+  if(CCB_CONFIG.scriptUrl){
+    try{await fetch(CCB_CONFIG.scriptUrl,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'ccb_sighting',data:record})});}catch(e){}
+  }
+  bioSightings.push({date:record.date,species:record.species,category:record.category,
+    lat,lon,lpc:record.lpc,notes:record.notes,recorder:record.submitter});
+  updateBioKPIs();renderRecentSightings();if(bioMap)renderBioMap();
+  status.textContent='✅ Submitted'+(CCB_CONFIG.scriptUrl?'':' (local only — set scriptUrl to save to Sheet)');
+  status.style.color='var(--green)';
+  btn.disabled=false;btn.textContent='Submit & Save';
+  setTimeout(()=>closeSubmitModal(),1800);
+}
+
 </script>
+
+<div id="submit-modal">
+  <div id="submit-box">
+    <div id="submit-box-head">
+      <h2>📍 Submit Sighting / Event</h2>
+      <button id="submit-close" onclick="closeSubmitModal()">✕</button>
+    </div>
+    <div id="submit-body">
+      <div class="form-row">
+        <label class="form-label">Photo (optional — triggers AI species ID)</label>
+        <div class="upload-zone" onclick="document.getElementById('s-photo').click()"
+          style="padding:12px;text-align:center;cursor:pointer">
+          📷 <span style="font-size:11px;color:var(--dim)">Tap to capture or upload photo</span>
+        </div>
+        <input type="file" id="s-photo" accept="image/*" capture="environment"
+          style="display:none" onchange="handleSubmitPhoto(this)"/>
+        <img id="s-photo-preview" class="photo-preview"/>
+        <div id="s-ai-result" class="ai-result">
+          <div class="ai-sp" id="s-ai-species">—</div>
+          <div class="ai-sci" id="s-ai-sci"></div>
+          <div style="margin-top:4px;font-size:9px;color:var(--dim)">
+            <span id="s-ai-cat"></span> · confidence: <span id="s-ai-conf"></span>
+            · <span id="s-ai-notable"></span>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Coordinates</label>
+        <div class="coord-row">
+          <span>Browser GPS:</span><span class="coord-pill" id="s-browser-coord">getting…</span>
+          <span>EXIF:</span><span class="coord-pill" id="s-exif-coord">—</span>
+        </div>
+        <div style="font-size:9px;color:var(--dim);margin-top:2px">EXIF used for map if available, otherwise browser GPS</div>
+        <div class="form-row-2" style="margin-top:4px">
+          <div class="form-row">
+            <label class="form-label">Lat (override)</label>
+            <input class="form-input" id="s-lat" type="number" step="0.000001" placeholder="auto"/>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Lon (override)</label>
+            <input class="form-input" id="s-lon" type="number" step="0.000001" placeholder="auto"/>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Tag</label>
+        <div class="tag-grid" id="s-tag-grid">
+          <button class="tag-btn" data-tag="bird"       onclick="setTag(this)">🦅 Bird</button>
+          <button class="tag-btn" data-tag="mammal"     onclick="setTag(this)">🐾 Mammal</button>
+          <button class="tag-btn" data-tag="reptile"    onclick="setTag(this)">🦎 Reptile</button>
+          <button class="tag-btn" data-tag="fish"       onclick="setTag(this)">🐟 Fish</button>
+          <button class="tag-btn" data-tag="insect"     onclick="setTag(this)">🦋 Insect</button>
+          <button class="tag-btn" data-tag="native tree" onclick="setTag(this)">🌳 Native tree</button>
+          <button class="tag-btn" data-tag="recruitment" onclick="setTag(this)">🌱 Recruitment</button>
+          <button class="tag-btn" data-tag="invasive"  onclick="setTag(this)">⚠️ Invasive</button>
+          <button class="tag-btn" data-tag="incident"  onclick="setTag(this)">🐄 Wildlife incident</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Species / "What is this?"</label>
+        <input class="form-input" id="s-species" type="text" placeholder="AI will suggest from photo"/>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Scientific name (optional)</label>
+        <input class="form-input" id="s-sci" type="text" placeholder="Auto-filled from AI"/>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row">
+          <label class="form-label">District</label>
+          <select class="form-input" id="s-district" onchange="filterSubmitBlock()">
+            <option value="">— select —</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Block</label>
+          <select class="form-input" id="s-block" onchange="filterSubmitLPC()">
+            <option value="">— select —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">LPC (plot)</label>
+        <select class="form-input" id="s-lpc">
+          <option value="">— select LPC —</option>
+        </select>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row">
+          <label class="form-label">Your name</label>
+          <input class="form-input" id="s-name" type="text" placeholder="Field staff name"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Date</label>
+          <input class="form-input" id="s-date" type="date"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Notes</label>
+        <textarea class="form-input" id="s-notes" rows="2"
+          placeholder="Damage, count, behaviour, context…" style="resize:vertical"></textarea>
+      </div>
+      <div id="s-status" style="font-size:11px;min-height:16px"></div>
+    </div>
+    <div id="submit-footer">
+      <button class="cancel-btn" onclick="closeSubmitModal()">Cancel</button>
+      <button class="submit-btn" id="s-submit-btn" onclick="submitSighting()">Submit &amp; Save</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
