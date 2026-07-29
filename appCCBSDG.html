@@ -180,6 +180,40 @@ function exportBibTeX() {
   a.click(); URL.revokeObjectURL(url);
 }
 
+
+// ── Load sightings from Sheet ─────────────────────────────────────────
+async function loadSightingsFromSheet() {
+  if (!CCB_CONFIG.scriptUrl) return;
+  try {
+    const res  = await fetch(CCB_CONFIG.scriptUrl + '?action=getSightings');
+    const data = await res.json();
+    if (!data.success || !data.rows) return;
+    const sheetSightings = data.rows
+      .filter(r => r.type === 'sighting' && r.species)
+      .map(r => ({
+        date:     r.date     || '',
+        species:  r.species  || '',
+        category: r.category || 'fauna',
+        lat:      parseFloat(r.lat_used) || NaN,
+        lon:      parseFloat(r.lon_used) || NaN,
+        lpc:      r.lpc      || '',
+        notes:    r.notes    || '',
+        recorder: r.submitter|| '',
+      }));
+    // Merge — avoid duplicates by date+species+recorder
+    sheetSightings.forEach(s => {
+      const exists = bioSightings.find(b =>
+        b.date===s.date && b.species===s.species && b.recorder===s.recorder);
+      if (!exists) bioSightings.push(s);
+    });
+    updateBioKPIs();
+    renderRecentSightings();
+    if (bioMap) renderBioMap();
+  } catch(e) {
+    console.warn('loadSightingsFromSheet failed:', e);
+  }
+}
+
 // ── Submit modal ──────────────────────────────────────────────────────
 let _submitTag=null,_browserCoord=null,_exifCoord=null,_photoBase64=null,_photoBlob=null;
 
@@ -577,6 +611,12 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 
       <!-- BIO OVERVIEW -->
       <div class="panel active" id="panel-bio-overview">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+          <button onclick="loadSightingsFromSheet()" style="background:var(--surface);border:1px solid var(--border);
+            border-radius:5px;color:var(--teal);font-size:10px;padding:4px 10px;cursor:pointer">
+            🔄 Refresh sightings
+          </button>
+        </div>
         <div class="kpi-row">
           <div class="kpi-card">
             <span class="kpi-v" style="color:var(--green)" id="kpi-species">—</span>
@@ -1256,6 +1296,7 @@ window.addEventListener('load', () => {
   loadPlantationData();
   renderRefs();
   loadBibFromDrive();
+  loadSightingsFromSheet();
 });
 
 
@@ -1453,6 +1494,40 @@ function exportBibTeX() {
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='asha_arr_bibliography.bib';
   a.click(); URL.revokeObjectURL(url);
+}
+
+
+// ── Load sightings from Sheet ─────────────────────────────────────────
+async function loadSightingsFromSheet() {
+  if (!CCB_CONFIG.scriptUrl) return;
+  try {
+    const res  = await fetch(CCB_CONFIG.scriptUrl + '?action=getSightings');
+    const data = await res.json();
+    if (!data.success || !data.rows) return;
+    const sheetSightings = data.rows
+      .filter(r => r.type === 'sighting' && r.species)
+      .map(r => ({
+        date:     r.date     || '',
+        species:  r.species  || '',
+        category: r.category || 'fauna',
+        lat:      parseFloat(r.lat_used) || NaN,
+        lon:      parseFloat(r.lon_used) || NaN,
+        lpc:      r.lpc      || '',
+        notes:    r.notes    || '',
+        recorder: r.submitter|| '',
+      }));
+    // Merge — avoid duplicates by date+species+recorder
+    sheetSightings.forEach(s => {
+      const exists = bioSightings.find(b =>
+        b.date===s.date && b.species===s.species && b.recorder===s.recorder);
+      if (!exists) bioSightings.push(s);
+    });
+    updateBioKPIs();
+    renderRecentSightings();
+    if (bioMap) renderBioMap();
+  } catch(e) {
+    console.warn('loadSightingsFromSheet failed:', e);
+  }
 }
 
 // ── Submit modal ──────────────────────────────────────────────────────
