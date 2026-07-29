@@ -244,7 +244,7 @@ const INVASIVES = [
    tag:'invasive'},
   // Page 2
   {name:'Water hyacinth',sci:'Pontederia crassipes',threat:'high',
-   img:'invasiveImages/ponteria_crassipes.jpg',
+   img:'invasiveImages/pontederia_crassipes.jpg',
    tip:'Free-floating rosette, purple flowers. Chokes wetlands near flood-prone plots.',
    tag:'invasive'},
   {name:'Giant salvinia',sci:'Salvinia molesta',threat:'high',
@@ -269,7 +269,7 @@ const INVASIVES = [
    tag:'invasive'},
 ];
 
-const INV_PER_PAGE = 4;
+const INV_PER_PAGE = 4;  // 4 per page, 3 pages
 let _invPageIdx = 0;
 const _invTotalPages = 3; // 12 species, 3 pages of 4
 
@@ -289,14 +289,14 @@ function renderInvasivesPages() {
   const container = document.getElementById('invasives-pages');
   const dots = document.getElementById('inv-dots');
   // Set width
-  const boxW = document.getElementById('invasives-box')?.offsetWidth || 600;
+  const boxW = document.getElementById('invasives-box')?.offsetWidth || 520;
   container.style.width = (boxW * _invTotalPages) + 'px';
   // Render pages
   container.innerHTML = '';
   for (let p=0; p<_invTotalPages; p++) {
     const page = document.createElement('div');
     page.className = 'inv-page';
-    const bW = document.getElementById('invasives-box')?.offsetWidth || 600;
+    const bW = document.getElementById('invasives-box')?.offsetWidth || 520;
     page.style.width = bW + 'px';
     page.style.maxWidth = '95vw';
     page.style.flexShrink = '0';
@@ -336,7 +336,7 @@ function renderInvasivesPages() {
 function updateInvasivesPage() {
   const container = document.getElementById('invasives-pages');
   // Get actual rendered width
-  const pageW = document.getElementById('invasives-box')?.offsetWidth || 600;
+  const pageW = document.getElementById('invasives-box')?.offsetWidth || 520;
   container.style.transform = `translateX(-${_invPageIdx * pageW}px)`;
   document.querySelectorAll('.inv-dot').forEach((d,i)=>
     d.classList.toggle('active', i===_invPageIdx));
@@ -713,20 +713,20 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
   z-index:9100;align-items:center;justify-content:center}
 #invasives-modal.open{display:flex}
 #invasives-box{background:#0d1f2d;border:1px solid #1e3a52;border-radius:14px;
-  width:640px;max-width:95vw;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+  width:520px;max-width:95vw;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
 #invasives-head{padding:14px 16px 10px;border-bottom:1px solid #1e3a52;
   display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 #invasives-head h2{font-size:14px;font-weight:700;color:#e2f0ff}
 #invasives-close{background:none;border:none;color:#3a6080;font-size:20px;cursor:pointer}
 #invasives-pages{display:flex;transition:transform .35s ease;flex-shrink:0}
-.inv-page{width:600px;max-width:95vw;padding:10px 14px;display:flex;
-  flex-direction:column;gap:10px;flex-shrink:0;overflow-y:auto}
+.inv-page{width:100%;padding:10px 14px;display:flex;
+  flex-direction:column;gap:8px;flex-shrink:0}
 .inv-card{background:#102030;border:1px solid #1e3a52;border-radius:8px;
-  padding:10px;display:flex;flex-direction:row;gap:12px;cursor:pointer;
-  transition:border-color .15s;align-items:stretch}
-.inv-card-photo{width:50%;min-height:140px;object-fit:cover;border-radius:6px;
-  flex-shrink:0;background:#0a1a2a}
-.inv-card-body{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;justify-content:center}
+  padding:8px;display:flex;flex-direction:row;gap:10px;cursor:pointer;
+  transition:border-color .15s;align-items:center}
+.inv-card-photo{width:120px;height:120px;object-fit:cover;border-radius:6px;
+  flex-shrink:0;background:#1e3a52}
+.inv-card-body{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
 .inv-card:hover{border-color:#2dd4bf}
 .inv-card-name{font-size:14px;font-weight:700;color:#e2f0ff;line-height:1.2}
 .inv-card-sci{font-size:11px;font-style:italic;color:#7ba8c4}
@@ -1751,7 +1751,7 @@ const INVASIVES = [
    tag:'invasive'},
   // Page 2
   {name:'Water hyacinth',sci:'Pontederia crassipes',threat:'high',
-   img:'invasiveImages/ponteria_crassipes.jpg',
+   img:'invasiveImages/pontederia_crassipes.jpg',
    tip:'Free-floating rosette, purple flowers. Chokes wetlands near flood-prone plots.',
    tag:'invasive'},
   {name:'Giant salvinia',sci:'Salvinia molesta',threat:'high',
@@ -1776,7 +1776,7 @@ const INVASIVES = [
    tag:'invasive'},
 ];
 
-const INV_PER_PAGE = 4;
+const INV_PER_PAGE = 4;  // 4 per page, 3 pages
 let _invPageIdx = 0;
 const _invTotalPages = 3; // 12 species, 3 pages of 4
 
@@ -1796,14 +1796,14 @@ function renderInvasivesPages() {
   const container = document.getElementById('invasives-pages');
   const dots = document.getElementById('inv-dots');
   // Set width
-  const boxW = document.getElementById('invasives-box')?.offsetWidth || 600;
+  const boxW = document.getElementById('invasives-box')?.offsetWidth || 520;
   container.style.width = (boxW * _invTotalPages) + 'px';
   // Render pages
   container.innerHTML = '';
   for (let p=0; p<_invTotalPages; p++) {
     const page = document.createElement('div');
     page.className = 'inv-page';
-    const bW = document.getElementById('invasives-box')?.offsetWidth || 600;
+    const bW = document.getElementById('invasives-box')?.offsetWidth || 520;
     page.style.width = bW + 'px';
     page.style.maxWidth = '95vw';
     page.style.flexShrink = '0';
@@ -1843,7 +1843,7 @@ function renderInvasivesPages() {
 function updateInvasivesPage() {
   const container = document.getElementById('invasives-pages');
   // Get actual rendered width
-  const pageW = document.getElementById('invasives-box')?.offsetWidth || 600;
+  const pageW = document.getElementById('invasives-box')?.offsetWidth || 520;
   container.style.transform = `translateX(-${_invPageIdx * pageW}px)`;
   document.querySelectorAll('.inv-dot').forEach((d,i)=>
     d.classList.toggle('active', i===_invPageIdx));
