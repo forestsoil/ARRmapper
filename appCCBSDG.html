@@ -269,9 +269,9 @@ const INVASIVES = [
    tag:'invasive'},
 ];
 
-const INV_PER_PAGE = 6;
+const INV_PER_PAGE = 4;
 let _invPageIdx = 0;
-const _invTotalPages = 2; // 12 species, 2 pages of 6
+const _invTotalPages = 3; // 12 species, 3 pages of 4
 
 function openInvasivesModal() {
   _invPageIdx = 0;
@@ -306,7 +306,7 @@ function renderInvasivesPages() {
       card.className = 'inv-card';
       card.innerHTML = `
         ${inv.img ? `<img class="inv-card-photo" src="${inv.img}" alt="${inv.name}"
-          onerror="this.style.display='none'"/>` : ''}
+          onerror="this.style.background='#1e3a52';this.style.minHeight='140px'"/>` : '<div class="inv-card-photo"></div>'}
         <div class="inv-card-body">
           <div class="inv-card-name">${inv.name}</div>
           <div class="inv-card-sci">${inv.sci}</div>
@@ -713,28 +713,29 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
   z-index:9100;align-items:center;justify-content:center}
 #invasives-modal.open{display:flex}
 #invasives-box{background:#0d1f2d;border:1px solid #1e3a52;border-radius:14px;
-  width:600px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+  width:640px;max-width:95vw;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
 #invasives-head{padding:14px 16px 10px;border-bottom:1px solid #1e3a52;
   display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 #invasives-head h2{font-size:14px;font-weight:700;color:#e2f0ff}
 #invasives-close{background:none;border:none;color:#3a6080;font-size:20px;cursor:pointer}
 #invasives-pages{display:flex;transition:transform .35s ease;flex-shrink:0}
 .inv-page{width:600px;max-width:95vw;padding:10px 14px;display:flex;
-  flex-direction:column;gap:8px;flex-shrink:0}
+  flex-direction:column;gap:10px;flex-shrink:0;overflow-y:auto}
 .inv-card{background:#102030;border:1px solid #1e3a52;border-radius:8px;
-  padding:8px;display:flex;flex-direction:row;gap:10px;cursor:pointer;
-  transition:border-color .15s;align-items:flex-start}
-.inv-card-photo{width:90px;height:90px;object-fit:cover;border-radius:6px;flex-shrink:0}
-.inv-card-body{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+  padding:10px;display:flex;flex-direction:row;gap:12px;cursor:pointer;
+  transition:border-color .15s;align-items:stretch}
+.inv-card-photo{width:50%;min-height:140px;object-fit:cover;border-radius:6px;
+  flex-shrink:0;background:#0a1a2a}
+.inv-card-body{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;justify-content:center}
 .inv-card:hover{border-color:#2dd4bf}
-.inv-card-name{font-size:11px;font-weight:700;color:#e2f0ff;line-height:1.2}
-.inv-card-sci{font-size:9px;font-style:italic;color:#7ba8c4}
-.inv-card-threat{font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;
+.inv-card-name{font-size:14px;font-weight:700;color:#e2f0ff;line-height:1.2}
+.inv-card-sci{font-size:11px;font-style:italic;color:#7ba8c4}
+.inv-card-threat{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;
   display:inline-block;margin-top:2px}
 .threat-high{background:rgba(244,63,94,.15);color:#f43f5e}
 .threat-med{background:rgba(251,191,36,.12);color:#fbbf24}
-.inv-card-tip{font-size:9px;color:#3a6080;margin-top:2px;line-height:1.4}
-.inv-card-submit{font-size:9px;color:#2dd4bf;margin-top:auto;cursor:pointer}
+.inv-card-tip{font-size:11px;color:#7ba8c4;margin-top:2px;line-height:1.5}
+.inv-card-submit{font-size:11px;color:#2dd4bf;margin-top:auto;cursor:pointer;font-weight:600}
 #invasives-footer{padding:10px 16px;border-top:1px solid #1e3a52;
   display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .inv-dot{width:8px;height:8px;border-radius:50%;background:#1e3a52;
@@ -1775,9 +1776,9 @@ const INVASIVES = [
    tag:'invasive'},
 ];
 
-const INV_PER_PAGE = 6;
+const INV_PER_PAGE = 4;
 let _invPageIdx = 0;
-const _invTotalPages = 2; // 12 species, 2 pages of 6
+const _invTotalPages = 3; // 12 species, 3 pages of 4
 
 function openInvasivesModal() {
   _invPageIdx = 0;
@@ -1812,7 +1813,7 @@ function renderInvasivesPages() {
       card.className = 'inv-card';
       card.innerHTML = `
         ${inv.img ? `<img class="inv-card-photo" src="${inv.img}" alt="${inv.name}"
-          onerror="this.style.display='none'"/>` : ''}
+          onerror="this.style.background='#1e3a52';this.style.minHeight='140px'"/>` : '<div class="inv-card-photo"></div>'}
         <div class="inv-card-body">
           <div class="inv-card-name">${inv.name}</div>
           <div class="inv-card-sci">${inv.sci}</div>
