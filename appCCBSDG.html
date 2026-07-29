@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CCB &amp; SDG Dashboard v7 — Asha ARR</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.cjs"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 
 // ── Bibliography / BibTeX ─────────────────────────────────────────────
@@ -221,68 +222,26 @@ function getBrowserGPS() {
   },()=>{document.getElementById('s-browser-coord').textContent='unavailable';});
 }
 
-function extractEXIF(arrayBuffer) {
-  try {
-    const view=new DataView(arrayBuffer);
-    if(view.getUint16(0)!==0xFFD8)return null;
-    let offset=2;
-    while(offset<view.byteLength-2){
-      const marker=view.getUint16(offset);
-      if(marker===0xFFE1){
-        const exifOffset=offset+4;
-        const header=String.fromCharCode(...new Uint8Array(arrayBuffer,exifOffset,4));
-        if(header!=='Exif')break;
-        const tiffOffset=exifOffset+6;
-        const le=view.getUint16(tiffOffset)===0x4949;
-        const r16=o=>le?view.getUint16(tiffOffset+o,true):view.getUint16(tiffOffset+o);
-        const r32=o=>le?view.getUint32(tiffOffset+o,true):view.getUint32(tiffOffset+o);
-        const ifdOff=r32(4);
-        const entries=r16(ifdOff);
-        for(let i=0;i<entries;i++){
-          const e=ifdOff+2+i*12;
-          if(r16(e)===0x8825){
-            const gOff=r32(e+8);
-            const gEntries=r16(gOff);
-            let latRef='N',lat=null,lonRef='E',lon=null;
-            for(let j=0;j<gEntries;j++){
-              const g=gOff+2+j*12;
-              const tag=r16(g);
-              const valOff=r32(g+8);
-              if(tag===1)latRef=String.fromCharCode(view.getUint8(tiffOffset+valOff));
-              if(tag===3)lonRef=String.fromCharCode(view.getUint8(tiffOffset+valOff));
-              if(tag===2||tag===4){
-                const dN=r32(valOff),dD=r32(valOff+4),mN=r32(valOff+8),
-                      mD=r32(valOff+12),sN=r32(valOff+16),sD=r32(valOff+20);
-                const dd=dN/dD+mN/mD/60+sN/sD/3600;
-                if(tag===2)lat=dd;else lon=dd;
-              }
-            }
-            if(lat!==null&&lon!==null)return{lat:latRef==='S'?-lat:lat,lon:lonRef==='W'?-lon:lon};
-          }
-        }
-        break;
-      }
-      const segLen=view.getUint16(offset+2);offset+=2+segLen;
-    }
-  }catch(e){}
-  return null;
-}
 
 async function handleSubmitPhoto(input) {
   const file=input.files[0];if(!file)return;
-  input.value=''; // allow re-selecting same file
+  input.value='';
   _photoBlob=file;
-  const ab=await file.arrayBuffer();
-  const exif=extractEXIF(ab);
-  if(exif){
-    _exifCoord=exif;
-    document.getElementById('s-exif-coord').textContent=exif.lat.toFixed(5)+', '+exif.lon.toFixed(5);
-    document.getElementById('s-lat').value=exif.lat.toFixed(6);
-    document.getElementById('s-lon').value=exif.lon.toFixed(6);
-  }
   const url=URL.createObjectURL(file);
   const prev=document.getElementById('s-photo-preview');
   prev.src=url;prev.style.display='block';
+  // EXIF GPS via exifr
+  try {
+    const gps = typeof exifr !== 'undefined' ? await exifr.gps(file) : null;
+    if(gps&&gps.latitude&&gps.longitude){
+      _exifCoord={lat:gps.latitude,lon:gps.longitude};
+      document.getElementById('s-exif-coord').textContent=gps.latitude.toFixed(5)+', '+gps.longitude.toFixed(5);
+      document.getElementById('s-lat').value=gps.latitude.toFixed(6);
+      document.getElementById('s-lon').value=gps.longitude.toFixed(6);
+    } else {
+      document.getElementById('s-exif-coord').textContent='no GPS in photo';
+    }
+  } catch(e){ document.getElementById('s-exif-coord').textContent='EXIF unavailable'; }
   const reader=new FileReader();
   reader.onload=async e=>{_photoBase64=e.target.result.split(',')[1];await callVisionAPI(_photoBase64);};
   reader.readAsDataURL(file);
@@ -372,7 +331,7 @@ async function submitSighting() {
   const lat=parseFloat(document.getElementById('s-lat').value);
   const lon=parseFloat(document.getElementById('s-lon').value);
   if(!species){status.textContent='⚠️ Species/description required';status.style.color='var(--rose)';return;}
-  if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ Coordinates required';status.style.color='var(--rose)';return;}
+  if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ No GPS — submitting without location';status.style.color='var(--amber)';}
   btn.disabled=true;btn.textContent='Submitting…';
   const category=TAG_CATEGORY[_submitTag]||'fauna';
   const record={
@@ -1538,68 +1497,26 @@ function getBrowserGPS() {
   },()=>{document.getElementById('s-browser-coord').textContent='unavailable';});
 }
 
-function extractEXIF(arrayBuffer) {
-  try {
-    const view=new DataView(arrayBuffer);
-    if(view.getUint16(0)!==0xFFD8)return null;
-    let offset=2;
-    while(offset<view.byteLength-2){
-      const marker=view.getUint16(offset);
-      if(marker===0xFFE1){
-        const exifOffset=offset+4;
-        const header=String.fromCharCode(...new Uint8Array(arrayBuffer,exifOffset,4));
-        if(header!=='Exif')break;
-        const tiffOffset=exifOffset+6;
-        const le=view.getUint16(tiffOffset)===0x4949;
-        const r16=o=>le?view.getUint16(tiffOffset+o,true):view.getUint16(tiffOffset+o);
-        const r32=o=>le?view.getUint32(tiffOffset+o,true):view.getUint32(tiffOffset+o);
-        const ifdOff=r32(4);
-        const entries=r16(ifdOff);
-        for(let i=0;i<entries;i++){
-          const e=ifdOff+2+i*12;
-          if(r16(e)===0x8825){
-            const gOff=r32(e+8);
-            const gEntries=r16(gOff);
-            let latRef='N',lat=null,lonRef='E',lon=null;
-            for(let j=0;j<gEntries;j++){
-              const g=gOff+2+j*12;
-              const tag=r16(g);
-              const valOff=r32(g+8);
-              if(tag===1)latRef=String.fromCharCode(view.getUint8(tiffOffset+valOff));
-              if(tag===3)lonRef=String.fromCharCode(view.getUint8(tiffOffset+valOff));
-              if(tag===2||tag===4){
-                const dN=r32(valOff),dD=r32(valOff+4),mN=r32(valOff+8),
-                      mD=r32(valOff+12),sN=r32(valOff+16),sD=r32(valOff+20);
-                const dd=dN/dD+mN/mD/60+sN/sD/3600;
-                if(tag===2)lat=dd;else lon=dd;
-              }
-            }
-            if(lat!==null&&lon!==null)return{lat:latRef==='S'?-lat:lat,lon:lonRef==='W'?-lon:lon};
-          }
-        }
-        break;
-      }
-      const segLen=view.getUint16(offset+2);offset+=2+segLen;
-    }
-  }catch(e){}
-  return null;
-}
 
 async function handleSubmitPhoto(input) {
   const file=input.files[0];if(!file)return;
-  input.value=''; // allow re-selecting same file
+  input.value='';
   _photoBlob=file;
-  const ab=await file.arrayBuffer();
-  const exif=extractEXIF(ab);
-  if(exif){
-    _exifCoord=exif;
-    document.getElementById('s-exif-coord').textContent=exif.lat.toFixed(5)+', '+exif.lon.toFixed(5);
-    document.getElementById('s-lat').value=exif.lat.toFixed(6);
-    document.getElementById('s-lon').value=exif.lon.toFixed(6);
-  }
   const url=URL.createObjectURL(file);
   const prev=document.getElementById('s-photo-preview');
   prev.src=url;prev.style.display='block';
+  // EXIF GPS via exifr
+  try {
+    const gps = typeof exifr !== 'undefined' ? await exifr.gps(file) : null;
+    if(gps&&gps.latitude&&gps.longitude){
+      _exifCoord={lat:gps.latitude,lon:gps.longitude};
+      document.getElementById('s-exif-coord').textContent=gps.latitude.toFixed(5)+', '+gps.longitude.toFixed(5);
+      document.getElementById('s-lat').value=gps.latitude.toFixed(6);
+      document.getElementById('s-lon').value=gps.longitude.toFixed(6);
+    } else {
+      document.getElementById('s-exif-coord').textContent='no GPS in photo';
+    }
+  } catch(e){ document.getElementById('s-exif-coord').textContent='EXIF unavailable'; }
   const reader=new FileReader();
   reader.onload=async e=>{_photoBase64=e.target.result.split(',')[1];await callVisionAPI(_photoBase64);};
   reader.readAsDataURL(file);
@@ -1689,7 +1606,7 @@ async function submitSighting() {
   const lat=parseFloat(document.getElementById('s-lat').value);
   const lon=parseFloat(document.getElementById('s-lon').value);
   if(!species){status.textContent='⚠️ Species/description required';status.style.color='var(--rose)';return;}
-  if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ Coordinates required';status.style.color='var(--rose)';return;}
+  if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ No GPS — submitting without location';status.style.color='var(--amber)';}
   btn.disabled=true;btn.textContent='Submitting…';
   const category=TAG_CATEGORY[_submitTag]||'fauna';
   const record={
