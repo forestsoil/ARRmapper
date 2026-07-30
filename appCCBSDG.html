@@ -191,14 +191,20 @@ async function loadSightingsFromSheet() {
     const sheetSightings = data.rows
       .filter(r => r.type === 'sighting' && r.species)
       .map(r => ({
-        date:     r.date     || '',
-        species:  r.species  || '',
-        category: r.category || 'fauna',
-        lat:      parseFloat(r.lat_used) || NaN,
-        lon:      parseFloat(r.lon_used) || NaN,
-        lpc:      r.lpc      || '',
-        notes:    r.notes    || '',
-        recorder: r.submitter|| '',
+        date:         r.date         || '',
+        species:      r.species      || '',
+        category:     r.category     || 'fauna',
+        lat:          parseFloat(r.lat_used) || NaN,
+        lon:          parseFloat(r.lon_used) || NaN,
+        lpc:          r.lpc          || '',
+        notes:        r.notes        || '',
+        recorder:     r.submitter    || '',
+        photo_url:    r.photo_url    || '',
+        district:     r.district     || '',
+        block:        r.block        || '',
+        coord_source: r.coord_source || '',
+        ai_species:   r.ai_species   || '',
+        notable:      r.notable      || false,
       }));
     // Merge — avoid duplicates by date+species+recorder
     sheetSightings.forEach(s => {
@@ -282,7 +288,7 @@ function closeInvasivesModal() {
   document.getElementById('invasives-modal').classList.remove('open');
 }
 document.addEventListener('keydown', e => {
-  if (e.key==='Escape') { closeInvasivesModal(); closeSubmitModal(); }
+  if (e.key==='Escape') { closeInvasivesModal(); closeSubmitModal(); closeSightingDetail(); }
 });
 
 function renderInvasivesPages() {
@@ -548,7 +554,9 @@ async function submitSighting() {
       body:JSON.stringify({action:'ccb_sighting',data:record})});}catch(e){}
   }
   bioSightings.push({date:record.date,species:record.species,category:record.category,
-    lat,lon,lpc:record.lpc,notes:record.notes,recorder:record.submitter});
+    lat,lon,lpc:record.lpc,notes:record.notes,recorder:record.submitter,
+    photo_url:record.photo_url||'',district:record.district||'',block:record.block||'',
+    coord_source:record.coord_source||'',ai_species:record.ai_species||'',notable:record.notable||false});
   updateBioKPIs();renderRecentSightings();if(bioMap)renderBioMap();
   status.textContent='✅ Submitted'+(CCB_CONFIG.scriptUrl?'':' (local only — set scriptUrl to save to Sheet)');
   status.style.color='var(--green)';
@@ -676,6 +684,21 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 #submit-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
   z-index:9000;align-items:center;justify-content:center}
 #submit-modal.open{display:flex}
+#sighting-detail-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);
+  z-index:9100;align-items:center;justify-content:center}
+#sighting-detail-modal.open{display:flex}
+#sd-box{background:var(--card);border-radius:12px;width:min(420px,94vw);max-height:88vh;
+  overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+#sd-head{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border)}
+#sd-head span{font-size:14px;font-weight:700;color:var(--teal)}
+#sd-head button{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;line-height:1}
+#sd-body{padding:16px}
+.sd-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:baseline}
+.sd-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.sd-val{font-size:12px;color:var(--fg)}
+.sighting-row{cursor:pointer;transition:background .15s}
+.sighting-row:hover{background:rgba(45,212,191,.08)}
 #submit-box{background:var(--card);border:1px solid var(--border);border-radius:12px;
   width:520px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column}
 #submit-box-head{padding:14px 16px;border-bottom:1px solid var(--border);
@@ -874,10 +897,10 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
           <div id="bio-map"></div>
         </div>
         <div class="sec-card">
-          <h3>Upload geo-tagged sighting photo / record</h3>
+          <h3>Batch import: geo-tagged photos or CSV</h3>
           <div class="upload-zone" onclick="document.getElementById('bio-photo-input').click()">
             📷
-            <p>Tap to upload timestamped sighting photo or CSV<br>
+            <p>Drop multiple geo-tagged photos or a CSV to batch-import sightings<br>
               <span style="font-size:9px">EXIF lat/lon extracted automatically · CSV: date,species,category,lat,lon,lpc,notes</span>
             </p>
           </div>
@@ -1469,7 +1492,9 @@ function updateBioKPIs() {
 function renderRecentSightings() {
   const tbody = document.getElementById('bio-recent-tbody');
   const recent = [...bioSightings].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,20);
-  tbody.innerHTML = recent.map(s=>`<tr>
+  // Store sorted refs for click lookup
+  window._recentSightingsRef = recent;
+  tbody.innerHTML = recent.map((s,i)=>`<tr class="sighting-row" onclick="openSightingDetail(${i})" title="Click to view details">
     <td>${s.date||'—'}</td>
     <td>${s.species||'—'}</td>
     <td><span class="tag-pill" style="background:${CAT_COLORS[s.category]||'#666'};color:#fff">
@@ -1479,6 +1504,37 @@ function renderRecentSightings() {
     <td>${s.recorder||'—'}</td>
     <td>${s.notes||'—'}</td>
   </tr>`).join('') || `<tr><td colspan="7" style="color:var(--dim);text-align:center;padding:20px">No records</td></tr>`;
+}
+
+function openSightingDetail(i) {
+  const s = (window._recentSightingsRef||[])[i];
+  if (!s) return;
+  const m = document.getElementById('sighting-detail-modal');
+  document.getElementById('sd-date').textContent     = s.date     || '—';
+  document.getElementById('sd-species').textContent  = s.species  || '—';
+  document.getElementById('sd-category').textContent = (CAT_ICONS[s.category]||'') + ' ' + (s.category||'—');
+  document.getElementById('sd-lpc').textContent      = s.lpc      || '—';
+  document.getElementById('sd-recorder').textContent = s.recorder  || '—';
+  document.getElementById('sd-district').textContent = s.district  || '—';
+  document.getElementById('sd-block').textContent    = s.block     || '—';
+  document.getElementById('sd-coord').textContent    = isNaN(s.lat) ? '—' : s.lat.toFixed(5)+', '+s.lon.toFixed(5);
+  document.getElementById('sd-coord-src').textContent= s.coord_source || '—';
+  document.getElementById('sd-ai').textContent       = s.ai_species || '—';
+  document.getElementById('sd-notable').textContent  = s.notable ? '⭐ Yes' : 'No';
+  document.getElementById('sd-notes').textContent    = s.notes    || '—';
+  const photoWrap = document.getElementById('sd-photo-wrap');
+  const photoImg  = document.getElementById('sd-photo');
+  if (s.photo_url) {
+    photoImg.src = s.photo_url;
+    photoWrap.style.display = 'block';
+  } else {
+    photoWrap.style.display = 'none';
+  }
+  m.classList.add('open');
+}
+
+function closeSightingDetail() {
+  document.getElementById('sighting-detail-modal').classList.remove('open');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────
@@ -1698,14 +1754,20 @@ async function loadSightingsFromSheet() {
     const sheetSightings = data.rows
       .filter(r => r.type === 'sighting' && r.species)
       .map(r => ({
-        date:     r.date     || '',
-        species:  r.species  || '',
-        category: r.category || 'fauna',
-        lat:      parseFloat(r.lat_used) || NaN,
-        lon:      parseFloat(r.lon_used) || NaN,
-        lpc:      r.lpc      || '',
-        notes:    r.notes    || '',
-        recorder: r.submitter|| '',
+        date:         r.date         || '',
+        species:      r.species      || '',
+        category:     r.category     || 'fauna',
+        lat:          parseFloat(r.lat_used) || NaN,
+        lon:          parseFloat(r.lon_used) || NaN,
+        lpc:          r.lpc          || '',
+        notes:        r.notes        || '',
+        recorder:     r.submitter    || '',
+        photo_url:    r.photo_url    || '',
+        district:     r.district     || '',
+        block:        r.block        || '',
+        coord_source: r.coord_source || '',
+        ai_species:   r.ai_species   || '',
+        notable:      r.notable      || false,
       }));
     // Merge — avoid duplicates by date+species+recorder
     sheetSightings.forEach(s => {
@@ -1789,7 +1851,7 @@ function closeInvasivesModal() {
   document.getElementById('invasives-modal').classList.remove('open');
 }
 document.addEventListener('keydown', e => {
-  if (e.key==='Escape') { closeInvasivesModal(); closeSubmitModal(); }
+  if (e.key==='Escape') { closeInvasivesModal(); closeSubmitModal(); closeSightingDetail(); }
 });
 
 function renderInvasivesPages() {
@@ -2055,7 +2117,9 @@ async function submitSighting() {
       body:JSON.stringify({action:'ccb_sighting',data:record})});}catch(e){}
   }
   bioSightings.push({date:record.date,species:record.species,category:record.category,
-    lat,lon,lpc:record.lpc,notes:record.notes,recorder:record.submitter});
+    lat,lon,lpc:record.lpc,notes:record.notes,recorder:record.submitter,
+    photo_url:record.photo_url||'',district:record.district||'',block:record.block||'',
+    coord_source:record.coord_source||'',ai_species:record.ai_species||'',notable:record.notable||false});
   updateBioKPIs();renderRecentSightings();if(bioMap)renderBioMap();
   status.textContent='✅ Submitted'+(CCB_CONFIG.scriptUrl?'':' (local only — set scriptUrl to save to Sheet)');
   status.style.color='var(--green)';
@@ -2064,6 +2128,37 @@ async function submitSighting() {
 }
 
 </script>
+
+<div id="sighting-detail-modal">
+  <div id="sd-box">
+    <div id="sd-head">
+      <span id="sd-title">Sighting Detail</span>
+      <button onclick="closeSightingDetail()">✕</button>
+    </div>
+    <div id="sd-body">
+      <div id="sd-photo-wrap" style="display:none;margin-bottom:12px">
+        <img id="sd-photo" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px"/>
+      </div>
+      <div class="sd-grid">
+        <span class="sd-label">Date</span><span id="sd-date" class="sd-val"></span>
+        <span class="sd-label">Species</span><span id="sd-species" class="sd-val"></span>
+        <span class="sd-label">Category</span><span id="sd-category" class="sd-val"></span>
+        <span class="sd-label">Plot (LPC)</span><span id="sd-lpc" class="sd-val"></span>
+        <span class="sd-label">Recorder</span><span id="sd-recorder" class="sd-val"></span>
+        <span class="sd-label">District</span><span id="sd-district" class="sd-val"></span>
+        <span class="sd-label">Block</span><span id="sd-block" class="sd-val"></span>
+        <span class="sd-label">Coordinates</span><span id="sd-coord" class="sd-val"></span>
+        <span class="sd-label">Coord source</span><span id="sd-coord-src" class="sd-val"></span>
+        <span class="sd-label">AI ID</span><span id="sd-ai" class="sd-val"></span>
+        <span class="sd-label">Notable</span><span id="sd-notable" class="sd-val"></span>
+      </div>
+      <div style="margin-top:10px">
+        <span class="sd-label">Notes</span>
+        <div id="sd-notes" style="margin-top:4px;font-size:12px;color:var(--fg);line-height:1.5"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="submit-modal">
   <div id="submit-box">
