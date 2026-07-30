@@ -519,44 +519,42 @@ async function submitSighting() {
   if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ No GPS — submitting without location';status.style.color='var(--amber)';}
   btn.disabled=true;btn.textContent='Submitting…';
   const category=TAG_CATEGORY[_submitTag]||'fauna';
-  const record={
-    timestamp:new Date().toISOString(),
-    submitter:document.getElementById('s-name').value.trim(),
-    date:document.getElementById('s-date').value,
-    species,sci:document.getElementById('s-sci').value.trim(),
-    tag:_submitTag||'',category,
-    lat_used:lat,lon_used:lon,
-    lat_browser:_browserCoord?.lat||'',lon_browser:_browserCoord?.lon||'',
-    lat_exif:_exifCoord?.lat||'',lon_exif:_exifCoord?.lon||'',
-    coord_source:_exifCoord?'EXIF':(_browserCoord?'GPS':'manual'),
-    lpc:document.getElementById('s-lpc').value,
-    district:document.getElementById('s-district').value,
-    block:document.getElementById('s-block').value,
-    notes:document.getElementById('s-notes').value.trim(),
-    ai_species:document.getElementById('s-ai-species').textContent,
-    notable:document.getElementById('s-ai-notable').textContent.includes('Notable'),
-    photo_url:'',
+  const ts=new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
+  const fname=_photoBase64?`CCB_${(document.getElementById('s-lpc').value)||'noLPC'}_${_submitTag||'sighting'}_${ts}.jpg`:null;
+  const payload={
+    action:'ccb_sighting',
+    data:{
+      timestamp:new Date().toISOString(),
+      submitter:document.getElementById('s-name').value.trim(),
+      date:document.getElementById('s-date').value,
+      species,sci:document.getElementById('s-sci').value.trim(),
+      tag:_submitTag||'',category,
+      lat_used:lat,lon_used:lon,
+      lat_browser:_browserCoord?.lat||'',lon_browser:_browserCoord?.lon||'',
+      lat_exif:_exifCoord?.lat||'',lon_exif:_exifCoord?.lon||'',
+      coord_source:_exifCoord?'EXIF':(_browserCoord?'GPS':'manual'),
+      lpc:document.getElementById('s-lpc').value,
+      district:document.getElementById('s-district').value,
+      block:document.getElementById('s-block').value,
+      notes:document.getElementById('s-notes').value.trim(),
+      ai_species:document.getElementById('s-ai-species').textContent,
+      notable:document.getElementById('s-ai-notable').textContent.includes('Notable'),
+    },
+    fileData:_photoBase64||null,
+    filename:fname,
+    mimeType:'image/jpeg',
   };
-  if(_photoBase64&&CCB_CONFIG.scriptUrl){
-    try{
-      const ts=new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
-      const fname=`CCB_${record.lpc||'noLPC'}_${record.tag||'sighting'}_${ts}.jpg`;
-      await fetch(CCB_CONFIG.scriptUrl,{method:'POST',mode:'no-cors',
-        headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({username:record.submitter||'ccb',toolFolder:'CCBSightings',
-          filename:fname,fileData:_photoBase64,mimeType:'image/jpeg'})});
-      record.photo_url=`CCBSightings/${fname}`;
-    }catch(e){}
-  }
   if(CCB_CONFIG.scriptUrl){
     try{await fetch(CCB_CONFIG.scriptUrl,{method:'POST',mode:'no-cors',
       headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'ccb_sighting',data:record})});}catch(e){}
+      body:JSON.stringify(payload)});}catch(e){}
   }
-  bioSightings.push({date:record.date,species:record.species,category:record.category,
-    lat,lon,lpc:record.lpc,notes:record.notes,recorder:record.submitter,
-    photo_url:record.photo_url||'',district:record.district||'',block:record.block||'',
-    coord_source:record.coord_source||'',ai_species:record.ai_species||'',notable:record.notable||false});
+  const rec=payload.data;
+  bioSightings.push({date:rec.date,species:rec.species,category:rec.category,
+    lat,lon,lpc:rec.lpc,notes:rec.notes,recorder:rec.submitter,
+    photo_url:_photoBase64?('pending_'+fname):'',
+    district:rec.district||'',block:rec.block||'',
+    coord_source:rec.coord_source||'',ai_species:rec.ai_species||'',notable:rec.notable||false});
   updateBioKPIs();renderRecentSightings();if(bioMap)renderBioMap();
   status.textContent='✅ Submitted'+(CCB_CONFIG.scriptUrl?'':' (local only — set scriptUrl to save to Sheet)');
   status.style.color='var(--green)';
@@ -2082,44 +2080,42 @@ async function submitSighting() {
   if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ No GPS — submitting without location';status.style.color='var(--amber)';}
   btn.disabled=true;btn.textContent='Submitting…';
   const category=TAG_CATEGORY[_submitTag]||'fauna';
-  const record={
-    timestamp:new Date().toISOString(),
-    submitter:document.getElementById('s-name').value.trim(),
-    date:document.getElementById('s-date').value,
-    species,sci:document.getElementById('s-sci').value.trim(),
-    tag:_submitTag||'',category,
-    lat_used:lat,lon_used:lon,
-    lat_browser:_browserCoord?.lat||'',lon_browser:_browserCoord?.lon||'',
-    lat_exif:_exifCoord?.lat||'',lon_exif:_exifCoord?.lon||'',
-    coord_source:_exifCoord?'EXIF':(_browserCoord?'GPS':'manual'),
-    lpc:document.getElementById('s-lpc').value,
-    district:document.getElementById('s-district').value,
-    block:document.getElementById('s-block').value,
-    notes:document.getElementById('s-notes').value.trim(),
-    ai_species:document.getElementById('s-ai-species').textContent,
-    notable:document.getElementById('s-ai-notable').textContent.includes('Notable'),
-    photo_url:'',
+  const ts=new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
+  const fname=_photoBase64?`CCB_${(document.getElementById('s-lpc').value)||'noLPC'}_${_submitTag||'sighting'}_${ts}.jpg`:null;
+  const payload={
+    action:'ccb_sighting',
+    data:{
+      timestamp:new Date().toISOString(),
+      submitter:document.getElementById('s-name').value.trim(),
+      date:document.getElementById('s-date').value,
+      species,sci:document.getElementById('s-sci').value.trim(),
+      tag:_submitTag||'',category,
+      lat_used:lat,lon_used:lon,
+      lat_browser:_browserCoord?.lat||'',lon_browser:_browserCoord?.lon||'',
+      lat_exif:_exifCoord?.lat||'',lon_exif:_exifCoord?.lon||'',
+      coord_source:_exifCoord?'EXIF':(_browserCoord?'GPS':'manual'),
+      lpc:document.getElementById('s-lpc').value,
+      district:document.getElementById('s-district').value,
+      block:document.getElementById('s-block').value,
+      notes:document.getElementById('s-notes').value.trim(),
+      ai_species:document.getElementById('s-ai-species').textContent,
+      notable:document.getElementById('s-ai-notable').textContent.includes('Notable'),
+    },
+    fileData:_photoBase64||null,
+    filename:fname,
+    mimeType:'image/jpeg',
   };
-  if(_photoBase64&&CCB_CONFIG.scriptUrl){
-    try{
-      const ts=new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
-      const fname=`CCB_${record.lpc||'noLPC'}_${record.tag||'sighting'}_${ts}.jpg`;
-      await fetch(CCB_CONFIG.scriptUrl,{method:'POST',mode:'no-cors',
-        headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({username:record.submitter||'ccb',toolFolder:'CCBSightings',
-          filename:fname,fileData:_photoBase64,mimeType:'image/jpeg'})});
-      record.photo_url=`CCBSightings/${fname}`;
-    }catch(e){}
-  }
   if(CCB_CONFIG.scriptUrl){
     try{await fetch(CCB_CONFIG.scriptUrl,{method:'POST',mode:'no-cors',
       headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'ccb_sighting',data:record})});}catch(e){}
+      body:JSON.stringify(payload)});}catch(e){}
   }
-  bioSightings.push({date:record.date,species:record.species,category:record.category,
-    lat,lon,lpc:record.lpc,notes:record.notes,recorder:record.submitter,
-    photo_url:record.photo_url||'',district:record.district||'',block:record.block||'',
-    coord_source:record.coord_source||'',ai_species:record.ai_species||'',notable:record.notable||false});
+  const rec=payload.data;
+  bioSightings.push({date:rec.date,species:rec.species,category:rec.category,
+    lat,lon,lpc:rec.lpc,notes:rec.notes,recorder:rec.submitter,
+    photo_url:_photoBase64?('pending_'+fname):'',
+    district:rec.district||'',block:rec.block||'',
+    coord_source:rec.coord_source||'',ai_species:rec.ai_species||'',notable:rec.notable||false});
   updateBioKPIs();renderRecentSightings();if(bioMap)renderBioMap();
   status.textContent='✅ Submitted'+(CCB_CONFIG.scriptUrl?'':' (local only — set scriptUrl to save to Sheet)');
   status.style.color='var(--green)';
