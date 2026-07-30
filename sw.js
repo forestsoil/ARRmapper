@@ -38,6 +38,8 @@ const NETWORK_FIRST_PATHS = [
   '/ARRmapper/index.html',
   '/ARRmapper/',
   '/ARRmapper/appDashboard.html',
+  '/ARRmapper/appCCBSDG.html',
+  '/ARRmapper/projDocumentation.html',
 ];
 
 // ── Install: pre-cache app shell ─────────────────────────────────────
