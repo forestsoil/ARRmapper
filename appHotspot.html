@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARR Hotspot Viewer</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
+<style>
+:root{--bg:#0f1a0f;--panel:#172017;--border:#2a3d2a;--text:#c8d8c0;--muted:#6b8a6b;--accent:#7ecf6a;--danger:#e05555;--warn:#d4a84b;--font:'Courier New',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px}
+#header{height:36px;background:var(--panel);border-bottom:1px solid var(--border);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:nowrap;overflow:hidden}
+#header h1{font-size:12px;color:var(--accent);letter-spacing:.06em;white-space:nowrap}
+#header h1 span{color:var(--muted);font-size:10px;margin-left:4px}
+.proj-btn{background:var(--bg);border:1px solid var(--border);color:var(--muted);padding:3px 8px;cursor:pointer;font-family:var(--font);font-size:11px;letter-spacing:.04em;transition:all .15s;white-space:nowrap}
+.proj-btn:hover{border-color:var(--accent);color:var(--text)}
+.proj-btn.active{background:var(--accent);color:#0f1a0f;border-color:var(--accent);font-weight:bold}
+.hdr-sep{color:var(--border);font-size:16px;flex-shrink:0}
+select.hdr-sel{
+  background:var(--bg);border:1px solid var(--border);color:var(--text);
+  font-family:var(--font);font-size:11px;padding:2px 4px;
+  cursor:pointer;outline:none;max-width:140px;
+}
+select.hdr-sel:disabled{opacity:.35;cursor:default}
+select.hdr-sel option{background:#111c11}
+#ctrl-wrap{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0}
+#ctrl-wrap label{color:var(--muted);font-size:10px;white-space:nowrap}
+#opacity-slider{width:60px;accent-color:var(--accent)}
+#vill-toggle{accent-color:var(--accent);cursor:pointer}
+#map-wrap{position:relative;height:calc(100vh - 36px)}
+#map{width:100%;height:100%}
+
+#legend{position:absolute;bottom:28px;right:10px;z-index:1000;background:rgba(10,20,10,.95);border:1px solid var(--border);padding:10px 12px;width:210px}
+#legend h3{font-size:10px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px}
+.legend-channels{font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.8}
+.ch-r{color:#ff6b6b;font-weight:bold}.ch-g{color:#69db7c;font-weight:bold}.ch-b{color:#74c0fc;font-weight:bold}
+.legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.legend-cell{padding:5px 4px;font-size:9px;text-align:center;line-height:1.3;font-weight:bold;border-radius:2px}
+.lc-yellow{background:rgba(220,180,20,.9);color:#111}
+.lc-red{background:rgba(220,60,60,.9);color:#fff}
+.lc-green{background:rgba(40,140,60,.9);color:#fff}
+.lc-purple{background:rgba(160,40,200,.9);color:#fff}
+.lc-blue{background:rgba(40,80,220,.9);color:#fff}
+.lc-dark{background:rgba(20,40,20,.9);color:#aaa;border:1px solid #2a3d2a}
+
+#info{position:absolute;top:10px;right:10px;z-index:1000;background:#111c11;border:1px solid var(--border);border-radius:6px;width:252px;display:none;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+#info-header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border)}
+#info-header h3{font-size:10px;color:var(--muted);letter-spacing:.12em}
+#info-close{cursor:pointer;color:var(--muted);font-size:16px;line-height:1}
+#info-close:hover{color:#fff}
+#info-body{padding:10px 12px 0}
+.info-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.info-label{color:#7a9a7a;font-size:11px}
+.info-val{font-size:13px;font-weight:bold;font-family:var(--font)}
+.val-flood{color:#74c0fc}.val-stress{color:#ff6b6b}.val-soil{color:#69db7c}.val-coord{color:#aaa;font-size:11px}
+#info-vill{margin:8px 0 0;padding:6px 12px;background:#0d160d;border-top:1px solid var(--border);font-size:11px;color:#8fbc8f;display:none;line-height:1.5}
+#info-verdict{padding:10px 12px 12px}
+#verdict-bar{height:6px;border-radius:3px;margin-bottom:8px}
+#verdict-class{font-size:12px;font-weight:bold;margin-bottom:4px}
+#verdict-text{font-size:11px;line-height:1.5;color:#ddd}
+
+#status{position:absolute;bottom:0;left:0;right:0;z-index:1000;background:rgba(10,20,10,.92);border-top:1px solid var(--border);padding:3px 10px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+#status-msg.loading{color:var(--warn)}
+#status-msg.error{color:var(--danger)}
+#status-msg.ok{color:var(--accent)}
+#loading-overlay{position:absolute;inset:0;z-index:2000;background:rgba(10,20,10,.88);align-items:center;justify-content:center;flex-direction:column;gap:12px;display:none}
+#loading-overlay.active{display:flex}
+.spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading-text{color:var(--accent);font-size:12px;letter-spacing:.1em}
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>ARR HOTSPOT <span>v3</span></h1>
+  <div id="proj-btns"></div>
+  <span class="hdr-sep">|</span>
+  <select class="hdr-sel" id="sel-district" disabled>
+    <option value="">— District —</option>
+  </select>
+  <select class="hdr-sel" id="sel-block" disabled>
+    <option value="">— Block —</option>
+  </select>
+  <div id="ctrl-wrap">
+    <label>OVL</label>
+    <input type="range" id="opacity-slider" min="0" max="100" value="70">
+    <label id="opacity-val">70%</label>
+    <label><input type="checkbox" id="vill-toggle" checked> Vill</label>
+  </div>
+</div>
+<div id="map-wrap">
+  <div id="map"></div>
+  <div id="legend">
+    <h3>SUITABILITY · CLICK MAP TO SAMPLE</h3>
+    <div class="legend-channels">
+      <span class="ch-r">R</span> Stress &nbsp;
+      <span class="ch-g">G</span> Soil &nbsp;
+      <span class="ch-b">B</span> Flood
+    </div>
+    <div class="legend-grid">
+      <div class="legend-cell lc-yellow">HI STRESS<br>GOOD SOIL<br>LOW FLOOD<br>★ TOP</div>
+      <div class="legend-cell lc-red">HI STRESS<br>POOR SOIL<br>LOW FLOOD<br>△ MOD</div>
+      <div class="legend-cell lc-green">LO STRESS<br>GOOD SOIL<br>LOW FLOOD<br>✓ VEG</div>
+      <div class="legend-cell lc-purple">HI STRESS<br>GOOD SOIL<br>HI FLOOD<br>⚠ RISK</div>
+      <div class="legend-cell lc-blue">LO STRESS<br>ANY SOIL<br>HI FLOOD<br>~ WET</div>
+      <div class="legend-cell lc-dark">LOW ALL<br>✦ FOREST</div>
+    </div>
+  </div>
+
+  <div id="info">
+    <div id="info-header">
+      <h3>PIXEL SAMPLE</h3>
+      <span id="info-close" onclick="document.getElementById('info').style.display='none'">✕</span>
+    </div>
+    <div id="info-body">
+      <div class="info-row"><span class="info-label">Flood freq</span><span class="info-val val-flood" id="iv-flood">—</span></div>
+      <div class="info-row"><span class="info-label">Drought stress</span><span class="info-val val-stress" id="iv-stress">—</span></div>
+      <div class="info-row"><span class="info-label">Soil suitability</span><span class="info-val val-soil" id="iv-soil">—</span></div>
+      <div class="info-row"><span class="info-label">Lat / Lon</span><span class="info-val val-coord" id="iv-latlng">—</span></div>
+    </div>
+    <div id="info-vill"></div>
+    <div id="info-verdict">
+      <div id="verdict-bar"></div>
+      <div id="verdict-class"></div>
+      <div id="verdict-text"></div>
+    </div>
+  </div>
+
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-text">LOADING COGs…</div>
+  </div>
+  <div id="status">
+    <span id="status-msg">Select a project above</span>
+    <span id="status-coords"></span>
+  </div>
+</div>
+
+<script>
+const COG_BASE  = 'https://forestsoil.github.io/arrm-cog/cogs/';
+const VILL_BASE = 'https://forestsoil.github.io/arrm-cog/villages/';
+
+// District slug map
+const DIST_FILE = {
+  'Alipurduar':      'alipurduar_villages.geojson',
+  'Bankura':         'bankura_villages.geojson',
+  'Birbhum':         'birbhum_villages.geojson',
+  'Darjiling':       'darjiling_villages.geojson',
+  'Jalpaiguri':      'jalpaiguri_villages.geojson',
+  'Jhargram':        'jhargram_villages.geojson',
+  'Kalimpong':       'kalimpong_villages.geojson',
+  'Koch Bihar':      'koch_bihar_villages.geojson',
+  'Paschim Bardhaman':'paschim_bardhaman_villages.geojson',
+  'Puruliya':        'puruliya_villages.geojson',
+};
+
+const PROJECTS = {
+  asha1:  { label:'Asha 1',  center:[26.6,89.2], zoom:9,
+    flood:'asha1_flood_freq.tif', stress:'asha1_drought_stress.tif', soil:'asha1_soil_suit.tif',
+    districts:['Jalpaiguri','Alipurduar','Koch Bihar'] },
+  asha2:  { label:'Asha 2',  center:[26.8,88.5], zoom:9,
+    flood:'asha2_flood_freq.tif', stress:'asha2_drought_stress.tif', soil:'asha2_soil_suit.tif',
+    districts:['Jalpaiguri','Alipurduar','Koch Bihar','Darjiling','Kalimpong'] },
+  banani: { label:'Banani',  center:[23.2,86.8], zoom:8,
+    flood:'banani_flood_freq.tif', stress:'banani_drought_stress.tif', soil:'banani_soil_suit.tif',
+    districts:['Birbhum','Bankura','Puruliya','Jhargram','Paschim Bardhaman'] },
+  arun:   { label:'Arun',    center:[27.5,95.5], zoom:9,
+    flood:'arun_flood_freq.tif',  stress:'arun_drought_stress.tif',  soil:'arun_soil_suit.tif',
+    districts:[] },
+};
+
+const map = L.map('map',{zoomControl:true});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:18}).addTo(map);
+map.setView([26.0,90.0],7);
+
+let currentProj=null, cogFlood=null, cogStress=null, cogSoil=null;
+let overlayLayer=null, villageLayer=null, villageData=null;
+let currentOpacity=0.7;
+
+// ── Project buttons ───────────────────────────────────────────────────────────
+const btnWrap = document.getElementById('proj-btns');
+Object.entries(PROJECTS).forEach(([key,cfg])=>{
+  const btn = document.createElement('button');
+  btn.className = 'proj-btn';
+  btn.textContent = cfg.label;
+  btn.dataset.key = key;
+  btn.onclick = ()=>loadProject(key);
+  btnWrap.appendChild(btn);
+});
+
+// ── District dropdown ─────────────────────────────────────────────────────────
+const selDist  = document.getElementById('sel-district');
+const selBlock = document.getElementById('sel-block');
+
+selDist.addEventListener('change', async()=>{
+  const dist = selDist.value;
+  selBlock.innerHTML = '<option value="">— Block —</option>';
+  selBlock.disabled = true;
+  if(villageLayer){map.removeLayer(villageLayer); villageLayer=null;}
+  villageData = null;
+  if(!dist) return;
+  await loadDistrictVillages(dist);
+});
+
+selBlock.addEventListener('change',()=>{
+  const block = selBlock.value;
+  if(!villageLayer) return;
+  villageLayer.eachLayer(l=>{
+    const show = !block || l.feature.properties.Sub_dist === block;
+    if(show) l.setStyle({fillOpacity:0, opacity:0.5});
+    else     l.setStyle({fillOpacity:0, opacity:0});
+  });
+});
+
+function populateDistrictDropdown(districts){
+  selDist.innerHTML = '<option value="">— District —</option>';
+  districts.forEach(d=>{
+    const o = document.createElement('option');
+    o.value = d; o.textContent = d;
+    selDist.appendChild(o);
+  });
+  selDist.disabled = (districts.length === 0);
+}
+
+async function loadDistrictVillages(dist){
+  const file = DIST_FILE[dist];
+  if(!file) return;
+  setStatus('Loading '+dist+' villages…','loading');
+  try{
+    const r = await fetch(VILL_BASE + file);
+    if(!r.ok) throw new Error('404');
+    villageData = await r.json();
+
+    // Populate block dropdown
+    const blocks = [...new Set(villageData.features.map(f=>f.properties.Sub_dist).filter(Boolean))].sort();
+    selBlock.innerHTML = '<option value="">— All Blocks —</option>';
+    blocks.forEach(b=>{ const o=document.createElement('option'); o.value=b; o.textContent=b; selBlock.appendChild(o); });
+    selBlock.disabled = false;
+
+    // Render village layer
+    if(villageLayer){map.removeLayer(villageLayer); villageLayer=null;}
+    villageLayer = L.geoJSON(villageData,{
+      style:{color:'#ffffff',weight:0.6,fillOpacity:0,opacity:0.5},
+      onEachFeature:(f,layer)=>{
+        layer.on('click',(e)=>{
+          L.DomEvent.stopPropagation(e);
+          const p = f.properties;
+          const el = document.getElementById('info-vill');
+          el.innerHTML = `<b>${p.Vill_name||'—'}</b><br>${p.Sub_dist||''} Block · ${p.District||''}<br><span style="color:var(--muted);font-size:10px">LGD ${p.Vill_LGD||'—'}</span>`;
+          el.style.display = 'block';
+          document.getElementById('info').style.display = 'block';
+        });
+      }
+    });
+    if(document.getElementById('vill-toggle').checked) villageLayer.addTo(map);
+
+    // Fit map to district
+    map.fitBounds(villageLayer.getBounds(), {padding:[20,20]});
+    setStatus(dist+' villages loaded · click village or map to sample','ok');
+  }catch(e){
+    setStatus('Villages not available: '+dist,'error');
+  }
+}
+
+// ── Village toggle ────────────────────────────────────────────────────────────
+document.getElementById('vill-toggle').addEventListener('change',function(){
+  if(villageLayer){ this.checked ? villageLayer.addTo(map) : map.removeLayer(villageLayer); }
+});
+
+// ── Opacity ───────────────────────────────────────────────────────────────────
+const slider = document.getElementById('opacity-slider');
+slider.addEventListener('input',()=>{
+  currentOpacity = slider.value/100;
+  document.getElementById('opacity-val').textContent = slider.value+'%';
+  if(overlayLayer) overlayLayer.setOpacity(currentOpacity);
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function setStatus(msg,cls=''){const el=document.getElementById('status-msg');el.textContent=msg;el.className=cls;}
+function setLoading(on,msg='LOADING COGs…'){document.getElementById('loading-overlay').classList.toggle('active',on);document.getElementById('loading-text').textContent=msg;}
+
+async function fetchCOG(filename){
+  const tiff = await GeoTIFF.fromUrl(COG_BASE+filename,{allowFullFile:false});
+  return await tiff.getImage();
+}
+
+function cogWindow(img,n,s,w,e){
+  const[ox,oy]=img.getOrigin();
+  const res=img.getResolution();
+  const rx=res[0],ry=res[3]||res[1];
+  const c1=Math.max(0,Math.floor((w-ox)/rx));
+  const r1=Math.max(0,Math.floor((n-oy)/ry));
+  const c2=Math.min(img.getWidth(),Math.ceil((e-ox)/rx));
+  const r2=Math.min(img.getHeight(),Math.ceil((s-oy)/ry));
+  return{c1,r1,c2,r2,cw:c2-c1,rh:r2-r1,ox,oy,rx,ry};
+}
+
+async function readPixel(image,lat,lng){
+  const[ox,oy]=image.getOrigin();
+  const res=image.getResolution();
+  const rx=res[0],ry=res[3]||res[1];
+  const col=Math.floor((lng-ox)/rx);
+  const row=Math.floor((lat-oy)/ry);
+  const w=image.getWidth(),h=image.getHeight();
+  if(col<0||row<0||col>=w||row>=h)return null;
+  const data=await image.readRasters({window:[col,row,col+1,row+1]});
+  return data[0][0];
+}
+
+function norm(v){
+  if(v===null||v===undefined)return null;
+  if(v===0)return null;
+  if(v<-9000)return null;
+  return v>1?v/255:v;
+}
+
+// ── Render COG composite ──────────────────────────────────────────────────────
+async function renderOverlay(){
+  if(!cogFlood)return;
+  if(overlayLayer){map.removeLayer(overlayLayer);overlayLayer=null;}
+  const bounds=map.getBounds();
+  const n=bounds.getNorth(),s=bounds.getSouth(),w=bounds.getWest(),e=bounds.getEast();
+  const size=512;
+  const canvas=document.createElement('canvas');
+  canvas.width=size;canvas.height=size;
+  const ctx=canvas.getContext('2d');
+  const imgData=ctx.createImageData(size,size);
+
+  const fw=cogWindow(cogFlood,n,s,w,e);
+  let floodData=null;
+  if(fw.cw>0&&fw.rh>0)floodData=(await cogFlood.readRasters({window:[fw.c1,fw.r1,fw.c2,fw.r2]}))[0];
+
+  let stressData=null,sw_=null;
+  if(cogStress){sw_=cogWindow(cogStress,n,s,w,e);if(sw_.cw>0&&sw_.rh>0)stressData=(await cogStress.readRasters({window:[sw_.c1,sw_.r1,sw_.c2,sw_.r2]}))[0];}
+
+  let soilData=null,slw=null;
+  if(cogSoil){slw=cogWindow(cogSoil,n,s,w,e);if(slw.cw>0&&slw.rh>0)soilData=(await cogSoil.readRasters({window:[slw.c1,slw.r1,slw.c2,slw.r2]}))[0];}
+
+  for(let py=0;py<size;py++){
+    for(let px=0;px<size;px++){
+      const lat_=n-(py/size)*(n-s);
+      const lng_=w+(px/size)*(e-w);
+      let flood=0,stress=0,soil=0,hasData=false;
+      if(floodData&&fw.cw>0&&fw.rh>0){
+        const fc=Math.floor((lng_-fw.ox)/fw.rx)-fw.c1;
+        const fr=Math.floor((lat_-fw.oy)/fw.ry)-fw.r1;
+        if(fc>=0&&fr>=0&&fc<fw.cw&&fr<fw.rh){const v=norm(floodData[fr*fw.cw+fc]);if(v!==null){flood=v;hasData=true;}}
+      }
+      if(stressData&&sw_.cw>0&&sw_.rh>0){
+        const fc=Math.floor((lng_-sw_.ox)/sw_.rx)-sw_.c1;
+        const fr=Math.floor((lat_-sw_.oy)/sw_.ry)-sw_.r1;
+        if(fc>=0&&fr>=0&&fc<sw_.cw&&fr<sw_.rh){const v=norm(stressData[fr*sw_.cw+fc]);if(v!==null)stress=v;}
+      }
+      if(soilData&&slw.cw>0&&slw.rh>0){
+        const fc=Math.floor((lng_-slw.ox)/slw.rx)-slw.c1;
+        const fr=Math.floor((lat_-slw.oy)/slw.ry)-slw.r1;
+        if(fc>=0&&fr>=0&&fc<slw.cw&&fr<slw.rh){const v=norm(soilData[fr*slw.cw+fc]);if(v!==null)soil=v;}
+      }
+      const idx=(py*size+px)*4;
+      imgData.data[idx]=Math.round(stress*255);
+      imgData.data[idx+1]=Math.round(soil*255);
+      imgData.data[idx+2]=Math.round(flood*255);
+      imgData.data[idx+3]=hasData?210:0;
+    }
+  }
+  ctx.putImageData(imgData,0,0);
+  overlayLayer=L.imageOverlay(canvas.toDataURL(),bounds,{opacity:currentOpacity});
+  overlayLayer.addTo(map);
+}
+
+// ── Load project ──────────────────────────────────────────────────────────────
+async function loadProject(key){
+  if(currentProj===key)return;
+  currentProj=key;
+  const cfg=PROJECTS[key];
+  document.querySelectorAll('.proj-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.proj-btn[data-key="${key}"]`)?.classList.add('active');
+  if(overlayLayer){map.removeLayer(overlayLayer);overlayLayer=null;}
+  if(villageLayer){map.removeLayer(villageLayer);villageLayer=null;}
+  cogFlood=null;cogStress=null;cogSoil=null;villageData=null;
+  document.getElementById('info').style.display='none';
+  document.getElementById('info-vill').style.display='none';
+  selBlock.innerHTML='<option value="">— Block —</option>';
+  selBlock.disabled=true;
+  populateDistrictDropdown(cfg.districts);
+  selDist.value='';
+  map.setView(cfg.center,cfg.zoom);
+  setLoading(true,'Fetching COGs…');
+  setStatus('Loading '+cfg.label+'…','loading');
+  try{
+    cogFlood=await fetchCOG(cfg.flood);
+    if(cfg.stress){setLoading(true,'Fetching drought stress…');cogStress=await fetchCOG(cfg.stress);}
+    if(cfg.soil){setLoading(true,'Fetching soil suitability…');cogSoil=await fetchCOG(cfg.soil);}
+    setLoading(true,'Rendering composite…');
+    await renderOverlay();
+    setStatus(cfg.label+' loaded · select district or click map','ok');
+  }catch(e){
+    setStatus('Error: '+e.message,'error');
+    console.error(e);
+  }finally{setLoading(false);}
+}
+
+map.on('moveend',()=>{if(cogFlood)renderOverlay();});
+
+// ── Click to sample ───────────────────────────────────────────────────────────
+map.on('click',async(e)=>{
+  if(!cogFlood)return;
+  const{lat,lng}=e.latlng;
+  const fv=await readPixel(cogFlood,lat,lng);
+  const sv=cogStress?await readPixel(cogStress,lat,lng):null;
+  const slv=cogSoil?await readPixel(cogSoil,lat,lng):null;
+  const flood=fv!=null?norm(fv):null;
+  const stress=sv!=null?norm(sv):null;
+  const soil=slv!=null?norm(slv):null;
+
+  document.getElementById('iv-flood').textContent=flood!=null?(flood*100).toFixed(1)+'%':'—';
+  document.getElementById('iv-stress').textContent=stress!=null?(stress*100).toFixed(1)+'%':'—';
+  document.getElementById('iv-soil').textContent=soil!=null?(soil*100).toFixed(1)+'%':'—';
+  document.getElementById('iv-latlng').textContent=lat.toFixed(4)+', '+lng.toFixed(4);
+  document.getElementById('info-vill').style.display='none';
+
+  const hi_f=flood!=null&&flood>0.3;
+  const hi_s=stress!=null&&stress>0.3;
+  const hi_sl=soil!=null&&soil>0.4;
+
+  let col,cls,msg;
+  if(flood===null&&stress===null){col='#444';cls='NO DATA';msg='Outside project boundary or protected area.';}
+  else if(hi_s&&hi_sl&&!hi_f){col='#d4b000';cls='★ TOP PRIORITY';msg='Degraded land, good soil, low flood. Best ARR candidate.';}
+  else if(hi_s&&!hi_sl&&!hi_f){col='#e05555';cls='△ MODERATE';msg='Degraded but poor soil texture. ARR viable, lower yield.';}
+  else if(hi_s&&(hi_sl||true)&&hi_f){col='#a030c8';cls='⚠ RISKY';msg='High flood + stress. Flood-tolerant species only.';}
+  else if(!hi_s&&hi_f){col='#4060dd';cls='~ WETLAND';msg='Regularly inundated. Low ARR priority — avoid.';}
+  else if(hi_sl&&!hi_f){col='#2d6a4f';cls='✓ VEGETATED';msg='Good soil, low stress — likely vegetated. Low priority.';}
+  else{col='#1a3a1a';cls='✦ FOREST';msg='Healthy land — low stress, low flood. Leave alone.';}
+
+  document.getElementById('verdict-bar').style.background=col;
+  document.getElementById('verdict-class').style.color=col;
+  document.getElementById('verdict-class').textContent=cls;
+  document.getElementById('verdict-text').textContent=msg;
+  document.getElementById('info').style.display='block';
+});
+
+map.on('mousemove',(e)=>{
+  document.getElementById('status-coords').textContent=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5);
+});
+</script>
+</body>
+</html>
