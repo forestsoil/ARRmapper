@@ -143,6 +143,38 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 .override-warn{background:rgba(245,166,35,.1);border:1px solid var(--c-warn);border-radius:var(--radius);padding:8px 12px;font-size:12px;color:var(--c-warn);margin-top:6px}
 .override-confirm{margin-top:6px;display:flex;gap:8px}
 .override-confirm button{flex:1;padding:7px;border-radius:6px;border:1px solid var(--c-border);background:var(--c-card);color:var(--c-text);font-size:12px;cursor:pointer;font-family:var(--font)}
+/* Mortality form */
+.mort-grid{display:flex;flex-direction:column;gap:0}
+.mort-hdr{display:grid;grid-template-columns:1fr 70px 70px 70px;gap:6px;padding:6px 10px;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.05em;background:var(--c-section-hdr);border:1px solid var(--c-border);border-bottom:none;border-radius:var(--radius) var(--radius) 0 0}
+.mort-row{display:grid;grid-template-columns:1fr 70px 70px 70px;gap:6px;align-items:center;padding:7px 10px;border:1px solid var(--c-border);border-top:none;background:var(--c-card)}
+.mort-row:last-child{border-radius:0 0 var(--radius) var(--radius)}
+.mort-row.zero-plant{opacity:.45}
+.mort-spp{font-size:12px;font-weight:600;color:var(--c-text)}
+.mort-sci{font-size:10px;color:var(--c-muted)}
+.mort-input{width:100%;text-align:center;padding:5px 4px;font-size:13px;font-family:var(--font)}
+.mort-alive{font-size:12px;font-weight:700;text-align:center;color:var(--c-accent2)}
+.mort-alive.negative{color:var(--c-danger)}
+/* Health grid */
+.health-grid{display:flex;flex-direction:column;gap:0}
+.health-hdr{display:grid;grid-template-columns:1fr repeat(8,28px);gap:4px;padding:6px 10px;font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.05em;background:var(--c-section-hdr);border:1px solid var(--c-border);border-bottom:none;border-radius:var(--radius) var(--radius) 0 0}
+.health-row{display:grid;grid-template-columns:1fr repeat(8,28px);gap:4px;align-items:center;padding:6px 10px;border:1px solid var(--c-border);border-top:none;background:var(--c-card)}
+.health-row:last-child{border-radius:0 0 var(--radius) var(--radius)}
+.health-row.zero-plant{opacity:.45}
+.health-spp{font-size:12px;font-weight:600}
+.health-btn{width:28px;height:28px;border-radius:5px;background:var(--c-input-bg);border:1px solid var(--c-border);color:var(--c-text);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;font-family:var(--font);padding:0;transition:all .1s}
+.health-btn.sel-1,.health-btn.sel-2{background:#dc2626;border-color:#dc2626;color:#fff}
+.health-btn.sel-3,.health-btn.sel-4{background:#f97316;border-color:#f97316;color:#fff}
+.health-btn.sel-5,.health-btn.sel-6{background:#eab308;border-color:#eab308;color:#000}
+.health-btn.sel-7,.health-btn.sel-8{background:#16a34a;border-color:#16a34a;color:#fff}
+/* Plot condition slider */
+.plot-cond-wrap{display:flex;flex-direction:column;gap:8px}
+.plot-cond-chips{display:flex;gap:6px;flex-wrap:wrap}
+.plot-cond-chip{padding:7px 12px;border-radius:7px;background:var(--c-input-bg);border:1px solid var(--c-border);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .12s}
+.plot-cond-chip.sel{background:var(--c-accent2);border-color:var(--c-accent2);color:#fff}
+/* LPC lookup result banner */
+.lpc-result{background:rgba(52,201,122,.12);border:1px solid var(--c-accent2);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--c-accent2);margin-top:6px;display:none}
+.lpc-result.show{display:block}
+.lpc-result strong{color:var(--c-text)}
 </style>
 </head>
 <body>
@@ -153,7 +185,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
     <button class="lang-btn" id="lang-btn" onclick="cycleLang()">EN</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
-    <span class="ver">v1 DEV14</span>
+    <span class="ver">v1 DEV16</span>
     <div id="user-chip">Loading…</div>
   </div>
   <div id="main">
@@ -2503,6 +2535,70 @@ const SCHEMA = {
           ]
         }
       ]
+    },
+
+    "mortality": {
+      "id": "mortality",
+      "label": "Plantation Plot Evaluation",
+      "subtitle": "Species mortality, survival count and plot condition",
+      "projects": ["ASHA1"],
+      "links_to": "LPC",
+      "sections": [
+        {
+          "id": "s_mort_plot",
+          "label": "Plot Identity",
+          "fields": [
+            { "id": "lpc_id",           "label": "Land Parcel Code (LPC)", "type": "mort_lpc_lookup", "required": true },
+            { "id": "district",         "label": "District",        "type": "auto_from_lpc", "readonly": true },
+            { "id": "block",            "label": "Block",           "type": "auto_from_lpc", "readonly": true },
+            { "id": "plantation_year",  "label": "Plantation Year", "type": "auto_from_lpc", "readonly": true },
+            { "id": "beneficiary_names","label": "Beneficiary Name(s)", "type": "auto_from_lpc", "readonly": true },
+            { "id": "area_ha",          "label": "Land Area (Ha)",  "type": "auto_from_lpc", "readonly": true },
+            { "id": "season",           "label": "Season",          "type": "auto_season",   "readonly": true }
+          ]
+        },
+        {
+          "id": "s_mort_team",
+          "label": "Field Team",
+          "fields": [
+            { "id": "volunteer_name",  "label": "Volunteer Name",  "type": "text", "required": true },
+            { "id": "watering_team",   "label": "Watering Team",   "type": "text" },
+            { "id": "cluster_name",    "label": "Cluster Name",    "type": "mort_cluster_select", "required": true },
+            { "id": "cluster_head",    "label": "Cluster Head",    "type": "auto_from_cluster", "readonly": true },
+            { "id": "surveyor_name",   "label": "Name of Staff",   "type": "auto", "source": "google_account_email", "readonly": true }
+          ]
+        },
+        {
+          "id": "s_mort_species",
+          "label": "Species Count — Planting, Dead, Alive",
+          "hint": "Enter planted count and dead count. Alive = Planted − Dead (auto).",
+          "fields": [
+            { "id": "species_mortality", "label": "Species Mortality Grid", "type": "mort_species_grid" }
+          ]
+        },
+        {
+          "id": "s_mort_health",
+          "label": "Species Health Condition (1 = Critical, 8 = Excellent)",
+          "hint": "Rate health for each planted species (1–8 scale)",
+          "fields": [
+            { "id": "species_health", "label": "Health Rating Grid", "type": "mort_health_grid" }
+          ]
+        },
+        {
+          "id": "s_mort_plot_cond",
+          "label": "Plot Condition",
+          "fields": [
+            { "id": "plot_condition", "label": "Overall Plot Condition (%)", "type": "plot_condition_select", "required": true },
+            { "id": "land_owner_engagement", "label": "Land Owner Engagement", "type": "multiselect", "single_select": true,
+              "options": [
+                { "value": "yes", "label": "Yes", "label_hi": "हाँ", "label_bn": "হ্যাঁ" },
+                { "value": "no",  "label": "No",  "label_hi": "नहीं", "label_bn": "না" }
+              ]
+            },
+            { "id": "remarks", "label": "Overall Remarks", "type": "textarea" }
+          ]
+        }
+      ]
     }
   },
 
@@ -2549,7 +2645,7 @@ const SCHEMA = {
       "BANANI": "Banani_SurveyResponses"
     },
     "sheets_per_workbook": {
-      "ASHA1":  ["Baseline","Plantation","Fencing","Event","Nursery"],
+      "ASHA1":  ["Baseline","Plantation","Fencing","Event","Nursery","Mortality"],
       "ASHA2":  ["Baseline","Event","Nursery"],
       "ARUN":   ["Baseline","Biomass_Plot","Biomass_Tree","Event","Nursery"],
       "BANANI": ["Baseline","Plantation","Fencing","Biomass_Plot","Biomass_Tree","Event","Nursery"]
@@ -3103,6 +3199,238 @@ function resolveDynamicYears(text) {
 }
 
 // ═══════════════════════════════════════════════════════
+// CLUSTER HEAD DATA (Asha 1)
+// ═══════════════════════════════════════════════════════
+// Each entry: { head, district, blocks[] }
+// A block may appear under multiple heads; per-LPC resolution
+// uses district+block from GeoJSON to suggest the matching head.
+const CLUSTER_DATA = [
+  { head:'Goutam Dhar',        district:'Jalpaiguri',  blocks:['Matiali','Kranti','Mal'] },
+  { head:'Goutam Dhar',        district:'Kalimpong',   blocks:['Gorubathan'] },
+  { head:'Abhijit Mukherjee',  district:'Jalpaiguri',  blocks:['Banarhat','Dhupguri','Maynaguri'] },
+  { head:'Ujjwal Barman',      district:'Jalpaiguri',  blocks:['Nagrakata','Dhupguri'] },
+  { head:'Roshni Subba',       district:'Alipurduar',  blocks:['Madarihat','Madarihat-Birpara','Kalchini','Alipurduar 1'] },
+  { head:'Sarbananda Barman',  district:'Coochbehar',  blocks:['Dinhata 1','Sitalkuchi'] },
+  { head:'Suvojit Bose',       district:'Alipurduar',  blocks:['Alipurduar 2','Kumargram'] },
+  { head:'Suvojit Palit',      district:'Alipurduar',  blocks:['Alipurduar 2','Kumargram'] },
+  { head:'Katik Barman',       district:'Alipurduar',  blocks:['Alipurduar 2'] },
+  { head:'Katik Barman',       district:'Coochbehar',  blocks:['Tufanganj 1','Tufanganj 2'] },
+];
+
+// Given district+block, return list of possible cluster heads
+function getClusterHeadsForBlock(district, block) {
+  return CLUSTER_DATA.filter(c =>
+    c.district.toLowerCase() === (district||'').toLowerCase() &&
+    c.blocks.some(b => b.toLowerCase() === (block||'').toLowerCase())
+  ).map(c => c.head);
+}
+
+// All unique cluster names (heads) for dropdown
+function allClusterHeads() {
+  return [...new Set(CLUSTER_DATA.map(c => c.head))].sort();
+}
+
+// ═══════════════════════════════════════════════════════
+// ASHA PLANTATION GEOJSON CACHE (for mortality LPC lookup)
+// ═══════════════════════════════════════════════════════
+const PLANTATION_GEOJSON_URL = 'https://forestsoil.github.io/ARRmapper/asha_plantation.geojson';
+const PLANTATION_OPFS_KEY    = 'asha_plantation.json';
+let _plantationFeatures = null;
+
+// GeoJSON species key → schema code
+const GEOJSON_SPP_MAP = {
+  MAHAGONI:'MHG', GAMAR:'GMR', TEAK:'TK', NEEM:'NM', JAM:'JM',
+  CHIKRASSI:'CKS', JARUL:'JRL', PANISAL:'PNS', KHAYER:'KHR',
+  SHIMUL:'SML', KALOSHIRISH:'KSR', KATHAL:'KTH', CHAMP:'CHP', BOYRA:'BYR'
+};
+
+async function loadPlantationGeoJSON() {
+  if (_plantationFeatures) return _plantationFeatures;
+  // Try OPFS first
+  try {
+    const dir  = await opfsDir(['plantation_cache']);
+    const blob = await opfsReadBlob(dir, PLANTATION_OPFS_KEY);
+    _plantationFeatures = JSON.parse(await blob.text());
+    return _plantationFeatures;
+  } catch(e) {}
+  // Fetch from network
+  try {
+    toast('Loading plantation data…', 'info', 8000);
+    const r = await fetch(PLANTATION_GEOJSON_URL);
+    if (!r.ok) throw new Error(r.status);
+    const geojson = await r.json();
+    _plantationFeatures = geojson.features || [];
+    // Cache to OPFS
+    try {
+      const dir = await opfsDir(['plantation_cache'], true);
+      await opfsWrite(dir, PLANTATION_OPFS_KEY,
+        new Blob([JSON.stringify(_plantationFeatures)], {type:'application/json'}));
+    } catch(e) {}
+    return _plantationFeatures;
+  } catch(e) {
+    toast('Plantation data unavailable offline', 'warn');
+    return null;
+  }
+}
+
+function lookupLPC(lpcVal, features) {
+  if (!features || !lpcVal) return null;
+  const n = parseInt(lpcVal);
+  return features.find(f => f.properties.LPC === n) || null;
+}
+
+// Auto-determine season from current month
+function getCurrentSeason() {
+  const m = new Date().getMonth() + 1; // 1-12
+  if (m >= 2 && m <= 5)  return 'PREMON';
+  if (m >= 6 && m <= 9)  return 'MON';
+  return 'POSMON';
+}
+function seasonLabel(code) {
+  return { PREMON:'Pre-Monsoon (Feb–May)', MON:'Monsoon (Jun–Sep)', POSMON:'Post-Monsoon (Oct–Jan)' }[code] || code;
+}
+
+// Populate auto_from_lpc fields after a successful lookup
+function applyLPCData(feat) {
+  const p = feat.properties;
+  const spMap = {}; // code → count
+  Object.entries(p.species || {}).forEach(([k,v]) => {
+    const code = GEOJSON_SPP_MAP[k];
+    if (code) spMap[code] = v;
+  });
+  S.values.district         = p.DISTRICT || '';
+  S.values.block            = p.BLOCK    || '';
+  S.values.plantation_year  = p.YEAR     || '';
+  S.values.beneficiary_names= p.BENNAMES || '';
+  S.values.area_ha          = p.AREA_HA  != null ? p.AREA_HA.toFixed(4) : '';
+  S.values._species_planted = spMap; // raw planted counts per code
+  // Update readonly display fields
+  ['district','block','plantation_year','beneficiary_names','area_ha'].forEach(id => {
+    const el = document.getElementById('f_'+id);
+    if (el) el.value = S.values[id];
+  });
+  // Refresh species/health grids if already rendered
+  const mg = document.getElementById('f_species_mortality');
+  const hg = document.getElementById('f_species_health');
+  if (mg) { mg.innerHTML=''; buildMortGrid(mg); }
+  if (hg) { hg.innerHTML=''; buildHealthGrid(hg); }
+  // Suggest cluster heads
+  const heads = getClusterHeadsForBlock(p.DISTRICT, p.BLOCK);
+  const clSel = document.getElementById('f_cluster_name');
+  if (clSel) {
+    // highlight suggested
+    Array.from(clSel.options).forEach(o => {
+      o.style.fontWeight = heads.includes(o.value) ? '700' : '';
+    });
+    if (heads.length === 1 && !S.values.cluster_name) {
+      clSel.value = heads[0];
+      S.values.cluster_name = heads[0];
+      S.values.cluster_head = heads[0];
+      const chEl = document.getElementById('f_cluster_head');
+      if (chEl) chEl.value = heads[0];
+    }
+  }
+}
+
+// ─── Build mortality species grid ────────────────────
+function buildMortGrid(wrap) {
+  const species = SCHEMA.species['ASHA1'] || [];
+  const planted = S.values._species_planted || {};
+  const vals    = S.values.species_mortality || {};
+
+  const hdr = document.createElement('div'); hdr.className='mort-hdr';
+  hdr.innerHTML='<span>Species</span><span>Planted</span><span>Dead</span><span>Alive</span>';
+  wrap.appendChild(hdr);
+
+  species.forEach(sp => {
+    const plantCount = planted[sp.code] || 0;
+    const row = document.createElement('div');
+    row.className = 'mort-row' + (plantCount === 0 ? ' zero-plant' : '');
+
+    const nm = document.createElement('div');
+    nm.innerHTML = `<div class="mort-spp">${sp.local}</div><div class="mort-sci">${sp.scientific}</div>`;
+
+    // Planted (auto from LPC or manual)
+    const pInp = document.createElement('input');
+    pInp.type='number'; pInp.min='0'; pInp.className='field-input mort-input';
+    pInp.value = plantCount || (vals[sp.code]?.planted ?? '');
+    pInp.placeholder='0';
+
+    // Dead
+    const dInp = document.createElement('input');
+    dInp.type='number'; dInp.min='0'; dInp.className='field-input mort-input';
+    dInp.value = vals[sp.code]?.dead ?? '';
+    dInp.placeholder='0';
+
+    // Alive (auto)
+    const aDiv = document.createElement('div'); aDiv.className='mort-alive';
+
+    const updateAlive = () => {
+      const p = parseInt(pInp.value)||0;
+      const d = parseInt(dInp.value)||0;
+      const a = p - d;
+      aDiv.textContent = p > 0 ? a : '—';
+      aDiv.classList.toggle('negative', a < 0);
+      if (!S.values.species_mortality) S.values.species_mortality = {};
+      S.values.species_mortality[sp.code] = { planted:p, dead:d, alive:Math.max(0,a) };
+      updateSpeciesCount();
+    };
+    pInp.oninput = updateAlive;
+    dInp.oninput = updateAlive;
+    updateAlive();
+
+    row.appendChild(nm); row.appendChild(pInp); row.appendChild(dInp); row.appendChild(aDiv);
+    wrap.appendChild(row);
+  });
+}
+
+function updateSpeciesCount() {
+  const grid = S.values.species_mortality || {};
+  const count = Object.values(grid).filter(v => (v.planted||0) > 0).length;
+  S.values.num_species = count;
+  const el = document.getElementById('f_num_species');
+  if (el) el.value = count;
+}
+
+// ─── Build health rating grid ─────────────────────────
+function buildHealthGrid(wrap) {
+  const species = SCHEMA.species['ASHA1'] || [];
+  const planted = S.values._species_planted || {};
+  const vals    = S.values.species_health || {};
+
+  const hdr = document.createElement('div'); hdr.className='health-hdr';
+  let hdHtml = '<span>Species</span>';
+  for (let i=1;i<=8;i++) hdHtml += `<span style="text-align:center">${i}</span>`;
+  hdr.innerHTML = hdHtml;
+  wrap.appendChild(hdr);
+
+  species.forEach(sp => {
+    const plantCount = planted[sp.code] || 0;
+    const row = document.createElement('div');
+    row.className = 'health-row' + (plantCount === 0 ? ' zero-plant' : '');
+
+    const nm = document.createElement('div');
+    nm.className = 'health-spp'; nm.textContent = sp.local;
+    row.appendChild(nm);
+
+    const curVal = vals[sp.code] || null;
+    for (let i=1;i<=8;i++) {
+      const btn = document.createElement('button');
+      btn.type='button'; btn.className='health-btn' + (curVal===i ? ` sel-${i}` : '');
+      btn.textContent = i;
+      btn.onclick = () => {
+        row.querySelectorAll('.health-btn').forEach(b => b.className='health-btn');
+        btn.className = `health-btn sel-${i}`;
+        if (!S.values.species_health) S.values.species_health = {};
+        S.values.species_health[sp.code] = i;
+      };
+      row.appendChild(btn);
+    }
+    wrap.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
 // SCREEN: PROJECTS
 // ═══════════════════════════════════════════════════════
 // Projects visible in the launcher — others remain in SCHEMA but are hidden
@@ -3139,7 +3467,7 @@ async function loadDrafts() {
   });
 }
 
-const FORM_ICON = { baseline:'👤', grievance:'⚠️', plantation:'🌱', fencing:'🚧', event:'📋', biomass_plot:'🗺️', biomass_tree:'🌳', nursery:'🪴', leakage:'🐄' };
+const FORM_ICON = { baseline:'👤', grievance:'⚠️', plantation:'🌱', fencing:'🚧', event:'📋', biomass_plot:'🗺️', biomass_tree:'🌳', nursery:'🪴', leakage:'🐄', mortality:'📊' };
 
 // ═══════════════════════════════════════════════════════
 // SCREEN: FORM LIST
@@ -3507,6 +3835,121 @@ function mkInput(f, fg) {
       const w = document.createElement('div'); w.id = 'f_' + f.id;
       mkGrievanceLookup(f, fg).then(el => w.appendChild(el));
       return w;
+    }
+
+    case 'mort_lpc_lookup': {
+      const wrap = document.createElement('div'); wrap.id='f_'+f.id;
+      const row  = document.createElement('div'); row.style.cssText='display:flex;gap:8px';
+      const inp  = document.createElement('input');
+      inp.type='text'; inp.className='field-input'; inp.placeholder='e.g. 1050001';
+      inp.value = S.values.lpc_id || '';
+      const btn  = document.createElement('button');
+      btn.type='button'; btn.className='file-btn primary'; btn.style.cssText='width:auto;padding:10px 16px;flex-shrink:0';
+      btn.textContent='Look up';
+      const result = document.createElement('div'); result.className='lpc-result';
+
+      inp.oninput = () => { S.values.lpc_id = inp.value.trim(); };
+
+      btn.onclick = async () => {
+        const lpcVal = inp.value.trim();
+        if (!lpcVal) { toast('Enter an LPC first', 'warn'); return; }
+        btn.textContent='Loading…'; btn.disabled=true;
+        const features = await loadPlantationGeoJSON();
+        btn.textContent='Look up'; btn.disabled=false;
+        if (!features) { result.className='lpc-result'; return; }
+        const feat = lookupLPC(lpcVal, features);
+        if (!feat) {
+          result.className='lpc-result show';
+          result.style.color='var(--c-danger)'; result.style.borderColor='var(--c-danger)';
+          result.style.background='rgba(220,38,38,.08)';
+          result.innerHTML = `LPC <strong>${lpcVal}</strong> not found in plantation data`;
+          return;
+        }
+        const p = feat.properties;
+        result.className='lpc-result show';
+        result.style.color=''; result.style.borderColor=''; result.style.background='';
+        result.innerHTML = `✓ <strong>${p.DISTRICT}</strong> / ${p.BLOCK} · ${p.YEAR} · ${p.AREA_HA} ha · ${(p.BENNAMES||'').split(',').length} beneficiaries`;
+        applyLPCData(feat);
+        // Set season
+        const season = getCurrentSeason();
+        S.values.season = season;
+        const sEl = document.getElementById('f_season');
+        if (sEl) sEl.value = seasonLabel(season);
+        updateConditionals();
+        toast(`✓ LPC ${lpcVal} loaded`, 'success');
+      };
+
+      row.appendChild(inp); row.appendChild(btn);
+      wrap.appendChild(row); wrap.appendChild(result);
+      return wrap;
+    }
+
+    case 'auto_from_lpc':
+    case 'auto_season': {
+      const inp = document.createElement('input');
+      inp.type='text'; inp.className='field-input'; inp.id='f_'+f.id;
+      inp.readOnly=true; inp.style.color='var(--c-muted)';
+      inp.value = f.type === 'auto_season'
+        ? (S.values.season ? seasonLabel(S.values.season) : 'Auto — set after LPC lookup')
+        : (S.values[f.id] || 'Auto — set after LPC lookup');
+      return inp;
+    }
+
+    case 'mort_cluster_select': {
+      const sel = document.createElement('select');
+      sel.className='field-select'; sel.id='f_'+f.id;
+      sel.innerHTML='<option value="">— Select cluster head —</option>';
+      allClusterHeads().forEach(h => {
+        const o = document.createElement('option');
+        o.value=h; o.textContent=h;
+        if (S.values.cluster_name===h) o.selected=true;
+        sel.appendChild(o);
+      });
+      sel.onchange = () => {
+        S.values.cluster_name = sel.value;
+        S.values.cluster_head = sel.value;
+        const chEl = document.getElementById('f_cluster_head');
+        if (chEl) { chEl.value = sel.value; }
+      };
+      return sel;
+    }
+
+    case 'auto_from_cluster': {
+      const inp = document.createElement('input');
+      inp.type='text'; inp.className='field-input'; inp.id='f_'+f.id;
+      inp.readOnly=true; inp.style.color='var(--c-muted)';
+      inp.value = S.values.cluster_head || 'Auto — set after cluster selection';
+      return inp;
+    }
+
+    case 'mort_species_grid': {
+      const wrap = document.createElement('div'); wrap.className='mort-grid'; wrap.id='f_'+f.id;
+      buildMortGrid(wrap);
+      return wrap;
+    }
+
+    case 'mort_health_grid': {
+      const wrap = document.createElement('div'); wrap.className='health-grid'; wrap.id='f_'+f.id;
+      buildHealthGrid(wrap);
+      return wrap;
+    }
+
+    case 'plot_condition_select': {
+      const wrap = document.createElement('div'); wrap.className='plot-cond-wrap'; wrap.id='f_'+f.id;
+      const chips = document.createElement('div'); chips.className='plot-cond-chips';
+      [10,20,30,40,50,60,70,80,90,100].forEach(v => {
+        const c = document.createElement('button');
+        c.type='button'; c.className='plot-cond-chip' + (S.values.plot_condition===v ? ' sel' : '');
+        c.textContent = v+'%';
+        c.onclick = () => {
+          chips.querySelectorAll('.plot-cond-chip').forEach(x=>x.classList.remove('sel'));
+          c.classList.add('sel');
+          S.values.plot_condition = v;
+        };
+        chips.appendChild(c);
+      });
+      wrap.appendChild(chips);
+      return wrap;
     }
 
     case 'file': {
@@ -4454,8 +4897,28 @@ en: {
   'form.fencing.sub':'Fencing materials and condition per plot',
   'form.event':'Local Meeting Event Record',
   'form.event.sub':'LSC, PRA, FGD, etc. event record',
-  'form.leakage':'Ongoing Leakage Assessment',
-  'form.leakage.sub':'Post-baseline cattle grazing leakage — annual assessment',
+  'form.mortality':'Plantation Plot Evaluation',
+  'form.mortality.sub':'Species mortality, survival count and plot condition',
+  's.s_mort_plot':'Plot Identity',
+  's.s_mort_team':'Field Team',
+  's.s_mort_species':'Species Count — Planting, Dead, Alive',
+  's.s_mort_health':'Species Health Condition (1 = Critical, 8 = Excellent)',
+  's.s_mort_plot_cond':'Plot Condition',
+  'f.lpc_id_mort':'Land Parcel Code (LPC)',
+  'f.volunteer_name':'Volunteer Name',
+  'f.watering_team':'Watering Team',
+  'f.cluster_name':'Cluster Name / Head',
+  'f.cluster_head':'Cluster Head',
+  'f.district':'District','f.block':'Block',
+  'f.plantation_year':'Plantation Year',
+  'f.beneficiary_names':'Beneficiary Name(s)',
+  'f.area_ha':'Land Area (Ha)',
+  'f.season':'Season',
+  'f.species_mortality':'Species Mortality Grid',
+  'f.species_health':'Health Rating Grid',
+  'f.plot_condition':'Overall Plot Condition (%)',
+  'f.land_owner_engagement':'Land Owner Engagement',
+  'f.num_species':'No. of Species (planted)',
   'form.biomass_plot':'Biomass Survey — Plot Details',
   'form.biomass_plot.sub':'Plot-level site conditions and observations',
   'form.biomass_tree':'Biomass Survey — Tree Assessment',
@@ -4795,6 +5258,23 @@ hi: {
   'form.fencing.sub':'बाड़ सामग्री और स्थिति',
   'form.event':'स्थानीय बैठक रिकॉर्ड',
   'form.event.sub':'LSC, PRA, FGD आदि कार्यक्रम रिकॉर्ड',
+  'form.mortality':'प्लांटेशन प्लॉट मूल्यांकन',
+  'form.mortality.sub':'प्रजाति मृत्यु दर, जीवित संख्या और प्लॉट की स्थिति',
+  's.s_mort_plot':'प्लॉट पहचान',
+  's.s_mort_team':'फील्ड टीम',
+  's.s_mort_species':'प्रजाति संख्या — लगाए, मरे, जीवित',
+  's.s_mort_health':'प्रजाति स्वास्थ्य स्थिति (1 = गंभीर, 8 = उत्कृष्ट)',
+  's.s_mort_plot_cond':'प्लॉट की स्थिति',
+  'f.volunteer_name':'स्वयंसेवक का नाम',
+  'f.watering_team':'सिंचाई दल',
+  'f.cluster_name':'क्लस्टर नाम / प्रमुख',
+  'f.cluster_head':'क्लस्टर प्रमुख',
+  'f.plantation_year':'रोपण वर्ष',
+  'f.beneficiary_names':'लाभार्थी का नाम (नाम)',
+  'f.area_ha':'भूमि क्षेत्र (हेक्टेयर)',
+  'f.season':'मौसम',
+  'f.plot_condition':'समग्र प्लॉट स्थिति (%)',
+  'f.land_owner_engagement':'भूमि मालिक की भागीदारी',
   'form.leakage':'चल रहा लीकेज मूल्यांकन',
   'form.leakage.sub':'बेसलाइन के बाद मवेशी चराई लीकेज — वार्षिक मूल्यांकन',
   'form.biomass_plot':'Biomass Survey — Plot Details',
@@ -5095,6 +5575,23 @@ bn: {
   'form.fencing.sub':'বেড়ার উপকরণ ও অবস্থা',
   'form.event':'স্থানীয় সভা ইভেন্ট রেকর্ড',
   'form.event.sub':'LSC, PRA, FGD ইত্যাদি ইভেন্ট রেকর্ড',
+  'form.mortality':'বৃক্ষরোপণ প্লট মূল্যায়ন',
+  'form.mortality.sub':'প্রজাতি মৃত্যুহার, বেঁচে থাকার সংখ্যা ও প্লটের অবস্থা',
+  's.s_mort_plot':'প্লট পরিচয়',
+  's.s_mort_team':'মাঠ দল',
+  's.s_mort_species':'প্রজাতি সংখ্যা — লাগানো, মৃত, জীবিত',
+  's.s_mort_health':'প্রজাতির স্বাস্থ্য অবস্থা (১ = সংকটাপন্ন, ৮ = চমৎকার)',
+  's.s_mort_plot_cond':'প্লটের অবস্থা',
+  'f.volunteer_name':'স্বেচ্ছাসেবকের নাম',
+  'f.watering_team':'জল সরবরাহ দল',
+  'f.cluster_name':'ক্লাস্টারের নাম / প্রধান',
+  'f.cluster_head':'ক্লাস্টার প্রধান',
+  'f.plantation_year':'বৃক্ষরোপণ বছর',
+  'f.beneficiary_names':'উপকারভোগীর নাম (নামসমূহ)',
+  'f.area_ha':'জমির পরিমাণ (হে)',
+  'f.season':'মৌসুম',
+  'f.plot_condition':'সামগ্রিক প্লটের অবস্থা (%)',
+  'f.land_owner_engagement':'জমির মালিকের সম্পৃক্ততা',
   'form.leakage':'চলমান লিকেজ মূল্যায়ন',
   'form.leakage.sub':'বেসলাইন-পরবর্তী গবাদিপশু চরানো লিকেজ — বার্ষিক মূল্যায়ন',
   'form.biomass_plot':'Biomass Survey — Plot Details',
