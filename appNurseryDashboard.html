@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery Dashboard — ARR Suite</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --forest:#1a3d2b;--canopy:#2d6a4f;--leaf:#52b788;--mist:#d8f3dc;
+  --ink:#1c2b20;--mid:#4a6741;--pale:#f4faf6;--rule:rgba(82,183,136,.25);
+  --card:#fff;--danger:#dc2626;--warn:#f97316;--info:#0369a1;
+  --radius:10px;--font:'Segoe UI',system-ui,sans-serif;
+}
+body{font-family:var(--font);background:var(--pale);color:var(--ink);min-height:100vh}
+
+/* ── HEADER ── */
+header{background:var(--forest);padding:16px 24px;display:flex;align-items:center;
+  gap:14px;border-bottom:3px solid var(--leaf)}
+header a.back{color:var(--mist);text-decoration:none;font-size:13px;opacity:.8;
+  display:flex;align-items:center;gap:5px;flex-shrink:0}
+header a.back:hover{opacity:1}
+.hdr-text h1{font-size:18px;font-weight:700;color:#fff}
+.hdr-text p{font-size:11px;color:var(--mist);margin-top:2px}
+.hdr-lang{margin-left:auto;display:flex;gap:6px}
+.lang-btn{padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.3);
+  background:none;color:var(--mist);font-size:11px;cursor:pointer;font-family:var(--font)}
+.lang-btn.active{background:var(--leaf);border-color:var(--leaf);color:#fff;font-weight:700}
+
+/* ── NAV TABS ── */
+.nav-tabs{background:var(--forest);display:flex;gap:2px;padding:0 24px;
+  border-bottom:3px solid var(--leaf);overflow-x:auto}
+.nav-tab{padding:10px 18px;font-size:12px;font-weight:600;color:var(--mist);
+  cursor:pointer;border:none;background:none;opacity:.6;border-bottom:3px solid transparent;
+  margin-bottom:-3px;transition:opacity .15s;white-space:nowrap;font-family:var(--font)}
+.nav-tab:hover{opacity:.9}
+.nav-tab.active{opacity:1;color:#fff;border-bottom-color:var(--leaf)}
+
+/* ── MAIN ── */
+main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+
+/* ── SCREEN PANELS ── */
+.screen{display:none}
+.screen.active{display:block}
+
+/* ── FORM TILES (CCB style) ── */
+.form-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.form-tile{background:var(--card);border:1.5px solid var(--rule);border-radius:14px;
+  padding:24px 20px;cursor:pointer;text-align:center;transition:box-shadow .15s,transform .1s,border-color .15s;
+  position:relative;overflow:hidden}
+.form-tile::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--accent,var(--leaf));opacity:0;transition:opacity .15s}
+.form-tile:hover{box-shadow:0 6px 24px rgba(0,0,0,.1);transform:translateY(-2px);border-color:var(--accent,var(--leaf))}
+.form-tile:hover::before{opacity:1}
+.tile-icon{font-size:36px;margin-bottom:10px;line-height:1}
+.tile-name{font-size:14px;font-weight:700;color:var(--forest);margin-bottom:4px}
+.tile-sub{font-size:11px;color:var(--mid);line-height:1.4}
+
+/* ── FORM MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;
+  overflow-y:auto;padding:20px}
+.modal-bg.open{display:flex;align-items:flex-start;justify-content:center}
+.modal{background:var(--card);border-radius:14px;width:100%;max-width:600px;
+  margin:auto;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{background:var(--forest);padding:16px 20px;display:flex;align-items:center;gap:10px}
+.modal-hdr h2{font-size:16px;font-weight:700;color:#fff;flex:1}
+.modal-hdr p{font-size:11px;color:var(--mist);margin-top:2px}
+.modal-close{background:none;border:none;color:var(--mist);font-size:22px;cursor:pointer;
+  padding:0 4px;line-height:1;font-family:var(--font)}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:16px;max-height:80vh;overflow-y:auto}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--rule);display:flex;gap:10px}
+
+/* ── FORM FIELDS ── */
+.field-group{display:flex;flex-direction:column;gap:5px}
+.field-label{font-size:12px;font-weight:600;color:var(--mid)}
+.field-hint{font-size:10px;color:var(--mid);font-style:italic}
+.field-input,.field-select,.field-textarea{width:100%;padding:9px 12px;border-radius:8px;
+  border:1.5px solid var(--rule);background:#fff;font-size:13px;font-family:var(--font);
+  color:var(--ink);outline:none;transition:border-color .15s}
+.field-input:focus,.field-select:focus,.field-textarea:focus{border-color:var(--leaf)}
+.field-textarea{min-height:70px;resize:vertical}
+.field-input[readonly]{background:var(--pale);color:var(--mid)}
+
+/* ── SECTION HEADER ── */
+.section-hdr{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--mid);padding-bottom:6px;border-bottom:1px solid var(--rule);margin-bottom:2px}
+
+/* ── MULTISELECT CHIPS ── */
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 12px;border-radius:20px;border:1.5px solid var(--rule);
+  background:#fff;font-size:12px;cursor:pointer;font-family:var(--font);
+  transition:all .12s;color:var(--ink)}
+.chip.sel{background:var(--leaf);border-color:var(--leaf);color:#fff;font-weight:600}
+.chip.lemon{border-color:#ca8a04}
+.chip.lemon.sel{background:#ca8a04;border-color:#ca8a04;color:#fff}
+
+/* ── SPECIES GRID ── */
+.spp-grid{display:flex;flex-direction:column;gap:0}
+.spp-hdr{display:grid;grid-template-columns:1fr 90px 80px;gap:6px;
+  padding:6px 10px;font-size:10px;font-weight:700;color:var(--mid);
+  text-transform:uppercase;background:var(--pale);border:1px solid var(--rule);
+  border-bottom:none;border-radius:var(--radius) var(--radius) 0 0}
+.spp-row{display:grid;grid-template-columns:1fr 90px 80px;gap:6px;align-items:center;
+  padding:6px 10px;border:1px solid var(--rule);border-top:none;background:var(--card)}
+.spp-row:last-child{border-radius:0 0 var(--radius) var(--radius)}
+.spp-row.lemon-row{background:#fffbeb}
+.spp-name{font-size:12px;font-weight:600}
+.spp-name.lemon{color:#92400e}
+.spp-plan{font-size:11px;color:var(--mid);text-align:center}
+.spp-inp{width:100%;text-align:center;padding:5px;font-size:13px;font-family:var(--font);
+  border:1.5px solid var(--rule);border-radius:6px;background:#fff}
+
+/* ── BUTTONS ── */
+.btn{padding:10px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:var(--font);transition:all .15s}
+.btn-primary{background:var(--leaf);color:#fff}
+.btn-primary:hover{background:var(--canopy)}
+.btn-secondary{background:var(--pale);color:var(--mid);border:1px solid var(--rule)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-full{width:100%}
+.btn-icon{font-size:16px;margin-right:6px}
+
+/* ── DASHBOARD CARDS ── */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.dash-card{background:var(--card);border:1.5px solid var(--rule);border-radius:var(--radius);overflow:hidden}
+.dash-card.full{grid-column:1/-1}
+.dash-card-hdr{padding:12px 16px;border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;gap:8px}
+.dash-card-hdr h3{font-size:13px;font-weight:700;color:var(--forest);flex:1}
+.dash-card-body{padding:16px}
+
+/* ── KPI ROW ── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi-card{background:var(--card);border:1.5px solid var(--rule);border-radius:var(--radius);
+  padding:14px 16px;text-align:center}
+.kpi-val{font-size:24px;font-weight:700;color:var(--forest);line-height:1}
+.kpi-label{font-size:10px;color:var(--mid);margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+
+/* ── TABLE ── */
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{padding:7px 10px;background:var(--pale);font-weight:700;color:var(--mid);
+  text-align:left;border-bottom:2px solid var(--rule);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+.data-table td{padding:7px 10px;border-bottom:1px solid var(--rule);color:var(--ink)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.data-table .lemon-cell{color:#92400e;font-style:italic}
+
+/* ── PROGRESS BAR ── */
+.prog-bar{height:6px;background:var(--rule);border-radius:3px;overflow:hidden;margin-top:4px}
+.prog-fill{height:100%;background:var(--leaf);border-radius:3px;transition:width .3s}
+.prog-fill.warn{background:var(--warn)}
+.prog-fill.danger{background:var(--danger)}
+
+/* ── MAP ── */
+#seed-map{height:400px;border-radius:var(--radius);border:1.5px solid var(--rule)}
+
+/* ── SOURCE BADGE ── */
+.src-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;padding:2px 7px;border-radius:20px}
+.src-own{background:#d1fae5;color:#065f46}
+.src-ext{background:#dbeafe;color:#1e40af}
+.src-leg{background:#f3f4f6;color:#6b7280}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--forest);color:#fff;padding:10px 20px;border-radius:30px;
+  font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;
+  white-space:nowrap}
+#toast.show{opacity:1}
+
+/* ── SYNC STATUS ── */
+.sync-bar{background:rgba(82,183,136,.1);border:1px solid var(--rule);border-radius:8px;
+  padding:8px 14px;display:flex;align-items:center;gap:10px;font-size:12px;margin-bottom:16px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--leaf);flex-shrink:0}
+.sync-dot.offline{background:var(--warn)}
+.sync-dot.pending{background:var(--info)}
+
+/* ── PHOTO PREVIEW ── */
+.photo-preview{width:100%;height:160px;background:var(--pale);border:2px dashed var(--rule);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;overflow:hidden;position:relative}
+.photo-preview img{width:100%;height:100%;object-fit:cover}
+.photo-preview-label{color:var(--mid);font-size:12px;text-align:center;padding:10px}
+
+/* ── PROVENANCE ── */
+.prov-placeholder{padding:32px;text-align:center;color:var(--mid);font-size:13px}
+.prov-placeholder .big{font-size:32px;margin-bottom:8px}
+
+/* ── OFFLINE BADGE ── */
+.offline-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:20px;
+  background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+
+@media(max-width:680px){
+  .form-tiles{grid-template-columns:1fr}
+  .dash-grid{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .dash-card.full{grid-column:1}
+  header{padding:12px 16px}
+  main{padding:16px 12px 48px}
+}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<header>
+  <a class="back" href="index.html">← Suite</a>
+  <div class="hdr-text">
+    <h1>🌱 Nursery Dashboard</h1>
+    <p>Sapling plan, dispatch tracking and seed tree mapping — Asha 1</p>
+  </div>
+  <div class="hdr-lang">
+    <button class="lang-btn active" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" onclick="setLang('hi')">HI</button>
+    <button class="lang-btn" onclick="setLang('bn')">BN</button>
+  </div>
+</header>
+
+<nav class="nav-tabs">
+  <button class="nav-tab active" onclick="showScreen('dashboard')">📊 Dashboard</button>
+  <button class="nav-tab" onclick="showScreen('forms')">📋 Data Entry</button>
+  <button class="nav-tab" onclick="showScreen('seedmap')">🗺️ Seed Tree Map</button>
+  <button class="nav-tab" onclick="showScreen('queue')">📤 Upload Queue</button>
+</nav>
+
+<main>
+
+<!-- ═══ DASHBOARD SCREEN ═══ -->
+<div class="screen active" id="screen-dashboard">
+
+  <div class="sync-bar" id="sync-bar">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-text">Checking connection…</span>
+    <span class="offline-badge" style="margin-left:auto">Asha 1 · 2026</span>
+  </div>
+
+  <div class="kpi-row" id="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-val" id="kpi-total-plan">820,000</div>
+      <div class="kpi-label">Total Planned (carbon spp)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val" id="kpi-dispatched">0</div>
+      <div class="kpi-label">Total Dispatched</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val" id="kpi-seed-trees">0</div>
+      <div class="kpi-label">Seed Trees Mapped</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val" id="kpi-queue">0</div>
+      <div class="kpi-label">Pending Upload</div>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+
+    <div class="dash-card full">
+      <div class="dash-card-hdr">
+        <h3>Plan vs Dispatched — by Species</h3>
+        <select class="field-select" style="width:auto;padding:4px 8px;font-size:11px" id="chart-source-filter" onchange="renderPlanChart()">
+          <option value="ALL">All Sources</option>
+          <option value="SALS">TF Salsalabari</option>
+          <option value="GRAS">TF Grassmore</option>
+          <option value="MSAL">Monirul (Salsalabari)</option>
+          <option value="MEHB">Mehboob (Sisubari)</option>
+        </select>
+      </div>
+      <div class="dash-card-body">
+        <canvas id="plan-chart" height="180"></canvas>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <div class="dash-card-hdr"><h3>Stock by Source Nursery</h3></div>
+      <div class="dash-card-body">
+        <table class="data-table" id="source-table">
+          <thead><tr><th>Source</th><th>Type</th><th class="num">Plan</th><th class="num">Dispatched</th><th class="num">Remaining</th></tr></thead>
+          <tbody id="source-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <div class="dash-card-hdr"><h3>District-wise Received</h3></div>
+      <div class="dash-card-body">
+        <table class="data-table" id="district-table">
+          <thead><tr><th>District</th><th class="num">Received</th><th class="num">LPCs Served</th></tr></thead>
+          <tbody id="district-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dash-card full">
+      <div class="dash-card-hdr"><h3>Recent Dispatches</h3></div>
+      <div class="dash-card-body">
+        <table class="data-table" id="dispatch-table">
+          <thead><tr><th>Date</th><th>Source</th><th>District</th><th>LPC</th><th>Type</th><th class="num">Total</th></tr></thead>
+          <tbody id="dispatch-tbody"><tr><td colspan="6" style="text-align:center;color:var(--mid);padding:20px">No dispatches recorded yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dash-card full">
+      <div class="dash-card-hdr">
+        <h3>🌳 Mother Tree Provenance</h3>
+        <span style="font-size:11px;color:var(--mid);margin-left:auto">Seed Tree → Nursery Batch → LPC</span>
+      </div>
+      <div class="dash-card-body">
+        <div class="prov-placeholder">
+          <div class="big">🌳</div>
+          Provenance chain will appear here as dispatches are tagged with Seed Tree IDs.<br>
+          <span style="font-size:11px">Tag dispatches in Data Entry → 🌿 Sapling Dispatch → Seed Tree ID field</span>
+        </div>
+        <div id="prov-content" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="dash-card full">
+      <div class="dash-card-hdr">
+        <h3>🗺️ Soil Map Integration</h3>
+        <span style="font-size:11px;color:var(--mid);margin-left:auto">Pending soil polygon push from ARR Mapper</span>
+      </div>
+      <div class="dash-card-body">
+        <div class="prov-placeholder">
+          <div class="big">🗺️</div>
+          Soil suitability data will appear here once soil map polygons are submitted from ARR Mapper.<br>
+          <span style="font-size:11px">This will enable species-wise sapling demand estimation per district based on soil type mapping.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ FORMS SCREEN ═══ -->
+<div class="screen" id="screen-forms">
+  <div class="form-tiles">
+
+    <div class="form-tile" style="--accent:#2d6a4f" onclick="openForm('dispatch')">
+      <div class="tile-icon">🌿</div>
+      <div class="tile-name" data-i18n="tile.dispatch">Sapling Dispatch</div>
+      <div class="tile-sub" data-i18n="tile.dispatch.sub">Record sapling movement from nursery to field — source, district, LPC, per-species count</div>
+    </div>
+
+    <div class="form-tile" style="--accent:#7c3aed" onclick="openForm('seedtree')">
+      <div class="tile-icon">🌳</div>
+      <div class="tile-name" data-i18n="tile.seedtree">Seed Tree Record</div>
+      <div class="tile-sub" data-i18n="tile.seedtree.sub">Map mother trees with GPS, species, location type, seeds collected and photo</div>
+    </div>
+
+    <div class="form-tile" style="--accent:#0369a1" onclick="openForm('inspection')">
+      <div class="tile-icon">📋</div>
+      <div class="tile-name" data-i18n="tile.inspection">Nursery Inspection</div>
+      <div class="tile-sub" data-i18n="tile.inspection.sub">Record current stock count, health and polybag size per species at source nursery</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ SEED MAP SCREEN ═══ -->
+<div class="screen" id="screen-seedmap">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <select class="field-select" style="width:auto" id="map-spp-filter" onchange="renderSeedMap()">
+      <option value="ALL">All Species</option>
+    </select>
+    <select class="field-select" style="width:auto" id="map-loc-filter" onchange="renderSeedMap()">
+      <option value="ALL" data-i18n="loc.all">All Location Types</option>
+      <option value="ROAD" data-i18n="loc.road">By Roadside</option>
+      <option value="VLG" data-i18n="loc.village">In Village</option>
+      <option value="FRST" data-i18n="loc.forest">In Forest</option>
+    </select>
+    <span id="map-count" style="font-size:12px;color:var(--mid);margin-left:auto"></span>
+  </div>
+  <div id="seed-map"></div>
+  <div style="margin-top:12px">
+    <div id="seed-tree-list"></div>
+  </div>
+</div>
+
+<!-- ═══ QUEUE SCREEN ═══ -->
+<div class="screen" id="screen-queue">
+  <div class="sync-bar">
+    <div class="sync-dot" id="queue-dot"></div>
+    <span id="queue-status">Checking…</span>
+    <button class="btn btn-primary" style="margin-left:auto;padding:6px 14px;font-size:12px" onclick="syncQueue()">↑ Sync Now</button>
+  </div>
+  <div id="queue-list"></div>
+</div>
+
+</main>
+
+<!-- ═══ DISPATCH MODAL ═══ -->
+<div class="modal-bg" id="modal-dispatch">
+<div class="modal">
+<div class="modal-hdr">
+  <div style="flex:1">
+    <h2 data-i18n="tile.dispatch">🌿 Sapling Dispatch</h2>
+    <p data-i18n="tile.dispatch.sub">Record sapling movement from nursery to field</p>
+  </div>
+  <button class="modal-close" onclick="closeModal('dispatch')">✕</button>
+</div>
+<div class="modal-body" id="dispatch-body">
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.date">Date</label>
+    <input type="date" class="field-input" id="d-date">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.source">Source Nursery</label>
+    <select class="field-select" id="d-source" onchange="onSourceChange()">
+      <option value="">— Select —</option>
+      <option value="SALS">TF Salsalabari (Own)</option>
+      <option value="GRAS">TF Grassmore (Own)</option>
+      <option value="MSAL">Monirul — Salsalabari</option>
+      <option value="MEHB">Mehboob (Sisubari)</option>
+      <option value="MJAL">Monirul — Jalpaiguri (Legacy)</option>
+      <option value="CHAL">MS Chalsa (Legacy)</option>
+    </select>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.district">Destination District</label>
+    <div class="chip-row" id="d-district">
+      <div class="chip" data-val="APDE" onclick="selChip(this,'d-district',true)">APDE</div>
+      <div class="chip" data-val="APDW" onclick="selChip(this,'d-district',true)">APDW</div>
+      <div class="chip" data-val="JPG" onclick="selChip(this,'d-district',true)">JPG</div>
+      <div class="chip" data-val="CBH" onclick="selChip(this,'d-district',true)">CBH</div>
+      <div class="chip" data-val="KPG" onclick="selChip(this,'d-district',true)">KPG</div>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.lpc">LPC (Land Parcel Code)</label>
+    <input type="text" class="field-input" id="d-lpc" placeholder="e.g. 1050001">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.nature">Nature of Plantation</label>
+    <div class="chip-row" id="d-nature">
+      <div class="chip" data-val="NEW" onclick="selChip(this,'d-nature',true)" data-i18n="nat.new">New Plantation</div>
+      <div class="chip" data-val="REPLANT" onclick="selChip(this,'d-nature',true)" data-i18n="nat.replant">Replantation</div>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.seedtree_id">Seed Tree ID <span style="font-weight:400;color:var(--mid)">(optional — for provenance tracking)</span></label>
+    <input type="text" class="field-input" id="d-seedtree" placeholder="e.g. ST-ASHA1-001" list="seedtree-datalist">
+    <datalist id="seedtree-datalist"></datalist>
+  </div>
+
+  <div class="section-hdr" data-i18n="s.species_count">Species Count</div>
+  <div class="spp-grid" id="d-spp-grid">
+    <div class="spp-hdr"><span>Species</span><span>2026 Plan</span><span>Qty</span></div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.vehicle">Vehicle / Remarks</label>
+    <input type="text" class="field-input" id="d-vehicle" placeholder="Vehicle no., driver, remarks">
+  </div>
+
+</div>
+<div class="modal-footer">
+  <button class="btn btn-secondary" onclick="closeModal('dispatch')" data-i18n="btn.cancel">Cancel</button>
+  <button class="btn btn-primary" onclick="saveDispatch()" data-i18n="btn.save">Save Offline</button>
+</div>
+</div>
+</div>
+
+<!-- ═══ SEED TREE MODAL ═══ -->
+<div class="modal-bg" id="modal-seedtree">
+<div class="modal">
+<div class="modal-hdr">
+  <div style="flex:1">
+    <h2 data-i18n="tile.seedtree">🌳 Seed Tree Record</h2>
+    <p data-i18n="tile.seedtree.sub">Map mother trees with GPS and photo</p>
+  </div>
+  <button class="modal-close" onclick="closeModal('seedtree')">✕</button>
+</div>
+<div class="modal-body">
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.date">Date</label>
+    <input type="date" class="field-input" id="st-date">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.species">Species</label>
+    <select class="field-select" id="st-species">
+      <option value="">— Select —</option>
+    </select>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.loc_type">Location Type</label>
+    <div class="chip-row" id="st-loctype">
+      <div class="chip" data-val="ROAD" onclick="selChip(this,'st-loctype',true)" data-i18n="loc.road">By Roadside</div>
+      <div class="chip" data-val="VLG" onclick="selChip(this,'st-loctype',true)" data-i18n="loc.village">In Village</div>
+      <div class="chip" data-val="FRST" onclick="selChip(this,'st-loctype',true)" data-i18n="loc.forest">In Forest</div>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.seeds">Seeds Collected (approx. count)</label>
+    <input type="number" class="field-input" id="st-seeds" min="0" placeholder="0">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.gps">GPS Location</label>
+    <div style="display:flex;gap:8px">
+      <input type="text" class="field-input" id="st-lat" placeholder="Latitude" readonly>
+      <input type="text" class="field-input" id="st-lon" placeholder="Longitude" readonly>
+      <button class="btn btn-secondary" style="white-space:nowrap;padding:9px 14px" onclick="getGPS()" data-i18n="btn.gps">📍 Get GPS</button>
+    </div>
+    <div class="field-hint" id="st-gps-acc"></div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.photo">Photo (max 3MP, 80% quality)</label>
+    <div class="photo-preview" id="st-photo-preview" onclick="document.getElementById('st-photo-input').click()">
+      <div class="photo-preview-label">📷 Tap to capture or choose photo</div>
+    </div>
+    <input type="file" id="st-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleSeedPhoto(this)">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.notes">Notes</label>
+    <textarea class="field-textarea" id="st-notes" placeholder="Additional notes about this tree…"></textarea>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.submitter">Recorded by</label>
+    <input type="text" class="field-input" id="st-submitter" readonly placeholder="Auto — set after sign-in">
+  </div>
+
+</div>
+<div class="modal-footer">
+  <button class="btn btn-secondary" onclick="closeModal('seedtree')" data-i18n="btn.cancel">Cancel</button>
+  <button class="btn btn-primary" onclick="saveSeedTree()" data-i18n="btn.save">Save Offline</button>
+</div>
+</div>
+</div>
+
+<!-- ═══ INSPECTION MODAL ═══ -->
+<div class="modal-bg" id="modal-inspection">
+<div class="modal">
+<div class="modal-hdr">
+  <div style="flex:1">
+    <h2 data-i18n="tile.inspection">📋 Nursery Inspection</h2>
+    <p data-i18n="tile.inspection.sub">Stock count and health at source nursery</p>
+  </div>
+  <button class="modal-close" onclick="closeModal('inspection')">✕</button>
+</div>
+<div class="modal-body">
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.date">Date</label>
+    <input type="date" class="field-input" id="ins-date">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.source">Source Nursery</label>
+    <select class="field-select" id="ins-source">
+      <option value="">— Select —</option>
+      <option value="SALS">TF Salsalabari (Own)</option>
+      <option value="GRAS">TF Grassmore (Own)</option>
+      <option value="MSAL">Monirul — Salsalabari</option>
+      <option value="MEHB">Mehboob (Sisubari)</option>
+      <option value="MJAL">Monirul — Jalpaiguri (Legacy)</option>
+      <option value="CHAL">MS Chalsa (Legacy)</option>
+    </select>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.inspector">Inspector Name</label>
+    <input type="text" class="field-input" id="ins-inspector" placeholder="">
+  </div>
+
+  <div class="section-hdr" data-i18n="s.stock_count">Stock Count per Species</div>
+  <div class="spp-grid" id="ins-spp-grid">
+    <div class="spp-hdr">
+      <span data-i18n="col.species">Species</span>
+      <span data-i18n="col.polybag">Polybag (in)</span>
+      <span data-i18n="col.count">Count</span>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.health">Overall Nursery Health</label>
+    <div class="chip-row" id="ins-health">
+      <div class="chip" data-val="GOOD" onclick="selChip(this,'ins-health',true)" data-i18n="hlth.good">Good</div>
+      <div class="chip" data-val="FAIR" onclick="selChip(this,'ins-health',true)" data-i18n="hlth.fair">Fair</div>
+      <div class="chip" data-val="POOR" onclick="selChip(this,'ins-health',true)" data-i18n="hlth.poor">Poor</div>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.remarks">Remarks</label>
+    <textarea class="field-textarea" id="ins-remarks"></textarea>
+  </div>
+
+</div>
+<div class="modal-footer">
+  <button class="btn btn-secondary" onclick="closeModal('inspection')" data-i18n="btn.cancel">Cancel</button>
+  <button class="btn btn-primary" onclick="saveInspection()" data-i18n="btn.save">Save Offline</button>
+</div>
+</div>
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════
+
+const APP_VERSION = 'nursery_DEV1';
+
+const SPECIES = [
+  { code:'TK',  local:'Teak',       local_hi:'सागौन',    local_bn:'সেগুন',    sci:'Tectona grandis',         polybag:'9×7', carbon:true  },
+  { code:'MHG', local:'Mahagoni',   local_hi:'महागोनी',  local_bn:'মহাগনি',   sci:'Swietenia mahogani',      polybag:'4×6', carbon:true  },
+  { code:'CKS', local:'Chikrashi',  local_hi:'चिकरासी', local_bn:'চিকরাশি',  sci:'Chukrasia tabularis',     polybag:'4×6', carbon:true  },
+  { code:'GMR', local:'Gamar',      local_hi:'गम्हार',   local_bn:'গামার',    sci:'Gmelina arborea',         polybag:'4×6', carbon:true  },
+  { code:'KSR', local:'Kalo Sirish',local_hi:'काला सिरीष',local_bn:'কালো সিরিষ',sci:'Albizia lebbeck',       polybag:'4×6', carbon:true  },
+  { code:'PNS', local:'Panisaj',    local_hi:'पानीसाज', local_bn:'পানিসাজ',  sci:'Terminalia myriocarpa',   polybag:'4×6', carbon:true  },
+  { code:'SML', local:'Shimul',     local_hi:'शिमुल',    local_bn:'শিমুল',    sci:'Bombax ceiba',            polybag:'4×6', carbon:true  },
+  { code:'NM',  local:'Neem',       local_hi:'नीम',      local_bn:'নিম',      sci:'Azadirachta indica',      polybag:'4×6', carbon:true  },
+  { code:'KTH', local:'Kathal',     local_hi:'कटहल',     local_bn:'কাঁঠাল',   sci:'Artocarpus heterophyllus',polybag:'4×6', carbon:true  },
+  { code:'JM',  local:'Kalo Jam',   local_hi:'काला जाम', local_bn:'কালো জাম', sci:'Syzygium cumini',         polybag:'4×6', carbon:true  },
+  { code:'JRL', local:'Jarul',      local_hi:'जारुल',    local_bn:'জারুল',    sci:'Lagerstroemia speciosa',  polybag:'4×6', carbon:true  },
+  { code:'KHR', local:'Khair',      local_hi:'खैर',      local_bn:'খয়ের',    sci:'Senegalia catechu',       polybag:'4×6', carbon:true  },
+  { code:'CHP', local:'Chaap',      local_hi:'चाप',      local_bn:'চাঁপ',     sci:'Magnolia champaca',       polybag:'4×6', carbon:true  },
+  { code:'LMN', local:'Lemon (Lebu)',local_hi:'नींबू',   local_bn:'লেবু',     sci:'Citrus limon',            polybag:'4×6', carbon:false }
+];
+
+// 2026 plan per source (carbon species only, from blob)
+const PLAN_2026 = {
+  SALS:{ TK:100000,MHG:10000,CKS:10000,GMR:20000,KSR:20000,PNS:25000,SML:40000,NM:0,    KTH:5000, JM:25000,JRL:20000,KHR:15000,CHP:10000 },
+  GRAS:{ TK:100000,MHG:10000,CKS:10000,GMR:20000,KSR:20000,PNS:25000,SML:40000,NM:0,    KTH:5000, JM:25000,JRL:20000,KHR:15000,CHP:10000 },
+  MSAL:{ TK:30000, MHG:10000,CKS:10000,GMR:20000,KSR:20000,PNS:0,    SML:0,    NM:10000,KTH:10000,JM:10000,JRL:20000,KHR:0,    CHP:20000 },
+  MEHB:{ TK:20000, MHG:0,    CKS:0,    GMR:10000,KSR:10000,PNS:0,    SML:0,    NM:0,    KTH:0,    JM:0,    JRL:10000,KHR:10000,CHP:0    },
+  MJAL:{ legacy:true },
+  CHAL:{ legacy:true }
+};
+
+// Total plan per species (all active sources)
+function totalPlanForSpp(code) {
+  return ['SALS','GRAS','MSAL','MEHB'].reduce((s,src) => s + (PLAN_2026[src][code]||0), 0);
+}
+
+const SOURCES = [
+  { code:'SALS', label:'TF Salsalabari',        type:'own', serves:['APDE','APDW','CBH'] },
+  { code:'GRAS', label:'TF Grassmore',           type:'own', serves:['JPG','KPG'] },
+  { code:'MSAL', label:'Monirul (Salsalabari)',  type:'ext', serves:['APDE','APDW'] },
+  { code:'MJAL', label:'Monirul (Jalpaiguri)',   type:'leg', serves:['APDE','APDW'] },
+  { code:'MEHB', label:'Mehboob (Sisubari)',     type:'ext', serves:['JPG','KPG'] },
+  { code:'CHAL', label:'MS Chalsa',              type:'leg', serves:['JPG','KPG'] },
+];
+
+const DISTRICTS = ['APDE','APDW','JPG','CBH','KPG'];
+
+// ═══════════════════════════════════════════════════════
+// I18N
+// ═══════════════════════════════════════════════════════
+let _lang = 'en';
+const I18N = {
+  en:{
+    'tile.dispatch':'Sapling Dispatch',
+    'tile.dispatch.sub':'Record sapling movement from nursery to field',
+    'tile.seedtree':'Seed Tree Record',
+    'tile.seedtree.sub':'Map mother trees with GPS, species, location type and photo',
+    'tile.inspection':'Nursery Inspection',
+    'tile.inspection.sub':'Record current stock count and health at source nursery',
+    'f.date':'Date','f.source':'Source Nursery','f.district':'Destination District',
+    'f.lpc':'LPC (Land Parcel Code)','f.nature':'Nature of Plantation',
+    'f.seedtree_id':'Seed Tree ID','f.vehicle':'Vehicle / Remarks',
+    'f.species':'Species','f.loc_type':'Location Type','f.seeds':'Seeds Collected',
+    'f.gps':'GPS Location','f.photo':'Photo','f.notes':'Notes','f.submitter':'Recorded by',
+    'f.inspector':'Inspector Name','f.health':'Overall Nursery Health','f.remarks':'Remarks',
+    's.species_count':'Species Count','s.stock_count':'Stock Count per Species',
+    'col.species':'Species','col.polybag':'Polybag (in)','col.count':'Count',
+    'nat.new':'New Plantation','nat.replant':'Replantation',
+    'loc.all':'All Location Types','loc.road':'By Roadside','loc.village':'In Village','loc.forest':'In Forest',
+    'hlth.good':'Good','hlth.fair':'Fair','hlth.poor':'Poor',
+    'btn.cancel':'Cancel','btn.save':'Save Offline','btn.gps':'📍 Get GPS',
+  },
+  hi:{
+    'tile.dispatch':'पौधा प्रेषण',
+    'tile.dispatch.sub':'नर्सरी से खेत तक पौधों की आवाजाही दर्ज करें',
+    'tile.seedtree':'बीज वृक्ष रिकॉर्ड',
+    'tile.seedtree.sub':'GPS, प्रजाति, स्थान प्रकार और फोटो के साथ मातृ वृक्ष मैप करें',
+    'tile.inspection':'नर्सरी निरीक्षण',
+    'tile.inspection.sub':'स्रोत नर्सरी में वर्तमान स्टॉक और स्वास्थ्य दर्ज करें',
+    'f.date':'तारीख','f.source':'स्रोत नर्सरी','f.district':'गंतव्य जिला',
+    'f.lpc':'LPC (भूमि पार्सल कोड)','f.nature':'रोपण का प्रकार',
+    'f.seedtree_id':'बीज वृक्ष ID','f.vehicle':'वाहन / टिप्पणी',
+    'f.species':'प्रजाति','f.loc_type':'स्थान प्रकार','f.seeds':'एकत्रित बीज',
+    'f.gps':'GPS स्थान','f.photo':'फोटो','f.notes':'नोट्स','f.submitter':'दर्ज किया',
+    'f.inspector':'निरीक्षक का नाम','f.health':'नर्सरी स्वास्थ्य','f.remarks':'टिप्पणी',
+    's.species_count':'प्रजाति संख्या','s.stock_count':'प्रजाति-वार स्टॉक संख्या',
+    'col.species':'प्रजाति','col.polybag':'पॉलीबैग (इंच)','col.count':'संख्या',
+    'nat.new':'नई रोपण','nat.replant':'पुनः रोपण',
+    'loc.all':'सभी स्थान प्रकार','loc.road':'सड़क किनारे','loc.village':'गाँव में','loc.forest':'जंगल में',
+    'hlth.good':'अच्छा','hlth.fair':'ठीक','hlth.poor':'खराब',
+    'btn.cancel':'रद्द करें','btn.save':'ऑफलाइन सहेजें','btn.gps':'📍 GPS लें',
+  },
+  bn:{
+    'tile.dispatch':'চারা প্রেরণ',
+    'tile.dispatch.sub':'নার্সারি থেকে মাঠে চারা পাঠানোর রেকর্ড',
+    'tile.seedtree':'বীজ গাছের রেকর্ড',
+    'tile.seedtree.sub':'GPS, প্রজাতি, অবস্থানের ধরন ও ছবিসহ মাতৃ গাছ ম্যাপ করুন',
+    'tile.inspection':'নার্সারি পরিদর্শন',
+    'tile.inspection.sub':'উৎস নার্সারিতে বর্তমান মজুত ও স্বাস্থ্য রেকর্ড করুন',
+    'f.date':'তারিখ','f.source':'উৎস নার্সারি','f.district':'গন্তব্য জেলা',
+    'f.lpc':'LPC (জমির পার্সেল কোড)','f.nature':'রোপণের ধরন',
+    'f.seedtree_id':'বীজ গাছের ID','f.vehicle':'যানবাহন / মন্তব্য',
+    'f.species':'প্রজাতি','f.loc_type':'অবস্থানের ধরন','f.seeds':'সংগৃহীত বীজ',
+    'f.gps':'GPS অবস্থান','f.photo':'ছবি','f.notes':'নোট','f.submitter':'রেকর্ড করেছেন',
+    'f.inspector':'পরিদর্শকের নাম','f.health':'নার্সারির স্বাস্থ্য','f.remarks':'মন্তব্য',
+    's.species_count':'প্রজাতির সংখ্যা','s.stock_count':'প্রজাতিভিত্তিক মজুত সংখ্যা',
+    'col.species':'প্রজাতি','col.polybag':'পলিব্যাগ (ইঞ্চি)','col.count':'সংখ্যা',
+    'nat.new':'নতুন রোপণ','nat.replant':'পুনরায় রোপণ',
+    'loc.all':'সব অবস্থানের ধরন','loc.road':'রাস্তার পাশে','loc.village':'গ্রামে','loc.forest':'বনে',
+    'hlth.good':'ভালো','hlth.fair':'মোটামুটি','hlth.poor':'খারাপ',
+    'btn.cancel':'বাতিল','btn.save':'অফলাইনে সংরক্ষণ','btn.gps':'📍 GPS নিন',
+  }
+};
+
+function t(key, fallback='') {
+  return (I18N[_lang]||I18N.en)[key] || (I18N.en[key]) || fallback;
+}
+
+function setLang(lang) {
+  _lang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent===lang.toUpperCase()));
+  applyI18N();
+  buildSpeciesGrids();
+}
+
+function applyI18N() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.dataset.i18n);
+    if (v) el.textContent = v;
+  });
+}
+
+function sppName(sp) {
+  return _lang==='hi' ? sp.local_hi : _lang==='bn' ? sp.local_bn : sp.local;
+}
+
+// ═══════════════════════════════════════════════════════
+// INDEXEDDB
+// ═══════════════════════════════════════════════════════
+let _db = null;
+const DB_NAME = 'NurseryDB'; const DB_VER = 1;
+const STORES = ['dispatches','seedtrees','inspections','queue'];
+
+async function openDB() {
+  if (_db) return _db;
+  return new Promise((res,rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      STORES.forEach(s => { if (!db.objectStoreNames.contains(s)) db.createObjectStore(s,{keyPath:'id'}); });
+    };
+    req.onsuccess = e => { _db = e.target.result; res(_db); };
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+async function dbPut(store, rec) {
+  const db = await openDB();
+  return new Promise((res,rej) => {
+    const tx = db.transaction(store,'readwrite');
+    tx.objectStore(store).put(rec).onsuccess = e => res(e.target.result);
+    tx.onerror = e => rej(e.target.error);
+  });
+}
+
+async function dbGetAll(store) {
+  const db = await openDB();
+  return new Promise((res,rej) => {
+    const tx = db.transaction(store,'readonly');
+    tx.objectStore(store).getAll().onsuccess = e => res(e.target.result);
+    tx.onerror = e => rej(e.target.error);
+  });
+}
+
+async function dbDelete(store, id) {
+  const db = await openDB();
+  return new Promise((res,rej) => {
+    const tx = db.transaction(store,'readwrite');
+    tx.objectStore(store).delete(id).onsuccess = () => res();
+    tx.onerror = e => rej(e.target.error);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════
+function uuid() { return crypto.randomUUID ? crypto.randomUUID() : Date.now()+Math.random().toString(36).slice(2); }
+function ts()   { const d=new Date(); return d.toISOString().replace(/[-:T]/g,'').slice(0,15); }
+function today(){ return new Date().toISOString().slice(0,10); }
+function fmtNum(n){ return (n||0).toLocaleString(); }
+
+function toast(msg, type='info', dur=3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = type==='success'?'#166534':type==='warn'?'#92400e':type==='error'?'#991b1b':'#1a3d2b';
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), dur);
+}
+
+function selChip(el, groupId, single=false) {
+  if (single) document.querySelectorAll(`#${groupId} .chip`).forEach(c=>c.classList.remove('sel'));
+  el.classList.toggle('sel');
+}
+
+function getChipVal(groupId, single=false) {
+  const sels = [...document.querySelectorAll(`#${groupId} .chip.sel`)].map(c=>c.dataset.val);
+  return single ? (sels[0]||'') : sels;
+}
+
+// Image compression to ~3MP / 80% quality
+function compressImage(file, maxMp=3, quality=0.8) {
+  return new Promise(res => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const mp = (img.width * img.height) / 1e6;
+      let w = img.width, h = img.height;
+      if (mp > maxMp) {
+        const scale = Math.sqrt(maxMp / mp);
+        w = Math.round(w * scale); h = Math.round(h * scale);
+      }
+      const c = document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      c.toBlob(b => { URL.revokeObjectURL(url); res(b); }, 'image/jpeg', quality);
+    };
+    img.src = url;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// SCREEN NAVIGATION
+// ═══════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if (id==='dashboard') refreshDashboard();
+  if (id==='seedmap')   initSeedMap();
+  if (id==='queue')     renderQueue();
+}
+
+// ═══════════════════════════════════════════════════════
+// SPECIES GRIDS
+// ═══════════════════════════════════════════════════════
+function buildSpeciesGrids() {
+  buildDispatchGrid();
+  buildInspectionGrid();
+  buildSeedTreeSelect();
+  buildMapSppFilter();
+}
+
+function buildDispatchGrid() {
+  const g = document.getElementById('d-spp-grid');
+  g.innerHTML = `<div class="spp-hdr"><span>${t('col.species')}</span><span>2026 Plan</span><span>${t('col.count')}</span></div>`;
+  SPECIES.forEach(sp => {
+    const row = document.createElement('div');
+    row.className = 'spp-row' + (!sp.carbon ? ' lemon-row' : '');
+    const plan = sp.carbon ? totalPlanForSpp(sp.code) : '—';
+    row.innerHTML = `
+      <div class="spp-name${!sp.carbon?' lemon':''}">${sppName(sp)}${!sp.carbon?' 🍋':''}</div>
+      <div class="spp-plan">${sp.carbon ? fmtNum(plan) : '—'}</div>
+      <input type="number" min="0" class="spp-inp" id="d-spp-${sp.code}" placeholder="0">`;
+    g.appendChild(row);
+  });
+}
+
+function buildInspectionGrid() {
+  const g = document.getElementById('ins-spp-grid');
+  g.innerHTML = `<div class="spp-hdr"><span>${t('col.species')}</span><span>${t('col.polybag')}</span><span>${t('col.count')}</span></div>`;
+  SPECIES.forEach(sp => {
+    const row = document.createElement('div');
+    row.className = 'spp-row' + (!sp.carbon ? ' lemon-row' : '');
+    row.innerHTML = `
+      <div class="spp-name${!sp.carbon?' lemon':''}">${sppName(sp)}${!sp.carbon?' 🍋':''}</div>
+      <div class="spp-plan">${sp.polybag}"</div>
+      <input type="number" min="0" class="spp-inp" id="ins-spp-${sp.code}" placeholder="0">`;
+    g.appendChild(row);
+  });
+}
+
+function buildSeedTreeSelect() {
+  const sel = document.getElementById('st-species');
+  sel.innerHTML = '<option value="">— Select —</option>';
+  SPECIES.forEach(sp => {
+    const o = document.createElement('option');
+    o.value = sp.code;
+    o.textContent = sppName(sp) + (sp.carbon ? '' : ' 🍋');
+    sel.appendChild(o);
+  });
+}
+
+function buildMapSppFilter() {
+  const sel = document.getElementById('map-spp-filter');
+  sel.innerHTML = '<option value="ALL">All Species</option>';
+  SPECIES.forEach(sp => {
+    const o = document.createElement('option');
+    o.value = sp.code; o.textContent = sppName(sp);
+    sel.appendChild(o);
+  });
+}
+
+function onSourceChange() {
+  // Could filter suggested districts based on source routing — for now just toast
+  const src = document.getElementById('d-source').value;
+  const s = SOURCES.find(x=>x.code===src);
+  if (s && s.serves.length) toast(`Typical districts: ${s.serves.join(', ')}`, 'info', 3000);
+}
+
+// ═══════════════════════════════════════════════════════
+// SAVE DISPATCH
+// ═══════════════════════════════════════════════════════
+async function saveDispatch() {
+  const date   = document.getElementById('d-date').value;
+  const source = document.getElementById('d-source').value;
+  const dist   = getChipVal('d-district', true);
+  const lpc    = document.getElementById('d-lpc').value.trim();
+  const nature = getChipVal('d-nature', true);
+  const stId   = document.getElementById('d-seedtree').value.trim();
+  const vehicle= document.getElementById('d-vehicle').value.trim();
+
+  if (!date||!source||!dist||!lpc||!nature) { toast('Fill required fields', 'warn'); return; }
+
+  const sppCounts = {};
+  let total = 0;
+  SPECIES.forEach(sp => {
+    const v = parseInt(document.getElementById('d-spp-'+sp.code)?.value)||0;
+    if (v>0) { sppCounts[sp.code]=v; total+=v; }
+  });
+
+  if (total===0) { toast('Enter at least one species count', 'warn'); return; }
+
+  const rec = {
+    id: uuid(), form:'dispatch', ts: ts(),
+    date, source, district:dist, lpc, nature, vehicle,
+    seed_tree_id: stId||null,
+    species: sppCounts, total,
+    uploaded: false
+  };
+
+  await dbPut('dispatches', rec);
+  await enqueue(rec);
+  closeModal('dispatch');
+  toast(`✓ Dispatch saved — ${fmtNum(total)} saplings`, 'success');
+  refreshDashboard();
+}
+
+// ═══════════════════════════════════════════════════════
+// SEED TREE GPS + PHOTO
+// ═══════════════════════════════════════════════════════
+let _stPhoto = null; // compressed blob
+let _stLat=null, _stLon=null;
+
+function getGPS() {
+  if (!navigator.geolocation) { toast('Geolocation not available', 'warn'); return; }
+  toast('Getting GPS…', 'info', 5000);
+  navigator.geolocation.getCurrentPosition(pos => {
+    _stLat = pos.coords.latitude.toFixed(6);
+    _stLon = pos.coords.longitude.toFixed(6);
+    document.getElementById('st-lat').value = _stLat;
+    document.getElementById('st-lon').value = _stLon;
+    document.getElementById('st-gps-acc').textContent = `Accuracy: ±${Math.round(pos.coords.accuracy)}m`;
+    toast(`GPS: ${_stLat}, ${_stLon}`, 'success');
+  }, err => toast('GPS error: '+err.message, 'error'), { enableHighAccuracy:true, timeout:15000 });
+}
+
+async function handleSeedPhoto(inp) {
+  if (!inp.files[0]) return;
+  const compressed = await compressImage(inp.files[0]);
+  _stPhoto = compressed;
+  const url = URL.createObjectURL(compressed);
+  const prev = document.getElementById('st-photo-preview');
+  prev.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
+  const kb = Math.round(compressed.size/1024);
+  toast(`Photo compressed — ${kb}KB`, 'success');
+}
+
+// ═══════════════════════════════════════════════════════
+// SAVE SEED TREE
+// ═══════════════════════════════════════════════════════
+async function saveSeedTree() {
+  const date    = document.getElementById('st-date').value;
+  const species = document.getElementById('st-species').value;
+  const loctype = getChipVal('st-loctype', true);
+  const seeds   = parseInt(document.getElementById('st-seeds').value)||0;
+  const notes   = document.getElementById('st-notes').value.trim();
+  const sub     = document.getElementById('st-submitter').value.trim();
+
+  if (!date||!species||!loctype) { toast('Fill required fields', 'warn'); return; }
+  if (!_stLat||!_stLon)         { toast('GPS required for seed tree record', 'warn'); return; }
+
+  // Generate Seed Tree ID
+  const allTrees = await dbGetAll('seedtrees');
+  const stId = `ST-ASHA1-${String(allTrees.length+1).padStart(3,'0')}`;
+
+  // Store photo as base64 for offline
+  let photoB64 = null;
+  if (_stPhoto) {
+    const ab = await _stPhoto.arrayBuffer();
+    photoB64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+  }
+
+  const rec = {
+    id: uuid(), form:'seedtree', ts: ts(),
+    seed_tree_id: stId, date,
+    species, location_type: loctype,
+    seeds_collected: seeds, notes,
+    lat: parseFloat(_stLat), lon: parseFloat(_stLon),
+    submitter: sub,
+    photo_b64: photoB64,
+    uploaded: false
+  };
+
+  await dbPut('seedtrees', rec);
+  await enqueue(rec);
+  closeModal('seedtree');
+  toast(`✓ ${stId} saved`, 'success');
+  updateKPIs();
+}
+
+// ═══════════════════════════════════════════════════════
+// SAVE INSPECTION
+// ═══════════════════════════════════════════════════════
+async function saveInspection() {
+  const date      = document.getElementById('ins-date').value;
+  const source    = document.getElementById('ins-source').value;
+  const inspector = document.getElementById('ins-inspector').value.trim();
+  const health    = getChipVal('ins-health', true);
+  const remarks   = document.getElementById('ins-remarks').value.trim();
+
+  if (!date||!source) { toast('Fill required fields', 'warn'); return; }
+
+  const stock = {};
+  SPECIES.forEach(sp => {
+    const v = parseInt(document.getElementById('ins-spp-'+sp.code)?.value)||0;
+    if (v>0) stock[sp.code] = v;
+  });
+
+  const rec = {
+    id: uuid(), form:'inspection', ts: ts(),
+    date, source, inspector, health, remarks, stock,
+    uploaded: false
+  };
+
+  await dbPut('inspections', rec);
+  await enqueue(rec);
+  closeModal('inspection');
+  toast('✓ Inspection saved', 'success');
+}
+
+// ═══════════════════════════════════════════════════════
+// OFFLINE QUEUE
+// ═══════════════════════════════════════════════════════
+async function enqueue(rec) {
+  await dbPut('queue', { id: rec.id, form: rec.form, ts: rec.ts, payload: rec });
+  updateQueueKPI();
+}
+
+async function updateQueueKPI() {
+  const q = await dbGetAll('queue');
+  document.getElementById('kpi-queue').textContent = q.length;
+  const dot = document.getElementById('queue-dot');
+  const txt = document.getElementById('queue-status');
+  if (dot && txt) {
+    dot.className = 'sync-dot' + (q.length>0?' pending':'');
+    txt.textContent = q.length>0 ? `${q.length} record(s) pending upload` : 'All synced';
+  }
+}
+
+async function syncQueue() {
+  const q = await dbGetAll('queue');
+  if (!q.length) { toast('Nothing to sync', 'info'); return; }
+  if (!navigator.onLine) { toast('Offline — connect to sync', 'warn'); return; }
+  toast(`Uploading ${q.length} record(s)…`, 'info', 5000);
+  let ok=0, fail=0;
+  for (const item of q) {
+    // Apps Script endpoint would go here — same pattern as Survey Manager
+    // Seed tree photos upload to Drive folder linked to asha1.data album
+    try {
+      // Placeholder — wire to APP_CONFIG.scriptUrl.nursery when deployed
+      // await fetch(APP_CONFIG.scriptUrl.nursery, { method:'POST', body: JSON.stringify(item.payload) });
+      await dbDelete('queue', item.id);
+      ok++;
+    } catch(e) { fail++; }
+  }
+  toast(`✓ ${ok} uploaded${fail?`, ${fail} failed`:''}`, ok>0?'success':'error');
+  updateQueueKPI();
+  renderQueue();
+}
+
+async function renderQueue() {
+  const q = await dbGetAll('queue');
+  const el = document.getElementById('queue-list');
+  updateQueueKPI();
+  if (!q.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--mid)">Queue is empty — all records synced</div>';
+    return;
+  }
+  el.innerHTML = q.map(item => `
+    <div style="background:var(--card);border:1.5px solid var(--rule);border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${item.form} — ${item.payload.date||item.ts}</div>
+        <div style="font-size:11px;color:var(--mid)">${item.id}</div>
+      </div>
+      <span style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:20px;font-weight:700">PENDING</span>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+let _planChart = null;
+
+async function refreshDashboard() {
+  await updateKPIs();
+  await renderPlanChart();
+  await renderSourceTable();
+  await renderDistrictTable();
+  await renderDispatchTable();
+  await renderProvenance();
+}
+
+async function updateKPIs() {
+  const dispatches = await dbGetAll('dispatches');
+  const trees      = await dbGetAll('seedtrees');
+  const q          = await dbGetAll('queue');
+  const totalDisp  = dispatches.reduce((s,d)=>s+(d.total||0), 0);
+  document.getElementById('kpi-dispatched').textContent  = fmtNum(totalDisp);
+  document.getElementById('kpi-seed-trees').textContent  = trees.length;
+  document.getElementById('kpi-queue').textContent       = q.length;
+  document.getElementById('kpi-total-plan').textContent  = '820,000';
+}
+
+async function renderPlanChart() {
+  const dispatches = await dbGetAll('dispatches');
+  const srcFilter  = document.getElementById('chart-source-filter').value;
+
+  const filtered = srcFilter==='ALL' ? dispatches : dispatches.filter(d=>d.source===srcFilter);
+
+  const labels = SPECIES.filter(s=>s.carbon).map(s=>sppName(s));
+  const planVals = SPECIES.filter(s=>s.carbon).map(sp => {
+    if (srcFilter==='ALL') return totalPlanForSpp(sp.code);
+    return PLAN_2026[srcFilter] ? (PLAN_2026[srcFilter][sp.code]||0) : 0;
+  });
+  const dispVals = SPECIES.filter(s=>s.carbon).map(sp =>
+    filtered.reduce((sum,d)=>sum+(d.species?.[sp.code]||0),0)
+  );
+
+  if (_planChart) _planChart.destroy();
+  const ctx = document.getElementById('plan-chart').getContext('2d');
+  _planChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        { label:'Plan 2026', data:planVals, backgroundColor:'rgba(82,183,136,.25)', borderColor:'#52b788', borderWidth:1.5, borderRadius:4 },
+        { label:'Dispatched', data:dispVals, backgroundColor:'rgba(45,106,79,.7)', borderColor:'#2d6a4f', borderWidth:1, borderRadius:4 }
+      ]
+    },
+    options:{ responsive:true, plugins:{legend:{position:'top'}}, scales:{ y:{ beginAtZero:true } } }
+  });
+}
+
+async function renderSourceTable() {
+  const dispatches = await dbGetAll('dispatches');
+  const tbody = document.getElementById('source-tbody');
+  tbody.innerHTML = '';
+  SOURCES.forEach(src => {
+    const plan = src.type==='leg' ? '—' : fmtNum(Object.values(PLAN_2026[src.code]||{}).reduce((s,v)=>s+(typeof v==='number'?v:0),0));
+    const disp = fmtNum(dispatches.filter(d=>d.source===src.code).reduce((s,d)=>s+(d.total||0),0));
+    const planN= src.type==='leg' ? 0 : Object.values(PLAN_2026[src.code]||{}).reduce((s,v)=>s+(typeof v==='number'?v:0),0);
+    const dispN= dispatches.filter(d=>d.source===src.code).reduce((s,d)=>s+(d.total||0),0);
+    const rem  = src.type==='leg' ? '—' : fmtNum(Math.max(0,planN-dispN));
+    const badge= src.type==='own'?'src-own':src.type==='ext'?'src-ext':'src-leg';
+    const typeLabel= src.type==='own'?'TF Own':src.type==='ext'?'External':'Legacy';
+    const pct  = planN>0 ? Math.min(100,Math.round(dispN/planN*100)) : 0;
+    tbody.innerHTML += `<tr>
+      <td>${src.label}</td>
+      <td><span class="src-badge ${badge}">${typeLabel}</span></td>
+      <td class="num">${plan}</td>
+      <td class="num">${disp}<div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div></td>
+      <td class="num">${rem}</td>
+    </tr>`;
+  });
+}
+
+async function renderDistrictTable() {
+  const dispatches = await dbGetAll('dispatches');
+  const tbody = document.getElementById('district-tbody');
+  tbody.innerHTML = '';
+  DISTRICTS.forEach(d => {
+    const recs = dispatches.filter(x=>x.district===d);
+    const total= fmtNum(recs.reduce((s,x)=>s+(x.total||0),0));
+    const lpcs = new Set(recs.map(x=>x.lpc)).size;
+    tbody.innerHTML += `<tr><td>${d}</td><td class="num">${total}</td><td class="num">${lpcs}</td></tr>`;
+  });
+}
+
+async function renderDispatchTable() {
+  const dispatches = await dbGetAll('dispatches');
+  const tbody = document.getElementById('dispatch-tbody');
+  if (!dispatches.length) {
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--mid);padding:20px">No dispatches recorded yet</td></tr>';
+    return;
+  }
+  const sorted = [...dispatches].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20);
+  tbody.innerHTML = sorted.map(d => `<tr>
+    <td>${d.date}</td>
+    <td>${SOURCES.find(s=>s.code===d.source)?.label||d.source}</td>
+    <td>${d.district}</td>
+    <td>${d.lpc}</td>
+    <td>${d.nature==='NEW'?'New':'Replant'}</td>
+    <td class="num">${fmtNum(d.total)}</td>
+  </tr>`).join('');
+}
+
+async function renderProvenance() {
+  const dispatches = await dbGetAll('dispatches');
+  const tagged = dispatches.filter(d=>d.seed_tree_id);
+  const pc = document.getElementById('prov-content');
+  const pp = document.querySelector('.prov-placeholder');
+  if (!tagged.length) { pc.style.display='none'; pp.style.display='block'; return; }
+  pp.style.display='none'; pc.style.display='block';
+  // Group by seed tree ID
+  const byTree = {};
+  tagged.forEach(d => {
+    if (!byTree[d.seed_tree_id]) byTree[d.seed_tree_id]=[];
+    byTree[d.seed_tree_id].push(d);
+  });
+  pc.innerHTML = Object.entries(byTree).map(([stId, recs]) => `
+    <div style="margin-bottom:14px;padding:12px;background:var(--pale);border-radius:8px;border:1px solid var(--rule)">
+      <div style="font-size:13px;font-weight:700;color:var(--forest);margin-bottom:6px">🌳 ${stId}</div>
+      ${recs.map(r=>`<div style="font-size:12px;color:var(--mid);margin-left:16px">→ ${r.date} · ${r.district} · LPC ${r.lpc} · ${fmtNum(r.total)} saplings</div>`).join('')}
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// SEED MAP
+// ═══════════════════════════════════════════════════════
+let _map = null;
+let _markers = [];
+const SPP_COLORS = ['#2d6a4f','#7c3aed','#0369a1','#be185d','#b45309','#0f766e','#dc2626','#ca8a04','#166534','#4338ca','#0891b2','#854d0e','#6d28d9','#ca8a04'];
+
+async function initSeedMap() {
+  if (_map) { renderSeedMap(); return; }
+  _map = L.map('seed-map').setView([26.5, 89.5], 8);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {attribution:'© OpenStreetMap',maxZoom:18}).addTo(_map);
+  setTimeout(()=>{ _map.invalidateSize(); renderSeedMap(); }, 200);
+}
+
+async function renderSeedMap() {
+  if (!_map) return;
+  _markers.forEach(m=>_map.removeLayer(m)); _markers=[];
+  const trees = await dbGetAll('seedtrees');
+  const sppF  = document.getElementById('map-spp-filter').value;
+  const locF  = document.getElementById('map-loc-filter').value;
+
+  const filtered = trees.filter(t =>
+    (sppF==='ALL'||t.species===sppF) &&
+    (locF==='ALL'||t.location_type===locF)
+  );
+
+  document.getElementById('map-count').textContent = `${filtered.length} tree${filtered.length!==1?'s':''} shown`;
+
+  // Update seed tree ID datalist for dispatch form
+  const dl = document.getElementById('seedtree-datalist');
+  if (dl) dl.innerHTML = trees.map(t=>`<option value="${t.seed_tree_id}">${t.seed_tree_id} — ${SPECIES.find(s=>s.code===t.species)?.local||t.species}</option>`).join('');
+
+  filtered.forEach(t => {
+    if (!t.lat||!t.lon) return;
+    const sp   = SPECIES.find(s=>s.code===t.species);
+    const spIdx= SPECIES.findIndex(s=>s.code===t.species);
+    const col  = SPP_COLORS[spIdx%SPP_COLORS.length];
+    const icon = L.divIcon({
+      className:'',
+      html:`<div style="width:14px;height:14px;border-radius:50%;background:${col};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
+      iconSize:[14,14], iconAnchor:[7,7]
+    });
+    const m = L.marker([t.lat,t.lon],{icon}).addTo(_map);
+    m.bindPopup(`
+      <b>${t.seed_tree_id}</b><br>
+      ${sp ? sppName(sp) : t.species}<br>
+      ${t.location_type} · ${t.date}<br>
+      Seeds: ${t.seeds_collected||0}<br>
+      ${t.notes||''}
+    `);
+    _markers.push(m);
+  });
+
+  // List below map
+  const list = document.getElementById('seed-tree-list');
+  if (!filtered.length) {
+    list.innerHTML='<div style="text-align:center;padding:20px;color:var(--mid)">No seed trees recorded yet</div>';
+    return;
+  }
+  list.innerHTML = `<div style="margin-top:12px">
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>Species</th><th>Location</th><th>Date</th><th class="num">Seeds</th></tr></thead>
+      <tbody>${filtered.map(t=>{
+        const sp=SPECIES.find(s=>s.code===t.species);
+        return `<tr>
+          <td><b>${t.seed_tree_id}</b></td>
+          <td>${sp?sppName(sp):t.species}</td>
+          <td>${t.location_type}</td>
+          <td>${t.date}</td>
+          <td class="num">${t.seeds_collected||0}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function openForm(id) {
+  // Reset form state
+  if (id==='dispatch') {
+    document.getElementById('d-date').value = today();
+    document.querySelectorAll('#d-district .chip').forEach(c=>c.classList.remove('sel'));
+    document.querySelectorAll('#d-nature .chip').forEach(c=>c.classList.remove('sel'));
+    document.getElementById('d-lpc').value='';
+    document.getElementById('d-source').value='';
+    document.getElementById('d-vehicle').value='';
+    document.getElementById('d-seedtree').value='';
+    SPECIES.forEach(sp=>{const el=document.getElementById('d-spp-'+sp.code);if(el)el.value='';});
+    buildDispatchGrid();
+  }
+  if (id==='seedtree') {
+    document.getElementById('st-date').value = today();
+    _stPhoto=null; _stLat=null; _stLon=null;
+    document.getElementById('st-photo-preview').innerHTML='<div class="photo-preview-label">📷 Tap to capture or choose photo</div>';
+    document.getElementById('st-lat').value='';
+    document.getElementById('st-lon').value='';
+    document.getElementById('st-gps-acc').textContent='';
+    document.getElementById('st-seeds').value='';
+    document.getElementById('st-notes').value='';
+    document.getElementById('st-species').value='';
+    document.querySelectorAll('#st-loctype .chip').forEach(c=>c.classList.remove('sel'));
+  }
+  if (id==='inspection') {
+    document.getElementById('ins-date').value = today();
+    document.getElementById('ins-source').value='';
+    document.getElementById('ins-inspector').value='';
+    document.getElementById('ins-remarks').value='';
+    document.querySelectorAll('#ins-health .chip').forEach(c=>c.classList.remove('sel'));
+    SPECIES.forEach(sp=>{const el=document.getElementById('ins-spp-'+sp.code);if(el)el.value='';});
+    buildInspectionGrid();
+  }
+  document.getElementById('modal-'+id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById('modal-'+id).classList.remove('open');
+}
+
+// Close on backdrop click
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => { if(e.target===bg) bg.classList.remove('open'); });
+});
+
+// ═══════════════════════════════════════════════════════
+// CONNECTIVITY
+// ═══════════════════════════════════════════════════════
+function updateConnectivity() {
+  const online = navigator.onLine;
+  const dot  = document.getElementById('sync-dot');
+  const text = document.getElementById('sync-text');
+  if (dot)  dot.className = 'sync-dot' + (online?'':' offline');
+  if (text) text.textContent = online ? 'Online — tap Sync to upload pending records' : 'Offline — records saved locally';
+}
+
+window.addEventListener('online',  updateConnectivity);
+window.addEventListener('offline', updateConnectivity);
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+async function init() {
+  await openDB();
+  buildSpeciesGrids();
+  applyI18N();
+  updateConnectivity();
+  await refreshDashboard();
+}
+
+init();
+</script>
+</body>
+</html>
