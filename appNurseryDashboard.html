@@ -1459,9 +1459,11 @@ function openForm(id) {
     document.querySelectorAll('#d-nature .chip').forEach(c=>c.classList.remove('sel'));
     document.getElementById('d-lpc').value='';
     document.getElementById('d-source').value='';
-    document.getElementById('d-vehicle').value='';
-    document.getElementById('d-seedtree').value='';
-    SPECIES.forEach(sp=>{const el=document.getElementById('d-spp-'+sp.code);if(el)el.value='';});
+    document.getElementById('d-vehicle-no').value='';
+    document.getElementById('d-driver').value='';
+    document.getElementById('d-remarks').value='';
+    document.getElementById('d-requested-by').value='';
+    clearDispatchPhoto();
     buildDispatchGrid();
   }
   if (id==='seedtree') {
