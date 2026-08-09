@@ -8,6 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <title>Survey Manager — ARR</title>
 <style>
 :root {
@@ -171,7 +172,24 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 .plot-cond-chips{display:flex;gap:6px;flex-wrap:wrap}
 .plot-cond-chip{padding:7px 12px;border-radius:7px;background:var(--c-input-bg);border:1px solid var(--c-border);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .12s}
 .plot-cond-chip.sel{background:var(--c-accent2);border-color:var(--c-accent2);color:#fff}
-/* LPC lookup result banner */
+/* Plot size widget */
+.plot-size-wrap{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.plot-size-wrap input{width:80px}
+.plot-size-label{font-size:12px;color:var(--c-muted)}
+.plot-size-area{font-size:11px;color:var(--c-accent2);font-weight:600}
+/* Tree specimens widget */
+.tree-specimens-wrap{display:flex;flex-direction:column;gap:10px}
+.tree-specimen-card{background:var(--c-input-bg);border:1px solid var(--c-border);border-radius:var(--radius);padding:12px 14px;position:relative}
+.tree-specimen-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.tree-specimen-id{font-size:12px;font-weight:700;color:var(--c-accent2);font-family:monospace}
+.tree-specimen-rm{background:none;border:none;color:var(--c-danger);cursor:pointer;font-size:16px;margin-left:auto;padding:0 4px;font-family:var(--font)}
+.tree-specimen-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tree-specimen-fields .field-group{margin:0}
+.tree-specimen-fields .full-width{grid-column:1/-1}
+.tree-add-btn{background:var(--c-card);border:1.5px dashed var(--c-accent2);border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;font-size:13px;color:var(--c-accent2);font-weight:600;font-family:var(--font)}
+.tree-add-btn:hover{background:rgba(22,163,74,.06)}
+.species-other-wrap{display:flex;gap:8px;align-items:center;margin-top:6px}
+.species-other-wrap input{flex:1}
 .lpc-result{background:rgba(52,201,122,.12);border:1px solid var(--c-accent2);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--c-accent2);margin-top:6px;display:none}
 .lpc-result.show{display:block}
 .lpc-result strong{color:var(--c-text)}
@@ -180,12 +198,13 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 <body>
 <div id="app">
   <div id="topbar">
+    <a href="index.html" class="back-btn" style="text-decoration:none;font-size:12px;padding:5px 10px;flex-shrink:0">⬅ Suite</a>
     <span id="online-dot"></span>
     <h1 id="topbar-title">Survey Manager</h1>
     <button class="lang-btn" id="lang-btn" onclick="cycleLang()">EN</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
-    <span class="ver">v1 DEV16</span>
+    <span class="ver">v1 DEV19</span>
     <div id="user-chip">Loading…</div>
   </div>
   <div id="main">
@@ -235,8 +254,9 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 // APP_CONFIG
 // ═══════════════════════════════════════════════════════
 const APP_CONFIG = {
-  version: 'v1_DEV10',
+  version: 'v1_DEV17',
   toolFolder: 'appSurveyManager',
+  oauthClientId: '348880490660-lmovs9s5ml5s87p0tlnv8l41njibqukb.apps.googleusercontent.com',
   scriptUrl: {
     ASHA1:  'https://script.google.com/macros/s/AKfycbxB-VNuUJza-Ahqq6HoSq5sWEKJi7-7Emoxnaq7RaSl8KeEHtdalzlAX674DJpxcVpG/exec',
     ASHA2:  'https://script.google.com/macros/s/AKfycbzoa218pBufF7SvjEhx1Cp2TBUl8fl5daRRKAuCqBAoKFSIIcjueKg0Q9jqcSjBtZcX1Q/exec',
@@ -1736,7 +1756,7 @@ const SCHEMA = {
           "id": "s_meta",
           "label": "Survey Meta",
           "fields": [
-            { "id": "lpc_id",       "label": "Land Parcel Code (LPC)", "type": "text", "required": false, "hint": "Link to plot if already assigned" },
+            { "id": "dbc_id",       "label": "DB Code (DBC)", "type": "dbc_autogenerate", "readonly": true, "hint": "Auto-generated from District + Block after both are selected" },
             { "id": "remarks",      "label": "Remarks", "type": "textarea" },
             { "id": "surveyor_name","label": "Surveyor Name", "type": "auto", "source": "google_account_email", "readonly": true }
           ]
@@ -1870,12 +1890,13 @@ const SCHEMA = {
           "id": "s_plot",
           "label": "Plot & Beneficiary",
           "fields": [
-            { "id": "lpc_id",            "label": "Land Parcel Code (LPC)", "type": "text", "required": true },
-            { "id": "dbc_id",            "label": "DB Code (DBC)",          "type": "text", "required": true },
-            { "id": "beneficiary_name",  "label": "Beneficiary Name",       "type": "text", "required": true },
-            { "id": "land_area_sqm",     "label": "Land Area",              "type": "land_area", "unit_options": { "ARUN": ["pura","sqm"], "default": ["bigha_wb","sqm"] }, "storage_unit": "sqm", "required": true },
-            { "id": "plantation_date",   "label": "Plantation Complete Date","type": "date", "required": true
-            },
+            { "id": "lpc_id",            "label": "Land Parcel Code (LPC)", "type": "lpc_lookup", "required": true },
+            { "id": "district_code",     "label": "District",        "type": "auto_from_lpc", "readonly": true },
+            { "id": "block_circle_code", "label": "Block",           "type": "auto_from_lpc", "readonly": true },
+            { "id": "plantation_year",   "label": "Plantation Year", "type": "auto_from_lpc", "readonly": true },
+            { "id": "beneficiary_names", "label": "Beneficiary Name(s)", "type": "auto_from_lpc", "readonly": true },
+            { "id": "area_ha",           "label": "Land Area (Ha)",  "type": "auto_from_lpc", "readonly": true },
+            { "id": "plantation_date",   "label": "Plantation Complete Date","type": "date", "required": true },
             {
               "id": "fencing_status",
               "label": "Fencing Status at Plantation",
@@ -1922,22 +1943,15 @@ const SCHEMA = {
       "links_to": "LPC",
       "sections": [
         {
-          "id": "s_location",
-          "label": "Location",
-          "fields": [
-            { "id": "district_code",     "label": "District", "type": "select_district",     "required": true, "gps_autosuggest": true },
-            { "id": "block_circle_code", "label": { "ARUN": "Circle", "default": "Block" }, "type": "select_block_circle", "required": true, "gps_autosuggest": true }
-          ]
-        },
-        {
           "id": "s_plot",
           "label": "Plot & Beneficiary",
           "fields": [
-            { "id": "lpc_id",           "label": "Land Parcel Code (LPC)", "type": "text", "required": true },
-            { "id": "dbc_id",           "label": "DB Code (DBC)",          "type": "text", "required": true },
-            { "id": "beneficiary_name", "label": "Beneficiary Name",       "type": "text", "required": true },
-            { "id": "land_area_sqm",    "label": "Land Area",              "type": "land_area", "unit_options": { "ARUN": ["pura","sqm"], "default": ["bigha_wb","sqm"] }, "storage_unit": "sqm", "required": true },
-            { "id": "fencing_date",     "label": "Fencing Complete Date",  "type": "date", "required": true }
+            { "id": "lpc_id",            "label": "Land Parcel Code (LPC)", "type": "lpc_lookup", "required": true },
+            { "id": "district_code",     "label": "District",        "type": "auto_from_lpc", "readonly": true },
+            { "id": "block_circle_code", "label": "Block",           "type": "auto_from_lpc", "readonly": true },
+            { "id": "beneficiary_names", "label": "Beneficiary Name(s)", "type": "auto_from_lpc", "readonly": true },
+            { "id": "area_ha",           "label": "Land Area (Ha)",  "type": "auto_from_lpc", "readonly": true },
+            { "id": "fencing_date",      "label": "Fencing Complete Date", "type": "date", "required": true }
           ]
         },
         {
@@ -1992,7 +2006,7 @@ const SCHEMA = {
 
     "event": {
       "id": "event",
-      "label": "Local Meeting Event Record",
+      "label": "Meeting Record (LSC etc.)",
       "subtitle": "LSC, PRA, FGD, etc. event record",
       "projects": ["ASHA1","ASHA2","ARUN","BANANI"],
       "links_to": "standalone",
@@ -2072,18 +2086,27 @@ const SCHEMA = {
 
     "biomass_plot": {
       "id": "biomass_plot",
-      "label": "Biomass Survey — Plot Details",
+      "label": "Survey Biomass — Plot Details",
       "projects": ["ASHA1","ASHA2","ARUN","BANANI"],
-      "links_to": "LPC",
+      "links_to": "standalone",
       "sections": [
         {
           "id": "s_plot_id",
           "label": "Plot Identity",
           "fields": [
-            { "id": "survey_date",  "label": "Survey Date", "type": "date", "required": true },
-            { "id": "parcel_id",    "label": "Parcel ID (e.g. Ilambazar Forest)", "type": "text", "required": true },
-            { "id": "plot_id",      "label": "Plot ID (e.g. ILMF01)",            "type": "text", "required": true },
-            { "id": "lpc_id",       "label": "Land Parcel Code (LPC)",            "type": "text", "required": false },
+            { "id": "survey_date",      "label": "Survey Date", "type": "date", "required": true },
+            { "id": "plot_id",          "label": "Plot ID (e.g. ILMF01)", "type": "text", "required": true },
+            { "id": "lpc_id",           "label": "Plot ID (LPC)", "type": "text", "required": false, "hint": "Only if LPC has been assigned — not mandatory" },
+            { "id": "beneficiary_names","label": "Beneficiary Name(s)", "type": "text", "required": false, "hint": "At least one of Beneficiary Name(s) or DBC Code(s) is required" },
+            { "id": "dbc_ids",          "label": "DBC Code(s)", "type": "text", "required": false, "hint": "Comma-separated if multiple. At least one of Beneficiary Name(s) or DBC Code(s) is required" },
+            {
+              "id": "plot_size",
+              "label": "Plot Size",
+              "type": "plot_size_widget",
+              "default_m": 30,
+              "hint": "Default 30×30 m — change if needed"
+            },
+            { "id": "plot_kml",         "label": "Plot KML / Boundary", "type": "file", "accept": ".kml,.kmz,.geojson", "hint": "Upload KML, paste GPS, or use saved file from device" },
             {
               "id": "land_cover_type",
               "label": "Land Cover (LC) Type",
@@ -2127,14 +2150,10 @@ const SCHEMA = {
               "label": "Aspect",
               "type": "multiselect",
               "options": [
-                { "value": "N",           "label": "N" },
-                { "value": "NE",          "label": "NE" },
-                { "value": "E",           "label": "E" },
-                { "value": "SE",          "label": "SE" },
-                { "value": "S",           "label": "S" },
-                { "value": "SW",          "label": "SW" },
-                { "value": "W",           "label": "W" },
-                { "value": "NW",          "label": "NW" },
+                { "value": "N","label":"N" },{ "value":"NE","label":"NE" },
+                { "value": "E","label":"E" },{ "value":"SE","label":"SE" },
+                { "value": "S","label":"S" },{ "value":"SW","label":"SW" },
+                { "value": "W","label":"W" },{ "value":"NW","label":"NW" },
                 { "value": "flat_aspect", "label": "Flat" }
               ]
             }
@@ -2233,74 +2252,44 @@ const SCHEMA = {
 
     "biomass_tree": {
       "id": "biomass_tree",
-      "label": "Biomass Survey — Tree Assessment",
+      "label": "Survey Biomass — Tree Assessment",
       "projects": ["ASHA1","ASHA2","ARUN","BANANI"],
-      "links_to": "LPC",
+      "links_to": "standalone",
       "parent_form": "biomass_plot",
       "parent_key": "plot_id",
       "sections": [
         {
-          "id": "s_tree_id",
-          "label": "Tree Identity",
+          "id": "s_tree_plot",
+          "label": "Plot Reference",
           "fields": [
-            { "id": "plot_id",    "label": "Plot ID (from Plot Details form)", "type": "text", "required": true },
-            { "id": "tree_id",    "label": "Tree ID",                          "type": "text", "required": true },
-            { "id": "stem_id",    "label": "Stem ID (if multi-stem)",          "type": "text", "required": false }
+            { "id": "plot_id", "label": "Plot ID (links to Plot Details record)", "type": "text", "required": true,
+              "hint": "Enter the Plot ID used in the Plot Details form" },
+            { "id": "lpc_id",           "label": "Plot ID (LPC)", "type": "text", "required": false, "hint": "Only if LPC has been assigned — not mandatory" },
+            { "id": "beneficiary_names","label": "Beneficiary Name(s)", "type": "text", "required": false, "hint": "At least one of Beneficiary Name(s) or DBC Code(s) is required" },
+            { "id": "dbc_ids",          "label": "DBC Code(s)", "type": "text", "required": false, "hint": "Comma-separated if multiple. At least one of Beneficiary Name(s) or DBC Code(s) is required" }
           ]
         },
         {
-          "id": "s_measurements",
-          "label": "Measurements",
+          "id": "s_tree_specimens",
+          "label": "Tree Specimens",
+          "hint": "Add one or more trees measured in this plot. Tree IDs are auto-generated.",
           "fields": [
-            { "id": "dbh_cm",   "label": "DBH (cm)",                             "type": "number", "required": true, "min": 0 },
-            { "id": "species",  "label": "Species",   "type": "species_select",   "required": true },
-            {
-              "id": "height_class",
-              "label": "Height Estimate",
-              "type": "multiselect",
-              "options": [
-                { "value": "lt3m",  "label": "< 3m" },
-                { "value": "3_7m",  "label": "3–7m" },
-                { "value": "7_15m", "label": "7–15m" },
-                { "value": "gt15m", "label": "> 15m" }
-              ]
-            },
-            {
-              "id": "crown_pos",
-              "label": "Crown Position",
-              "type": "multiselect",
-              "options": [
-                { "value": "dominant",     "label": "Dominant" },
-                { "value": "codominant",   "label": "Co-dominant" },
-                { "value": "intermediate", "label": "Intermediate" },
-                { "value": "suppressed",   "label": "Suppressed" }
-              ]
-            },
-            {
-              "id": "condition",
-              "label": "Tree Condition",
-              "type": "select",
-              "required": true,
-              "options": [
-                { "value": "live",    "label": "Live" },
-                { "value": "dead",    "label": "Dead" },
-                { "value": "damaged", "label": "Injured / Damaged" }
-              ]
-            }
+            { "id": "tree_specimens", "label": "Trees", "type": "tree_specimens_widget" }
           ]
         },
         {
           "id": "s_uploads",
-          "label": "Uploads",
+          "label": "Plot Photos",
           "fields": [
-            { "id": "tree_photo", "label": "Tree / Stem Photo", "type": "file", "accept": "image/*", "field_role": "tree_photo" }
+            { "id": "tree_photo", "label": "Tree / Stem Photos", "type": "file", "accept": "image/*", "field_role": "tree_photo", "multiple": true, "max_files": 10 }
           ]
         },
         {
           "id": "s_meta",
           "label": "Notes",
           "fields": [
-            { "id": "comments", "label": "Comments (canopy position, condition notes)", "type": "textarea" }
+            { "id": "comments",      "label": "General Comments / Site Notes", "type": "textarea" },
+            { "id": "surveyor_name", "label": "Surveyor", "type": "auto", "source": "google_account_email", "readonly": true }
           ]
         }
       ]
@@ -2381,7 +2370,7 @@ const SCHEMA = {
 
     "leakage": {
       "id": "leakage",
-      "label": "Ongoing Leakage Assessment",
+      "label": "Leakage Assessment (post-plantation)",
       "subtitle": "Post-baseline cattle grazing leakage — annual assessment",
       "projects": ["ASHA1","ASHA2","ARUN","BANANI"],
       "links_to": "LPC",
@@ -2390,13 +2379,13 @@ const SCHEMA = {
           "id": "s_leakage_plot",
           "label": "Plot & Beneficiary",
           "fields": [
-            { "id": "lpc_id",           "label": "Land Parcel Code (LPC)", "type": "text", "required": true },
-            { "id": "dbc_id",           "label": "DB Code (DBC)",          "type": "text", "required": true },
-            { "id": "beneficiary_name", "label": "Beneficiary Name",       "type": "text", "required": true },
-            { "id": "district_code",    "label": "District", "type": "select_district", "required": true, "gps_autosuggest": true },
-            { "id": "block_circle_code","label": { "ARUN": "Circle", "default": "Block" }, "type": "select_block_circle", "required": true, "gps_autosuggest": true },
-            { "id": "gp_name",          "label": "Gram Panchayat", "type": "text", "gps_autosuggest": true },
-            { "id": "village_name",     "label": "Village", "type": "text", "gps_autosuggest": true }
+            { "id": "lpc_id",            "label": "Land Parcel Code (LPC)", "type": "lpc_lookup", "required": true },
+            { "id": "district_code",     "label": "District",         "type": "auto_from_lpc", "readonly": true },
+            { "id": "block_circle_code", "label": "Block",            "type": "auto_from_lpc", "readonly": true },
+            { "id": "gp_name",           "label": "Gram Panchayat",   "type": "auto_from_lpc", "readonly": true },
+            { "id": "village_name",      "label": "Village",          "type": "auto_from_lpc", "readonly": true },
+            { "id": "beneficiary_names", "label": "Beneficiary Name(s)", "type": "auto_from_lpc", "readonly": true },
+            { "id": "area_ha",           "label": "Land Area (Ha)",   "type": "auto_from_lpc", "readonly": true }
           ]
         },
         {
@@ -2539,7 +2528,7 @@ const SCHEMA = {
 
     "mortality": {
       "id": "mortality",
-      "label": "Plantation Mortality Evaluation",
+      "label": "Plantation Health & Mortality Evaluation",
       "subtitle": "Species mortality, survival count and plot condition",
       "projects": ["ASHA1"],
       "links_to": "LPC",
@@ -2933,6 +2922,12 @@ function onDistrictChange(distCode) {
   S.values.state = state;
   const el = document.getElementById('f_state');
   if (el) el.textContent = state || '—';
+  // Reset DBC display if in baseline (district changed = new DBC needed)
+  if (S.formId === 'baseline') {
+    S.values.dbc_id = null;
+    const dbcEl = document.getElementById('f_dbc_id');
+    if (dbcEl) dbcEl.value = 'Auto — select District + Block first';
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -3431,6 +3426,123 @@ function buildHealthGrid(wrap) {
 }
 
 // ═══════════════════════════════════════════════════════
+// DBC ENCODING — district digit + 2-digit block prefix
+// Format: D BB XXXX (7 digits). e.g. Alipurduar/Alipurduar 2 → 1020001
+// ═══════════════════════════════════════════════════════
+const DBC_DISTRICT_DIGIT = {
+  'Alipurduar': 1, 'Coochbehar': 2, 'Jalpaiguri': 4, 'Kalimpong': 5
+};
+const DBC_BLOCK_DIGITS = {
+  'Alipurduar 1':'01','Alipurduar 2':'02','Falakata':'03','Kalchini':'04',
+  'Kumargram':'05','Madarihat':'06','Madarihat-Birpara':'06',
+  'Cooch Behar 1':'01','Cooch Behar 2':'12','Dinhata 1':'03','Dinhata 2':'04',
+  'Mathabhanga 1':'05','Mathabhanga 2':'07','Mekhliganj':'08',
+  'Sitai':'09','Sitalkuchi':'10','Tufanganj 1':'11','Tufanganj 2':'12',
+  'Toofanganj 1':'11','Toofanganj 2':'12',
+  'Banarhat':'08','Dhupguri':'02','Jalpaiguri':'01','Kranti':'04',
+  'Mal':'05','Matiali':'06','Maynaguri':'07','Nagrakata':'08',
+  'Gorubathan':'01','Kalimpong 1':'02','Kalimpong 2':'03'
+};
+
+function dbcPrefix(district, block) {
+  const d = DBC_DISTRICT_DIGIT[district];
+  const b = DBC_BLOCK_DIGITS[block];
+  return (d && b) ? String(d) + b : null;
+}
+
+function maxDbcForPrefix(prefix, features) {
+  let max = 0;
+  for (const f of (features||[])) {
+    for (const dbc of (f.properties.dbcs||[])) {
+      const s = String(dbc.DBC||'');
+      if (s.startsWith(prefix) && s.length === 7) {
+        const seq = parseInt(s.slice(prefix.length));
+        if (seq > max) max = seq;
+      }
+    }
+  }
+  return max;
+}
+
+async function generateNextDBC(district, block) {
+  const prefix = dbcPrefix(district, block);
+  if (!prefix) return null;
+  let features = _plantationFeatures;
+  if (!features) { try { features = await loadPlantationGeoJSON(); } catch(e) {} }
+  const next = maxDbcForPrefix(prefix, features||[]) + 1;
+  return parseInt(prefix + String(next).padStart(4,'0'));
+}
+
+// ═══════════════════════════════════════════════════════
+// SHARED LPC LOOKUP UTILITY (plantation, fencing, leakage)
+// ═══════════════════════════════════════════════════════
+const LPC_AUTOFILL_FIELDS = {
+  plantation: ['district_code','block_circle_code','gp_name','village_name','beneficiary_names','area_ha','plantation_year'],
+  fencing:    ['district_code','block_circle_code','beneficiary_names','area_ha'],
+  leakage:    ['district_code','block_circle_code','gp_name','village_name','beneficiary_names','area_ha']
+};
+
+const LPC_PROP_MAP = {
+  district_code:     p => p.DISTRICT  || '',
+  block_circle_code: p => p.BLOCK     || '',
+  gp_name:           p => p.GP        || '',
+  village_name:      p => p.VILLAGE   || '',
+  beneficiary_names: p => p.BENNAMES  || '',
+  area_ha:           p => p.AREA_HA   != null ? p.AREA_HA.toFixed(4) : '',
+  plantation_year:   p => p.YEAR      || ''
+};
+
+async function doLPCLookup(lpcVal, formType) {
+  const features = await loadPlantationGeoJSON();
+  if (!features) return null;
+  const feat = lookupLPC(lpcVal, features);
+  if (!feat) return null;
+  const p = feat.properties;
+  (LPC_AUTOFILL_FIELDS[formType]||[]).forEach(fid => {
+    const val = LPC_PROP_MAP[fid] ? LPC_PROP_MAP[fid](p) : '';
+    S.values[fid] = val;
+    const el = document.getElementById('f_'+fid);
+    if (el) { el.value = val; }
+  });
+  updateConditionals();
+  return feat;
+}
+
+function mkSharedLPCLookup(f, formType) {
+  const wrap = document.createElement('div'); wrap.id='f_'+f.id;
+  const row  = document.createElement('div'); row.style.cssText='display:flex;gap:8px';
+  const inp  = document.createElement('input');
+  inp.type='text'; inp.className='field-input'; inp.placeholder='e.g. 1050001';
+  inp.value = S.values[f.id]||'';
+  const btn  = document.createElement('button');
+  btn.type='button'; btn.className='file-btn primary';
+  btn.style.cssText='width:auto;padding:10px 16px;flex-shrink:0;font-size:13px';
+  btn.textContent='🔍 Look up';
+  const result = document.createElement('div'); result.className='lpc-result';
+
+  inp.oninput = () => { S.values[f.id] = inp.value.trim(); };
+  btn.onclick = async () => {
+    const lpcVal = inp.value.trim();
+    if (!lpcVal) { toast('Enter an LPC first','warn'); return; }
+    btn.textContent='Loading…'; btn.disabled=true;
+    const feat = await doLPCLookup(lpcVal, formType);
+    btn.textContent='🔍 Look up'; btn.disabled=false;
+    if (!feat) {
+      result.className='lpc-result show';
+      result.style.cssText='display:block;color:var(--c-danger);border-color:var(--c-danger);background:rgba(220,38,38,.07)';
+      result.innerHTML=`LPC <strong>${lpcVal}</strong> not found`; return;
+    }
+    const p = feat.properties;
+    result.className='lpc-result show'; result.style.cssText='display:block';
+    result.innerHTML=`✓ <strong>${p.DISTRICT}</strong> / ${p.BLOCK} · ${p.YEAR} · ${p.AREA_HA?.toFixed(2)} ha`;
+    toast(`✓ LPC ${lpcVal} loaded`,'success');
+  };
+  row.appendChild(inp); row.appendChild(btn);
+  wrap.appendChild(row); wrap.appendChild(result);
+  return wrap;
+}
+
+// ═══════════════════════════════════════════════════════
 // SCREEN: PROJECTS
 // ═══════════════════════════════════════════════════════
 // Projects visible in the launcher — others remain in SCHEMA but are hidden
@@ -3472,6 +3584,34 @@ const FORM_ICON = { baseline:'👤', grievance:'⚠️', plantation:'🌱', fenc
 // ═══════════════════════════════════════════════════════
 // SCREEN: FORM LIST
 // ═══════════════════════════════════════════════════════
+// Form sections config — order and grouping shown in the form list
+const FORM_SECTIONS_CONFIG = [
+  {
+    label: 'Ongoing Surveys',
+    forms: [
+      { id:'baseline',     icon:'👤', name:'Baseline (Beneficiary)',                  sub:'Enrol new beneficiary, collect land and site details' },
+      { id:'mortality',    icon:'📊', name:'Health & Mortality Evaluation',            sub:'Plot condition, species mortality and health rating' },
+      { id:'leakage',      icon:'🐄', name:'Leakage Assessment (post-plantation)',     sub:'Post-baseline cattle grazing leakage — annual' },
+      { id:'grievance',    icon:'⚠️', name:'Grievance Registration & Redressal',      sub:'Register or resolve field grievances' },
+      { id:'event',        icon:'📋', name:'Record a Local Meeting (LSC etc.)',        sub:'FGD, LSC, PRA, consent, official meetings' },
+    ]
+  },
+  {
+    label: 'Plantation Season',
+    forms: [
+      { id:'plantation',   icon:'🌱', name:'Record Plantation Details',               sub:'Species count, plantation date, fencing status' },
+      { id:'fencing',      icon:'🚧', name:'Record Fencing Details',                  sub:'Fencing type, materials, condition' },
+    ]
+  },
+  {
+    label: 'Pre-plantation Season',
+    forms: [
+      { id:'biomass_plot', icon:'🗺️', name:'Survey Biomass — Plot Details',           sub:'Plot identity, size, ground conditions, photos' },
+      { id:'biomass_tree', icon:'🌳', name:'Survey Biomass — Tree Assessment',        sub:'Multi-specimen tree measurement and condition' },
+    ]
+  }
+];
+
 function selectProject(proj) {
   S.project = proj;
   document.getElementById('proj-tag').textContent = proj;
@@ -3479,15 +3619,29 @@ function selectProject(proj) {
   document.getElementById('proj-full-label').textContent = SCHEMA.meta.projects[proj].label;
   const list = document.getElementById('form-btn-list');
   list.innerHTML = '';
-  Object.values(SCHEMA.forms).forEach(form => {
-    if (!form.projects.includes(proj)) return;
-    if (form.disabled) return; // skip disabled forms
-    const btn = document.createElement('div');
-    btn.className = 'form-btn';
-    btn.innerHTML = `<span class="form-icon">${FORM_ICON[form.id]||'📝'}</span><div class="form-info"><div class="form-name">${form.label}</div><div class="form-meta">→ ${form.links_to||'standalone'} · ${form.sections?.length||0} sections</div></div><span style="color:var(--c-muted)">›</span>`;
-    btn.onclick = () => openForm(form.id);
-    list.appendChild(btn);
+
+  FORM_SECTIONS_CONFIG.forEach(sec => {
+    // Check if any form in this section is valid for project
+    const validForms = sec.forms.filter(fc => {
+      const fd = SCHEMA.forms[fc.id];
+      return fd && fd.projects.includes(proj) && !fd.disabled;
+    });
+    if (!validForms.length) return;
+
+    // Section label
+    const secLbl = document.createElement('div');
+    secLbl.style.cssText='font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--c-muted);margin:14px 0 6px;padding-bottom:5px;border-bottom:1px solid var(--c-border)';
+    secLbl.textContent = sec.label;
+    list.appendChild(secLbl);
+
+    validForms.forEach(fc => {
+      const btn = document.createElement('div'); btn.className='form-btn';
+      btn.innerHTML=`<span class="form-icon">${fc.icon}</span><div class="form-info"><div class="form-name">${fc.name}</div><div class="form-meta">${fc.sub}</div></div><span style="color:var(--c-muted)">›</span>`;
+      btn.onclick = () => openForm(fc.id);
+      list.appendChild(btn);
+    });
   });
+
   showScreen('screen-forms');
 }
 
@@ -3571,8 +3725,10 @@ function mkInput(f, fg) {
     case 'auto': {
       const d = document.createElement('div');
       d.className = 'field-auto-chip';
-      d.textContent = '✓ ' + (S.userEmail || 'logged-in user');
-      S.values[f.id] = S.userEmail;
+      const display = S.userName || S.userEmail || 'logged-in user';
+      d.textContent = '✓ ' + display;
+      d.dataset.surveyor = 'true';
+      S.values[f.id] = S.userEmail || display;
       return d;
     }
 
@@ -3666,6 +3822,11 @@ function mkInput(f, fg) {
       sel.onchange = () => {
         S.values[f.id] = sel.value;
         if (f.type==='select_district') { repopulateL2(); onDistrictChange(sel.value); }
+        if (f.type==='select_block_circle' && S.formId==='baseline') {
+          S.values.dbc_id = null;
+          const dbcEl = document.getElementById('f_dbc_id');
+          if (dbcEl) dbcEl.value = 'Auto — select District + Block first';
+        }
         if (f.id==='stakeholder_type') onStakeholderChange();
         updateConditionals();
       };
@@ -3837,6 +3998,44 @@ function mkInput(f, fg) {
       return w;
     }
 
+    case 'dbc_autogenerate': {
+      const wrap = document.createElement('div'); wrap.id='f_'+f.id;
+      const row  = document.createElement('div'); row.style.cssText='display:flex;gap:8px;align-items:center';
+      const disp = document.createElement('input');
+      disp.type='text'; disp.className='field-input'; disp.id='f_dbc_id';
+      disp.readOnly=true; disp.style.color='var(--c-accent2)';
+      disp.style.fontWeight='700'; disp.style.fontFamily='monospace';
+      disp.value = S.values.dbc_id ? String(S.values.dbc_id) : 'Auto — select District + Block first';
+      const btn = document.createElement('button');
+      btn.type='button'; btn.className='file-btn primary';
+      btn.style.cssText='width:auto;padding:10px 14px;flex-shrink:0;font-size:12px';
+      btn.textContent='🔄 Generate';
+      btn.onclick = async () => {
+        const dist  = S.values.district_code    || S.values.district;
+        const block = S.values.block_circle_code || S.values.block;
+        if (!dist || !block) { toast('Select District and Block first','warn'); return; }
+        btn.textContent='…'; btn.disabled=true;
+        const dbc = await generateNextDBC(dist, block);
+        btn.textContent='🔄 Generate'; btn.disabled=false;
+        if (!dbc) { toast('Cannot generate DBC for this district/block','error'); return; }
+        S.values.dbc_id = dbc;
+        disp.value = String(dbc);
+        toast(`✓ DBC ${dbc} generated`,'success');
+      };
+      const hint = document.createElement('div');
+      hint.className='field-hint'; hint.style.marginTop='4px';
+      hint.textContent='Legacy 2022-23 DBCs (< 1000000) were assigned manually and are not in this sequence.';
+      row.appendChild(disp); row.appendChild(btn);
+      wrap.appendChild(row); wrap.appendChild(hint);
+      return wrap;
+    }
+
+    case 'lpc_lookup': {
+      // Shared LPC lookup — formType inferred from current form id
+      const formType = S.formId || 'plantation';
+      return mkSharedLPCLookup(f, formType);
+    }
+
     case 'mort_lpc_lookup': {
       const wrap = document.createElement('div'); wrap.id='f_'+f.id;
       const row  = document.createElement('div'); row.style.cssText='display:flex;gap:8px';
@@ -3949,6 +4148,181 @@ function mkInput(f, fg) {
         chips.appendChild(c);
       });
       wrap.appendChild(chips);
+      return wrap;
+    }
+
+    case 'plot_size_widget': {
+      const wrap = document.createElement('div'); wrap.id='f_'+f.id;
+      const row  = document.createElement('div'); row.className='plot-size-wrap';
+      const wInp = document.createElement('input'); wInp.type='number'; wInp.className='field-input'; wInp.min='1'; wInp.placeholder='30';
+      const sep  = document.createElement('span');  sep.className='plot-size-label'; sep.textContent='×';
+      const hInp = document.createElement('input'); hInp.type='number'; hInp.className='field-input'; hInp.min='1'; hInp.placeholder='30';
+      const unit = document.createElement('span');  unit.className='plot-size-label'; unit.textContent='m';
+      const area = document.createElement('span');  area.className='plot-size-area';
+      const cur = S.values[f.id] || {};
+      wInp.value = cur.width  || 30;
+      hInp.value = cur.height || 30;
+      const upd = () => {
+        const w=parseFloat(wInp.value)||30, h=parseFloat(hInp.value)||30;
+        area.textContent = `= ${(w*h).toFixed(0)} m²`;
+        S.values[f.id] = { width:w, height:h, area_sqm:w*h };
+      };
+      wInp.oninput=upd; hInp.oninput=upd; upd();
+      row.appendChild(wInp); row.appendChild(sep); row.appendChild(hInp); row.appendChild(unit); row.appendChild(area);
+      wrap.appendChild(row);
+      return wrap;
+    }
+
+    case 'tree_specimens_widget': {
+      const wrap = document.createElement('div'); wrap.className='tree-specimens-wrap'; wrap.id='f_'+f.id;
+      if (!S.values.tree_specimens) S.values.tree_specimens = [];
+      const specimens = S.values.tree_specimens;
+
+      // All species for this project + Other option
+      const allSpp = (SCHEMA.species[S.project]||[]);
+
+      function treeIdForIdx(idx) {
+        const plotId = S.values.plot_id || 'PLT';
+        return `${plotId}-T${String(idx+1).padStart(3,'0')}`;
+      }
+
+      function renderSpecimens() {
+        wrap.innerHTML = '';
+        specimens.forEach((sp, idx) => {
+          const card = document.createElement('div'); card.className='tree-specimen-card';
+          // Header
+          const hdr = document.createElement('div'); hdr.className='tree-specimen-hdr';
+          const idEl = document.createElement('span'); idEl.className='tree-specimen-id';
+          idEl.textContent = treeIdForIdx(idx);
+          const rmBtn = document.createElement('button'); rmBtn.type='button'; rmBtn.className='tree-specimen-rm';
+          rmBtn.textContent='✕'; rmBtn.title='Remove this tree';
+          rmBtn.onclick = () => { specimens.splice(idx,1); renderSpecimens(); };
+          hdr.appendChild(idEl); hdr.appendChild(rmBtn);
+          card.appendChild(hdr);
+
+          const fields = document.createElement('div'); fields.className='tree-specimen-fields';
+
+          // DBH
+          const dbhGrp = document.createElement('div'); dbhGrp.className='field-group';
+          const dbhLbl = document.createElement('div'); dbhLbl.className='field-label'; dbhLbl.textContent='DBH (cm)';
+          const dbhInp = document.createElement('input'); dbhInp.type='number'; dbhInp.className='field-input'; dbhInp.min='0'; dbhInp.step='0.1';
+          dbhInp.value = sp.dbh_cm||''; dbhInp.placeholder='e.g. 24.5';
+          dbhInp.oninput=()=>{sp.dbh_cm=parseFloat(dbhInp.value)||0};
+          dbhGrp.appendChild(dbhLbl); dbhGrp.appendChild(dbhInp); fields.appendChild(dbhGrp);
+
+          // Stem ID
+          const stmGrp = document.createElement('div'); stmGrp.className='field-group';
+          const stmLbl = document.createElement('div'); stmLbl.className='field-label'; stmLbl.textContent='Stem ID (if multi-stem)';
+          const stmInp = document.createElement('input'); stmInp.type='text'; stmInp.className='field-input';
+          stmInp.value=sp.stem_id||''; stmInp.placeholder='e.g. A, B, C';
+          stmInp.oninput=()=>{sp.stem_id=stmInp.value};
+          stmGrp.appendChild(stmLbl); stmGrp.appendChild(stmInp); fields.appendChild(stmGrp);
+
+          // Species select (full width)
+          const sppGrp = document.createElement('div'); sppGrp.className='field-group full-width';
+          const sppLbl = document.createElement('div'); sppLbl.className='field-label'; sppLbl.textContent='Species';
+          const sppSel = document.createElement('select'); sppSel.className='field-select';
+          sppSel.innerHTML='<option value="">— Select species —</option>';
+          allSpp.forEach(s => {
+            const o = document.createElement('option'); o.value=s.code;
+            const nm = _lang==='hi'?(s.local_hi||s.local):_lang==='bn'?(s.local_bn||s.local):s.local;
+            o.textContent=`${nm} (${s.scientific})`;
+            if(sp.species===s.code) o.selected=true;
+            sppSel.appendChild(o);
+          });
+          const otherOpt = document.createElement('option'); otherOpt.value='OTHER'; otherOpt.textContent='Other (specify below)';
+          if(sp.species==='OTHER') otherOpt.selected=true;
+          sppSel.appendChild(otherOpt);
+
+          // Other species free text
+          const otherWrap = document.createElement('div'); otherWrap.className='species-other-wrap';
+          otherWrap.style.display = sp.species==='OTHER' ? 'flex' : 'none';
+          const otherLbl = document.createElement('span'); otherLbl.className='plot-size-label'; otherLbl.textContent='Species name:';
+          const otherInp = document.createElement('input'); otherInp.type='text'; otherInp.className='field-input';
+          otherInp.value=sp.species_other||''; otherInp.placeholder='Scientific or local name';
+          otherInp.oninput=()=>{sp.species_other=otherInp.value};
+          otherWrap.appendChild(otherLbl); otherWrap.appendChild(otherInp);
+
+          sppSel.onchange=()=>{
+            sp.species=sppSel.value;
+            otherWrap.style.display=sppSel.value==='OTHER'?'flex':'none';
+          };
+          sppGrp.appendChild(sppLbl); sppGrp.appendChild(sppSel); sppGrp.appendChild(otherWrap);
+          fields.appendChild(sppGrp);
+
+          // Height class
+          const htGrp = document.createElement('div'); htGrp.className='field-group';
+          const htLbl = document.createElement('div'); htLbl.className='field-label'; htLbl.textContent='Height Estimate';
+          const htSel = document.createElement('select'); htSel.className='field-select';
+          htSel.innerHTML='<option value="">—</option>';
+          [['lt3m','< 3m'],['3_7m','3–7m'],['7_15m','7–15m'],['gt15m','> 15m']].forEach(([v,l])=>{
+            const o=document.createElement('option'); o.value=v; o.textContent=l;
+            if(sp.height_class===v) o.selected=true;
+            htSel.appendChild(o);
+          });
+          htSel.onchange=()=>{sp.height_class=htSel.value};
+          htGrp.appendChild(htLbl); htGrp.appendChild(htSel); fields.appendChild(htGrp);
+
+          // Crown position
+          const cpGrp = document.createElement('div'); cpGrp.className='field-group';
+          const cpLbl = document.createElement('div'); cpLbl.className='field-label'; cpLbl.textContent='Crown Position';
+          const cpSel = document.createElement('select'); cpSel.className='field-select';
+          cpSel.innerHTML='<option value="">—</option>';
+          [['dominant','Dominant'],['codominant','Co-dominant'],['intermediate','Intermediate'],['suppressed','Suppressed']].forEach(([v,l])=>{
+            const o=document.createElement('option'); o.value=v; o.textContent=l;
+            if(sp.crown_pos===v) o.selected=true;
+            cpSel.appendChild(o);
+          });
+          cpSel.onchange=()=>{sp.crown_pos=cpSel.value};
+          cpGrp.appendChild(cpLbl); cpGrp.appendChild(cpSel); fields.appendChild(cpGrp);
+
+          // Condition
+          const conGrp = document.createElement('div'); conGrp.className='field-group';
+          const conLbl = document.createElement('div'); conLbl.className='field-label'; conLbl.textContent='Condition';
+          const conSel = document.createElement('select'); conSel.className='field-select';
+          conSel.innerHTML='<option value="">—</option>';
+          [['live','Live'],['dead','Dead'],['damaged','Injured / Damaged']].forEach(([v,l])=>{
+            const o=document.createElement('option'); o.value=v; o.textContent=l;
+            if(sp.condition===v) o.selected=true;
+            conSel.appendChild(o);
+          });
+          conSel.onchange=()=>{sp.condition=conSel.value};
+          conGrp.appendChild(conLbl); conGrp.appendChild(conSel); fields.appendChild(conGrp);
+
+          // Notes (full width)
+          const ntGrp = document.createElement('div'); ntGrp.className='field-group full-width';
+          const ntLbl = document.createElement('div'); ntLbl.className='field-label'; ntLbl.textContent='Tree Notes';
+          const ntInp = document.createElement('textarea'); ntInp.className='field-textarea'; ntInp.style.minHeight='50px';
+          ntInp.value=sp.notes||''; ntInp.placeholder='Canopy position, damage, remarks…';
+          ntInp.oninput=()=>{sp.notes=ntInp.value};
+          ntGrp.appendChild(ntLbl); ntGrp.appendChild(ntInp); fields.appendChild(ntGrp);
+
+          card.appendChild(fields);
+          wrap.appendChild(card);
+        });
+
+        // Add tree button
+        const addBtn = document.createElement('button'); addBtn.type='button'; addBtn.className='tree-add-btn';
+        addBtn.textContent = `+ Add Tree  (${specimens.length} recorded)`;
+        addBtn.onclick = () => {
+          specimens.push({ tree_id: treeIdForIdx(specimens.length), dbh_cm:null, species:'', stem_id:'', height_class:'', crown_pos:'', condition:'', notes:'' });
+          renderSpecimens();
+          // Scroll to new card
+          setTimeout(()=>{ const cards=wrap.querySelectorAll('.tree-specimen-card'); if(cards.length) cards[cards.length-1].scrollIntoView({behavior:'smooth',block:'nearest'}); }, 50);
+        };
+        wrap.appendChild(addBtn);
+      }
+
+      renderSpecimens();
+      // Re-render when plot_id changes so Tree IDs update
+      const plotIdObs = setInterval(()=>{
+        const pid = document.getElementById('f_plot_id');
+        if (!pid) { clearInterval(plotIdObs); return; }
+        if (pid.value !== (S.values._lastPlotId||'')) {
+          S.values._lastPlotId = pid.value;
+          renderSpecimens();
+        }
+      }, 800);
       return wrap;
     }
 
@@ -4633,6 +5007,21 @@ async function saveDraft() {
 // SUBMIT FORM
 // ═══════════════════════════════════════════════════════
 async function submitForm() {
+  // Extra validation for biomass forms — at least one of beneficiary_names or dbc_ids required
+  if (S.formId === 'biomass_plot' || S.formId === 'biomass_tree') {
+    const hasBen = (S.values.beneficiary_names||'').trim().length > 0;
+    const hasDBC = (S.values.dbc_ids||'').trim().length > 0;
+    if (!hasBen && !hasDBC) {
+      toast('Fill at least one: Beneficiary Name(s) or DBC Code(s)', 'error', 5000);
+      // Highlight both fields
+      ['f_beneficiary_names','f_dbc_ids'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.classList.add('err'); setTimeout(()=>el.classList.remove('err'), 3000); }
+      });
+      return;
+    }
+  }
+
   const { ok, errs } = validateForm();
   if (!ok) { toast('Required: ' + errs.slice(0,3).join(', '), 'error', 5000); return; }
 
@@ -4751,22 +5140,67 @@ async function syncQueue() {
 // ═══════════════════════════════════════════════════════
 function initAuth() {
   const cached = localStorage.getItem('arr_user_email');
-  if (cached) { setUser(cached); return; }
+  if (cached) { setUser(cached, localStorage.getItem('arr_user_name')||''); return; }
+
   if (window.google?.accounts?.id) {
     google.accounts.id.initialize({
-      client_id: APP_CONFIG.oauthClientId||'',
-      callback: r => { try { const p=JSON.parse(atob(r.credential.split('.')[1])); setUser(p.email); } catch(e){} },
-      auto_select: true
+      client_id: APP_CONFIG.oauthClientId,
+      callback: r => {
+        try {
+          const p = JSON.parse(atob(r.credential.split('.')[1]));
+          setUser(p.email, p.name||'');
+        } catch(e) { showManualLoginPrompt(); }
+      },
+      auto_select: true,
+      cancel_on_tap_outside: false
     });
-    google.accounts.id.prompt();
-  } else { setUser('unknown@device'); }
+    google.accounts.id.prompt(n => {
+      // If One Tap not available (e.g. no Google session), show manual fallback
+      if (n.isNotDisplayed() || n.isSkippedMoment()) showManualLoginPrompt();
+    });
+  } else {
+    // GSI not loaded (offline) — use cached or manual
+    showManualLoginPrompt();
+  }
 }
 
-function setUser(email) {
+function showManualLoginPrompt() {
+  const cached = localStorage.getItem('arr_user_email');
+  if (cached) { setUser(cached, localStorage.getItem('arr_user_name')||''); return; }
+  // Show inline prompt in user-chip area
+  const chip = document.getElementById('user-chip');
+  chip.innerHTML = '';
+  const inp = document.createElement('input');
+  inp.type='text'; inp.placeholder='Your name (offline)';
+  inp.style.cssText='font-size:11px;border:1px solid var(--c-border);border-radius:10px;padding:2px 8px;background:var(--c-input-bg);color:var(--c-text);width:140px;font-family:var(--font)';
+  inp.onkeydown = e => { if(e.key==='Enter' && inp.value.trim()) { setUser(inp.value.trim()+'@device', inp.value.trim()); } };
+  chip.appendChild(inp);
+  inp.focus();
+}
+
+function setUser(email, name='') {
   S.userEmail = email;
+  S.userName  = name || email.split('@')[0];
   localStorage.setItem('arr_user_email', email);
-  const c = document.getElementById('user-chip');
-  c.textContent = email; c.title = email;
+  if (name) localStorage.setItem('arr_user_name', name);
+  const chip = document.getElementById('user-chip');
+  const display = name && !email.endsWith('@device') ? name : email;
+  chip.textContent = display;
+  chip.title = email;
+  chip.style.cursor = 'pointer';
+  chip.onclick = () => {
+    if (confirm(`Signed in as ${email}\n\nSign out?`)) {
+      localStorage.removeItem('arr_user_email');
+      localStorage.removeItem('arr_user_name');
+      S.userEmail = ''; S.userName = '';
+      chip.textContent = 'Sign in';
+      chip.onclick = null;
+      if (window.google?.accounts?.id) google.accounts.id.prompt();
+      else showManualLoginPrompt();
+    }
+  };
+  // Auto-fill surveyor_name fields currently visible
+  document.querySelectorAll('[data-surveyor]').forEach(el => { el.value = email; });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -4919,9 +5353,9 @@ en: {
   'f.plot_condition':'Overall Plot Condition (%)',
   'f.land_owner_engagement':'Land Owner Engagement',
   'f.num_species':'No. of Species (planted)',
-  'form.biomass_plot':'Biomass Survey — Plot Details',
+  'form.biomass_plot':'Survey Biomass — Plot Details',
   'form.biomass_plot.sub':'Plot-level site conditions and observations',
-  'form.biomass_tree':'Biomass Survey — Tree Assessment',
+  'form.biomass_tree':'Survey Biomass — Tree Assessment',
   'form.biomass_tree.sub':'Individual tree measurement and condition',
   'form.nursery':'Nursery Mapping',
   'form.nursery.sub':'Nursery capability and species stock assessment',
@@ -5277,9 +5711,9 @@ hi: {
   'f.land_owner_engagement':'भूमि मालिक की भागीदारी',
   'form.leakage':'चल रहा लीकेज मूल्यांकन',
   'form.leakage.sub':'बेसलाइन के बाद मवेशी चराई लीकेज — वार्षिक मूल्यांकन',
-  'form.biomass_plot':'Biomass Survey — Plot Details',
+  'form.biomass_plot':'Survey Biomass — Plot Details',
   'form.biomass_plot.sub':'प्लॉट-स्तरीय साइट अवलोकन',
-  'form.biomass_tree':'Biomass Survey — Tree Assessment',
+  'form.biomass_tree':'Survey Biomass — Tree Assessment',
   'form.biomass_tree.sub':'एकल पेड़ माप और स्थिति',
   'form.nursery':'Nursery Mapping',
   'form.nursery.sub':'नर्सरी क्षमता और प्रजाति स्टॉक आकलन',
@@ -5594,9 +6028,9 @@ bn: {
   'f.land_owner_engagement':'জমির মালিকের সম্পৃক্ততা',
   'form.leakage':'চলমান লিকেজ মূল্যায়ন',
   'form.leakage.sub':'বেসলাইন-পরবর্তী গবাদিপশু চরানো লিকেজ — বার্ষিক মূল্যায়ন',
-  'form.biomass_plot':'Biomass Survey — Plot Details',
+  'form.biomass_plot':'Survey Biomass — Plot Details',
   'form.biomass_plot.sub':'প্লট-স্তরের সাইট পর্যবেক্ষণ',
-  'form.biomass_tree':'Biomass Survey — Tree Assessment',
+  'form.biomass_tree':'Survey Biomass — Tree Assessment',
   'form.biomass_tree.sub':'একক গাছ পরিমাপ ও অবস্থা',
   'form.nursery':'Nursery Mapping',
   'form.nursery.sub':'নার্সারি সক্ষমতা ও প্রজাতি স্টক মূল্যায়ন',
