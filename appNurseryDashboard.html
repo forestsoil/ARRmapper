@@ -1215,7 +1215,10 @@ async function syncQueue() {
     // Apps Script endpoint would go here — same pattern as Survey Manager
     // Seed tree photos upload to Drive folder linked to asha1.data album
     try {
-      await fetch(NURSERY_SCRIPT_URL, { method:'POST', body: JSON.stringify(item.payload) });
+      await fetch(NURSERY_SCRIPT_URL, {
+        method:'POST', mode:'no-cors',
+        body: JSON.stringify(item.payload)
+      });
       await dbDelete('queue', item.id);
       ok++;
     } catch(e) { fail++; }
