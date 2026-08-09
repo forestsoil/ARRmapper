@@ -99,19 +99,29 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 
 /* ── SPECIES GRID ── */
 .spp-grid{display:flex;flex-direction:column;gap:0}
+/* Dispatch grid: Species | Plan | Available | Requested | Dispatched */
+.spp-grid.dispatch-grid .spp-hdr{grid-template-columns:1fr 60px 70px 75px 80px}
+.spp-grid.dispatch-grid .spp-row{grid-template-columns:1fr 60px 70px 75px 80px}
 .spp-hdr{display:grid;grid-template-columns:1fr 90px 80px;gap:6px;
   padding:6px 10px;font-size:10px;font-weight:700;color:var(--mid);
   text-transform:uppercase;background:var(--pale);border:1px solid var(--rule);
   border-bottom:none;border-radius:var(--radius) var(--radius) 0 0}
 .spp-row{display:grid;grid-template-columns:1fr 90px 80px;gap:6px;align-items:center;
   padding:6px 10px;border:1px solid var(--rule);border-top:none;background:var(--card)}
+.spp-row.has-stid{display:flex;flex-direction:column;padding:6px 10px;gap:4px}
+.spp-row.has-stid .spp-row-main{display:grid;grid-template-columns:1fr 60px 70px 75px 80px;gap:6px;width:100%;align-items:center}
+.spp-row.has-stid .spp-row-stid{display:flex;align-items:center;gap:6px;padding-left:4px}
+.spp-row.has-stid .spp-row-stid label{font-size:10px;color:var(--mid);white-space:nowrap;min-width:80px}
+.spp-row.has-stid .spp-row-stid input{flex:1;font-size:11px;padding:3px 6px;border:1.5px solid var(--rule);border-radius:5px;font-family:var(--font)}
 .spp-row:last-child{border-radius:0 0 var(--radius) var(--radius)}
 .spp-row.lemon-row{background:#fffbeb}
 .spp-name{font-size:12px;font-weight:600}
 .spp-name.lemon{color:#92400e}
 .spp-plan{font-size:11px;color:var(--mid);text-align:center}
+.spp-avail{font-size:11px;color:var(--info);text-align:center;font-weight:600}
 .spp-inp{width:100%;text-align:center;padding:5px;font-size:13px;font-family:var(--font);
   border:1.5px solid var(--rule);border-radius:6px;background:#fff}
+.spp-inp.dispatched{border-color:var(--leaf);background:#f0fdf4}
 
 /* ── BUTTONS ── */
 .btn{padding:10px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;
@@ -450,19 +460,50 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
   </div>
 
   <div class="field-group">
-    <label class="field-label" data-i18n="f.seedtree_id">Seed Tree ID <span style="font-weight:400;color:var(--mid)">(optional — for provenance tracking)</span></label>
-    <input type="text" class="field-input" id="d-seedtree" placeholder="e.g. ST-ASHA1-001" list="seedtree-datalist">
-    <datalist id="seedtree-datalist"></datalist>
+    <label class="field-label" data-i18n="f.requested_by">Requested By (Field Staff)</label>
+    <input type="text" class="field-input" id="d-requested-by" placeholder="Name of field staff requesting dispatch">
   </div>
 
-  <div class="section-hdr" data-i18n="s.species_count">Species Count</div>
-  <div class="spp-grid" id="d-spp-grid">
-    <div class="spp-hdr"><span>Species</span><span>2026 Plan</span><span>Qty</span></div>
+  <div class="section-hdr" data-i18n="s.species_count">Species Count &amp; Seed Tree IDs</div>
+  <div style="font-size:11px;color:var(--mid);margin-bottom:6px;font-style:italic">Enter quantities dispatched. Seed Tree ID per species is optional — fill only when provenance is known.</div>
+  <div class="spp-grid dispatch-grid" id="d-spp-grid">
+    <div class="spp-hdr">
+      <span>Species</span><span>Plan</span><span>Available</span><span>Requested</span><span>Dispatched</span>
+    </div>
+  </div>
+
+  <div class="field-group" style="margin-top:16px">
+    <label class="field-label" data-i18n="f.vehicle_no">Vehicle Number</label>
+    <input type="text" class="field-input" id="d-vehicle-no" placeholder="e.g. WB 77 A 1234">
   </div>
 
   <div class="field-group">
-    <label class="field-label" data-i18n="f.vehicle">Vehicle / Remarks</label>
-    <input type="text" class="field-input" id="d-vehicle" placeholder="Vehicle no., driver, remarks">
+    <label class="field-label" data-i18n="f.driver">Driver Name</label>
+    <input type="text" class="field-input" id="d-driver" placeholder="Driver's name">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.remarks">Remarks</label>
+    <textarea class="field-input field-textarea" id="d-remarks" rows="2" placeholder="Any additional notes"></textarea>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label" data-i18n="f.loading_photo">Loading Photo <span style="font-weight:400;color:var(--mid)">(optional)</span></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:8px 14px">
+        📷 Camera
+        <input type="file" accept="image/*" capture="environment" id="d-photo-camera" style="display:none" onchange="onDispatchPhoto(this)">
+      </label>
+      <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:8px 14px">
+        🖼 Gallery
+        <input type="file" accept="image/*" id="d-photo-gallery" style="display:none" onchange="onDispatchPhoto(this)">
+      </label>
+    </div>
+    <div id="d-photo-preview" style="margin-top:8px;display:none">
+      <img id="d-photo-img" style="max-width:100%;max-height:180px;border-radius:8px;border:1.5px solid var(--rule)">
+      <div style="font-size:10px;color:var(--mid);margin-top:4px" id="d-photo-ts"></div>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:4px" onclick="clearDispatchPhoto()">✕ Remove</button>
+    </div>
   </div>
 
 </div>
@@ -620,7 +661,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 // CONSTANTS
 // ═══════════════════════════════════════════════════════
 
-const APP_VERSION = 'nursery_DEV2';
+const APP_VERSION = 'nursery_DEV3';
 
 const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3jozO4kQRjiHfzs9MVBkt9Fj2IA09oDRQOuSVgNL5c7Mkx0_e5Z_vK5ramnnl0qkHtA/exec';
 
@@ -681,7 +722,9 @@ const I18N = {
     'tile.inspection.sub':'Record current stock count and health at source nursery',
     'f.date':'Date','f.source':'Source Nursery','f.district':'Destination District',
     'f.lpc':'LPC (Land Parcel Code)','f.nature':'Nature of Plantation',
-    'f.seedtree_id':'Seed Tree ID','f.vehicle':'Vehicle / Remarks',
+    'f.requested_by':'Requested By (Field Staff)',
+    'f.vehicle_no':'Vehicle Number','f.driver':'Driver Name','f.remarks':'Remarks',
+    'f.loading_photo':'Loading Photo',
     'f.species':'Species','f.loc_type':'Location Type','f.seeds':'Seeds Collected',
     'f.gps':'GPS Location','f.photo':'Photo','f.notes':'Notes','f.submitter':'Recorded by',
     'f.inspector':'Inspector Name','f.health':'Overall Nursery Health','f.remarks':'Remarks',
@@ -701,7 +744,7 @@ const I18N = {
     'tile.inspection.sub':'स्रोत नर्सरी में वर्तमान स्टॉक और स्वास्थ्य दर्ज करें',
     'f.date':'तारीख','f.source':'स्रोत नर्सरी','f.district':'गंतव्य जिला',
     'f.lpc':'LPC (भूमि पार्सल कोड)','f.nature':'रोपण का प्रकार',
-    'f.seedtree_id':'बीज वृक्ष ID','f.vehicle':'वाहन / टिप्पणी',
+    'f.requested_by':'अनुरोधकर्ता (क्षेत्र कर्मचारी)','f.vehicle_no':'वाहन संख्या','f.driver':'चालक नाम','f.remarks':'टिप्पणी','f.loading_photo':'लोडिंग फोटो',
     'f.species':'प्रजाति','f.loc_type':'स्थान प्रकार','f.seeds':'एकत्रित बीज',
     'f.gps':'GPS स्थान','f.photo':'फोटो','f.notes':'नोट्स','f.submitter':'दर्ज किया',
     'f.inspector':'निरीक्षक का नाम','f.health':'नर्सरी स्वास्थ्य','f.remarks':'टिप्पणी',
@@ -721,7 +764,9 @@ const I18N = {
     'tile.inspection.sub':'উৎস নার্সারিতে বর্তমান মজুত ও স্বাস্থ্য রেকর্ড করুন',
     'f.date':'তারিখ','f.source':'উৎস নার্সারি','f.district':'গন্তব্য জেলা',
     'f.lpc':'LPC (জমির পার্সেল কোড)','f.nature':'রোপণের ধরন',
-    'f.seedtree_id':'বীজ গাছের ID','f.vehicle':'যানবাহন / মন্তব্য',
+    'f.requested_by':'অনুরোধকারী (মাঠকর্মী)',
+    'f.vehicle_no':'যানবাহন নম্বর','f.driver':'চালকের নাম','f.remarks':'মন্তব্য',
+    'f.loading_photo':'লোডিং ছবি',
     'f.species':'প্রজাতি','f.loc_type':'অবস্থানের ধরন','f.seeds':'সংগৃহীত বীজ',
     'f.gps':'GPS অবস্থান','f.photo':'ছবি','f.notes':'নোট','f.submitter':'রেকর্ড করেছেন',
     'f.inspector':'পরিদর্শকের নাম','f.health':'নার্সারির স্বাস্থ্য','f.remarks':'মন্তব্য',
@@ -874,17 +919,67 @@ function buildSpeciesGrids() {
 
 function buildDispatchGrid() {
   const g = document.getElementById('d-spp-grid');
-  g.innerHTML = `<div class="spp-hdr"><span>${t('col.species')}</span><span>2026 Plan</span><span>${t('col.count')}</span></div>`;
+  g.innerHTML = `<div class="spp-hdr">
+    <span>${t('col.species')}</span>
+    <span>Plan</span>
+    <span>Available</span>
+    <span>Requested</span>
+    <span>Dispatched</span>
+  </div>`;
   SPECIES.forEach(sp => {
     const row = document.createElement('div');
-    row.className = 'spp-row' + (!sp.carbon ? ' lemon-row' : '');
-    const plan = sp.carbon ? totalPlanForSpp(sp.code) : '—';
+    row.className = 'spp-row has-stid' + (!sp.carbon ? ' lemon-row' : '');
+    const plan  = sp.carbon ? fmtNum(totalPlanForSpp(sp.code)) : '—';
+    const avail = sp.carbon
+      ? `<input type="number" min="0" class="spp-inp" id="d-avail-${sp.code}" placeholder="0" title="Current stock at nursery">`
+      : `<span style="text-align:center;font-size:11px;color:var(--mid)">—</span>`;
+    const req = sp.carbon
+      ? `<input type="number" min="0" class="spp-inp" id="d-req-${sp.code}" placeholder="0" title="Quantity requested by field">`
+      : `<span style="text-align:center;font-size:11px;color:var(--mid)">—</span>`;
     row.innerHTML = `
-      <div class="spp-name${!sp.carbon?' lemon':''}">${sppName(sp)}${!sp.carbon?' 🍋':''}</div>
-      <div class="spp-plan">${sp.carbon ? fmtNum(plan) : '—'}</div>
-      <input type="number" min="0" class="spp-inp" id="d-spp-${sp.code}" placeholder="0">`;
+      <div class="spp-row-main">
+        <div class="spp-name${!sp.carbon?' lemon':''}">${sppName(sp)}${!sp.carbon?' 🍋':''}</div>
+        <div class="spp-plan">${plan}</div>
+        ${avail}
+        ${req}
+        <input type="number" min="0" class="spp-inp dispatched" id="d-spp-${sp.code}" placeholder="0" title="Quantity actually dispatched">
+      </div>
+      <div class="spp-row-stid">
+        <label>Seed Tree ID:</label>
+        <input type="text" placeholder="optional" id="d-stid-${sp.code}" list="seedtree-datalist">
+      </div>`;
     g.appendChild(row);
   });
+}
+
+// ── Dispatch photo handling ──────────────────────────────────────────────
+let _dispatchPhotoB64 = null;
+
+async function onDispatchPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const capTs = new Date().toLocaleString();
+  const b64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Read failed'));
+    r.readAsDataURL(file);
+  });
+  _dispatchPhotoB64 = b64;
+  const prev = document.getElementById('d-photo-preview');
+  document.getElementById('d-photo-img').src = 'data:image/jpeg;base64,' + b64;
+  document.getElementById('d-photo-ts').textContent = '📷 Captured: ' + capTs;
+  prev.style.display = 'block';
+  document.getElementById('d-photo-camera').value  = '';
+  document.getElementById('d-photo-gallery').value = '';
+}
+
+function clearDispatchPhoto() {
+  _dispatchPhotoB64 = null;
+  document.getElementById('d-photo-preview').style.display = 'none';
+  document.getElementById('d-photo-img').src = '';
+  document.getElementById('d-photo-camera').value  = '';
+  document.getElementById('d-photo-gallery').value = '';
 }
 
 function buildInspectionGrid() {
@@ -933,35 +1028,56 @@ function onSourceChange() {
 // SAVE DISPATCH
 // ═══════════════════════════════════════════════════════
 async function saveDispatch() {
-  const date   = document.getElementById('d-date').value;
-  const source = document.getElementById('d-source').value;
-  const dist   = getChipVal('d-district', true);
-  const lpc    = document.getElementById('d-lpc').value.trim();
-  const nature = getChipVal('d-nature', true);
-  const stId   = document.getElementById('d-seedtree').value.trim();
-  const vehicle= document.getElementById('d-vehicle').value.trim();
+  const date        = document.getElementById('d-date').value;
+  const source      = document.getElementById('d-source').value;
+  const dist        = getChipVal('d-district', true);
+  const lpc         = document.getElementById('d-lpc').value.trim();
+  const nature      = getChipVal('d-nature', true);
+  const requestedBy = document.getElementById('d-requested-by').value.trim();
+  const vehicleNo   = document.getElementById('d-vehicle-no').value.trim();
+  const driver      = document.getElementById('d-driver').value.trim();
+  const remarks     = document.getElementById('d-remarks').value.trim();
 
   if (!date||!source||!dist||!lpc||!nature) { toast('Fill required fields', 'warn'); return; }
 
-  const sppCounts = {};
+  const sppCounts    = {};
+  const sppAvail     = {};
+  const sppRequested = {};
+  const sppStIds     = {};
   let total = 0;
+
   SPECIES.forEach(sp => {
-    const v = parseInt(document.getElementById('d-spp-'+sp.code)?.value)||0;
-    if (v>0) { sppCounts[sp.code]=v; total+=v; }
+    const dispatched = parseInt(document.getElementById('d-spp-'+sp.code)?.value)||0;
+    if (dispatched > 0) { sppCounts[sp.code] = dispatched; total += dispatched; }
+    const avail = parseInt(document.getElementById('d-avail-'+sp.code)?.value)||0;
+    if (avail > 0) sppAvail[sp.code] = avail;
+    const req = parseInt(document.getElementById('d-req-'+sp.code)?.value)||0;
+    if (req > 0) sppRequested[sp.code] = req;
+    const stid = document.getElementById('d-stid-'+sp.code)?.value.trim();
+    if (stid) sppStIds[sp.code] = stid;
   });
 
-  if (total===0) { toast('Enter at least one species count', 'warn'); return; }
+  if (total===0) { toast('Enter at least one dispatched count', 'warn'); return; }
 
   const rec = {
     id: uuid(), form:'dispatch', ts: ts(),
-    date, source, district:dist, lpc, nature, vehicle,
-    seed_tree_id: stId||null,
-    species: sppCounts, total,
+    date, source, district:dist, lpc, nature,
+    requested_by: requestedBy || null,
+    vehicle_no:   vehicleNo   || null,
+    driver:       driver       || null,
+    remarks:      remarks      || null,
+    species:      sppCounts,
+    spp_avail:    sppAvail,
+    spp_requested:sppRequested,
+    spp_stids:    sppStIds,
+    total,
+    loading_photo_b64: _dispatchPhotoB64 || null,
     uploaded: false
   };
 
   await dbPut('dispatches', rec);
   await enqueue(rec);
+  clearDispatchPhoto();
   closeModal('dispatch');
   toast(`✓ Dispatch saved — ${fmtNum(total)} saplings`, 'success');
   refreshDashboard();
