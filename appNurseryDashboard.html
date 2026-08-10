@@ -398,7 +398,8 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
   <div class="sync-bar">
     <div class="sync-dot" id="queue-dot"></div>
     <span id="queue-status">Checking…</span>
-    <button class="btn btn-primary" style="margin-left:auto;padding:6px 14px;font-size:12px" onclick="syncQueue()">↑ Sync Now</button>
+    <button class="btn btn-secondary" style="padding:6px 14px;font-size:12px" onclick="pullFromSheet()" id="pull-btn">⬇ Pull from Sheet</button>
+      <button class="btn btn-primary" style="margin-left:8px;padding:6px 14px;font-size:12px" onclick="syncQueue()">↑ Sync Now</button>
   </div>
   <div id="queue-list"></div>
 </div>
@@ -661,9 +662,9 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 // CONSTANTS
 // ═══════════════════════════════════════════════════════
 
-const APP_VERSION = 'nursery_DEV3';
+const APP_VERSION = 'nursery_DEV7';
 
-const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec';
+const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3jozO4kQRjiHfzs9MVBkt9Fj2IA09oDRQOuSVgNL5c7Mkx0_e5Z_vK5ramnnl0qkHtA/exec';
 
 const SPECIES = [
   { code:'TK',  local:'Teak',       local_hi:'सागौन',    local_bn:'সেগুন',    sci:'Tectona grandis',         polybag:'9×7', carbon:true  },
@@ -827,6 +828,17 @@ async function dbPut(store, rec) {
     const tx = db.transaction(store,'readwrite');
     tx.objectStore(store).put(rec).onsuccess = e => res(e.target.result);
     tx.onerror = e => rej(e.target.error);
+  });
+}
+
+async function dbGet(store, id) {
+  return new Promise((res,rej)=>{
+    openDB().then(db=>{
+      const tx = db.transaction(store,'readonly');
+      const req = tx.objectStore(store).get(id);
+      req.onsuccess = ()=>res(req.result||null);
+      req.onerror   = ()=>rej(req.error);
+    });
   });
 }
 
@@ -1226,6 +1238,132 @@ async function syncQueue() {
   toast(`✓ ${ok} uploaded${fail?`, ${fail} failed`:''}`, ok>0?'success':'error');
   updateQueueKPI();
   renderQueue();
+}
+
+async function pullFromSheet() {
+  if (!navigator.onLine) { toast('Offline — connect to pull', 'warn'); return; }
+  const btn = document.getElementById('pull-btn');
+  btn.disabled = true; btn.textContent = '⬇ Pulling…';
+  try {
+    const url = NURSERY_SCRIPT_URL + '?action=getAll';
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    let dCount=0, sCount=0, iCount=0;
+
+    // Dispatches
+    for (const row of (data.dispatches||[])) {
+      const id = row.submission_id || row[0];
+      if (!id || id==='submission_id') continue;
+      const existing = await dbGet('dispatches', id);
+      if (existing) continue;
+      // Map sheet columns to app record shape
+      const rec = {
+        id,
+        form: 'dispatch',
+        ts: row.app_timestamp || row[2] || '',
+        date: row.Date || row[3] || '',
+        source: row['Source Nursery'] || row[4] || '',
+        district: row['Destination District'] || row[5] || '',
+        lpc: row['Project Field Location (LPC)'] || row[6] || '',
+        nature: row['Nature of Plantation'] || row[7] || '',
+        requested_by: row['Requested By'] || row[8] || null,
+        vehicle_no: row['Vehicle Number'] || row[9] || null,
+        driver: row['Driver Name'] || row[10] || null,
+        total: parseInt(row.Total || row[11]) || 0,
+        species: {
+          TK:  parseInt(row.Teak)         ||0,
+          MHG: parseInt(row.Mahagoni)     ||0,
+          CKS: parseInt(row.Chikrashi)    ||0,
+          GMR: parseInt(row.Gamar)        ||0,
+          KSR: parseInt(row['Kalo Sirish'])||0,
+          SML: parseInt(row.Shimul)       ||0,
+          NM:  parseInt(row.Neem)         ||0,
+          KTH: parseInt(row.Kathal)       ||0,
+          JM:  parseInt(row['Kalo Jam'])  ||0,
+          PNS: parseInt(row.Panisaj)      ||0,
+          JRL: parseInt(row.Jarul)        ||0,
+          KHR: parseInt(row.Khair)        ||0,
+          CHP: parseInt(row.Chaap)        ||0,
+          LMN: parseInt(row['Lemon (Lebu)'])||0,
+        },
+        remarks: row.Remarks || null,
+        uploaded: true
+      };
+      await dbPut('dispatches', rec);
+      dCount++;
+    }
+
+    // Seed Trees
+    for (const row of (data.seedtrees||[])) {
+      const id = row.submission_id || row[0];
+      if (!id || id==='submission_id') continue;
+      const existing = await dbGet('seedtrees', id);
+      if (existing) continue;
+      const rec = {
+        id,
+        form: 'seedtree',
+        ts: row.app_timestamp || '',
+        seed_tree_id: row['Seed Tree ID'] || '',
+        date: row.Date || '',
+        species: row['Species Code'] || '',
+        location_type: row['Location Type'] || '',
+        seeds_collected: parseInt(row['Seeds Collected'])||0,
+        lat: parseFloat(row.Latitude)||null,
+        lon: parseFloat(row.Longitude)||null,
+        notes: row.Notes || '',
+        submitter: row['Recorded By'] || '',
+        photo_url: row.photo_drive_url || '',
+        uploaded: true
+      };
+      await dbPut('seedtrees', rec);
+      sCount++;
+    }
+
+    // Inspections
+    for (const row of (data.inspections||[])) {
+      const id = row.submission_id || row[0];
+      if (!id || id==='submission_id') continue;
+      const existing = await dbGet('inspections', id);
+      if (existing) continue;
+      const rec = {
+        id,
+        form: 'inspection',
+        ts: row.app_timestamp || '',
+        date: row.Date || '',
+        source: row['Source Nursery'] || '',
+        inspector: row.Inspector || '',
+        health: row['Overall Health'] || '',
+        remarks: row.Remarks || '',
+        stock: {
+          TK:  parseInt(row.Teak)         ||0,
+          MHG: parseInt(row.Mahagoni)     ||0,
+          CKS: parseInt(row.Chikrashi)    ||0,
+          GMR: parseInt(row.Gamar)        ||0,
+          KSR: parseInt(row['Kalo Sirish'])||0,
+          SML: parseInt(row.Shimul)       ||0,
+          NM:  parseInt(row.Neem)         ||0,
+          KTH: parseInt(row.Kathal)       ||0,
+          JM:  parseInt(row['Kalo Jam'])  ||0,
+          PNS: parseInt(row.Panisaj)      ||0,
+          JRL: parseInt(row.Jarul)        ||0,
+          KHR: parseInt(row.Khair)        ||0,
+          CHP: parseInt(row.Chaap)        ||0,
+          LMN: parseInt(row['Lemon (Lebu)'])||0,
+        },
+        uploaded: true
+      };
+      await dbPut('inspections', rec);
+      iCount++;
+    }
+
+    toast(`✓ Pulled: ${dCount} dispatches, ${sCount} seed trees, ${iCount} inspections`, 'success', 6000);
+    refreshDashboard();
+  } catch(err) {
+    toast('Pull failed: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '⬇ Pull from Sheet';
+  }
 }
 
 async function renderQueue() {
