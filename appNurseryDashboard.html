@@ -664,7 +664,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 
 const APP_VERSION = 'nursery_DEV7';
 
-const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3jozO4kQRjiHfzs9MVBkt9Fj2IA09oDRQOuSVgNL5c7Mkx0_e5Z_vK5ramnnl0qkHtA/exec';
+const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec';
 
 const SPECIES = [
   { code:'TK',  local:'Teak',       local_hi:'सागौन',    local_bn:'সেগুন',    sci:'Tectona grandis',         polybag:'9×7', carbon:true  },
@@ -1245,9 +1245,24 @@ async function pullFromSheet() {
   const btn = document.getElementById('pull-btn');
   btn.disabled = true; btn.textContent = '⬇ Pulling…';
   try {
-    const url = NURSERY_SCRIPT_URL + '?action=getAll';
-    const resp = await fetch(url);
-    const data = await resp.json();
+    const data = await new Promise((resolve, reject) => {
+      const cbName = '__nurseryPull_' + Date.now();
+      const script = document.createElement('script');
+      const timer = setTimeout(() => {
+        delete window[cbName];
+        script.remove();
+        reject(new Error('Pull timed out'));
+      }, 20000);
+      window[cbName] = (d) => {
+        clearTimeout(timer);
+        delete window[cbName];
+        script.remove();
+        resolve(d);
+      };
+      script.src = NURSERY_SCRIPT_URL + '?action=getAll&callback=' + cbName;
+      script.onerror = () => { clearTimeout(timer); reject(new Error('Script load failed')); };
+      document.head.appendChild(script);
+    });
 
     let dCount=0, sCount=0, iCount=0;
 
