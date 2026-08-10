@@ -23,9 +23,7 @@ header img{width:110px;height:110px;object-fit:contain;flex-shrink:0}
 .hdr-text h1{font-size:26px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.2}
 .hdr-text p{font-size:12px;color:var(--mist);line-height:1.6;max-width:340px}
 main{max-width:960px;margin:0 auto;padding:32px 20px 48px;text-align:center}
-.section-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--mid);margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
-.grid{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-bottom:36px}
+.grid{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-bottom:0}
 .app-card{background:#fff;border:1.5px solid var(--rule);border-radius:12px;padding:20px 18px 16px;
   text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:8px;
   transition:box-shadow .15s,border-color .15s,transform .1s;cursor:pointer;position:relative;
@@ -45,6 +43,9 @@ main{max-width:960px;margin:0 auto;padding:32px 20px 48px;text-align:center}
 .tag.soon{background:#f3f4f6;color:#9ca3af}
 .tag.field{background:#dbeafe;color:#1e40af}
 .tag.ccb{background:#fce7f3;color:#9d174d}
+.tag.analysis{background:#e0f4f7;color:#0e5f6e}
+.tag.monitoring{background:#f3e8ff;color:#6b21a8}
+.tag.operations{background:#fef3e2;color:#92400e}
 .card-arrow{position:absolute;bottom:16px;right:16px;font-size:16px;
   color:var(--accent,var(--leaf));opacity:0;transition:opacity .15s,transform .15s}
 .app-card:hover .card-arrow{opacity:1;transform:translateX(3px)}
@@ -72,18 +73,16 @@ footer a:hover{color:var(--canopy)}
 </header>
 
 <main>
+  <div class="grid" style="margin-bottom:14px">
 
-  <div class="section-label">Field tools</div>
-  <div class="grid">
-
+    <!-- Row 1: Field tools + Land Hotspotter -->
     <a class="app-card" href="appARRmapper.html" style="--accent:#2d6a4f">
       <div class="card-icon">🗺️</div>
       <div class="card-name">ARR Mapper</div>
-      <div class="card-sub">Vector capture, plantation mapping, soil classification, MRV monitoring visits — offline-first, Drive sync</div>
+      <div class="card-sub">Vector capture, plantation mapping, soil classification — offline-first, Drive sync</div>
       <div class="card-tags">
         <span class="tag field">Field</span>
         <span class="tag">Offline</span>
-        <span class="tag new">MRV</span>
       </div>
       <div class="card-arrow">→</div>
     </a>
@@ -91,31 +90,10 @@ footer a:hover{color:var(--canopy)}
     <a class="app-card" href="./appSurveyManager.html" style="--accent:#0369a1">
       <div class="card-icon">📋</div>
       <div class="card-name">Survey Manager</div>
-      <div class="card-sub">Beneficiary details, FGD records, event forms — linked to plot LPCs and project data</div>
+      <div class="card-sub">Beneficiary baseline, plantation &amp; fencing records, events, leakage and health &amp; mortality forms</div>
       <div class="card-tags">
         <span class="tag field">Field</span>
-        <span class="tag new">Live</span>
-      </div>
-      <div class="card-arrow">→</div>
-    </a>
-
-    <a class="app-card coming-soon" href="#" style="--accent:#6b7280">
-      <div class="card-icon">⬜</div>
-      <div class="card-name">&nbsp;</div>
-      <div class="card-sub">&nbsp;</div>
-      <div class="card-tags"><span class="tag soon">Coming soon</span></div>
-    </a>
-
-  </div>
-
-  <div class="section-label">Analysis &amp; monitoring</div>
-  <div class="grid">
-
-    <a class="app-card" href="appDashboard.html" style="--accent:#0f766e">
-      <div class="card-icon">🌡️</div>
-      <div class="card-name">Plantation Dashboard</div>
-      <div class="card-sub">Plantation status, species breakdown, beneficiary records and year-on-year area tracking — 2024–2026 Asha project data</div>
-      <div class="card-tags">
+        <span class="tag">Offline</span>
         <span class="tag new">Live</span>
       </div>
       <div class="card-arrow">→</div>
@@ -126,6 +104,30 @@ footer a:hover{color:var(--canopy)}
       <div class="card-name">Land Hotspotter</div>
       <div class="card-sub">COG-based flood frequency and drought stress viewer — 2-band composite scoring for ARR site prioritisation</div>
       <div class="card-tags">
+        <span class="tag analysis">Analysis</span>
+        <span class="tag new">Live</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <!-- Row 2: Analysis & Monitoring -->
+    <a class="app-card" href="appDashboard.html" style="--accent:#0f766e">
+      <div class="card-icon">🌡️</div>
+      <div class="card-name">Plantation Dashboard</div>
+      <div class="card-sub">Plantation status, species breakdown, beneficiary records and year-on-year area tracking — 2024–2026 Asha project data</div>
+      <div class="card-tags">
+        <span class="tag analysis">Analysis</span>
+        <span class="tag new">Live</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a class="app-card" href="appMonitoringDashboard.html" style="--accent:#7e22ce">
+      <div class="card-icon">🌿</div>
+      <div class="card-name">Monitoring Dashboard</div>
+      <div class="card-sub">Plantation survival, species health, plot condition and leakage — 2024–2025 legacy data and ongoing MRV records</div>
+      <div class="card-tags">
+        <span class="tag monitoring">Monitoring</span>
         <span class="tag new">Live</span>
       </div>
       <div class="card-arrow">→</div>
@@ -137,25 +139,22 @@ footer a:hover{color:var(--canopy)}
       <div class="card-sub">Biodiversity sightings map, natural recruitment, wildlife events, labour equity metrics and SDG co-benefit indicators</div>
       <div class="card-tags">
         <span class="tag ccb">CCB</span>
-        <span class="tag ccb">SDG</span>
+        <span class="tag monitoring">Monitoring</span>
+        <span class="tag analysis">Analysis</span>
         <span class="tag new">Live</span>
       </div>
       <div class="card-arrow">→</div>
     </a>
 
-  </div>
-
-  <div class="section-label">Operations</div>
-  <div class="grid">
-
+    <!-- Row 3: Operations -->
     <a class="app-card coming-soon" href="#" style="--accent:#b45309">
-      <div class="card-icon">🌿</div>
+      <div class="card-icon">📦</div>
       <div class="card-name">Inventory &amp; Resources</div>
       <div class="card-sub">Plot-linked material calculator — fencing, pits, fertiliser, planting labour — and nursery raising schedule</div>
       <div class="card-tags">
+        <span class="tag operations">Operations</span>
         <span class="tag soon">Coming soon</span>
       </div>
-      <div class="card-arrow">→</div>
     </a>
 
     <a class="app-card" href="appNurseryDashboard.html" style="--accent:#16a34a">
@@ -163,6 +162,8 @@ footer a:hover{color:var(--canopy)}
       <div class="card-name">Nursery Dashboard</div>
       <div class="card-sub">Sapling dispatch, stock tracking, seed tree mapping and plan vs actual — Asha 1 nursery network</div>
       <div class="card-tags">
+        <span class="tag operations">Operations</span>
+        <span class="tag analysis">Analysis</span>
         <span class="tag new">Live</span>
         <span class="tag">Offline</span>
       </div>
@@ -174,13 +175,13 @@ footer a:hover{color:var(--canopy)}
       <div class="card-name">Documentation &amp; Reports</div>
       <div class="card-sub">Verification reports, SOPs, project agreements, land document store and baseline documents</div>
       <div class="card-tags">
+        <span class="tag operations">Operations</span>
         <span class="tag new">Live</span>
       </div>
       <div class="card-arrow">→</div>
     </a>
 
   </div>
-
 </main>
 
 <script>
