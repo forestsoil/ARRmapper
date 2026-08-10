@@ -202,7 +202,7 @@ tbody td{padding:6px 10px;vertical-align:top}
   <!-- Row 2: Species survival (full width bar chart) -->
   <div class="card">
     <div class="card-title">Species Survival Rate</div>
-    <div class="chart-wrap" style="height:260px"><canvas id="ch-species"></canvas></div>
+    <div class="chart-wrap" style="height:380px"><canvas id="ch-species"></canvas></div>
   </div>
 
   <!-- Row 3: Year comparison + Plots needing attention -->
@@ -669,7 +669,7 @@ function renderSpeciesChart() {
       },
       scales:{
         x:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},
-        y:{ticks:{font:{size:10}}}
+        y:{ticks:{font:{size:10},autoSkip:false}}
       }
     }
   });
