@@ -137,7 +137,7 @@ tbody td{padding:6px 10px;vertical-align:top}
     <span id="live-badge" style="display:none;font-size:10px;color:#6ee7b7;background:rgba(110,231,183,.15);padding:4px 10px;border-radius:20px;border:1px solid rgba(110,231,183,.3)">Live</span>
     <span id="loader" style="display:none;font-size:10px;color:rgba(255,255,255,.5)">⟳</span>
     <a href="./index.html" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">🏠 App Suite</a>
-    <a href="./appSurveyManager.html#mortality" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">📋 Health-Mortality Form</a>
+    <a href="./appSurveyManager.html#mortality" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">📋 H&amp;M Form</a>
     <a href="./appSurveyManager.html#leakage" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">🐄 Leakage Form</a>
   </div>
 </header>
@@ -272,7 +272,7 @@ tbody td{padding:6px 10px;vertical-align:top}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ── Config ────────────────────────────────────────────────────────
-const AS_URL     = 'https://script.google.com/macros/s/AKfycbw4IadhskvZka5TlsmJOlavnMy7cybgZhI23--nBlzV5NuQAhPyi3l-YZXF-QFS14TH/exec'; // ← paste /exec URL after deploy
+const AS_URL     = ''; // ← paste /exec URL after deploy
 const IDB_NAME   = 'monitoring_dash';
 const IDB_STORE  = 'cache';
 const CACHE_KEY  = 'monitoring_data';
@@ -561,27 +561,118 @@ function renderCondChart() {
   charts['condition']=new Chart(document.getElementById('ch-condition'),{
     type:'doughnut',
     data:{labels:['Excellent ≥90%','Good 70-89%','Fair 50-69%','Poor <50%'],
-      datasets:[{data:b,backgroundColor:['#059669','#0e9f6e','#d97706','#dc2626'],borderWidth:2,borderColor:'#fff'}]},
+      datasets:[{data:b,backgroundColor:['#059669','#3b82f6','#f59e0b','#dc2626'],borderWidth:2,borderColor:'#fff'}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}}}}});
 }
 
 function renderSpeciesChart() {
   dc('species');
-  const sp={};
+
+  // Species colours — matches ARRmapper SPECIES_COLORS exactly
+  const SPP_COLOR = {
+    'Teak/Shegun': '#00FF00',
+    'Jarul':       '#DD88FF',
+    'Chikrashi':   '#FF0000',
+    'Shimul':      '#888888',
+    'Neem':        '#7B9E3A',
+    'Khayer':      '#FFBB88',
+    'Jam':         '#8800FF',
+    'Gamar':       '#FF8800',
+    'Panisaj':     '#7DC3E1',
+    'Mahagoni':    '#880000',
+    'Champ':       '#FFDD66',
+    'Boyra':       '#0000FF',
+    'Kalo Shirish':'#FFDDFF',
+    'Kathal':      '#006600',
+  };
+
+  // Build per-species per-year survival
+  const years = [...new Set(FILTERED.map(p=>p.data_year))].filter(Boolean).sort();
+  const spNames = new Set();
+  FILTERED.forEach(p=>(p.species||[]).forEach(s=>{ if(s.name) spNames.add(s.name); }));
+
+  // Aggregate by species across all years for sort order
+  const spTotals = {};
+  spNames.forEach(n=>{ spTotals[n]={planted:0,alive:0}; });
   FILTERED.forEach(p=>(p.species||[]).forEach(s=>{
-    if(!sp[s.name])sp[s.name]={planted:0,alive:0};
-    sp[s.name].planted+=s.planted||0; sp[s.name].alive+=s.alive||0;
+    if(!s.name)return;
+    spTotals[s.name].planted+=s.planted||0;
+    spTotals[s.name].alive+=s.alive||0;
   }));
-  const sorted=Object.entries(sp).filter(([,v])=>v.planted>0)
-    .map(([k,v])=>({name:k,pct:Math.round(100*v.alive/v.planted)}))
-    .sort((a,b)=>b.pct-a.pct);
-  const colors=sorted.map(x=>x.pct>=80?'rgba(5,150,105,.75)':x.pct>=60?'rgba(217,119,6,.75)':'rgba(220,38,38,.75)');
-  charts['species']=new Chart(document.getElementById('ch-species'),{
+  const sorted = [...spNames]
+    .filter(n=>spTotals[n].planted>0)
+    .sort((a,b)=>{
+      const sa=spTotals[a].alive/spTotals[a].planted;
+      const sb=spTotals[b].alive/spTotals[b].planted;
+      return sb-sa;
+    });
+
+  // Year opacity: earlier years more transparent
+  const yearAlpha = ['cc','ff']; // 2024=80%, 2025=100%
+
+  const datasets = years.map((yr,i)=>{
+    const data = sorted.map(name=>{
+      let pl=0,al=0;
+      FILTERED.filter(p=>p.data_year===yr).forEach(p=>
+        (p.species||[]).filter(s=>s.name===name).forEach(s=>{
+          pl+=s.planted||0; al+=s.alive||0;
+        })
+      );
+      return pl>0 ? Math.round(100*al/pl) : null;
+    });
+    // Per-species colour with year opacity
+    const bgColors = sorted.map(n=>{
+      const hex = SPP_COLOR[n]||'#aaaaaa';
+      const alpha = yearAlpha[Math.min(i,yearAlpha.length-1)];
+      return hex + alpha;
+    });
+    return {
+      label: String(yr),
+      data,
+      backgroundColor: bgColors,
+      borderRadius: 3,
+      borderSkipped: false,
+    };
+  });
+
+  charts['species'] = new Chart(document.getElementById('ch-species'),{
     type:'bar',
-    data:{labels:sorted.map(x=>x.name),datasets:[{label:'Survival %',data:sorted.map(x=>x.pct),backgroundColor:colors,borderRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},
-      scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+    data:{ labels: sorted, datasets },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      indexAxis:'y',
+      plugins:{
+        legend:{
+          position:'top',
+          labels:{
+            font:{size:11,weight:'600'},
+            generateLabels: chart => years.map((yr,i)=>({
+              text: String(yr),
+              fillStyle: '#555',
+              strokeStyle: '#555',
+              lineWidth: 0,
+              hidden: false,
+              datasetIndex: i,
+            }))
+          }
+        },
+        tooltip:{
+          callbacks:{
+            label: ctx => {
+              const v = ctx.parsed.x;
+              return v !== null ? ` ${ctx.dataset.label}: ${v}%` : ' No data';
+            }
+          }
+        }
+      },
+      scales:{
+        x:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},
+        y:{ticks:{font:{size:10}}}
+      }
+    }
+  });
 }
 
 function renderYearChart() {
