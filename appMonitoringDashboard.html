@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plantation Monitoring Dashboard · Asha 1</title>
+<title>Monitoring Dashboard · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -119,6 +119,26 @@ tbody td{padding:6px 10px;vertical-align:top}
   .kpi-row{padding:12px 12px 0}
   .sections{padding:12px 12px 40px}
 }
+
+/* ── MRV Field Visit Tool ─────────────────────────────────────── */
+.mrv-pm-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1f2937;gap:4px}
+.mrv-pm-label{font-size:10px;color:#9ca3af;flex:1;min-width:0;line-height:1.3}
+.mrv-pm-roller{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.mrv-pm-btn{background:#374151;border:none;color:#e5e7eb;border-radius:4px;width:22px;height:22px;font-size:14px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center}
+.mrv-pm-val{font-size:13px;font-weight:700;color:#f3f4f6;min-width:18px;text-align:center}
+.mrv-pm-sel{background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:10px;padding:3px 5px;max-width:120px}
+.mrv-vbtn{background:#1f2937;border:1.5px solid #374151;border-radius:6px;color:#d1d5db;font-size:11px;padding:5px 9px;cursor:pointer;white-space:nowrap}
+.mrv-vbtn.sel{background:#0d7377;border-color:#0fa3a8;color:#fff}
+.mrv-grade-btn{background:#1f2937;border:2px solid #374151;border-radius:6px;color:#d1d5db;font-size:13px;font-weight:700;padding:8px 4px;cursor:pointer;text-align:center}
+
+/* ── MRV panel ─────────────────────────────────────────────────── */
+.mrv-panel{background:#111827;border-radius:10px;padding:16px;margin-top:8px;color:#f3f4f6}
+.mrv-sec-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;margin-bottom:6px;margin-top:12px}
+.mrv-panel input[type=text],.mrv-panel input[type=date],.mrv-panel select{width:100%;background:#1f2937;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px 7px;font-family:var(--font)}
+.pm-btn{background:#374151;border:none;color:#e5e7eb;border-radius:4px;width:26px;height:26px;font-size:14px;cursor:pointer}
+.icon-btn{border:none;border-radius:6px;color:#fff;font-size:12px;padding:6px 10px;cursor:pointer;font-weight:600}
+.icon-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.b-teal-btn{background:#0d7377}.b-green-btn{background:#059669}.b-amber-btn{background:#b45a0c}.b-gray-btn{background:#374151}.b-red-btn{background:#7f1d1d}.b-off{opacity:.4;pointer-events:none}
 </style>
 </head>
 <body>
@@ -126,7 +146,7 @@ tbody td{padding:6px 10px;vertical-align:top}
 <header>
   <div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="hdr-title">🌿 Plantation Monitoring</span>
+      <span class="hdr-title">🌿 Monitoring Dashboard</span>
       <span class="hdr-badge">Asha 1</span>
     </div>
     <div class="hdr-sub">VCS 4866 · Jalpaiguri, Alipurduar &amp; Coochbehar</div>
@@ -137,8 +157,9 @@ tbody td{padding:6px 10px;vertical-align:top}
     <span id="live-badge" style="display:none;font-size:10px;color:#6ee7b7;background:rgba(110,231,183,.15);padding:4px 10px;border-radius:20px;border:1px solid rgba(110,231,183,.3)">Live</span>
     <span id="loader" style="display:none;font-size:10px;color:rgba(255,255,255,.5)">⟳</span>
     <a href="./index.html" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">🏠 App Suite</a>
-    <a href="./appSurveyManager.html#mortality" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">📋 Health-Mortality Form</a>
+    <a href="./appSurveyManager.html#mortality" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">📋 Health-Monitoring Form</a>
     <a href="./appSurveyManager.html#leakage" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">🐄 Leakage Form</a>
+    <button onclick="toggleMRVPanel()" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap" id="mrv-toggle-btn">📍 MRV Field Visit</button>
   </div>
 </header>
 
@@ -162,7 +183,7 @@ tbody td{padding:6px 10px;vertical-align:top}
     <select id="f-source">
       <option value="">All sources</option>
       <option value="legacy_xlsx">Legacy XLSX</option>
-      <option value="form">Health &amp; Mortality Form</option>
+      <option value="form">Health-Monitoring Form</option>
     </select>
   </div>
   <div class="filter-group">
@@ -263,12 +284,133 @@ tbody td{padding:6px 10px;vertical-align:top}
     </div>
   </div>
 
+
+  <!-- MRV Field Visit Tool -->
+  <div class="card" id="mrv-panel-card" style="display:none">
+    <div class="card-title">📍 MRV Field Visit Tool
+      <span style="font-size:9px;font-weight:400;color:#9ca3af;margin-left:8px">GPS-sampled tree grading · saves to Drive + Asha1_MonitoringRegister</span>
+    </div>
+    <div class="mrv-panel">
+
+    <div class="sec">
+      <div class="sec-t">📋 Plot</div>
+      <select id="mrv-plot-sel" onchange="mrvOnPlotSelect(this.value)" style="font-size:12px;width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;padding:5px">
+        <option value="">— select plot —</option>
+      </select>
+      <div id="mrv-plot-info" style="font-size:10px;color:#6b7280;margin-top:3px;min-height:14px"></div>
+    </div>
+    <div class="sec" id="mrv-sec-visit" style="display:none">
+      <div class="sec-t">Visit type</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
+        <button class="mrv-vbtn" data-vt="growth"    onclick="mrvSetVisitType('growth')"   >🌱 Growth</button>
+        <button class="mrv-vbtn" data-vt="condition" onclick="mrvSetVisitType('condition')" >🔍 Condition</button>
+        <button class="mrv-vbtn" data-vt="mortality" onclick="mrvSetVisitType('mortality')" >💀 Mortality</button>
+        <button class="mrv-vbtn" data-vt="annual"    onclick="mrvSetVisitType('annual')"    >📅 Annual</button>
+      </div>
+      <div id="mrv-mortality-warn" style="display:none;font-size:10px;color:#fbbf24;margin-top:4px">⚠️ Mortality assessments are normally Sep–Nov. Tap again to override.</div>
+    </div>
+    <div class="sec" id="mrv-sec-meta" style="display:none">
+      <div class="pm-row">
+        <span class="pm-label">LPC</span>
+        <input id="mrv-lpc" type="text" maxlength="20" placeholder="e.g. 4060006" style="flex:1;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px 7px"/>
+      </div>
+      <div class="pm-row" style="margin-top:4px">
+        <span class="pm-label">Date</span>
+        <input id="mrv-date" type="date" style="flex:1;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px 7px"/>
+      </div>
+    </div>
+    <div class="sec" id="mrv-sec-plotmetrics" style="display:none">
+      <div class="sec-t">📊 Plot Metrics <span style="font-size:9px;color:#6b7280;font-weight:400">(each 7% weight)</span></div>
+      <div id="mrv-pm-rows" style="margin-top:6px"></div>
+    </div>
+    <div class="sec" id="mrv-sec-progress" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:10px;color:#9ca3af">Sample points</span>
+        <span id="mrv-progress-lbl" style="font-size:11px;font-weight:700;color:#6ee7b7">0 / 0</span>
+      </div>
+      <div style="background:#374151;border-radius:4px;height:6px;margin-top:4px">
+        <div id="mrv-progress-bar" style="background:#6ee7b7;height:6px;border-radius:4px;width:0%;transition:width .3s"></div>
+      </div>
+    </div>
+    <div class="sec" id="mrv-sec-ctrl" style="display:none">
+      <div class="icon-row">
+        <button class="icon-btn b-teal" id="mrv-btn-start"  onclick="mrvStartVisit()"  style="font-size:13px;width:auto;padding:0 12px">▶ Start</button>
+        <button class="icon-btn b-green b-off" id="mrv-btn-next"   onclick="mrvNextPoint()"  style="font-size:13px;width:auto;padding:0 10px">Next ▶</button>
+        <button class="icon-btn b-amber b-off" id="mrv-btn-photo"  onclick="mrvTakePhoto()"  style="font-size:18px">📷</button>
+        <button class="icon-btn b-gray  b-off" id="mrv-btn-finish" onclick="mrvFinishVisit()" style="font-size:13px;width:auto;padding:0 10px">✅ Done</button>
+        <button class="icon-btn b-red   b-off" id="mrv-btn-cancel" onclick="mrvCancelVisit()" style="font-size:13px;width:auto;padding:0 10px">✕ Cancel</button>
+        <button class="icon-btn b-gray  b-off" id="mrv-btn-walkalong" onclick="mrvWalkAlongTap()" style="font-size:13px;width:auto;padding:0 10px">👁 Obs</button>
+      </div>
+    </div>
+    <div class="sec" id="mrv-sec-grade" style="display:none">
+      <div style="font-size:10px;color:#9ca3af;margin-bottom:4px">
+        Point <span id="mrv-pt-idx" style="color:#f3f4f6;font-weight:700">1</span>
+        of <span id="mrv-pt-total" style="color:#f3f4f6">0</span>
+        — <span id="mrv-pt-species" style="color:#a78bfa"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px" id="mrv-grade-grid">
+        <button class="mrv-grade-btn" data-g="A+" onclick="mrvSetGrade('A+')">A+</button>
+        <button class="mrv-grade-btn" data-g="A"  onclick="mrvSetGrade('A')">A</button>
+        <button class="mrv-grade-btn" data-g="B+" onclick="mrvSetGrade('B+')">B+</button>
+        <button class="mrv-grade-btn" data-g="B"  onclick="mrvSetGrade('B')">B</button>
+        <button class="mrv-grade-btn" data-g="C+" onclick="mrvSetGrade('C+')">C+</button>
+        <button class="mrv-grade-btn" data-g="C"  onclick="mrvSetGrade('C')">C</button>
+        <button class="mrv-grade-btn" data-g="D+" onclick="mrvSetGrade('D+')">D+</button>
+        <button class="mrv-grade-btn" data-g="D"  onclick="mrvSetGrade('D')">D</button>
+      </div>
+      <div class="pm-row">
+        <span class="pm-label">Height (cm)</span>
+        <button class="pm-btn" onclick="mrvAdjHeight(-5)">−</button>
+        <span id="mrv-height-val" style="font-size:12px;font-weight:700;color:#f3f4f6;min-width:44px;text-align:center">—</span>
+        <button class="pm-btn" onclick="mrvAdjHeight(+5)">+</button>
+      </div>
+      <div class="pm-row" style="margin-top:2px">
+        <span class="pm-label" style="color:#6b7280">DBH (cm) <span style="font-weight:400;font-size:9px">if &gt;5cm</span></span>
+        <button class="pm-btn" onclick="mrvAdjDBH(-0.5)" style="opacity:.6">−</button>
+        <span id="mrv-dbh-val" style="font-size:12px;color:#6b7280;min-width:44px;text-align:center">—</span>
+        <button class="pm-btn" onclick="mrvAdjDBH(+0.5)" style="opacity:.6">+</button>
+      </div>
+      <input id="mrv-pt-notes" type="text" maxlength="80" placeholder="notes (optional)…" style="width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:11px;padding:5px 7px;margin-top:6px"/>
+    </div>
+    <div class="sec" id="mrv-sec-summary" style="display:none">
+      <div class="sec-t">📊 Visit summary</div>
+      <div id="mrv-summary-body" style="font-size:10px;color:#d1d5db;margin-top:4px;line-height:1.8"></div>
+      <div class="icon-row" style="margin-top:8px" id="mrv-summary-btns">
+        <button class="icon-btn b-green" onclick="mrvExportVisit()" style="font-size:13px;width:auto;padding:0 12px">📦 Save &amp; Upload</button>
+        <button class="icon-btn b-gray"  onclick="mrvReset()"       style="font-size:13px;width:auto;padding:0 10px">↩ New visit</button>
+      </div>
+    </div>
+    <div id="mrv-walkalong-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1f2937;border-top:2px solid #374151;z-index:4000;padding:12px 14px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:12px;font-weight:700;color:#f3f4f6">👁 Walk-along observation</span>
+        <button onclick="mrvWalkAlongClose()" style="background:none;border:none;color:#9ca3af;font-size:18px;cursor:pointer">✕</button>
+      </div>
+      <div style="font-size:10px;color:#9ca3af;margin-bottom:6px">Species</div>
+      <select id="mrv-wa-species" style="width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px;margin-bottom:8px"></select>
+      <div style="font-size:10px;color:#9ca3af;margin-bottom:6px">Grade</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px" id="mrv-wa-grade-grid">
+        <button class="mrv-grade-btn" data-wg="A+" onclick="mrvWaSetGrade('A+')">A+</button>
+        <button class="mrv-grade-btn" data-wg="A"  onclick="mrvWaSetGrade('A')">A</button>
+        <button class="mrv-grade-btn" data-wg="B+" onclick="mrvWaSetGrade('B+')">B+</button>
+        <button class="mrv-grade-btn" data-wg="B"  onclick="mrvWaSetGrade('B')">B</button>
+        <button class="mrv-grade-btn" data-wg="C+" onclick="mrvWaSetGrade('C+')">C+</button>
+        <button class="mrv-grade-btn" data-wg="C"  onclick="mrvWaSetGrade('C')">C</button>
+        <button class="mrv-grade-btn" data-wg="D+" onclick="mrvWaSetGrade('D+')">D+</button>
+        <button class="mrv-grade-btn" data-wg="D"  onclick="mrvWaSetGrade('D')">D</button>
+      </div>
+      <input id="mrv-wa-notes" type="text" maxlength="80" placeholder="notes (optional)…" style="width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:11px;padding:5px 7px;margin-bottom:10px"/>
+      <button onclick="mrvWalkAlongSave()" style="width:100%;background:#0d7377;border:none;border-radius:6px;color:#fff;font-size:13px;padding:8px;cursor:pointer">Save observation</button>
+    </div>
+    <input type="file" id="mrv-photo-input" accept="image/*" capture="environment" style="display:none" onchange="mrvHandlePhoto(this)"/>
+      <div id="mrv-status-msg" style="display:none;font-size:11px;color:#6ee7b7;margin-top:8px;padding:6px;background:rgba(110,231,183,.1);border-radius:5px"></div>
+    </div>
+  </div>
+
   <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px">
-    Data: Legacy XLSX 2024–2025 (flat CSV paste) + Health &amp; Mortality form submissions (live via Apps Script) · Asha 1 VCS 4866 · ARR Project Suite
+    Data: Legacy XLSX 2024–2025 (flat CSV paste) + Health-Monitoring form submissions (live via Apps Script) · Asha 1 VCS 4866 · ARR Project Suite
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ── Config ────────────────────────────────────────────────────────
@@ -792,6 +934,830 @@ function boot() {
 }
 
 document.addEventListener('DOMContentLoaded', loadData);
+
+// ─────────────────────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════
+// MRV FIELD VISIT TOOL — lifted from appARRmapper v67
+// Adapted for appMonitoringDashboard context
+// Writes GeoJSON to Drive (via FieldTool AS) AND summary row to
+// Asha1_MonitoringRegister (via Monitoring AS)
+// ══════════════════════════════════════════════════════════════════
+
+// ── MRV config ────────────────────────────────────────────────────
+const MRV_TOOL_FOLDER  = 'MRVTool';
+const LEGACY_OPFS_PATH = ['geojson', 'VectorTool', '_legacy'];
+
+// ── FieldTool AS URL (for Drive GeoJSON upload) ───────────────────
+// Same URL used by ARRmapper for Drive file uploads
+const FIELD_TOOL_AS_URL = ''; // ← paste FieldTool /exec URL
+
+// ── Lightweight session for MRV uploads ──────────────────────────
+const MRV_SESSION = {
+  projectKey:  'Asha1',
+  userFolder:  '',  // set on first use from login prompt
+  setupDone:   false,
+};
+
+// ── Language stub (English only in dashboard) ─────────────────────
+const Lang = { th_soiltype: 'Soil type' };
+
+// ── MRV status message ─────────────────────────────────────────────
+function mrvSetStatusMsg(msg) {
+  const el = document.getElementById('mrv-status-msg');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+  console.log('[MRV]', msg);
+}
+
+// ── Panel toggle ───────────────────────────────────────────────────
+function toggleMRVPanel() {
+  const card = document.getElementById('mrv-panel-card');
+  const btn  = document.getElementById('mrv-toggle-btn');
+  if (!card) return;
+  const visible = card.style.display !== 'none';
+  card.style.display = visible ? 'none' : 'block';
+  btn.style.background = visible ? 'rgba(255,255,255,.12)' : 'rgba(13,115,119,.8)';
+  if (!visible) {
+    mrvLoadPlots();
+    // Prompt for user folder if not set
+    if (!MRV_SESSION.setupDone) {
+      const email = prompt('Enter your email for MRV upload attribution:');
+      if (email) {
+        MRV_SESSION.userFolder = email.split('@')[0].replace(/[^a-zA-Z0-9._-]/g,'_');
+        MRV_SESSION.setupDone  = true;
+      }
+    }
+  }
+}
+
+// ── OPFS helpers (minimal — same logic as ARRmapper) ──────────────
+async function opfsRoot() {
+  return await navigator.storage.getDirectory();
+}
+async function opfsDir(pathParts, create = true) {
+  let dir = await opfsRoot();
+  for (const part of pathParts) {
+    dir = await dir.getDirectoryHandle(part, { create });
+  }
+  return dir;
+}
+async function opfsWrite(dir, filename, blob) {
+  const fh = await dir.getFileHandle(filename, { create: true });
+  const w  = await fh.createWritable();
+  await w.write(blob); await w.close();
+}
+async function opfsReadBlob(dir, filename) {
+  const fh = await dir.getFileHandle(filename);
+  return await fh.getFile();
+}
+async function opfsList(dir) {
+  const names = [];
+  for await (const [name, handle] of dir.entries()) {
+    if (handle.kind === 'file') names.push(name);
+  }
+  return names;
+}
+async function opfsSaveGeoJSON(toolFolder, filename, geojson) {
+  try {
+    const dir = await opfsDir(['geojson', toolFolder]);
+    const blob = new Blob([JSON.stringify(geojson, null, 2)], { type:'application/geo+json' });
+    await opfsWrite(dir, filename, blob);
+  } catch(e) { console.warn('OPFS GeoJSON write failed:', e.message); }
+}
+async function opfsSaveToSent(toolFolder, filename, blob) {
+  try {
+    const dir = await opfsDir(['sent', toolFolder]);
+    await opfsWrite(dir, filename, blob);
+  } catch(e) { console.warn('OPFS sent write failed:', e.message); }
+}
+
+// ── blobToBase64 ───────────────────────────────────────────────────
+function blobToBase64(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+
+// ── Upload GeoJSON to Drive via FieldTool AS ──────────────────────
+async function uploadFile(filename, blob, toolFolder) {
+  if (!FIELD_TOOL_AS_URL || !MRV_SESSION.setupDone) return;
+  try {
+    const b64 = await blobToBase64(blob);
+    await fetch(FIELD_TOOL_AS_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        username: MRV_SESSION.userFolder,
+        toolFolder, filename,
+        fileData: b64,
+        mimeType: blob.type || 'application/octet-stream',
+      }),
+    });
+  } catch(e) { console.warn('Drive upload failed:', e.message); }
+}
+
+// ── POST MRV summary row to Asha1_MonitoringRegister ─────────────
+async function mrvPostToMonitoringSheet(visitData) {
+  if (!AS_URL) return;
+  try {
+    await fetch(AS_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'submitMRVVisit',
+        payload: visitData,
+      }),
+    });
+  } catch(e) { console.warn('Monitoring AS post failed:', e.message); }
+}
+
+// ── Outbox stubs (not needed in dashboard — drive upload is direct) ──
+async function outboxEnqueue(filename, blob, toolFolder) { return Date.now(); }
+async function outboxMarkSent(item) {}
+function outboxUpdateBadge() {}
+
+let mrvPlots=[], mrvActivePlot=null, mrvVisitType=null, mrvMortalityWarnShown=false;
+let mrvSamplePts=[], mrvCurrentIdx=0, mrvObservations=[], mrvPhotoBlobs=[];
+let mrvCurrentHeight=null, mrvCurrentDBH=null, mrvCurrentGrade=null;
+let mrvVisitActive=false, mrvLayer=null, mrvLayerOnMap=false;
+let mrvPlotMetricVals = {}; // {id: score 1–8}
+
+function mrvEnterMode() { /* dashboard: no-op map init */
+  mrvLoadPlots(); return;
+  if (!mrvLayer) { mrvLayer = L.layerGroup(); }
+  if (!mrvLayerOnMap) { mrvLayer.addTo(map); mrvLayerOnMap = true; }
+  mrvLoadPlots();
+}
+
+async function mrvLoadPlots() {
+  const sel = document.getElementById('mrv-plot-sel');
+  sel.innerHTML = '<option value="">— select plot —</option>';
+  mrvPlots = [];
+
+  // ── 1. sapling_points GeoJSONs from PlantationMapper (current-year field work) ──
+  try {
+    const dir = await opfsDir(['geojson','PlantationMapper'], false);
+    const files = await opfsList(dir);
+    for (const fname of files.filter(f=>f.includes('sapling_points'))) {
+      try {
+        const blob = await opfsReadBlob(dir, fname);
+        const gj = JSON.parse(await blob.text());
+        if (!gj.features || !gj.features.length) continue;
+        const lons=gj.features.map(f=>f.geometry.coordinates[0]);
+        const lats=gj.features.map(f=>f.geometry.coordinates[1]);
+        const dLon=Math.max(...lons)-Math.min(...lons), dLat=Math.max(...lats)-Math.min(...lats);
+        const cLat=(Math.max(...lats)+Math.min(...lats))/2;
+        const areaHa=(dLon*111320*Math.cos(cLat*Math.PI/180)*dLat*110540)/10000;
+        const density=areaHa>0?gj.features.length/areaHa:1000;
+        const ym=fname.match(/_(\d{4})\d{4}_/);
+        const plantYear=ym?ym[1]:'????';
+        mrvPlots.push({plotKey:fname,filename:fname,features:gj.features,areaHa,density,plantYear,source:'current'});
+        const opt=document.createElement('option');
+        opt.value=fname;
+        opt.textContent=fname.replace('_sapling_points','').replace(/\.geojson$/,'');
+        sel.appendChild(opt);
+      } catch(e){}
+    }
+  } catch(e){}
+
+  // ── 2. Legacy LP polygons from _legacy/ (2024–2026 fencing boundaries) ──
+  try {
+    const legacyDir = await opfsDir(LEGACY_OPFS_PATH, false);
+    const legacyFiles = await opfsList(legacyDir);
+    // Group alphabetically so years appear in order
+    legacyFiles.sort();
+    // Add optgroup header if there are any legacy plots
+    if (legacyFiles.length) {
+      const grp = document.createElement('optgroup');
+      grp.label = '── Legacy plots (2024–2026) ──';
+      sel.appendChild(grp);
+    }
+    for (const fname of legacyFiles.filter(f=>f.endsWith('.geojson'))) {
+      try {
+        const blob = await opfsReadBlob(legacyDir, fname);
+        const gj = JSON.parse(await blob.text());
+        if (!gj.features || !gj.features.length) continue;
+        const feat = gj.features[0];
+        // LP polygon — derive a pseudo point-grid from boundary centroid for MRV
+        // (boundary is used for map display; MRV sampling generates points at runtime)
+        const coords = feat.geometry.type === 'Polygon'
+          ? feat.geometry.coordinates[0]
+          : feat.geometry.coordinates[0][0];
+        const lons = coords.map(c=>c[0]), lats = coords.map(c=>c[1]);
+        const cLon = (Math.max(...lons)+Math.min(...lons))/2;
+        const cLat = (Math.max(...lats)+Math.min(...lats))/2;
+        const dLon = Math.max(...lons)-Math.min(...lons);
+        const dLat = Math.max(...lats)-Math.min(...lats);
+        const areaHa = (dLon*111320*Math.cos(cLat*Math.PI/180)*dLat*110540)/10000;
+        // Extract year from filename e.g. legacy2024
+        const ym = fname.match(/legacy(\d{4})/);
+        const plantYear = ym ? ym[1] : '????';
+        const lpc = feat.properties.name || fname.replace(/_LP_poly_gps_legacy\d+\.geojson$/,'');
+        // Represent as single centroid point with LP type so MRV can work boundary-mode
+        const pseudoFeatures = [{
+          type:'Feature',
+          properties:{ species:'Legacy plot', color:'#facc15', lpc },
+          geometry:{ type:'Point', coordinates:[cLon, cLat] }
+        }];
+        mrvPlots.push({
+          plotKey: fname, filename: fname,
+          features: pseudoFeatures,
+          boundary: feat.geometry,   // full polygon for map display
+          areaHa, density: 0,
+          plantYear, lpc, source:'legacy'
+        });
+        const opt = document.createElement('option');
+        opt.value = fname;
+        opt.textContent = lpc + ' (' + plantYear + ')';
+        sel.appendChild(opt);
+      } catch(e){}
+    }
+  } catch(e){}
+
+  if (!mrvPlots.length) document.getElementById('mrv-plot-info').textContent = 'No plots in OPFS yet. Use Files tab → Sync Legacy Plots.';
+}
+
+function mrvOnPlotSelect(plotKey) {
+  mrvReset(true);
+  if (!plotKey) return;
+  mrvActivePlot = mrvPlots.find(p=>p.plotKey===plotKey)||null;
+  if (!mrvActivePlot) return;
+  const p=mrvActivePlot;
+  ['mrv-sec-visit','mrv-sec-meta','mrv-sec-plotmetrics','mrv-sec-ctrl'].forEach(id=>document.getElementById(id).style.display='');
+  document.getElementById('mrv-date').value=new Date().toISOString().slice(0,10);
+  // Pre-fill LPC from legacy plot name
+  if (p.source==='legacy' && p.lpc) {
+    const lpcEl=document.getElementById('mrv-lpc');
+    if (!lpcEl.value) lpcEl.value=p.lpc;
+  }
+  mrvInitPlotMetrics();
+  mrvLayer.clearLayers();
+
+  if (p.source==='legacy' && p.boundary) {
+    // Draw fencing polygon boundary
+    const llCoords = (p.boundary.type==='Polygon'
+      ? p.boundary.coordinates[0]
+      : p.boundary.coordinates[0][0]
+    ).map(([lon,lat])=>[lat,lon]);
+    const poly = L.polygon(llCoords,{color:'#facc15',weight:2,fillColor:'#facc15',fillOpacity:0.08,interactive:false});
+    poly.addTo(mrvLayer);
+    map.fitBounds(poly.getBounds(),{padding:[20,20]});
+    document.getElementById('mrv-plot-info').textContent=`Legacy plot ${p.lpc} · ${p.areaHa.toFixed(2)} ha · ${p.plantYear} · boundary only`;
+  } else {
+    const spCount=new Set(p.features.map(f=>f.properties.species||'unknown')).size;
+    const estMonthly=spCount*(1+MRV_INTERIOR_PER_BLOCK);
+    document.getElementById('mrv-plot-info').textContent=`${p.features.length} saplings · ${p.areaHa.toFixed(2)} ha · ${spCount} spp · monthly ~${estMonthly} pts`;
+    p.features.forEach(f=>{
+      const [lon,lat]=f.geometry.coordinates;
+      L.circleMarker([lat,lon],{radius:2,color:'transparent',fillColor:f.properties.color||'#6ee7b7',fillOpacity:0.4,interactive:false}).addTo(mrvLayer);
+    });
+    const previewPts=mrvDrawSample(p.features).filter(s=>s.walkType==='centroid');
+    if (previewPts.length>1) {
+      L.polyline(previewPts.map(s=>[s.lat,s.lon]),{color:'#facc15',weight:1.5,opacity:0.4,dashArray:'4,4',interactive:false}).addTo(mrvLayer);
+    }
+    if (p.features.length) { const [lon0,lat0]=p.features[0].geometry.coordinates; map.setView([lat0,lon0],17); }
+  }
+}
+
+// ── Annual exhaustive sample (Sep-Nov) — density-tiered stratified random ──
+const MRV_DENSITY_SAMPLE = [{maxDens:550,perHa:15},{maxDens:999,perHa:25},{maxDens:Infinity,perHa:35}];
+function mrvDrawSampleAnnual(features) {
+  const lons=features.map(f=>f.geometry.coordinates[0]), lats=features.map(f=>f.geometry.coordinates[1]);
+  const dLon=Math.max(...lons)-Math.min(...lons), dLat=Math.max(...lats)-Math.min(...lats);
+  const cLat=(Math.max(...lats)+Math.min(...lats))/2;
+  const areaHa=(dLon*111320*Math.cos(cLat*Math.PI/180)*dLat*110540)/10000||1;
+  const density=features.length/areaHa;
+  const tier=MRV_DENSITY_SAMPLE.find(t=>density<=t.maxDens)||MRV_DENSITY_SAMPLE[2];
+  const n=Math.min(MRV_MAX_SAMPLE,Math.max(10,Math.round(tier.perHa*areaHa)));
+  const bySpecies={};
+  features.forEach(f=>{const sp=f.properties.species||'unknown';if(!bySpecies[sp])bySpecies[sp]=[];bySpecies[sp].push(f);});
+  const total=features.length, selected=[], spKeys=Object.keys(bySpecies);
+  const alloc={};let rem=n;
+  spKeys.forEach(sp=>{const q=Math.max(1,Math.round((bySpecies[sp].length/total)*n));alloc[sp]=q;rem-=q;});
+  if(rem>0){spKeys.sort((a,b)=>bySpecies[b].length-bySpecies[a].length);for(let i=0;i<rem&&i<spKeys.length;i++)alloc[spKeys[i]]++;}
+  spKeys.forEach(sp=>{
+    const pts=bySpecies[sp],k=Math.min(alloc[sp],pts.length);
+    pts.sort((a,b)=>(a.geometry.coordinates[1]+a.geometry.coordinates[0])-(b.geometry.coordinates[1]+b.geometry.coordinates[0]));
+    const step=pts.length/k;
+    for(let i=0;i<k;i++){
+      const pt=pts[Math.floor(i*step+Math.random()*step*0.3)];
+      if(pt)selected.push({pointKey:pt.geometry.coordinates[1].toFixed(6)+','+pt.geometry.coordinates[0].toFixed(6),lat:pt.geometry.coordinates[1],lon:pt.geometry.coordinates[0],species:pt.properties.species||'unknown',color:pt.properties.color||'#ffffff',walkType:'annual'});
+    }
+  });
+  // Sort annual sample by nearest-neighbour walk order
+  if (selected.length > 1) {
+    const rem=[...selected], ordered=[], first=rem.splice(0,1)[0]; ordered.push(first);
+    let cur=first;
+    while(rem.length){let best=0,bestD=Infinity;rem.forEach((p,i)=>{const d=Math.hypot(p.lat-cur.lat,p.lon-cur.lon);if(d<bestD){bestD=d;best=i;}});cur=rem.splice(best,1)[0];ordered.push(cur);}
+    return ordered;
+  }
+  return selected;
+}
+
+// ── MRV sampling: centroid walk + 3 interior points per species block ──
+function mrvSpeciesCentroid(pts) {
+  const lat=pts.reduce((s,p)=>s+p.geometry.coordinates[1],0)/pts.length;
+  const lon=pts.reduce((s,p)=>s+p.geometry.coordinates[0],0)/pts.length;
+  return {lat,lon};
+}
+
+function mrvNearestNeighbourOrder(pts, startIdx) {
+  // Greedy nearest-neighbour walk anchored to the long-axis extreme point
+  if (!pts.length) return [];
+  if (pts.length === 1) return [...pts];
+  if (startIdx === undefined) {
+    // Determine long axis from bounding box; start from the minimum-projection extreme
+    const lats = pts.map(p=>p.lat), lons = pts.map(p=>p.lon);
+    const dLat = Math.max(...lats) - Math.min(...lats);
+    const dLon = Math.max(...lons) - Math.min(...lons);
+    startIdx = 0;
+    let minProj = Infinity;
+    pts.forEach((p,i) => {
+      const proj = dLat >= dLon ? p.lat : p.lon;
+      if (proj < minProj) { minProj = proj; startIdx = i; }
+    });
+  }
+  const remaining = pts.map((p,i)=>({...p,_origIdx:i}));
+  let cur = remaining.splice(startIdx, 1)[0];
+  const ordered = [cur];
+  while (remaining.length) {
+    let best=0, bestD=Infinity;
+    remaining.forEach((c,i) => {
+      const d = Math.hypot(c.lat-cur.lat, c.lon-cur.lon);
+      if (d < bestD) { bestD=d; best=i; }
+    });
+    cur = remaining.splice(best, 1)[0];
+    ordered.push(cur);
+  }
+  return ordered;
+}
+
+function mrvDrawSample(features) {
+  const bySpecies={};
+  features.forEach(f=>{
+    const sp=f.properties.species||'unknown';
+    if(!bySpecies[sp])bySpecies[sp]=[];
+    bySpecies[sp].push(f);
+  });
+  const spKeys=Object.keys(bySpecies);
+  const selected=[];
+
+  // 1. Centroid walk — one point per species block (closest sapling to centroid)
+  const centroids=spKeys.map(sp=>({sp, ...mrvSpeciesCentroid(bySpecies[sp])}));
+  const walkOrder=mrvNearestNeighbourOrder(centroids);
+  walkOrder.forEach(c=>{
+    const pts=bySpecies[c.sp];
+    // Pick sapling closest to centroid
+    let best=pts[0], bestD=Infinity;
+    pts.forEach(p=>{
+      const d=Math.hypot(p.geometry.coordinates[1]-c.lat, p.geometry.coordinates[0]-c.lon);
+      if(d<bestD){bestD=d;best=p;}
+    });
+    selected.push({
+      pointKey:best.geometry.coordinates[1].toFixed(6)+','+best.geometry.coordinates[0].toFixed(6),
+      lat:best.geometry.coordinates[1], lon:best.geometry.coordinates[0],
+      species:c.sp, color:best.properties.color||'#ffffff',
+      walkType:'centroid'
+    });
+  });
+
+  // 2. Interior points — 3 spatially spread points per block (deterministic diagonal sort)
+  spKeys.forEach(sp=>{
+    const pts=bySpecies[sp];
+    const k=Math.min(MRV_INTERIOR_PER_BLOCK, pts.length);
+    const sorted=[...pts].sort((a,b)=>(a.geometry.coordinates[1]+a.geometry.coordinates[0])-(b.geometry.coordinates[1]+b.geometry.coordinates[0]));
+    const step=sorted.length/k;
+    for(let i=0;i<k;i++){
+      const pt=sorted[Math.floor(i*step+step*0.5)];
+      const key=pt.geometry.coordinates[1].toFixed(6)+','+pt.geometry.coordinates[0].toFixed(6);
+      if(pt && !selected.find(s=>s.pointKey===key)) {
+        selected.push({pointKey:key, lat:pt.geometry.coordinates[1], lon:pt.geometry.coordinates[0], species:sp, color:pt.properties.color||'#ffffff', walkType:'interior'});
+      }
+    }
+  });
+
+  // Unified nearest-neighbour walk over all selected points (centroid + interior)
+  return mrvNearestNeighbourOrder(selected).map(p=>({...p}));
+}
+
+function mrvSetVisitType(vt) {
+  if(vt==='mortality'||vt==='annual'){const month=new Date().getMonth()+1;if(!MRV_MORTALITY_MONTHS.includes(month)&&!mrvMortalityWarnShown){document.getElementById('mrv-mortality-warn').style.display='';mrvMortalityWarnShown=true;return;}}
+  mrvMortalityWarnShown=false;
+  document.getElementById('mrv-mortality-warn').style.display='none';
+  mrvVisitType=vt;
+  document.querySelectorAll('.mrv-vbtn').forEach(b=>b.classList.toggle('sel',b.dataset.vt===vt));
+}
+
+async function mrvStartVisit() {
+  if(!mrvActivePlot){setStatus('Select a plot first.','warn');return;}
+  if(!mrvVisitType){setStatus('Select a visit type.','warn');return;}
+  if(!document.getElementById('mrv-lpc').value.trim()){setStatus('Enter the LPC code.','warn');return;}
+  const p=mrvActivePlot;
+  const isAnnual = mrvVisitType === 'annual' || mrvVisitType === 'mortality';
+  const sampleKey = p.plotKey + (isAnnual ? '__annual' : '__monthly');
+  let sample = await idbMrvSampleGet(sampleKey).catch(()=>null);
+  if (!sample||!sample.length) {
+    sample = isAnnual ? mrvDrawSampleAnnual(p.features) : mrvDrawSample(p.features);
+    await idbMrvSampleSet(sampleKey, sample).catch(()=>{});
+  }
+  mrvSamplePts=sample;mrvCurrentIdx=0;mrvObservations=[];mrvPhotoBlobs=[];mrvVisitActive=true;
+  document.getElementById('mrv-btn-start').classList.add('b-off');
+  ['mrv-btn-next','mrv-btn-photo','mrv-btn-finish','mrv-btn-cancel','mrv-btn-walkalong'].forEach(id=>document.getElementById(id).classList.remove('b-off'));
+  document.getElementById('mrv-sec-grade').style.display='';
+  document.getElementById('mrv-sec-progress').style.display='';
+  document.getElementById('mrv-sec-summary').style.display='none';
+  mrvShowPoint(0);
+  setStatus('Visit started — grade each sample point.','');
+}
+
+function mrvShowPoint(idx) {
+  const pt=mrvSamplePts[idx];if(!pt)return;
+  mrvCurrentGrade=null;mrvCurrentHeight=null;mrvCurrentDBH=null;
+  document.getElementById('mrv-pt-idx').textContent=idx+1;
+  document.getElementById('mrv-pt-total').textContent=mrvSamplePts.length;
+  document.getElementById('mrv-pt-species').textContent=pt.species;
+  document.getElementById('mrv-height-val').textContent='—';
+  document.getElementById('mrv-dbh-val').textContent='—';
+  document.getElementById('mrv-pt-notes').value='';
+  document.querySelectorAll('.mrv-grade-btn').forEach(b=>b.classList.remove('sel'));
+  mrvUpdateProgress();
+  map.panTo([pt.lat,pt.lon]);
+  mrvLayer.clearLayers();
+  // Background sapling dots
+  mrvActivePlot.features.forEach(f=>{const [lon,lat]=f.geometry.coordinates;L.circleMarker([lat,lon],{radius:2,color:'transparent',fillColor:f.properties.color||'#6ee7b7',fillOpacity:0.3,interactive:false}).addTo(mrvLayer);});
+  // Walk-route polyline — connect sample pts in order (walk-along pts excluded)
+  const walkPts = mrvSamplePts.filter(s=>s.walkType!=='walkAlong');
+  if (walkPts.length > 1) {
+    const latlngs = walkPts.map(s=>[s.lat,s.lon]);
+    const isMonthly = mrvVisitType !== 'annual' && mrvVisitType !== 'mortality';
+    L.polyline(latlngs, {
+      color: isMonthly ? '#facc15' : '#f87171',
+      weight: 2, opacity: 0.6, dashArray: '6,4', interactive: false
+    }).addTo(mrvLayer);
+    // Directional arrows at midpoints (every 3rd segment)
+    for (let i=0; i<latlngs.length-1; i+=3) {
+      const mid=[(latlngs[i][0]+latlngs[i+1][0])/2,(latlngs[i][1]+latlngs[i+1][1])/2];
+      const angle=Math.atan2(latlngs[i+1][0]-latlngs[i][0],latlngs[i+1][1]-latlngs[i][1])*180/Math.PI;
+      L.marker(mid,{interactive:false,icon:L.divIcon({html:'<div style="transform:rotate('+angle+'deg);color:'+(isMonthly?'#facc15':'#f87171')+';font-size:10px;line-height:1">▶</div>',iconSize:[10,10],iconAnchor:[5,5],className:''})}).addTo(mrvLayer);
+    }
+  }
+  // Sample point markers
+  mrvSamplePts.forEach((s,i)=>{
+    if(s.walkType==='walkAlong') return;
+    const done=!!mrvObservations.find(o=>o.pointKey===s.pointKey);
+    const isCur=i===idx;
+    L.circleMarker([s.lat,s.lon],{radius:isCur?10:6,color:isCur?'#fff':(done?'#6ee7b7':'#6b7280'),weight:isCur?2.5:1.5,fillColor:isCur?s.color:(done?'#6ee7b7':'#374151'),fillOpacity:isCur?1:0.6,interactive:false}).addTo(mrvLayer);
+  });
+  // Walk-along observations as yellow stars
+  mrvObservations.filter(o=>o.walkType==='walkAlong').forEach(o=>{
+    L.circleMarker([o.lat,o.lon],{radius:5,color:'#facc15',weight:2,fillColor:'#facc15',fillOpacity:0.8,interactive:false}).addTo(mrvLayer);
+  });
+}
+
+function mrvSetGrade(g){mrvCurrentGrade=g;document.querySelectorAll('.mrv-grade-btn').forEach(b=>b.classList.toggle('sel',b.dataset.g===g));}
+function mrvAdjHeight(d){if(mrvCurrentHeight===null)mrvCurrentHeight=50;mrvCurrentHeight=Math.max(5,Math.min(2000,mrvCurrentHeight+d));document.getElementById('mrv-height-val').textContent=mrvCurrentHeight+' cm';}
+function mrvAdjDBH(d){if(mrvCurrentDBH===null)mrvCurrentDBH=5;mrvCurrentDBH=Math.max(0,Math.min(200,Math.round((mrvCurrentDBH+d)*10)/10));document.getElementById('mrv-dbh-val').textContent=mrvCurrentDBH.toFixed(1)+' cm';}
+function mrvUpdateProgress(){const done=mrvObservations.length,tot=mrvSamplePts.length;document.getElementById('mrv-progress-lbl').textContent=done+' / '+tot;document.getElementById('mrv-progress-bar').style.width=(tot?done/tot*100:0)+'%';}
+
+function mrvNextPoint() {
+  if(!mrvVisitActive)return;
+  const pt=mrvSamplePts[mrvCurrentIdx];if(!pt)return;
+  if(!mrvCurrentGrade){setStatus('Select a grade before moving on.','warn');return;}
+  mrvObservations.push({pointKey:pt.pointKey,lat:pt.lat,lon:pt.lon,species:pt.species,color:pt.color,grade:mrvCurrentGrade,height:mrvCurrentHeight,dbh:mrvCurrentDBH,notes:document.getElementById('mrv-pt-notes').value.trim()});
+  mrvUpdateProgress();mrvCurrentIdx++;
+  if(mrvCurrentIdx<mrvSamplePts.length){mrvShowPoint(mrvCurrentIdx);}
+  else{setStatus('All '+mrvSamplePts.length+' points graded. Tap ✅ Done to save.','');document.getElementById('mrv-btn-next').classList.add('b-off');document.getElementById('mrv-sec-grade').style.display='none';}
+}
+
+function mrvTakePhoto(){document.getElementById('mrv-photo-input').click();}
+async function mrvHandlePhoto(input) {
+  const file=input.files[0];if(!file)return;input.value='';
+  const pt=mrvSamplePts[mrvCurrentIdx]||mrvSamplePts[mrvSamplePts.length-1];if(!pt)return;
+  const d=new Date(),q='Q'+Math.ceil((d.getMonth()+1)/3);
+  const lpc=document.getElementById('mrv-lpc').value.trim()||'LPC';
+  const spCode=(SPECIES_CODE[pt.species]||'XX');
+  const ts=d.getFullYear()+''+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  const fname=lpc+'_'+spCode+'_'+q+'_'+ts+'.jpg';
+  mrvPhotoBlobs.push({species:pt.species,blob:file,filename:fname});
+  setStatus('📷 Photo saved: '+fname,'');
+}
+
+function mrvFinishVisit() {
+  if(!mrvObservations.length){setStatus('No observations recorded yet.','warn');return;}
+  if(mrvCurrentGrade&&mrvCurrentIdx<mrvSamplePts.length){const pt=mrvSamplePts[mrvCurrentIdx];if(!mrvObservations.find(o=>o.pointKey===pt.pointKey))mrvObservations.push({pointKey:pt.pointKey,lat:pt.lat,lon:pt.lon,species:pt.species,color:pt.color,grade:mrvCurrentGrade,height:mrvCurrentHeight,dbh:mrvCurrentDBH,notes:document.getElementById('mrv-pt-notes').value.trim()});}
+  mrvUpdateProgress();mrvBuildSummary();
+  document.getElementById('mrv-sec-grade').style.display='none';
+  document.getElementById('mrv-sec-summary').style.display='';
+  document.getElementById('mrv-btn-next').classList.add('b-off');
+  document.getElementById('mrv-btn-finish').classList.add('b-off');
+  mrvVisitActive=false;
+}
+
+// ── MRV language application ──────────────────────────────────────────
+function mrvApplyLang() {
+  const s = (id,txt) => { const el=document.getElementById(id); if(el&&txt) el.textContent=txt; };
+  const sp = (id,txt) => { const el=document.getElementById(id); if(el&&txt) el.placeholder=txt; };
+  // Plot selector
+  const sel=document.getElementById('mrv-plot-sel'); if(sel&&sel.options[0]) sel.options[0].text=Lang.mrv_select_plot||'— select plot —';
+  // Visit type buttons
+  const vbtns=document.querySelectorAll('.mrv-vbtn');
+  const vlabels=[Lang.mrv_visit_growth,Lang.mrv_visit_condition,Lang.mrv_visit_mortality,Lang.mrv_visit_annual];
+  const vkeys=['growth','condition','mortality','annual'];
+  vbtns.forEach(b=>{ const i=vkeys.indexOf(b.dataset.vt); if(i>=0&&vlabels[i]) b.textContent=vlabels[i]; });
+  // LPC / height / DBH / notes
+  sp('mrv-lpc', Lang.mrv_lpc_ph);
+  sp('mrv-pt-notes', Lang.mrv_notes_ph);
+  sp('mrv-wa-notes', Lang.mrv_notes_ph);
+  // Control buttons
+  const btnMap={'mrv-btn-start':'mrv_start','mrv-btn-next':'mrv_next','mrv-btn-finish':'mrv_done','mrv-btn-cancel':'mrv_cancel','mrv-btn-walkalong':'mrv_obs'};
+  Object.entries(btnMap).forEach(([id,key])=>{ const el=document.getElementById(id); if(el&&Lang[key]) el.textContent=Lang[key]; });
+  // Summary section title and buttons
+  const sumTitle=document.querySelector('#mrv-sec-summary .sec-t'); if(sumTitle) sumTitle.textContent=Lang.mrv_sum_title||'📊 Visit summary';
+  // Walk-along title
+  const waTitle=document.querySelector('#mrv-walkalong-sheet span'); if(waTitle&&Lang.mrv_wa_title) waTitle.textContent=Lang.mrv_wa_title;
+  const waSavebtn=document.querySelector('#mrv-walkalong-sheet button[onclick="mrvWalkAlongSave()"]'); if(waSavebtn&&Lang.mrv_wa_save) waSavebtn.textContent=Lang.mrv_wa_save;
+  // Progress label
+  const progLabel=document.querySelector('#mrv-sec-progress span:first-child'); if(progLabel&&Lang.mrv_sample_pts) progLabel.textContent=Lang.mrv_sample_pts;
+  // Height / DBH labels
+  const pmRows=document.querySelectorAll('#mrv-sec-grade .pm-row .pm-label');
+  if(pmRows[0]&&Lang.mrv_height) pmRows[0].textContent=Lang.mrv_height;
+  if(pmRows[1]) { pmRows[1].childNodes[0].textContent=Lang.mrv_dbh||'DBH (cm)'; const note=pmRows[1].querySelector('span'); if(note&&Lang.mrv_dbh_note) note.textContent=Lang.mrv_dbh_note; }
+  // Re-init plot metrics section if visible (refreshes labels/options)
+  if(document.getElementById('mrv-sec-plotmetrics')?.style.display!=='none' && mrvActivePlot) mrvInitPlotMetrics();
+}
+
+// ── Plot-level metrics ────────────────────────────────────────────────
+// 6 metrics × 7% = 42% | tree condition = 58% (capped at 56 pts → score 0–8)
+function mrvGetPlotMetrics() {
+  return [
+    { id:'survival',  label:Lang.mrv_survival||'Survival / Plant count',   type:'roller', min:1, max:8, def:4 },
+    { id:'fencing',   label:Lang.mrv_fencing||'Fencing condition',          type:'roller', min:1, max:8, def:4 },
+    { id:'threat',    label:Lang.mrv_threat||'Threat / Encroachment',       type:'roller', min:1, max:8, def:4 },
+    { id:'watering',  label:Lang.mrv_watering||'Watering / Irrigation',     type:'roller', min:1, max:8, def:4 },
+    { id:'owner_eng', label:Lang.mrv_owner_eng||'Owner engagement visit',   type:'select',
+      options:(Lang.mrv_own_opt||['2+ per day','Daily','2+ per week','Weekly','Fortnightly','Monthly','Quarterly','None']),
+      scores:[8,7,6,5,4,3,2,1] },
+    { id:'wildlife',  label:Lang.mrv_wildlife||'Wildlife damage (elephant/boar/deer/monkey)', type:'select',
+      options:(Lang.mrv_wild_opt||['None','Rare (1×/season)','Occasional (monthly)','Frequent (weekly)','Severe (daily/damage)']),
+      scores:[8,7,5,3,1] },
+  ];
+}
+// Convenience accessor used throughout
+const MRV_PLOT_METRICS = { get length(){ return mrvGetPlotMetrics().length } };
+
+let mrvPlotMetricVals = {}; // {id: score 1–8}
+
+function mrvInitPlotMetrics() {
+  const metrics = mrvGetPlotMetrics();
+  mrvPlotMetricVals = {};
+  metrics.forEach(m => { mrvPlotMetricVals[m.id] = m.def || (m.scores ? m.scores[0] : 4); });
+  const container = document.getElementById('mrv-pm-rows');
+  container.innerHTML = '';
+  // Section title i18n
+  const secT = document.querySelector('#mrv-sec-plotmetrics .sec-t');
+  if (secT) secT.innerHTML = (Lang.mrv_plot_metrics||'📊 Plot Metrics') + ' <span style="font-size:9px;color:#6b7280;font-weight:400">' + (Lang.mrv_weight_note||'(each 7% weight)') + '</span>';
+  metrics.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'mrv-pm-row';
+    if (m.type === 'roller') {
+      row.innerHTML = `<span class="mrv-pm-label">${m.label}</span>
+        <div class="mrv-pm-roller">
+          <button class="mrv-pm-btn" onclick="mrvPmAdj('${m.id}',-1)">−</button>
+          <input class="mrv-pm-val" id="mrv-pm-${m.id}" type="number" min="${m.min}" max="${m.max}" value="${mrvPlotMetricVals[m.id]}" style="width:32px;text-align:center;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#f3f4f6;font-size:13px;font-weight:700;padding:0" onchange="mrvPmManual('${m.id}',this.value)">
+          <button class="mrv-pm-btn" onclick="mrvPmAdj('${m.id}',+1)">+</button>
+        </div>`;
+    } else {
+      const opts = m.options.map((o,i)=>`<option value="${m.scores[i]}">${o}</option>`).join('');
+      row.innerHTML = `<span class="mrv-pm-label">${m.label}</span>
+        <select class="mrv-pm-sel" id="mrv-pm-${m.id}" onchange="mrvPmSelChange('${m.id}',this.value)">${opts}</select>`;
+      mrvPlotMetricVals[m.id] = m.scores[0];
+    }
+    container.appendChild(row);
+  });
+}
+
+function mrvPmAdj(id, delta) {
+  const m = mrvGetPlotMetrics().find(x=>x.id===id);
+  const cur = parseInt(document.getElementById('mrv-pm-'+id).value, 10) || mrvPlotMetricVals[id] || m.def;
+  const nv = Math.max(m.min, Math.min(m.max, cur + delta));
+  mrvPlotMetricVals[id] = nv;
+  document.getElementById('mrv-pm-'+id).value = nv;
+}
+
+function mrvPmManual(id, val) {
+  const m = mrvGetPlotMetrics().find(x=>x.id===id);
+  const nv = Math.max(m.min, Math.min(m.max, parseInt(val, 10) || m.def));
+  mrvPlotMetricVals[id] = nv;
+  document.getElementById('mrv-pm-'+id).value = nv;
+}
+
+function mrvPmSelChange(id, val) {
+  mrvPlotMetricVals[id] = parseInt(val, 10);
+}
+
+// Returns composite score 0–100
+function mrvCompositeScore(treeObs) {
+  // Tree condition: avg grade score (1–8) normalised, weight 58%, capped at 56 pts
+  const capped = treeObs.slice(0, 56);
+  const treeAvg = capped.length ? capped.reduce((s,o)=>s+(MRV_GRADE_SCORE[o.grade]||0),0)/capped.length : 0;
+  const treeScore = (treeAvg / 8) * 58;
+  // 6 plot metrics × 7% each
+  const pmScore = mrvGetPlotMetrics().reduce((s,m)=> s + ((mrvPlotMetricVals[m.id]||1)/8)*7, 0);
+  return Math.round(treeScore + pmScore);
+}
+
+// Composite score → letter grade
+function mrvScoreToGrade(score) {
+  if (score >= 95) return 'A+';
+  if (score >= 85) return 'A';
+  if (score >= 75) return 'B+';
+  if (score >= 65) return 'B';
+  if (score >= 55) return 'C+';
+  if (score >= 45) return 'C';
+  if (score >= 35) return 'D+';
+  return 'D';
+}
+
+function mrvRollupGrade(obs) {
+  if(!obs.length)return'—';
+  const avg=obs.reduce((s,o)=>s+(MRV_GRADE_SCORE[o.grade]||0),0)/obs.length;
+  const rounded=Math.round(avg);
+  return MRV_GRADES.find(g=>MRV_GRADE_SCORE[g]===rounded)||MRV_GRADES[MRV_GRADES.length-1];
+}
+
+function mrvBuildSummary() {
+  const treeGrade = mrvRollupGrade(mrvObservations);
+  const composite = mrvCompositeScore(mrvObservations);
+  const finalGrade = mrvScoreToGrade(composite);
+  const bySpecies={};mrvObservations.forEach(o=>{if(!bySpecies[o.species])bySpecies[o.species]=[];bySpecies[o.species].push(o);});
+  const capped = Math.min(mrvObservations.length, 56);
+  const treeAvg = capped ? mrvObservations.slice(0,56).reduce((s,o)=>s+(MRV_GRADE_SCORE[o.grade]||0),0)/capped : 0;
+  const treeContrib = Math.round((treeAvg/8)*58);
+  const pmContrib = composite - treeContrib;
+  const metrics = mrvGetPlotMetrics();
+  let html = `<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+    <strong style="font-size:18px;color:#6ee7b7">${finalGrade}</strong>
+    <span style="font-size:13px;color:#a78bfa;font-weight:700">${composite}/100</span>
+    <span style="font-size:9px;color:#6b7280">(${mrvObservations.length} ${Lang.mrv_sum_pts||'pts'})</span>
+  </div>
+  <div style="background:#111827;border-radius:4px;padding:5px 7px;margin-bottom:6px;font-size:9px;color:#9ca3af;line-height:1.8">
+    ${Lang.mrv_sum_tree||'🌳 Tree condition (58%)'}: <strong style="color:#f3f4f6">${treeContrib}</strong> ${Lang.mrv_sum_pts||'pts'} &nbsp;|&nbsp; ${Lang.mrv_sum_tree_grade||'Tree grade'}: <strong style="color:#6ee7b7">${treeGrade}</strong><br>
+    ${Lang.mrv_sum_pm||'📊 Plot metrics (42%)'}: <strong style="color:#f3f4f6">${pmContrib}</strong> ${Lang.mrv_sum_pts||'pts'}
+  </div>`;
+  // Plot metrics detail
+  html += `<div style="color:#9ca3af;font-size:9px;margin-bottom:3px">${Lang.mrv_sum_pm_scores||'Plot metric scores'}:</div>`;
+  metrics.forEach(m => {
+    const v = mrvPlotMetricVals[m.id]||1;
+    const contrib = Math.round((v/8)*7);
+    const col = v >= 6 ? '#6ee7b7' : v >= 4 ? '#fbbf24' : '#f87171';
+    let label = m.label;
+    if (m.type === 'select') {
+      const idx = m.scores.indexOf(v);
+      label += idx >= 0 ? ` — ${m.options[idx]}` : '';
+    }
+    html += `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #1f2937">
+      <span style="color:#d1d5db;font-size:9px">${label}</span>
+      <span style="font-weight:700;color:${col};font-size:10px">${v}/8 <span style="color:#6b7280;font-size:8px">(${contrib}pt)</span></span>
+    </div>`;
+  });
+  // Species breakdown
+  if(Object.keys(bySpecies).length){
+    html+=`<div style="color:#9ca3af;font-size:9px;margin:5px 0 3px">${Lang.mrv_sum_species||'Species breakdown'}:</div>`;
+    Object.entries(bySpecies).forEach(([sp,obs])=>{const sg=mrvRollupGrade(obs),flag=MRV_GRADE_SCORE[treeGrade]-MRV_GRADE_SCORE[sg]>=2?' ⚠️':'';html+='<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #1f2937"><span style="color:#d1d5db;font-size:9px">'+sp+'</span><span style="font-weight:700;color:'+(MRV_GRADE_SCORE[sg]<=3?'#f87171':'#6ee7b7')+'">'+sg+flag+'</span></div>';});
+  }
+  if(mrvPhotoBlobs.length)html+='<div style="margin-top:6px;font-size:9px;color:#9ca3af">📷 '+mrvPhotoBlobs.length+' photo(s) queued</div>';
+  document.getElementById('mrv-summary-body').innerHTML=html;
+}
+
+async function mrvExportVisit() {
+  const lpc  = document.getElementById('mrv-lpc').value.trim() || 'LPC';
+  const date = document.getElementById('mrv-date').value || new Date().toISOString().slice(0,10);
+  const vt   = mrvVisitType || 'growth', p = mrvActivePlot;
+  const plotGrade     = mrvRollupGrade(mrvObservations);
+  const compositeScore= mrvCompositeScore(mrvObservations);
+  const finalGrade    = mrvScoreToGrade(compositeScore);
+  const pmSnapshot    = {};
+  mrvGetPlotMetrics().forEach(m => {
+    const v = mrvPlotMetricVals[m.id] || 1;
+    pmSnapshot[m.id] = { score: v, label: m.type==='select'?(()=>{const i=m.scores.indexOf(v);return i>=0?m.options[i]:'?';})():v };
+  });
+  const ts   = date.replace(/-/g,'');
+  const base = lpc + '_' + (p ? p.plantYear : '????') + '_' + vt + '_' + ts;
+  const gj   = {
+    type: 'FeatureCollection',
+    properties: { lpc, visitType:vt, date, treeGrade:plotGrade, finalGrade,
+      compositeScore, plotMetrics:pmSnapshot, plotKey: p ? p.plotKey : '',
+      visitedPoints: mrvObservations.length, sampleTotal: mrvSamplePts.length },
+    features: mrvObservations.map(o => ({
+      type: 'Feature',
+      properties: { species:o.species, grade:o.grade, height_cm:o.height,
+        dbh_cm:o.dbh, notes:o.notes, pointKey:o.pointKey },
+      geometry: { type:'Point', coordinates:[o.lon, o.lat] }
+    }))
+  };
+  const gjBlob = new Blob([JSON.stringify(gj, null, 2)], { type:'application/geo+json' });
+  const gjName = base + '.geojson';
+
+  // 1. Save to OPFS audit trail
+  await opfsSaveGeoJSON(MRV_TOOL_FOLDER, gjName, gj).catch(()=>{});
+  await opfsSaveToSent(MRV_TOOL_FOLDER, gjName, gjBlob).catch(()=>{});
+
+  // 2. Upload GeoJSON to Drive via FieldTool AS
+  uploadFile(gjName, gjBlob, MRV_TOOL_FOLDER);
+  for (const ph of mrvPhotoBlobs) {
+    await opfsSaveToSent(MRV_TOOL_FOLDER, ph.filename, ph.blob).catch(()=>{});
+    uploadFile(ph.filename, ph.blob, MRV_TOOL_FOLDER);
+  }
+
+  // 3. POST summary row to Asha1_MonitoringRegister MRVVisits sheet
+  await mrvPostToMonitoringSheet({
+    visit_id:          'MRV-' + Date.now(),
+    source:            'mrv_tool',
+    lpc,
+    visit_type:        vt,
+    visit_date:        date,
+    composite_score:   compositeScore,
+    grade:             finalGrade,
+    plot_metrics_json: JSON.stringify(pmSnapshot),
+    observations_json: JSON.stringify(mrvObservations),
+    geojson_filename:  gjName,
+    submitted_by:      MRV_SESSION.userFolder,
+    data_year:         new Date(date).getFullYear(),
+  });
+
+  mrvSetStatusMsg('✅ MRV visit saved: ' + gjName);
+  document.getElementById('mrv-summary-btns').innerHTML =
+    '<span style="font-size:11px;color:#6ee7b7">Saved &amp; uploaded ✓</span>' +
+    '<button class="icon-btn b-gray-btn" onclick="mrvReset()" style="font-size:13px;width:auto;padding:0 10px">↩ New visit</button>';
+}
+
+
+let _mrvWaGrade = null;
+
+function mrvWalkAlongTap() {
+  if (!mrvVisitActive) return;
+  // Populate species picker from active plot
+  const sel = document.getElementById('mrv-wa-species');
+  sel.innerHTML = '';
+  const species = [...new Set((mrvActivePlot?.features||[]).map(f=>f.properties.species||'unknown'))].sort();
+  species.forEach(sp => { const o=document.createElement('option'); o.value=sp; o.textContent=sp; sel.appendChild(o); });
+  _mrvWaGrade = null;
+  document.querySelectorAll('#mrv-wa-grade-grid .mrv-grade-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('mrv-wa-notes').value = '';
+  document.getElementById('mrv-walkalong-sheet').style.display = '';
+}
+
+function mrvWaSetGrade(g) {
+  _mrvWaGrade = g;
+  document.querySelectorAll('#mrv-wa-grade-grid .mrv-grade-btn').forEach(b=>b.classList.toggle('sel', b.dataset.wg===g));
+}
+
+function mrvWalkAlongClose() {
+  document.getElementById('mrv-walkalong-sheet').style.display = 'none';
+  _mrvWaGrade = null;
+}
+
+function mrvWalkAlongSave() {
+  if (!_mrvWaGrade) { setStatus('Select a grade first.','warn'); return; }
+  const sp = document.getElementById('mrv-wa-species').value;
+  const notes = document.getElementById('mrv-wa-notes').value.trim();
+  // Get GPS position if available
+  const pos = (typeof lastGpsPos !== 'undefined' && lastGpsPos) ? lastGpsPos : null;
+  const lat = pos ? pos.lat : (mrvActivePlot?.features[0]?.geometry.coordinates[1]||0);
+  const lon = pos ? pos.lng : (mrvActivePlot?.features[0]?.geometry.coordinates[0]||0);
+  const key = 'wa_' + Date.now();
+  mrvObservations.push({
+    pointKey: key, lat, lon, species: sp, color: '#facc15',
+    grade: _mrvWaGrade, height: null, dbh: null, notes,
+    walkType: 'walkAlong'
+  });
+  mrvUpdateProgress();
+  mrvWalkAlongClose();
+  setStatus('Walk-along observation saved.','');
+}
+
+function mrvCancelVisit() {
+  if (!mrvVisitActive) return;
+  if (!confirm('Cancel this visit and discard all recorded observations?')) return;
+  mrvReset(true);
+  setStatus('Visit cancelled.','');
+}
+
+function mrvReset(keepPlot) {
+  mrvVisitActive=false;mrvVisitType=null;mrvSamplePts=[];mrvCurrentIdx=0;mrvObservations=[];mrvPhotoBlobs=[];mrvMortalityWarnShown=false;
+  document.querySelectorAll('.mrv-vbtn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('mrv-mortality-warn').style.display='none';
+  document.getElementById('mrv-sec-grade').style.display='none';
+  document.getElementById('mrv-sec-summary').style.display='none';
+  document.getElementById('mrv-sec-progress').style.display='none';
+  document.getElementById('mrv-btn-start').classList.remove('b-off');
+  ['mrv-btn-next','mrv-btn-photo','mrv-btn-finish','mrv-btn-cancel','mrv-btn-walkalong'].forEach(id=>document.getElementById(id).classList.add('b-off'));
+  if(!keepPlot){mrvActivePlot=null;document.getElementById('mrv-plot-sel').value='';document.getElementById('mrv-plot-info').textContent='';['mrv-sec-visit','mrv-sec-meta','mrv-sec-plotmetrics','mrv-sec-ctrl'].forEach(id=>document.getElementById(id).style.display='none');if(mrvLayer)mrvLayer.clearLayers();}
+}
+
 </script>
 
 </body>
