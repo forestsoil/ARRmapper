@@ -410,6 +410,23 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
   </div>
 </div>
 
+<!-- Inline records panel -->
+<div id="rec-panel" style="display:none;margin:12px 0">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+    <span id="rec-panel-title" style="font-weight:700;font-size:13px;flex:1"></span>
+    <button onclick="closeRecPanel()" style="font-size:11px;padding:4px 10px;background:var(--pale);border:1px solid var(--rule);border-radius:6px;color:var(--mid);cursor:pointer">✕ Close</button>
+    <button id="rec-panel-get" onclick="getXLSXFromViewer()" style="font-size:11px;padding:4px 10px;background:var(--canopy);border:none;border-radius:6px;color:#fff;font-weight:700;cursor:pointer">⬇ XLSX</button>
+  </div>
+  <div id="rec-panel-status" style="font-size:11px;color:var(--mid);margin-bottom:6px"></div>
+  <div style="overflow-x:auto;border:1px solid var(--rule);border-radius:8px;max-height:400px;overflow-y:auto">
+    <table style="border-collapse:collapse;width:100%;font-size:11px;min-width:500px">
+      <thead id="rec-panel-thead" style="position:sticky;top:0;z-index:2"></thead>
+      <tbody id="rec-panel-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+
 <!-- ═══ SEED MAP SCREEN ═══ -->
 <div class="screen" id="screen-seedmap">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
@@ -1744,47 +1761,49 @@ let _recForm = null;
 let _recRows = [];
 
 async function viewRecords(form) {
+  // Toggle — clicking same form's View again closes the panel
+  if (_recForm === form && document.getElementById('rec-panel').style.display !== 'none') {
+    closeRecPanel(); return;
+  }
   _recForm = form;
-  const store = REC_STORE[form];
-  const rows  = await dbGetAll(store);
-  _recRows    = rows || [];
+  const rows = await dbGetAll(REC_STORE[form]);
+  _recRows   = rows || [];
 
-  document.getElementById('rec-modal-title').textContent = REC_LABEL[form] + ' (' + _recRows.length + ')';
-  document.getElementById('rec-modal-status').textContent =
-    _recRows.length ? 'Showing ' + _recRows.length + ' records (from local IDB — pull to refresh)' : 'No records yet — pull from sheet first';
+  document.getElementById('rec-panel-title').textContent = REC_LABEL[form] + ' — ' + _recRows.length + ' records';
+  document.getElementById('rec-panel-status').textContent =
+    _recRows.length ? 'From local cache — pull to refresh from sheet' : 'No records yet — pull from sheet first';
+  document.getElementById('rec-panel').style.display = 'block';
 
-  renderRecModal();
-  document.getElementById('modal-records').style.display = 'flex';
-  document.body.style.overflow = 'hidden';
+  // Scroll panel into view
+  document.getElementById('rec-panel').scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+  renderRecPanel();
 }
 
-function closeRecords() {
-  document.getElementById('modal-records').style.display = 'none';
-  document.body.style.overflow = '';
+function closeRecPanel() {
+  document.getElementById('rec-panel').style.display = 'none';
   _recForm = null; _recRows = [];
 }
 
-function renderRecModal() {
+function renderRecPanel() {
   if (!_recRows.length) {
-    document.getElementById('rec-modal-thead').innerHTML = '';
-    document.getElementById('rec-modal-tbody').innerHTML =
+    document.getElementById('rec-panel-thead').innerHTML = '';
+    document.getElementById('rec-panel-tbody').innerHTML =
       '<tr><td style="padding:20px;color:var(--mid);text-align:center">No records</td></tr>';
     return;
   }
+  const keyCols = REC_KEY_COLS[_recForm] || [];
+  const allCols = [...new Set(_recRows.flatMap(r => Object.keys(r)))];
+  const cols    = [...keyCols.filter(c => allCols.includes(c)), ...allCols.filter(c => !keyCols.includes(c))];
 
-  // Build col order: key cols first, then remaining
-  const keyCols  = REC_KEY_COLS[_recForm] || [];
-  const allCols  = [...new Set(_recRows.flatMap(r => Object.keys(r)))];
-  const restCols = allCols.filter(c => !keyCols.includes(c));
-  const cols     = [...keyCols.filter(c => allCols.includes(c)), ...restCols];
-
-  document.getElementById('rec-modal-thead').innerHTML =
+  document.getElementById('rec-panel-thead').innerHTML =
     '<tr>' + cols.map(c =>
       `<th style="padding:6px 8px;text-align:left;white-space:nowrap;font-size:10px;font-weight:700;
-        border-bottom:2px solid var(--rule);text-transform:uppercase;letter-spacing:.04em">${c}</th>`
+        border-bottom:2px solid var(--rule);text-transform:uppercase;letter-spacing:.04em;
+        background:var(--pale)">${c}</th>`
     ).join('') + '</tr>';
 
-  document.getElementById('rec-modal-tbody').innerHTML =
+  document.getElementById('rec-panel-tbody').innerHTML =
     _recRows.map((row, ri) => {
       const bg = ri % 2 === 0 ? '' : 'background:var(--pale)';
       return '<tr style="' + bg + '">' + cols.map(c => {
