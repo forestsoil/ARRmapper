@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard v11 · Asha 1</title>
+<title>Nursery Dashboard v12 · Asha 1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -482,6 +482,17 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <span id="rec-panel-title" style="font-weight:700;font-size:13px;flex:1"></span>
     <button onclick="closeRecPanel()" style="font-size:11px;padding:4px 10px;background:var(--pale);border:1px solid var(--rule);border-radius:6px;color:var(--mid);cursor:pointer">✕ Close</button>
     <button id="rec-panel-get" onclick="getXLSXFromViewer()" style="font-size:11px;padding:4px 10px;background:var(--canopy);border:none;border-radius:6px;color:#fff;font-weight:700;cursor:pointer">⬇ XLSX</button>
+  </div>
+  <div class="nd-rec-filter" id="nd-rec-filter" style="display:none">
+    <select class="nd-rec-sel" id="nd-f-source" onchange="applyNDRecFilter()">
+      <option value="">All sources</option>
+    </select>
+    <select class="nd-rec-sel" id="nd-f-district" onchange="applyNDRecFilter()">
+      <option value="">All districts</option>
+    </select>
+    <input type="text" class="nd-rec-search" id="nd-f-search"
+      placeholder="Search…" oninput="applyNDRecFilter()">
+    <button onclick="clearNDRecFilter()" style="font-size:11px;padding:3px 8px;border:1px solid var(--rule);border-radius:5px;background:var(--pale);cursor:pointer">✕</button>
   </div>
   <div id="rec-panel-status" style="font-size:11px;color:var(--mid);margin-bottom:6px"></div>
   <div style="overflow-x:auto;border:1px solid var(--rule);border-radius:8px;max-height:400px;overflow-y:auto">
@@ -1827,39 +1838,96 @@ let _recForm = null;
 let _recRows = [];
 
 async function viewRecords(form) {
-  // Toggle — clicking same form's View again closes the panel
   if (_recForm === form && document.getElementById('rec-panel').style.display !== 'none') {
     closeRecPanel(); return;
   }
   _recForm = form;
   const rows = await dbGetAll(REC_STORE[form]);
   _recRows   = rows || [];
+  _ndRecFiltered = _recRows.slice();
 
   document.getElementById('rec-panel-title').textContent = REC_LABEL[form] + ' — ' + _recRows.length + ' records';
   document.getElementById('rec-panel-status').textContent =
     _recRows.length ? 'From local cache — pull to refresh from sheet' : 'No records yet — pull from sheet first';
   document.getElementById('rec-panel').style.display = 'block';
-
-  // Scroll panel into view
   document.getElementById('rec-panel').scrollIntoView({ behavior:'smooth', block:'nearest' });
 
-  renderRecPanel();
+  populateNDRecFilters();
+  renderNDRecPanel(_recRows);
 }
 
 function closeRecPanel() {
   document.getElementById('rec-panel').style.display = 'none';
-  _recForm = null; _recRows = [];
+  const fbar = document.getElementById('nd-rec-filter');
+  if (fbar) fbar.style.display = 'none';
+  _recForm = null; _recRows = []; _ndRecFiltered = [];
 }
 
-function renderRecPanel() {
-  if (!_recRows.length) {
+
+// ── Nursery record panel filter ───────────────────────────────────────
+let _ndRecFiltered = [];
+
+function populateNDRecFilters() {
+  if (!_recRows || !_recRows.length) return;
+  const filterDiv = document.getElementById('nd-rec-filter');
+  if (filterDiv) filterDiv.style.display = 'flex';
+
+  // Source filter (nursery source or district depending on form)
+  const srcSel = document.getElementById('nd-f-source');
+  const distSel = document.getElementById('nd-f-district');
+  if (srcSel) {
+    const sources = [...new Set(_recRows.map(r => r.source || r.nursery_source || r.dispatch_source).filter(Boolean))].sort();
+    const sv = srcSel.value;
+    srcSel.innerHTML = '<option value="">All sources</option>' +
+      sources.map(s => `<option value="${s}">${s}</option>`).join('');
+    srcSel.value = sv;
+  }
+  if (distSel) {
+    const dists = [...new Set(_recRows.map(r => r.district || r.district_code).filter(Boolean))].sort();
+    const dv = distSel.value;
+    distSel.innerHTML = '<option value="">All districts</option>' +
+      dists.map(d => `<option value="${d}">${d}</option>`).join('');
+    distSel.value = dv;
+  }
+}
+
+function applyNDRecFilter() {
+  const src    = document.getElementById('nd-f-source')?.value   || '';
+  const dist   = document.getElementById('nd-f-district')?.value || '';
+  const search = (document.getElementById('nd-f-search')?.value  || '').toLowerCase();
+
+  _ndRecFiltered = _recRows.filter(r => {
+    const rSrc  = r.source || r.nursery_source || r.dispatch_source || '';
+    const rDist = r.district || r.district_code || '';
+    if (src    && rSrc  !== src)  return false;
+    if (dist   && rDist !== dist) return false;
+    if (search && !JSON.stringify(r).toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  // Re-render with filtered rows
+  renderNDRecPanel(_ndRecFiltered);
+  document.getElementById('rec-panel-status').textContent =
+    _ndRecFiltered.length + ' of ' + _recRows.length + ' records';
+}
+
+function clearNDRecFilter() {
+  ['nd-f-source','nd-f-district','nd-f-search'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  applyNDRecFilter();
+}
+
+function renderNDRecPanel(rows) {
+  if (!rows || !rows.length) {
     document.getElementById('rec-panel-thead').innerHTML = '';
     document.getElementById('rec-panel-tbody').innerHTML =
-      '<tr><td style="padding:20px;color:var(--mid);text-align:center">No records</td></tr>';
+      '<tr><td style="padding:20px;color:var(--mid);text-align:center">No records match filter</td></tr>';
     return;
   }
   const keyCols = REC_KEY_COLS[_recForm] || [];
-  const allCols = [...new Set(_recRows.flatMap(r => Object.keys(r)))];
+  const allCols = [...new Set(rows.flatMap(r => Object.keys(r)))];
   const cols    = [...keyCols.filter(c => allCols.includes(c)), ...allCols.filter(c => !keyCols.includes(c))];
 
   document.getElementById('rec-panel-thead').innerHTML =
@@ -1870,7 +1938,7 @@ function renderRecPanel() {
     ).join('') + '</tr>';
 
   document.getElementById('rec-panel-tbody').innerHTML =
-    _recRows.map((row, ri) => {
+    rows.map((row, ri) => {
       const bg = ri % 2 === 0 ? '' : 'background:var(--pale)';
       return '<tr style="' + bg + '">' + cols.map(c => {
         let val = row[c] ?? '';
@@ -1885,8 +1953,9 @@ function renderRecPanel() {
     }).join('');
 }
 
+
 function getXLSXFromViewer() {
-  if (_recForm) buildAndDownloadXLSX(_recForm, _recRows);
+  if (_recForm) buildAndDownloadXLSX(_recForm, _ndRecFiltered.length ? _ndRecFiltered : _recRows);
 }
 
 async function getXLSX(form, btn) {

@@ -290,7 +290,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
     <button class="lang-btn" id="lang-btn" onclick="cycleLang()">EN</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
-    <span class="ver">v1 DEV29</span>
+    <span class="ver">v1 DEV30</span>
     <div id="user-chip">Loading…</div>
   </div>
   <div id="main">
@@ -391,7 +391,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 // APP_CONFIG
 // ═══════════════════════════════════════════════════════
 const APP_CONFIG = {
-  version: 'v1_DEV29',
+  version: 'v1_DEV30',
   toolFolder: 'appSurveyManager',
   oauthClientId: '348880490660-lmovs9s5ml5s87p0tlnv8l41njibqukb.apps.googleusercontent.com',
   scriptUrl: {
@@ -6541,6 +6541,12 @@ init();
 // ═══════════════════════════════════════════════════════
 
 // Form → sheet column map (key columns to show first)
+
+// Columns hidden in View mode (shown in XLSX Get export)
+const VIEW_HIDDEN_COLS = new Set([
+  'submission_id','timestamp_server','app_version','device_info',
+  'payload_sha256','audit_status','submission_date','timestamp_ingested',
+]);
 const REC_KEY_COLS = {
   baseline:     ['submission_id','timestamp_local','submitted_by','lpc_id','dbc_id','district_code','block_circle_code','gp_name','village_name','beneficiary_name'],
   mortality:    ['submission_id','timestamp_local','submitted_by','lpc_id','district_code','season','plot_condition','remarks'],
@@ -6615,8 +6621,8 @@ async function loadRecords() {
 
     const keyCols  = REC_KEY_COLS[formId] || [];
     const allCols  = Object.keys(_recData[0]);
-    const restCols = allCols.filter(c => !keyCols.includes(c));
-    _recCols = [...keyCols.filter(c => allCols.includes(c)), ...restCols];
+    const restCols = allCols.filter(c => !keyCols.includes(c) && !VIEW_HIDDEN_COLS.has(c));
+    _recCols = [...keyCols.filter(c => allCols.includes(c) && !VIEW_HIDDEN_COLS.has(c)), ...restCols];
 
     renderRecordTable();
     statusEl.textContent = _recData.length + ' records · ' + formId;

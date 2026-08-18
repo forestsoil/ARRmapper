@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v13 · Asha 1</title>
+<title>Monitoring Dashboard v14 · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -221,6 +221,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
   <div class="hdr-right">
     <span id="md-user" style="font-size:10px;color:rgba(255,255,255,.5);margin-right:4px"></span>
     <span id="data-badge" style="font-size:10px;color:rgba(255,255,255,.6);background:rgba(255,255,255,.1);padding:4px 10px;border-radius:20px">Loading…</span>
+    <span id="setup-hint" style="font-size:10px;color:#fcd34d;background:rgba(252,211,77,.1);padding:4px 10px;border-radius:20px;border:1px solid rgba(252,211,77,.3);display:none">⚠️ Set AS_URL to load live data</span>
     <span id="live-badge" style="display:none;font-size:10px;color:#6ee7b7;background:rgba(110,231,183,.15);padding:4px 10px;border-radius:20px;border:1px solid rgba(110,231,183,.3)">Live</span>
     <span id="loader" style="display:none;font-size:10px;color:rgba(255,255,255,.5)">⟳</span>
     <a href="./index.html" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">🏠 Suite</a>
@@ -481,7 +482,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ── Config ────────────────────────────────────────────────────────
-const AS_URL     = ''; // ← paste /exec URL after deploy
+const AS_URL     = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec'; // ← paste /exec URL after deploy
 const IDB_NAME   = 'monitoring_dash';
 const IDB_STORE  = 'cache';
 const CACHE_KEY  = 'monitoring_data';
@@ -554,7 +555,13 @@ async function loadData() {
     setStatus('stale', cached.ts);
     boot();
   } else {
-    setStatus('offline');
+    // No AS_URL set and no cache — show setup note
+    const badge = document.getElementById('data-badge');
+    if (badge) badge.textContent = AS_URL
+      ? 'No cached data — connect to network to load'
+      : 'Set AS_URL in source to enable live data';
+    // Still try to boot with empty data so UI is visible
+    boot();
   }
 }
 
@@ -1011,6 +1018,10 @@ function boot() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (!AS_URL) {
+    const hint = document.getElementById('setup-hint');
+    if (hint) hint.style.display = 'inline';
+  }
   const _auth = arrAuthGet();
   const userEl = document.getElementById('md-user');
   if (_auth && userEl) userEl.textContent = '👤 ' + (_auth.name || _auth.email);
