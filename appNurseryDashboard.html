@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard — ARR Suite</title>
+<title>Nursery Dashboard v11 · Asha 1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -295,7 +295,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <div id="toast"></div>
 
 <header>
-  <a class="back" href="index.html">← Suite</a>
+  <a href="./index.html" style="font-size:11px;padding:4px 10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;text-decoration:none;white-space:nowrap;flex-shrink:0">🏠 Suite</a>
   <div class="hdr-text">
     <h1>🌱 Nursery Dashboard</h1>
     <p>Sapling plan, dispatch tracking and seed tree mapping — Asha 1</p>
@@ -307,10 +307,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
   </div>
 </header>
 
-<div style="background:var(--forest);padding:4px 16px 0;display:flex;align-items:center;gap:8px">
-  <a href="./index.html" style="font-size:11px;padding:3px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:#fff;text-decoration:none;flex-shrink:0;margin-bottom:4px">🏠 Suite</a>
-  <span id="nd-user-chip" style="font-size:10px;color:rgba(255,255,255,.6);flex:1"></span>
-</div>
 <nav class="nav-tabs">
   <button class="nav-tab active" onclick="showScreen('dashboard')">📊 Dashboard</button>
   <button class="nav-tab" onclick="showScreen('forms')">📋 Data Entry</button>

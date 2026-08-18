@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CCB &amp; SDG Dashboard v18 · Asha 1</title>
+<title>CCB &amp; SDG Dashboard v19 · Asha 1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.cjs"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
@@ -840,8 +840,11 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
   <!-- Sidebar -->
   <div id="sidebar">
-    <div id="sb-header">
-      <h1>🦋 CCB &amp; SDG Reporting</h1>
+    <div id="sb-header" style="display:flex;flex-direction:column;gap:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h1 style="margin:0">🦋 CCB &amp; SDG Reporting</h1>
+        <a href="./index.html" style="font-size:11px;padding:4px 10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;text-decoration:none;white-space:nowrap;flex-shrink:0">🏠 Suite</a>
+      </div>
       <p>Asha ARR · Climate, Community &amp; Biodiversity</p>
     </div>
     <div style="padding:10px 10px 2px">
@@ -884,7 +887,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <div id="topbar">
       <span class="title" id="panel-title">Biodiversity Overview</span>
       <span class="spacer"></span>
-      <a href="index.html">← Suite</a>
+      
     </div>
     <div id="content">
 
