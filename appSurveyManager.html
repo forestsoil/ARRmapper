@@ -290,7 +290,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
     <button class="lang-btn" id="lang-btn" onclick="cycleLang()">EN</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
-    <span class="ver">v1 DEV27</span>
+    <span class="ver">v1 DEV29</span>
     <div id="user-chip">Loading…</div>
   </div>
   <div id="main">
@@ -391,7 +391,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 // APP_CONFIG
 // ═══════════════════════════════════════════════════════
 const APP_CONFIG = {
-  version: 'v1_DEV27',
+  version: 'v1_DEV29',
   toolFolder: 'appSurveyManager',
   oauthClientId: '348880490660-lmovs9s5ml5s87p0tlnv8l41njibqukb.apps.googleusercontent.com',
   scriptUrl: {
@@ -6588,9 +6588,21 @@ async function loadRecords() {
   const url = APP_CONFIG.scriptUrl[S.project];
   if (!url) { statusEl.textContent = 'No project selected or no script URL.'; return; }
 
+  // Use JSONP to avoid CORS redirect issue with AS GET endpoints
+  const cbName = '_cb_rec_' + Date.now();
   try {
-    const res  = await fetch(url + '?action=getRecords&form_id=' + formId + '&project=' + (S.project||''));
-    const data = await res.json();
+    const data = await new Promise((res, rej) => {
+      const script = document.createElement('script');
+      window[cbName] = d => {
+        delete window[cbName];
+        document.head.removeChild(script);
+        res(d);
+      };
+      script.onerror = () => { delete window[cbName]; document.head.removeChild(script); rej(new Error('Network error')); };
+      script.src = url + '?action=getRecords&form_id=' + formId + '&project=' + (S.project||'') + '&callback=' + cbName;
+      document.head.appendChild(script);
+      setTimeout(() => { delete window[cbName]; rej(new Error('Timeout')); }, 20000);
+    });
 
     if (!data.ok) { statusEl.textContent = 'Error: ' + (data.error || 'Unknown'); return; }
     if (!data.records || data.records.length === 0) {
@@ -6598,8 +6610,9 @@ async function loadRecords() {
     }
 
     _recData = data.records;
+    _allRecRows = _recData.slice();
+    document.getElementById('rec-search').value = '';
 
-    // Build column order: key cols first, then remaining cols alpha, skip empties
     const keyCols  = REC_KEY_COLS[formId] || [];
     const allCols  = Object.keys(_recData[0]);
     const restCols = allCols.filter(c => !keyCols.includes(c));
@@ -6610,6 +6623,7 @@ async function loadRecords() {
     exportBtn.style.display = 'inline-block';
   } catch(e) {
     statusEl.textContent = 'Fetch failed: ' + e.message + ' (offline?)';
+    delete window[cbName];
   }
 }
 
@@ -6689,10 +6703,17 @@ async function fetchAndExportXLSX(formId, formName) {
   const url = APP_CONFIG.scriptUrl[S.project];
   if (!url) { toast('No script URL for project', 'error'); return; }
   if (!window.XLSX) { toast('XLSX library not loaded', 'error'); return; }
+  const _cbExp = '_cb_exp_' + Date.now();
   try {
-    const res  = await fetch(url + '?action=getRecords&form_id=' + formId + '&project=' + S.project);
-    const data = await res.json();
-    if (!data.ok) { toast('Fetch error: ' + (data.error||'unknown'), 'error'); return; }
+    const data = await new Promise((res, rej) => {
+      const script = document.createElement('script');
+      window[_cbExp] = d => { delete window[_cbExp]; document.head.removeChild(script); res(d); };
+      script.onerror = () => { delete window[_cbExp]; document.head.removeChild(script); rej(new Error('Network error')); };
+      script.src = url + '?action=getRecords&form_id=' + formId + '&project=' + S.project + '&callback=' + _cbExp;
+      document.head.appendChild(script);
+      setTimeout(() => { delete window[_cbExp]; rej(new Error('Timeout')); }, 20000);
+    });
+    if (!data.ok) { toast('AS error: ' + (data.error||'unknown'), 'error'); return; }
     if (!data.records || !data.records.length) { toast('No records for ' + formName, 'warn'); return; }
 
     const keyCols = REC_KEY_COLS[formId] || [];
@@ -6711,6 +6732,7 @@ async function fetchAndExportXLSX(formId, formName) {
     toast('Downloaded: ' + fname, 'success');
   } catch(e) {
     toast('Download failed: ' + e.message, 'error');
+    delete window[_cbExp];
   }
 }
 
@@ -6725,15 +6747,24 @@ let _filterDistMap  = {}; // distCode → Set of blockCodes
 
 async function initFormFilters() {
   // Populate district dropdown from schema admin_hierarchy
+  // Guard: only populate if project changed or dropdown is empty
   const dists = SCHEMA.admin_hierarchy[S.project]?.districts || {};
   const dsel = document.getElementById('ff-district');
   if (!dsel) return;
+  // Only rebuild if project changed
+  if (dsel.dataset.project === S.project) return;
+  dsel.dataset.project = S.project;
+  // Clear and repopulate
+  dsel.innerHTML = '<option value="">All districts</option>';
   Object.entries(dists).forEach(([code, info]) => {
     const o = document.createElement('option');
     o.value = code;
-    o.textContent = info.name || code;
+    o.textContent = info.label || info.name || code;
     dsel.appendChild(o);
   });
+  // Reset block dropdown too
+  const bsel = document.getElementById('ff-block');
+  if (bsel) { bsel.innerHTML = '<option value="">All blocks</option>'; bsel.dataset.district = ''; }
 }
 
 function updateFormFilters() {
