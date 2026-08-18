@@ -223,6 +223,72 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 }
 </style>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script>
+// ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
+// Shared across all applets via localStorage keys:
+//   arr_user_email  — Google email or @device fallback
+//   arr_user_name   — display name
+//   arr_auth_ts     — timestamp of last auth (ms)
+// Auth expires after 12 hours; re-login required.
+// On expiry or missing auth, applets redirect to index.html?redirect={href}
+
+const ARR_AUTH_EMAIL_KEY = 'arr_user_email';
+const ARR_AUTH_NAME_KEY  = 'arr_user_name';
+const ARR_AUTH_TS_KEY    = 'arr_auth_ts';
+const ARR_AUTH_TTL       = 12 * 60 * 60 * 1000; // 12 hours
+
+function arrAuthGet() {
+  const email = localStorage.getItem(ARR_AUTH_EMAIL_KEY);
+  const name  = localStorage.getItem(ARR_AUTH_NAME_KEY) || '';
+  const ts    = parseInt(localStorage.getItem(ARR_AUTH_TS_KEY) || '0');
+  if (!email) return null;
+  if (Date.now() - ts > ARR_AUTH_TTL) { arrAuthClear(); return null; }
+  return { email, name };
+}
+
+function arrAuthSet(email, name) {
+  localStorage.setItem(ARR_AUTH_EMAIL_KEY, email);
+  localStorage.setItem(ARR_AUTH_NAME_KEY,  name || '');
+  localStorage.setItem(ARR_AUTH_TS_KEY,    String(Date.now()));
+}
+
+function arrAuthClear() {
+  localStorage.removeItem(ARR_AUTH_EMAIL_KEY);
+  localStorage.removeItem(ARR_AUTH_NAME_KEY);
+  localStorage.removeItem(ARR_AUTH_TS_KEY);
+}
+
+// Call on applet load — returns auth object or redirects to launcher
+function arrAuthCheck(redirectIfMissing = true) {
+  const auth = arrAuthGet();
+  if (!auth && redirectIfMissing) {
+    const returnUrl = encodeURIComponent(window.location.href);
+    window.location.href = '/ARRmapper/index.html?redirect=' + returnUrl;
+    return null;
+  }
+  return auth;
+}
+
+// Render a compact user chip element into a container element
+function arrAuthRenderChip(containerId, onSignOut) {
+  const auth = arrAuthGet();
+  const el   = document.getElementById(containerId);
+  if (!el) return;
+  if (!auth) { el.textContent = ''; return; }
+  const display = auth.name && !auth.email.endsWith('@device') ? auth.name : auth.email;
+  el.textContent = display;
+  el.title = auth.email;
+  el.style.cursor = 'pointer';
+  el.onclick = () => {
+    if (confirm('Signed in as ' + auth.email + '\n\nSign out?')) {
+      arrAuthClear();
+      if (typeof onSignOut === 'function') onSignOut();
+      else window.location.href = '/ARRmapper/index.html';
+    }
+  };
+}
+
+</script>
 </head>
 <body>
 
@@ -241,6 +307,10 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
   </div>
 </header>
 
+<div style="background:var(--forest);padding:4px 16px 0;display:flex;align-items:center;gap:8px">
+  <a href="./index.html" style="font-size:11px;padding:3px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:#fff;text-decoration:none;flex-shrink:0;margin-bottom:4px">🏠 Suite</a>
+  <span id="nd-user-chip" style="font-size:10px;color:rgba(255,255,255,.6);flex:1"></span>
+</div>
 <nav class="nav-tabs">
   <button class="nav-tab active" onclick="showScreen('dashboard')">📊 Dashboard</button>
   <button class="nav-tab" onclick="showScreen('forms')">📋 Data Entry</button>

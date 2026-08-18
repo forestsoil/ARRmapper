@@ -15,7 +15,7 @@
   --forest:#1a3d2b;--canopy:#2d6a4f;--leaf:#52b788;--mist:#d8f3dc;
   --ink:#1c2b20;--mid:#4a6741;--pale:#f4faf6;--rule:rgba(82,183,136,.25);
 }
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--pale);color:var(--ink);min-height:100vh}
+body{font-family:'Noto Sans','Segoe UI',system-ui,sans-serif;background:var(--pale);color:var(--ink);min-height:100vh}
 header{background:var(--forest);padding:20px 32px;display:flex;flex-direction:row;
   align-items:center;justify-content:center;gap:18px;border-bottom:3px solid var(--leaf)}
 header img{width:110px;height:110px;object-fit:contain;flex-shrink:0}
@@ -60,7 +60,18 @@ footer a:hover{color:var(--canopy)}
   main{padding:20px 12px 40px}
   .app-card{width:100%}
 }
+
+.auth-bar{background:rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;
+  padding:8px 24px;font-size:12px;color:var(--mist);justify-content:flex-end}
+.auth-bar .user-pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  border-radius:20px;padding:4px 12px;cursor:pointer;transition:background .15s}
+.auth-bar .user-pill:hover{background:rgba(255,255,255,.22)}
+#gsi-btn-wrap{min-width:220px}
+#gsi-btn-wrap button{font-family:inherit!important}
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -71,6 +82,13 @@ footer a:hover{color:var(--canopy)}
     <p>Field tools, monitoring and management<br>for ARR carbon projects</p>
   </div>
 </header>
+
+<div class="auth-bar" id="auth-bar">
+  <span id="auth-status" style="font-size:11px;opacity:.7">Checking sign-in…</span>
+  <div id="gsi-btn-wrap"></div>
+  <span id="auth-user-pill" class="user-pill" style="display:none"></span>
+  <button id="auth-signout-btn" onclick="launcherSignOut()" style="display:none;font-size:11px;padding:4px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:var(--mist);cursor:pointer">Sign out</button>
+</div>
 
 <main>
   <div class="grid" style="margin-bottom:14px">
@@ -188,6 +206,145 @@ footer a:hover{color:var(--canopy)}
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/ARRmapper/sw.js');
 }
+
+// ── Shared auth module ────────────────────────────────────────────
+// ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
+// Shared across all applets via localStorage keys:
+//   arr_user_email  — Google email or @device fallback
+//   arr_user_name   — display name
+//   arr_auth_ts     — timestamp of last auth (ms)
+// Auth expires after 12 hours; re-login required.
+// On expiry or missing auth, applets redirect to index.html?redirect={href}
+
+const ARR_AUTH_EMAIL_KEY = 'arr_user_email';
+const ARR_AUTH_NAME_KEY  = 'arr_user_name';
+const ARR_AUTH_TS_KEY    = 'arr_auth_ts';
+const ARR_AUTH_TTL       = 12 * 60 * 60 * 1000; // 12 hours
+
+function arrAuthGet() {
+  const email = localStorage.getItem(ARR_AUTH_EMAIL_KEY);
+  const name  = localStorage.getItem(ARR_AUTH_NAME_KEY) || '';
+  const ts    = parseInt(localStorage.getItem(ARR_AUTH_TS_KEY) || '0');
+  if (!email) return null;
+  if (Date.now() - ts > ARR_AUTH_TTL) { arrAuthClear(); return null; }
+  return { email, name };
+}
+
+function arrAuthSet(email, name) {
+  localStorage.setItem(ARR_AUTH_EMAIL_KEY, email);
+  localStorage.setItem(ARR_AUTH_NAME_KEY,  name || '');
+  localStorage.setItem(ARR_AUTH_TS_KEY,    String(Date.now()));
+}
+
+function arrAuthClear() {
+  localStorage.removeItem(ARR_AUTH_EMAIL_KEY);
+  localStorage.removeItem(ARR_AUTH_NAME_KEY);
+  localStorage.removeItem(ARR_AUTH_TS_KEY);
+}
+
+// Call on applet load — returns auth object or redirects to launcher
+function arrAuthCheck(redirectIfMissing = true) {
+  const auth = arrAuthGet();
+  if (!auth && redirectIfMissing) {
+    const returnUrl = encodeURIComponent(window.location.href);
+    window.location.href = '/ARRmapper/index.html?redirect=' + returnUrl;
+    return null;
+  }
+  return auth;
+}
+
+// Render a compact user chip element into a container element
+function arrAuthRenderChip(containerId, onSignOut) {
+  const auth = arrAuthGet();
+  const el   = document.getElementById(containerId);
+  if (!el) return;
+  if (!auth) { el.textContent = ''; return; }
+  const display = auth.name && !auth.email.endsWith('@device') ? auth.name : auth.email;
+  el.textContent = display;
+  el.title = auth.email;
+  el.style.cursor = 'pointer';
+  el.onclick = () => {
+    if (confirm('Signed in as ' + auth.email + '\n\nSign out?')) {
+      arrAuthClear();
+      if (typeof onSignOut === 'function') onSignOut();
+      else window.location.href = '/ARRmapper/index.html';
+    }
+  };
+}
+
+
+// ── Launcher auth ─────────────────────────────────────────────────
+const OAUTH_CLIENT_ID = '348880490660-o21fd3cm0as45qns22lkot6n162tdo7c.apps.googleusercontent.com';
+
+function launcherInit() {
+  // Handle redirect return — if ?redirect= param present after auth
+  const params  = new URLSearchParams(window.location.search);
+  const redirect = params.get('redirect');
+
+  const auth = arrAuthGet();
+  if (auth) {
+    showSignedIn(auth);
+    if (redirect) window.location.href = decodeURIComponent(redirect);
+    return;
+  }
+
+  // Not signed in — show GSI button
+  document.getElementById('auth-status').textContent = 'Sign in to access field tools';
+  if (window.google?.accounts?.id) {
+    initGSI(redirect);
+  } else {
+    // GSI not yet loaded — wait
+    window.addEventListener('load', () => {
+      if (window.google?.accounts?.id) initGSI(redirect);
+    });
+  }
+}
+
+function initGSI(redirectAfter) {
+  google.accounts.id.initialize({
+    client_id:           OAUTH_CLIENT_ID,
+    callback:            r => handleLauncherCredential(r, redirectAfter),
+    auto_select:         false,
+    cancel_on_tap_outside: false,
+  });
+  google.accounts.id.renderButton(
+    document.getElementById('gsi-btn-wrap'),
+    { theme:'filled_blue', size:'large', text:'signin_with', width:220 }
+  );
+  // Also try One Tap
+  google.accounts.id.prompt(n => {});
+}
+
+function handleLauncherCredential(response, redirectAfter) {
+  try {
+    const p = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    arrAuthSet(p.email, p.name || '');
+    showSignedIn({ email: p.email, name: p.name || '' });
+    if (redirectAfter) window.location.href = decodeURIComponent(redirectAfter);
+  } catch(e) {
+    document.getElementById('auth-status').textContent = 'Sign-in error — try again';
+  }
+}
+
+function showSignedIn(auth) {
+  const display = auth.name || auth.email;
+  document.getElementById('auth-status').textContent = '';
+  document.getElementById('gsi-btn-wrap').style.display = 'none';
+  const pill = document.getElementById('auth-user-pill');
+  pill.textContent = '👤 ' + display;
+  pill.title = auth.email;
+  pill.style.display = 'inline';
+  document.getElementById('auth-signout-btn').style.display = 'inline';
+}
+
+function launcherSignOut() {
+  if (!confirm('Sign out of ARR Project Suite?')) return;
+  arrAuthClear();
+  if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
+  window.location.reload();
+}
+
+document.addEventListener('DOMContentLoaded', launcherInit);
 </script>
 
 <footer>

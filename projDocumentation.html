@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Project Documentation — ARR Suite</title>
+<title>Documentation v4 · Asha 1</title>
 <style>
 .proj-tabs{display:none}
 .proj-tab:not(:first-child){display:none}
@@ -110,6 +110,72 @@ footer a:hover{color:var(--canopy)}
   .doc-title{white-space:normal}
 }
 </style>
+<script>
+// ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
+// Shared across all applets via localStorage keys:
+//   arr_user_email  — Google email or @device fallback
+//   arr_user_name   — display name
+//   arr_auth_ts     — timestamp of last auth (ms)
+// Auth expires after 12 hours; re-login required.
+// On expiry or missing auth, applets redirect to index.html?redirect={href}
+
+const ARR_AUTH_EMAIL_KEY = 'arr_user_email';
+const ARR_AUTH_NAME_KEY  = 'arr_user_name';
+const ARR_AUTH_TS_KEY    = 'arr_auth_ts';
+const ARR_AUTH_TTL       = 12 * 60 * 60 * 1000; // 12 hours
+
+function arrAuthGet() {
+  const email = localStorage.getItem(ARR_AUTH_EMAIL_KEY);
+  const name  = localStorage.getItem(ARR_AUTH_NAME_KEY) || '';
+  const ts    = parseInt(localStorage.getItem(ARR_AUTH_TS_KEY) || '0');
+  if (!email) return null;
+  if (Date.now() - ts > ARR_AUTH_TTL) { arrAuthClear(); return null; }
+  return { email, name };
+}
+
+function arrAuthSet(email, name) {
+  localStorage.setItem(ARR_AUTH_EMAIL_KEY, email);
+  localStorage.setItem(ARR_AUTH_NAME_KEY,  name || '');
+  localStorage.setItem(ARR_AUTH_TS_KEY,    String(Date.now()));
+}
+
+function arrAuthClear() {
+  localStorage.removeItem(ARR_AUTH_EMAIL_KEY);
+  localStorage.removeItem(ARR_AUTH_NAME_KEY);
+  localStorage.removeItem(ARR_AUTH_TS_KEY);
+}
+
+// Call on applet load — returns auth object or redirects to launcher
+function arrAuthCheck(redirectIfMissing = true) {
+  const auth = arrAuthGet();
+  if (!auth && redirectIfMissing) {
+    const returnUrl = encodeURIComponent(window.location.href);
+    window.location.href = '/ARRmapper/index.html?redirect=' + returnUrl;
+    return null;
+  }
+  return auth;
+}
+
+// Render a compact user chip element into a container element
+function arrAuthRenderChip(containerId, onSignOut) {
+  const auth = arrAuthGet();
+  const el   = document.getElementById(containerId);
+  if (!el) return;
+  if (!auth) { el.textContent = ''; return; }
+  const display = auth.name && !auth.email.endsWith('@device') ? auth.name : auth.email;
+  el.textContent = display;
+  el.title = auth.email;
+  el.style.cursor = 'pointer';
+  el.onclick = () => {
+    if (confirm('Signed in as ' + auth.email + '\n\nSign out?')) {
+      arrAuthClear();
+      if (typeof onSignOut === 'function') onSignOut();
+      else window.location.href = '/ARRmapper/index.html';
+    }
+  };
+}
+
+</script>
 </head>
 <body>
 
@@ -119,6 +185,7 @@ footer a:hover{color:var(--canopy)}
     <h1>Project Documentation</h1>
     <p>FAQs, verification reports, SOPs and baseline documents by project</p>
   </div>
+  <a href="./index.html" style="font-size:11px;padding:4px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:#fff;text-decoration:none;margin-left:auto">🏠 Suite</a>
 </header>
 
 <nav class="proj-tabs">
@@ -273,8 +340,8 @@ footer a:hover{color:var(--canopy)}
             <a class="doc-row" href="https://drive.google.com/file/d/15bdBszZLia1V16RnIgqhsLauqkSvhvXJ/view?usp=drive_link" target="_blank" rel="noopener">
               <div class="doc-icon">📘</div>
               <div class="doc-info">
-                <div class="doc-title">TSLPL ASHA Project Integrated SOP v10</div>
-                <div class="doc-date">2026-08-05</div>
+                <div class="doc-title">TSLPL ASHA Project Integrated SOP v6</div>
+                <div class="doc-date">2026-02-24</div>
               </div>
               <div class="doc-arrow">↗</div>
             </a>

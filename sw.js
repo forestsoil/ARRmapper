@@ -1,4 +1,4 @@
-// ARRMapper Field Tool — Service Worker v3
+// ARR Project Suite — Service Worker v4
 // Caching strategy:
 //   index.html        → network-first (always serve fresh launcher)
 //   appDashboard.html → network-first (data-dependent, stale is misleading)
@@ -7,10 +7,13 @@
 //   CDN assets        → cache-first (immutable versioned URLs)
 //   Google APIs       → network-only (auth, Maps, Apps Script)
 
-const CACHE_NAME = 'arrm-shell-2596cd8';
+const CACHE_NAME = 'arrm-shell-v4';
 
 const SHELL_URLS = [
   '/ARRmapper/appARRmapper.html',
+  '/ARRmapper/appSurveyManager.html',
+  '/ARRmapper/appNurseryDashboard.html',
+  '/ARRmapper/appHotspot.html',
   '/ARRmapper/manifest.json',
   '/ARRmapper/logo.png',
   '/ARRmapper/logo2.png',
@@ -40,6 +43,8 @@ const NETWORK_FIRST_PATHS = [
   '/ARRmapper/appDashboard.html',
   '/ARRmapper/appCCBSDG.html',
   '/ARRmapper/projDocumentation.html',
+  '/ARRmapper/appMonitoringDashboard.html',
+  '/ARRmapper/appSurveyManager.html',
 ];
 
 // ── Install: pre-cache app shell ─────────────────────────────────────
@@ -91,8 +96,9 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Stale-while-revalidate for appARRmapper.html
-  if (url.pathname.includes('appARRmapper.html')) {
+  // Stale-while-revalidate for appARRmapper + appNurseryDashboard (offline-capable)
+  if (url.pathname.includes('appARRmapper.html') ||
+      url.pathname.includes('appNurseryDashboard.html')) {
     event.respondWith(
       caches.open(CACHE_NAME).then(cache =>
         cache.match(event.request).then(cached => {
