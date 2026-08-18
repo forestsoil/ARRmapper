@@ -7,7 +7,7 @@
 //   CDN assets        → cache-first (immutable versioned URLs)
 //   Google APIs       → network-only (auth, Maps, Apps Script)
 
-const CACHE_NAME = 'arrm-shell-1506410';
+const CACHE_NAME = 'arrm-shell-39a711d';
 
 const SHELL_URLS = [
   '/ARRmapper/appARRmapper.html',
