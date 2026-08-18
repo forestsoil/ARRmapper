@@ -265,6 +265,19 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 .lpc-result{background:rgba(52,201,122,.12);border:1px solid var(--c-accent2);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--c-accent2);margin-top:6px;display:none}
 .lpc-result.show{display:block}
 .lpc-result strong{color:var(--c-text)}
+
+/* ── Form list filter bar ─────────────────────────────────────── */
+.filter-bar{background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.filter-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.filter-sel{font-family:var(--font);font-size:12px;padding:6px 8px;border:1px solid var(--c-border);border-radius:6px;background:var(--c-input-bg);color:var(--c-text);flex:1;min-width:100px}
+.filter-search{font-family:var(--font);font-size:12px;padding:6px 10px;border:1px solid var(--c-border);border-radius:6px;background:var(--c-input-bg);color:var(--c-text);flex:1;width:100%}
+.filter-label{font-size:10px;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.filter-count{font-size:11px;color:var(--c-muted);margin-left:auto;white-space:nowrap}
+.filter-clear{font-size:11px;padding:4px 8px;background:var(--c-bg);border:1px solid var(--c-border);border-radius:6px;color:var(--c-muted);cursor:pointer}
+.filter-clear:hover{color:var(--c-danger);border-color:var(--c-danger)}
+/* Records viewer search ─────────────────────────────────────── */
+.rec-search-bar{display:flex;gap:6px;margin-bottom:8px;align-items:center}
+.rec-search-inp{font-family:var(--font);font-size:12px;padding:6px 10px;border:1px solid var(--c-border);border-radius:6px;background:var(--c-input-bg);color:var(--c-text);flex:1}
 </style>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 </head>
@@ -277,7 +290,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
     <button class="lang-btn" id="lang-btn" onclick="cycleLang()">EN</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
-    <span class="ver">v1 DEV26</span>
+    <span class="ver">v1 DEV27</span>
     <div id="user-chip">Loading…</div>
   </div>
   <div id="main">
@@ -294,6 +307,25 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
         <button class="back-btn" onclick="showProjects()">← Back</button>
         <span class="proj-tag" id="proj-tag" style="font-weight:700;font-size:16px"></span>
         <span style="font-size:13px;color:var(--c-muted);flex:1" id="proj-full-label"></span>
+      </div>
+      <!-- Filter bar -->
+      <div class="filter-bar" id="form-filter-bar">
+        <div class="filter-row">
+          <span class="filter-label">Filter</span>
+          <select class="filter-sel" id="ff-district" onchange="updateFormFilters()">
+            <option value="">All districts</option>
+          </select>
+          <select class="filter-sel" id="ff-block" onchange="updateFormFilters()">
+            <option value="">All blocks</option>
+          </select>
+          <button class="filter-clear" onclick="clearFormFilters()">✕ Clear</button>
+          <span class="filter-count" id="ff-count"></span>
+        </div>
+        <div class="filter-row">
+          <input type="text" class="filter-search" id="ff-search"
+            placeholder="Search beneficiary, LPC, village, GP…"
+            oninput="updateFormFilters()">
+        </div>
       </div>
       <div class="form-btn-list" id="form-btn-list"></div>
     </div>
@@ -329,7 +361,11 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
         </select>
         <button id="rec-export-btn" onclick="exportRecordsXLSX()" style="display:none;font-size:11px;padding:5px 10px;background:var(--c-accent2);border:none;border-radius:var(--radius);color:#fff;font-weight:600;cursor:pointer">⬇ XLSX</button>
       </div>
-      <div id="rec-status" style="font-size:12px;color:var(--c-muted);margin:8px 0;min-height:18px"></div>
+      <div class="rec-search-bar">
+      <input type="text" class="rec-search-inp" id="rec-search"
+        placeholder="Search across all columns…" oninput="filterRecordTable()">
+      <span id="rec-status" style="font-size:11px;color:var(--c-muted);white-space:nowrap"></span>
+    </div>
       <div id="rec-table-wrap" style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 180px);border:1px solid var(--c-border);border-radius:var(--radius)">
         <table id="rec-table" style="border-collapse:collapse;width:100%;font-size:11px;min-width:600px">
           <thead id="rec-thead" style="position:sticky;top:0;z-index:2;background:var(--c-surface)"></thead>
@@ -355,7 +391,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 // APP_CONFIG
 // ═══════════════════════════════════════════════════════
 const APP_CONFIG = {
-  version: 'v1_DEV26',
+  version: 'v1_DEV27',
   toolFolder: 'appSurveyManager',
   oauthClientId: '348880490660-lmovs9s5ml5s87p0tlnv8l41njibqukb.apps.googleusercontent.com',
   scriptUrl: {
@@ -3823,6 +3859,8 @@ function selectProject(proj) {
       row.appendChild(getBtn);
       list.appendChild(row);
     });
+    // Init filter bar for this project
+    initFormFilters();
   });
 
   showScreen('screen-forms');
@@ -6674,6 +6712,115 @@ async function fetchAndExportXLSX(formId, formName) {
   } catch(e) {
     toast('Download failed: ' + e.message, 'error');
   }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// FORM LIST FILTER (District → Block → GP cascade + search)
+// ═══════════════════════════════════════════════════════════════
+
+// Loaded from plantation GeoJSON after first LPC fetch
+let _filterFeatures = null;
+let _filterDistMap  = {}; // distCode → Set of blockCodes
+
+async function initFormFilters() {
+  // Populate district dropdown from schema admin_hierarchy
+  const dists = SCHEMA.admin_hierarchy[S.project]?.districts || {};
+  const dsel = document.getElementById('ff-district');
+  if (!dsel) return;
+  Object.entries(dists).forEach(([code, info]) => {
+    const o = document.createElement('option');
+    o.value = code;
+    o.textContent = info.name || code;
+    dsel.appendChild(o);
+  });
+}
+
+function updateFormFilters() {
+  const distVal   = document.getElementById('ff-district')?.value || '';
+  const blockVal  = document.getElementById('ff-block')?.value    || '';
+  const search    = (document.getElementById('ff-search')?.value  || '').toLowerCase().trim();
+
+  // Update block dropdown based on district
+  const blockSel = document.getElementById('ff-block');
+  if (blockSel && distVal !== blockSel.dataset.district) {
+    blockSel.dataset.district = distVal;
+    blockSel.innerHTML = '<option value="">All blocks</option>';
+    if (distVal) {
+      const dists = SCHEMA.admin_hierarchy[S.project]?.districts || {};
+      const blocks = dists[distVal]?.blocks || {};
+      Object.entries(blocks).forEach(([code, info]) => {
+        const o = document.createElement('option');
+        o.value = code;
+        o.textContent = (typeof info === 'string' ? info : info.name) || code;
+        blockSel.appendChild(o);
+      });
+    }
+  }
+
+  // Filter form list — store filter state for LPC lookup pre-population
+  S._filter = { district: distVal, block: blockVal, search };
+
+  // Show/hide form buttons based on search (search is across form names/subs only here)
+  const rows = document.querySelectorAll('.form-btn-row');
+  let visible = 0;
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const show = !search || text.includes(search);
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  const cnt = document.getElementById('ff-count');
+  if (cnt) cnt.textContent = search ? visible + ' forms' : '';
+
+  // Pre-populate district/block in form values when filter is set
+  if (distVal) S.values.district_code = distVal;
+  if (blockVal) S.values.block_circle_code = blockVal;
+}
+
+function clearFormFilters() {
+  ['ff-district','ff-block','ff-search'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const blockSel = document.getElementById('ff-block');
+  if (blockSel) {
+    blockSel.innerHTML = '<option value="">All blocks</option>';
+    blockSel.dataset.district = '';
+  }
+  S._filter = {};
+  S.values.district_code = '';
+  S.values.block_circle_code = '';
+  document.querySelectorAll('.form-btn-row').forEach(r => r.style.display = '');
+  const cnt = document.getElementById('ff-count');
+  if (cnt) cnt.textContent = '';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RECORDS TABLE SEARCH
+// ═══════════════════════════════════════════════════════════════
+
+let _allRecRows = []; // cache for search filtering
+
+function filterRecordTable() {
+  const q = (document.getElementById('rec-search')?.value || '').toLowerCase();
+  if (!q) {
+    // Show all rows
+    document.querySelectorAll('#rec-tbody tr').forEach(tr => tr.style.display = '');
+    document.getElementById('rec-status').textContent =
+      _recData.length + ' records';
+    return;
+  }
+  let shown = 0;
+  document.querySelectorAll('#rec-tbody tr').forEach((tr, i) => {
+    const text = tr.textContent.toLowerCase();
+    const match = text.includes(q);
+    tr.style.display = match ? '' : 'none';
+    if (match) shown++;
+  });
+  document.getElementById('rec-status').textContent =
+    shown + ' of ' + _recData.length + ' records';
 }
 
 </script>

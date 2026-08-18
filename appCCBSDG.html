@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CCB &amp; SDG Dashboard v19 · Asha 1</title>
+<title>CCB &amp; SDG Dashboard v20 · Asha 1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.cjs"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
@@ -955,14 +955,26 @@ function arrAuthRenderChip(containerId, onSignOut) {
       <div class="panel" id="panel-bio-sightings">
         <div class="map-wrap">
           <h3>Biodiversity sightings map</h3>
-          <div style="padding:8px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid rgba(255,255,255,.1)">
+          <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid rgba(255,255,255,.1)">
             <select id="f-district" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
               <option value="">All districts</option>
+            </select>
+            <select id="f-block" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
+              <option value="">All blocks</option>
+            </select>
+            <select id="f-sighting-type" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
+              <option value="">All sighting types</option>
+              <option value="fauna">🦅 Fauna</option>
+              <option value="flora">🌿 Flora</option>
+              <option value="invasive">⚠️ Invasive</option>
+              <option value="recruitment">🌱 Recruitment</option>
+              <option value="incident">🐾 Wildlife incident</option>
             </select>
             <select id="f-species-bio" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
               <option value="">All species</option>
             </select>
-            <input type="text" id="f-bio-search" oninput="filterBioMap()" placeholder="Search…" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151;width:100px">
+            <input type="text" id="f-bio-search" oninput="filterBioMap()" placeholder="Search…" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151;width:90px">
+            <button onclick="clearBioFilters()" style="font-size:10px;padding:3px 8px;border-radius:4px;background:#374151;color:#e5e7eb;border:none;cursor:pointer">✕</button>
           </div>
           <div style="padding:8px 12px;display:flex;gap:10px;flex-wrap:wrap;font-size:10px">
             <label><input type="checkbox" id="f-fauna" checked onchange="filterBioMap()"> 🦅 Fauna</label>
@@ -1496,14 +1508,29 @@ const CAT_ICONS = {fauna:'🦅',flora:'🌿',invasive:'⚠️',recruitment:'🌱
 
 function populateBioFilters() {
   const districts = [...new Set(bioSightings.map(s=>s.district).filter(Boolean))].sort();
+  const blocks    = [...new Set(bioSightings.map(s=>s.block||s.block_circle).filter(Boolean))].sort();
   const species   = [...new Set(bioSightings.map(s=>s.species).filter(Boolean))].sort();
+
   const dsel = document.getElementById('f-district');
+  const bsel = document.getElementById('f-block');
   const ssel = document.getElementById('f-species-bio');
+
   if (dsel) {
     const dv = dsel.value;
     dsel.innerHTML = '<option value="">All districts</option>' +
       districts.map(d=>`<option value="${d}">${d}</option>`).join('');
     dsel.value = dv;
+  }
+  if (bsel) {
+    const bv = bsel.value;
+    // Filter blocks by selected district
+    const fDist = dsel?.value || '';
+    const filtBlocks = fDist
+      ? [...new Set(bioSightings.filter(s=>s.district===fDist).map(s=>s.block||s.block_circle).filter(Boolean))].sort()
+      : blocks;
+    bsel.innerHTML = '<option value="">All blocks</option>' +
+      filtBlocks.map(b=>`<option value="${b}">${b}</option>`).join('');
+    bsel.value = filtBlocks.includes(bv) ? bv : '';
   }
   if (ssel) {
     const sv = ssel.value;
@@ -1511,6 +1538,18 @@ function populateBioFilters() {
       species.map(s=>`<option value="${s}">${s}</option>`).join('');
     ssel.value = sv;
   }
+}
+
+function clearBioFilters() {
+  ['f-district','f-block','f-sighting-type','f-species-bio','f-bio-search'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['f-fauna','f-flora','f-invasive','f-recruit','f-incident'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = true;
+  });
+  renderBioMap();
 }
 
 function renderBioMap() {
@@ -1523,13 +1562,22 @@ function renderBioMap() {
     recruitment:document.getElementById('f-recruit')?.checked,
     incident:   document.getElementById('f-incident')?.checked,
   };
-  const fDist   = document.getElementById('f-district')?.value    || '';
-  const fSpp    = document.getElementById('f-species-bio')?.value || '';
-  const fSearch = (document.getElementById('f-bio-search')?.value || '').toLowerCase();
+  const fDist   = document.getElementById('f-district')?.value      || '';
+  const fBlock  = document.getElementById('f-block')?.value          || '';
+  const fType   = document.getElementById('f-sighting-type')?.value  || '';
+  const fSpp    = document.getElementById('f-species-bio')?.value    || '';
+  const fSearch = (document.getElementById('f-bio-search')?.value    || '').toLowerCase();
+
+  // When sighting type dropdown used, override checkboxes
+  const effectiveShow = fType ? { [fType]: true } : show;
+
+  // Repopulate block dropdown when district changes
+  populateBioFilters();
 
   bioSightings
-    .filter(s => show[s.category])
+    .filter(s => effectiveShow[s.category])
     .filter(s => !fDist   || s.district === fDist)
+    .filter(s => !fBlock  || (s.block||s.block_circle) === fBlock)
     .filter(s => !fSpp    || s.species  === fSpp)
     .filter(s => !fSearch || JSON.stringify(s).toLowerCase().includes(fSearch))
     .forEach(s=>{
