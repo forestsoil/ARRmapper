@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v17 · Asha 1</title>
+<title>Monitoring Dashboard v18 · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -601,15 +601,9 @@ async function fetchFromAS(background) {
     const url = AS_URL + '?action=getMonitoring&callback=_cb_monitoring';
     await new Promise((res, rej) => {
       const script = document.createElement('script');
-      const tid = setTimeout(() => {
+      window._cb_monitoring = data => {
         delete window._cb_monitoring;
         try { document.head.removeChild(script); } catch(_) {}
-        rej(new Error('Timeout'));
-      }, 15000);
-      window._cb_monitoring = data => {
-        clearTimeout(tid);
-        delete window._cb_monitoring;
-        document.head.removeChild(script);
         if (data.ok && data.records) {
           ALL_DATA = data.records.map(normalise);
           cacheSet(CACHE_KEY, {ts: Date.now(), data: ALL_DATA});
@@ -619,13 +613,19 @@ async function fetchFromAS(background) {
         } else { rej(new Error(data.error || 'No records')); }
       };
       script.onerror = () => {
-        clearTimeout(tid);
         delete window._cb_monitoring;
         try { document.head.removeChild(script); } catch(_) {}
         rej(new Error('Network error'));
       };
       script.src = url;
       document.head.appendChild(script);
+      setTimeout(() => {
+        if (window._cb_monitoring) {
+          delete window._cb_monitoring;
+          try { document.head.removeChild(script); } catch(_) {}
+          rej(new Error('Timeout'));
+        }
+      }, 20000);
     });
   } catch(e) {
     if (!background) setStatus('error', null, e.message);
