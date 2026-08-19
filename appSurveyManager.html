@@ -290,7 +290,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
     <button class="lang-btn" id="lang-btn" onclick="cycleLang()">EN</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
-    <span class="ver">v1 DEV31</span>
+    <span class="ver">v1 DEV32</span>
     <div id="user-chip">Loading…</div>
   </div>
   <div id="main">
@@ -387,7 +387,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 // APP_CONFIG
 // ═══════════════════════════════════════════════════════
 const APP_CONFIG = {
-  version: 'v1_DEV31',
+  version: 'v1_DEV32',
   toolFolder: 'appSurveyManager',
   oauthClientId: '348880490660-lmovs9s5ml5s87p0tlnv8l41njibqukb.apps.googleusercontent.com',
   scriptUrl: {
@@ -6538,6 +6538,24 @@ init();
 // Form → sheet column map (key columns to show first)
 
 // Columns hidden in View mode (shown in XLSX Get export)
+
+// Columns to show in View mode — derived from schema form field IDs
+// plus key header fields. XLSX Get exports all sheet columns.
+// Built from SCHEMA at runtime by buildFormViewCols()
+
+const VIEW_HEADER_COLS = ['timestamp_local','submitted_by','lpc_id','dbc_id','dbc_ids'];
+
+function buildFormViewCols(formId) {
+  const form     = SCHEMA.forms[formId];
+  if (!form) return null; // null = show all (minus VIEW_HIDDEN_COLS)
+  const sections = form.sections || [];
+  const fieldIds = sections.flatMap(s => (s.fields || []).map(f => f.id));
+  // key header cols first, then all schema field IDs
+  const keyCols  = [...VIEW_HEADER_COLS, ...fieldIds];
+  // Also include URL columns (_url suffix) if present
+  return keyCols;
+}
+
 const VIEW_HIDDEN_COLS = new Set([
   'submission_id','timestamp_server','app_version','device_info',
   'payload_sha256','audit_status','submission_date','timestamp_ingested',
@@ -6614,10 +6632,21 @@ async function loadRecords() {
     _allRecRows = _recData.slice();
     document.getElementById('rec-search').value = '';
 
-    const keyCols  = REC_KEY_COLS[formId] || [];
+    const viewCols = buildFormViewCols(formId);
     const allCols  = Object.keys(_recData[0]);
-    const restCols = allCols.filter(c => !keyCols.includes(c) && !VIEW_HIDDEN_COLS.has(c));
-    _recCols = [...keyCols.filter(c => allCols.includes(c) && !VIEW_HIDDEN_COLS.has(c)), ...restCols];
+    if (viewCols) {
+      // Show only schema-defined fields + key headers (that exist in sheet)
+      // Also include any _url columns (file attachments)
+      const urlCols = allCols.filter(c => c.endsWith('_url') || /_(\d+)$/.test(c));
+      _recCols = [
+        ...viewCols.filter(c => allCols.includes(c)),
+        ...urlCols.filter(c => !viewCols.includes(c))
+      ];
+    } else {
+      const keyCols  = REC_KEY_COLS[formId] || [];
+      const restCols = allCols.filter(c => !keyCols.includes(c) && !VIEW_HIDDEN_COLS.has(c));
+      _recCols = [...keyCols.filter(c => allCols.includes(c) && !VIEW_HIDDEN_COLS.has(c)), ...restCols];
+    }
 
     renderRecordTable();
     statusEl.textContent = _recData.length + ' records · ' + formId;
@@ -6750,9 +6779,8 @@ let _filterDistMap  = {}; // distCode → Set of blockCodes
 function initRecordFilters() {
   // Populate district dropdown from actual loaded records
   if (!_recData.length) return;
-  const dists = [...new Set(_recData.map(r =>
-    r.district_code || r.district || ''
-  ).filter(Boolean))].sort();
+  const distField = r => r.district_code || r.district || r.f?.district_code || '';
+  const dists = [...new Set(_recData.map(distField).filter(Boolean))].sort();
   const dsel = document.getElementById('rf-district');
   if (!dsel) return;
   const cur = dsel.value;
@@ -6787,7 +6815,7 @@ function updateRecordFilters() {
     const row = _recData[i];
     if (!row) return;
     const rDist  = row.district_code || row.district || '';
-    const rBlock = row.block_circle_code || row.block_circle || row.block || '';
+    const rBlock = row.block_circle_code || row.block_circle_name || row.block_circle || row.block || '';
     const matchDist  = !distVal  || rDist  === distVal;
     const matchBlock = !blockVal || rBlock === blockVal;
     const matchSearch = !search  || tr.textContent.toLowerCase().includes(search);
