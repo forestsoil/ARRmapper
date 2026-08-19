@@ -98,7 +98,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 #topbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--c-surface);border-bottom:1px solid var(--c-border);flex-shrink:0}
 #topbar h1{font-size:15px;font-weight:600;flex:1}
 #topbar .ver{font-size:11px;color:var(--c-muted)}
-#user-chip{font-size:11px;color:var(--c-muted);background:var(--c-card);border-radius:20px;padding:3px 10px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#user-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.85);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;flex-shrink:0}
 #main{flex:1;overflow-y:auto;padding:14px}
 .screen{display:none}.screen.active{display:block}
 .proj-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
@@ -284,13 +284,13 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 <body>
 <div id="app">
   <div id="topbar">
-    <a href="./index.html" class="back-btn" style="text-decoration:none;font-size:12px;padding:5px 10px;flex-shrink:0">🏠 Suite</a>
     <span id="online-dot"></span>
     <h1 id="topbar-title">Survey Manager</h1>
     <button class="lang-btn" id="lang-btn" onclick="cycleLang()">EN</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
-    <span class="ver">v1 DEV32</span>
+    <span class="ver">v1 DEV33</span>
+    <a href="./index.html" style="text-decoration:none;font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.85);white-space:nowrap;flex-shrink:0">🏠 Suite</a>
     <div id="user-chip">Loading…</div>
   </div>
   <div id="main">

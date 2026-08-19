@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CCB &amp; SDG Dashboard v21 · Asha 1</title>
+<title>CCB &amp; SDG Dashboard v22 · Asha 1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.cjs"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
@@ -592,6 +592,8 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 
 /* ── Main ── */
 #main{display:flex;flex-direction:column;overflow:hidden}
+.arr-chip{font-size:11px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;color:var(--ink);cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
+.arr-chip:hover{background:rgba(255,255,255,.22)}
 #topbar{background:var(--surface);border-bottom:1px solid var(--border);
   padding:0 16px;height:40px;display:flex;align-items:center;gap:12px;flex-shrink:0}
 #topbar .title{font-size:12px;font-weight:700;color:var(--ink)}
@@ -843,7 +845,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <div id="sb-header" style="display:flex;flex-direction:column;gap:4px">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <h1 style="margin:0">🦋 CCB &amp; SDG Reporting</h1>
-        <a href="./index.html" style="font-size:11px;padding:4px 10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;text-decoration:none;white-space:nowrap;flex-shrink:0">🏠 Suite</a>
       </div>
       <p>Asha ARR · Climate, Community &amp; Biodiversity</p>
     </div>
@@ -878,7 +879,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
       <button class="sb-btn" onclick="showPanel('sdg-diversity')">🌈 Plantation diversity</button>
       <div class="sb-divider"></div>
       <div class="sb-section-lbl">Data</div>
-      <button class="sb-btn" onclick="showPanel('data-upload')">📤 Upload records</button>
+      <button class="sb-btn" onclick="arrAuthGet()?showPanel('data-upload'):(window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href))" title="Sign in to upload records">📤 Upload records</button>
     </div>
   </div>
 
@@ -887,7 +888,8 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <div id="topbar">
       <span class="title" id="panel-title">Biodiversity Overview</span>
       <span class="spacer"></span>
-      
+      <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
+      <span id="arr-user-chip" class="arr-chip"></span>
     </div>
     <div id="content">
 
@@ -1695,6 +1697,7 @@ window.addEventListener('load', () => {
   renderRefs();
   loadBibFromDrive();
   loadSightingsFromSheet();
+  arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
 });
 
 

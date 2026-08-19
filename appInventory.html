@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>appInventory – Project Asha</title>
+<title>appInventory v5 – Project Asha</title>
 <!-- proj4js for CRS reprojection -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 <!-- shpjs for shapefile zip parsing -->
@@ -47,7 +47,9 @@
   header h1{font-size:16px;font-weight:700;letter-spacing:.5px;}
   header h1 span{font-weight:300;opacity:.8;font-size:13px;margin-left:6px;}
   .header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  #userLabel{font-size:12px;opacity:.9;}
+  #userLabel{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.9);white-space:nowrap}
+  .arr-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.85);cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;text-decoration:none}
+  .arr-chip:hover{background:rgba(255,255,255,.22)}
   .hbtn{
     background:rgba(255,255,255,.15);border:none;color:#fff;
     padding:4px 10px;border-radius:20px;cursor:pointer;font-size:13px;
@@ -305,7 +307,7 @@
   <div style="font-size:48px;">🚫</div>
   <div style="font-size:16px;font-weight:700;color:var(--warn);">Access Denied</div>
   <div id="accessDeniedMsg" style="font-size:13px;color:var(--text2);text-align:center;max-width:320px;"></div>
-  <a href="https://forestsoil.github.io/ARRmapper/" style="margin-top:8px;" class="btn-sm primary">← Back to Suite</a>
+  <a href="./index.html" style="margin-top:8px;" class="btn-sm primary">← Back to Suite</a>
 </div>
 
 <!-- ── HEADER ── -->
@@ -314,9 +316,9 @@
   <div class="header-right">
     <span id="netStatus"><span id="netDot"></span><span id="netText">Online</span></span>
     <span id="outboxPill" onclick="showTab('records',true)" title="Queued records">📤 <span id="outboxCount">0</span> queued</span>
-    <span id="userLabel"></span>
-    <a class="hbtn" href="https://forestsoil.github.io/ARRmapper/" id="suiteLink">🏠 Suite</a>
     <button class="hbtn" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
+    <a class="hbtn arr-chip" href="./index.html" style="text-decoration:none">🏠 Suite</a>
+    <span id="userLabel" class="arr-chip"></span>
   </div>
 </header>
 
@@ -725,14 +727,6 @@ window.onload = async () => {
   window.addEventListener("offline", onNetChange);
   onNetChange();
 
-  // Suite link — same-tab navigation
-  document.getElementById("suiteLink").addEventListener("click", e => {
-    if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
-      e.preventDefault();
-      window.location.href = "https://forestsoil.github.io/ARRmapper/";
-    }
-  });
-
   await arrAuthCheck();
 };
 
@@ -769,7 +763,7 @@ async function arrAuthCheck() {
   if (!valid) {
     // No valid session — redirect to launcher with return URL
     const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = "https://forestsoil.github.io/ARRmapper/index.html?redirect=" + returnUrl;
+    window.location.href = "./index.html?redirect=" + returnUrl;
     return;
   }
 

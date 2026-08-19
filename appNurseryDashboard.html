@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard v12 · Asha 1</title>
+<title>Nursery Dashboard v13 · Asha 1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -18,6 +18,8 @@
 body{font-family:var(--font);background:var(--pale);color:var(--ink);min-height:100vh}
 
 /* ── HEADER ── */
+.arr-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 11px;color:#fff;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
+.arr-chip:hover{background:rgba(255,255,255,.22)}
 header{background:var(--forest);padding:16px 24px;display:flex;align-items:center;
   gap:14px;border-bottom:3px solid var(--leaf)}
 header a.back{color:var(--mist);text-decoration:none;font-size:13px;opacity:.8;
@@ -25,7 +27,8 @@ header a.back{color:var(--mist);text-decoration:none;font-size:13px;opacity:.8;
 header a.back:hover{opacity:1}
 .hdr-text h1{font-size:18px;font-weight:700;color:#fff}
 .hdr-text p{font-size:11px;color:var(--mist);margin-top:2px}
-.hdr-lang{margin-left:auto;display:flex;gap:6px}
+.hdr-text{flex:1}
+.hdr-lang{display:flex;gap:6px;margin-left:auto}
 .lang-btn{padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.3);
   background:none;color:var(--mist);font-size:11px;cursor:pointer;font-family:var(--font)}
 .lang-btn.active{background:var(--leaf);border-color:var(--leaf);color:#fff;font-weight:700}
@@ -295,7 +298,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <div id="toast"></div>
 
 <header>
-  <a href="./index.html" style="font-size:11px;padding:4px 10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;color:#fff;text-decoration:none;white-space:nowrap;flex-shrink:0">🏠 Suite</a>
   <div class="hdr-text">
     <h1>🌱 Nursery Dashboard</h1>
     <p>Sapling plan, dispatch tracking and seed tree mapping — Asha 1</p>
@@ -305,6 +307,8 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <button class="lang-btn" onclick="setLang('hi')">HI</button>
     <button class="lang-btn" onclick="setLang('bn')">BN</button>
   </div>
+  <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
+  <span id="arr-user-chip" class="arr-chip"></span>
 </header>
 
 <nav class="nav-tabs">
@@ -428,7 +432,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <div class="screen" id="screen-forms">
   <div class="form-tiles">
 
-    <div class="form-tile" style="--accent:#2d6a4f" onclick="openForm('dispatch')">
+    <div class="form-tile" style="--accent:#2d6a4f" onclick="arrAuthGet()?openForm('dispatch'):(window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href))" title="Sign in to add dispatch records">
       <div class="tile-icon">🌿</div>
       <div class="tile-name" data-i18n="tile.dispatch">Sapling Dispatch</div>
       <div class="tile-sub" data-i18n="tile.dispatch.sub">Record sapling movement from nursery to field — source, district, LPC, per-species count</div>
@@ -443,7 +447,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
       </div>
     </div>
 
-    <div class="form-tile" style="--accent:#7c3aed" onclick="openForm('seedtree')">
+    <div class="form-tile" style="--accent:#7c3aed" onclick="arrAuthGet()?openForm('seedtree'):(window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href))" title="Sign in to add seed tree records">
       <div class="tile-icon">🌳</div>
       <div class="tile-name" data-i18n="tile.seedtree">Seed Tree Record</div>
       <div class="tile-sub" data-i18n="tile.seedtree.sub">Map mother trees with GPS, species, location type, seeds collected and photo</div>
@@ -458,7 +462,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
       </div>
     </div>
 
-    <div class="form-tile" style="--accent:#0369a1" onclick="openForm('inspection')">
+    <div class="form-tile" style="--accent:#0369a1" onclick="arrAuthGet()?openForm('inspection'):(window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href))" title="Sign in to add inspection records">
       <div class="tile-icon">📋</div>
       <div class="tile-name" data-i18n="tile.inspection">Nursery Inspection</div>
       <div class="tile-sub" data-i18n="tile.inspection.sub">Record current stock count, health and polybag size per species at source nursery</div>
@@ -1809,6 +1813,7 @@ async function init() {
   applyI18N();
   updateConnectivity();
   await refreshDashboard();
+  arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
 }
 
 init();

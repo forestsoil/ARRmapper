@@ -1,26 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!--
-  ARRMapper Field Tool
-  Copyright © 2025–2026 Nirmalya Chatterjee. All rights reserved.
-
-  This software is proprietary and confidential. It is licensed for use
-  exclusively by Tomorrow's Foundation, Tomorrow's Skills and Livelihoods
-  Plc., and other organisations authorised in writing by the developer.
-
-  Unauthorised copying, redistribution, reverse-engineering, or
-  modification of this software, in whole or in part, is strictly
-  prohibited without the express written permission of the developer.
-
-  Contact: tfcarbondata@gmail.com
--->
-
 <meta charset="UTF-8"/>
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>ARR Mapper v75 · Asha 1</title>
+<title>ARR Mapper v76 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -401,16 +386,13 @@ function arrAuthRenderChip(containerId, onSignOut) {
       <span style="font-size:22px">🌳</span>
       <div style="flex:1">
         <div style="font-size:15px;font-weight:700;color:#f3f4f6">ARRMapper Field Tool</div>
-        <div style="font-size:10px;color:#6b7280">v68 DEV3 &nbsp;·&nbsp; &copy; 2025&ndash;2026 Nirmalya Chatterjee</div>
+        <div style="font-size:10px;color:#6b7280">v76 &nbsp;·&nbsp; &copy; 2025&ndash;2026 Nirmalya Chatterjee</div>
       </div>
       <button onclick="closeAbout()" style="background:none;border:none;color:#9ca3af;font-size:20px;cursor:pointer;padding:4px">&times;</button>
     </div>
     <!-- Tabs -->
     <div style="display:flex;border-bottom:1px solid #374151;flex-shrink:0">
-      <button class="abt-tab abt-tab-sel" id="abt-tab-lic"    onclick="abtTab('lic')"  >📜 Licence</button>
-      <button class="abt-tab"             id="abt-tab-log"    onclick="abtTab('log')"  >📋 Changelog</button>
-      <button class="abt-tab"             id="abt-tab-priv"   onclick="abtTab('priv')" >🔒 Privacy</button>
-      <button class="abt-tab"             id="abt-tab-terms"  onclick="abtTab('terms')">📄 Terms</button>
+      <button class="abt-tab abt-tab-sel" id="abt-tab-log" onclick="abtTab('log')">📋 Changelog</button>
     </div>
     <!-- Content -->
     <div id="abt-content" style="overflow-y:auto;padding:14px;font-size:11px;color:#d1d5db;line-height:1.7;flex:1"></div>
@@ -441,11 +423,12 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <div id="topbar" style="flex-wrap:wrap;height:auto;padding:0">
   <div style="display:flex;align-items:center;width:100%;padding:3px 4px 2px;gap:2px">
     <button class="tb-uni-btn" id="btn-sb" onclick="toggleSB()" title="Menu / Close" style="background:#880000">☰</button>
-    <a href="./index.html" class="tb-uni-btn" title="App Suite" style="display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px">🏠</a>
-    <button class="tb-uni-btn" id="tb-about-btn" onclick="openAbout()" title="About">ℹ️</button>
+    <button class="tb-uni-btn" id="tb-about-btn" onclick="openAbout()" title="Changelog">ℹ️</button>
     <button class="tb-uni-btn" id="btn-kml-ind-tb" onclick="document.getElementById('kml-input').click()" title="Load KML/KMZ" style="margin-left:6px">📂</button>
     <button class="tb-uni-btn" id="tb-basemap-badge" onclick="cycleBasemap(this)" title="Basemap">🌐</button>
     <button class="tb-uni-btn" id="tb-lang-badge" onclick="cycleLang(this)" title="Language" style="font-size:13px;font-weight:700">E</button>
+    <span style="flex:1"></span>
+    <a href="./index.html" class="tb-uni-btn" title="Back to Suite" style="display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px">🏠</a>
     <button class="tb-uni-btn" id="tb-settings-btn" onclick="openSettingsCallout(this)" style="display:none" title="Session / Settings">👤</button>
   </div>
   <div style="display:flex;align-items:center;width:100%;padding:2px 4px 3px;gap:2px">
@@ -3667,19 +3650,11 @@ async function filesDelete(fname, toolName, dirHandle, rowEl) {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-// ABOUT PANEL  —  licence, changelog, privacy, terms
+// ABOUT PANEL  —  changelog
 // ═══════════════════════════════════════════════════════════════════════
 
 const ABOUT_CONTENT = {
-  lic: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Proprietary Licence</h3>
-<p><strong>ARRMapper Field Tool</strong><br>
-Copyright &copy; 2025&ndash;2026 Nirmalya Chatterjee. All rights reserved.</p>
-<p>This software is proprietary and confidential. It is licensed for use exclusively by Tomorrow&rsquo;s Foundation, Tomorrow&rsquo;s Skills and Livelihoods Plc., and other organisations authorised in writing by the developer.</p>
-<p>Unauthorised copying, redistribution, reverse-engineering, or modification of this software, in whole or in part, is strictly prohibited without the express written permission of the developer.</p>
-<p>Field staff are licensed to use this tool solely for data collection activities within their assigned project. No rights to the source code are granted to end users.</p>
-<p style="color:#6b7280;font-size:10px;margin-top:12px">Contact: <a href="mailto:tfcarbondata@gmail.com" style="color:#60a5fa">tfcarbondata@gmail.com</a></p>`,
-
-  log: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Changelog</h3>
+  log: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Changelog — ARR Mapper</h3>
 <div style="color:#9ca3af;font-size:10px;margin-bottom:12px">Cumulative changelog &mdash; latest first</div>
 
 <div class="abt-ver">v68 DEV3 <span class="abt-date">Jul 2026</span></div>
@@ -3809,31 +3784,6 @@ Copyright &copy; 2025&ndash;2026 Nirmalya Chatterjee. All rights reserved.</p>
   <li>Leaflet map with Esri satellite basemap</li>
 </ul>`,
 
-  priv: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Privacy Policy</h3>
-<p>Full privacy policy is available at:</p>
-<p><a href="https://forestsoil.github.io/ARRmapper/privacy_policy.html" target="_blank" style="color:#60a5fa;word-break:break-all">forestsoil.github.io/ARRmapper/privacy_policy.html</a></p>
-<hr style="border-color:#374151;margin:12px 0">
-<p><strong>Summary:</strong></p>
-<ul style="padding-left:16px;margin:6px 0">
-  <li>Only your Google email address is used for folder naming in project Drive</li>
-  <li>Session data is stored locally in your browser (IndexedDB) only</li>
-  <li>Field data is uploaded to the project Google Drive account</li>
-  <li>GPS location is used only when you actively use GPS tools</li>
-  <li>No data is sold or shared with third parties</li>
-</ul>`,
-
-  terms: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Terms of Service</h3>
-<p>Full terms are available at:</p>
-<p><a href="https://forestsoil.github.io/ARRmapper/terms_of_service.html" target="_blank" style="color:#60a5fa;word-break:break-all">forestsoil.github.io/ARRmapper/terms_of_service.html</a></p>
-<hr style="border-color:#374151;margin:12px 0">
-<p><strong>Summary:</strong></p>
-<ul style="padding-left:16px;margin:6px 0">
-  <li>Authorised field staff and project personnel only</li>
-  <li>Use solely for assigned ARR project data collection</li>
-  <li>Do not share access links with unauthorised persons</li>
-  <li>You are responsible for the accuracy of data you upload</li>
-  <li>Access may be revoked at any time by project administrators</li>
-</ul>`,
 };
 
 // Inline styles for changelog (injected via style tag on first open)
@@ -3848,12 +3798,10 @@ function aboutInjectStyles() {
   document.head.appendChild(s);
 }
 
-let _abtCurrentTab = 'lic';
-
 function openAbout() {
   aboutInjectStyles();
   document.getElementById('about-overlay').style.display = 'flex';
-  abtTab(_abtCurrentTab);
+  abtTab('log');
 }
 
 function closeAbout() {
@@ -3861,11 +3809,8 @@ function closeAbout() {
 }
 
 function abtTab(tab) {
-  _abtCurrentTab = tab;
-  ['lic','log','priv','terms'].forEach(t => {
-    const btn = document.getElementById('abt-tab-' + t);
-    if (btn) btn.classList.toggle('abt-tab-sel', t === tab);
-  });
+  const btn = document.getElementById('abt-tab-log');
+  if (btn) btn.classList.add('abt-tab-sel');
   const content = document.getElementById('abt-content');
   if (content) content.innerHTML = ABOUT_CONTENT[tab] || '';
 }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plantation Dashboard v8 · Asha 1</title><title>Asha ARR Dashboard</title>
+<title>Plantation Dashboard v9 · Asha 1</title><title>Asha ARR Dashboard</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 
@@ -21,8 +21,7 @@ function toggleTheme() {
   if (saved === 'light') { _lightTheme=true; document.documentElement.classList.add('light'); 
     document.addEventListener('DOMContentLoaded', () => {
   const _auth = arrAuthGet();
-  const uel = document.getElementById('pd-user');
-  if (_auth && uel) uel.textContent = '👤 ' + (_auth.name || _auth.email);
+  if (_auth) arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
 });
 document.addEventListener('DOMContentLoaded', ()=>{ const b=document.getElementById('theme-toggle'); if(b) b.textContent='🌙'; }); }
 })();
@@ -146,6 +145,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 
 /* ── Layout ── */
 #app{display:grid;grid-template-columns:300px 1fr;grid-template-rows:1fr;height:100vh}
+.arr-chip{font-size:11px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.85);cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
+.arr-chip:hover{background:rgba(255,255,255,.2)}
 #topbar{display:none}
 #topbar h1{font-size:14px;font-weight:700;color:var(--mist);letter-spacing:.04em;white-space:nowrap}
 #topbar .sep{width:1px;height:20px;background:var(--border)}
@@ -404,8 +405,9 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <body>
 <div id="app">
 <div style="background:var(--forest,#1a3d2b);padding:6px 16px;display:flex;align-items:center;gap:8px">
-  <a href="./index.html" style="font-size:11px;padding:3px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:#fff;text-decoration:none">🏠 Suite</a>
-  <span id="pd-user" style="font-size:10px;color:rgba(255,255,255,.5)"></span>
+  <span style="font-size:12px;font-weight:700;color:rgba(255,255,255,.7);flex:1">🌡️ Plantation Dashboard · Asha 1</span>
+  <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
+  <span id="arr-user-chip" class="arr-chip"></span>
 </div>
 
 
@@ -916,6 +918,10 @@ function switchTab(t) {
 // ── Single LPC panel ──────────────────────────────────────────────────
 function openLPCPanel(p) {
   if (typeof p === 'string') p = JSON.parse(p);
+  // PII guard — strip sensitive fields never shown in public dashboard
+  const PII_FIELDS = ['PHONE','MOBILE','CONTACT','CELL','AADHAAR','AADHAR','AADHARNO','UID','UID_NO'];
+  PII_FIELDS.forEach(f => { delete p[f]; });
+  if (p.dbcs) p.dbcs.forEach(d => PII_FIELDS.forEach(f => { delete d[f]; }));
   const panel = document.getElementById('lpc-panel');
   // Zoom to feature if it has geometry
   const feat = filteredFeatures.find(f => f.properties.LPC===p.LPC && f.properties.YEAR===p.YEAR);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v14 · Asha 1</title>
+<title>Monitoring Dashboard v15 · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -21,6 +21,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 
 /* ── Header ───────────────────────────────────────────────────── */
 header{background:var(--forest);padding:16px 24px;display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--leaf)}
+.arr-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 11px;color:#fff;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
+.arr-chip:hover{background:rgba(255,255,255,.22)}
 .hdr-badge{background:var(--leaf);color:#fff;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:20px}
 .hdr-title{color:#fff;font-size:18px;font-weight:700;letter-spacing:-.01em}
 .hdr-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:1px}
@@ -219,15 +221,15 @@ function arrAuthRenderChip(containerId, onSignOut) {
   </div>
 
   <div class="hdr-right">
-    <span id="md-user" style="font-size:10px;color:rgba(255,255,255,.5);margin-right:4px"></span>
     <span id="data-badge" style="font-size:10px;color:rgba(255,255,255,.6);background:rgba(255,255,255,.1);padding:4px 10px;border-radius:20px">Loading…</span>
     <span id="setup-hint" style="font-size:10px;color:#fcd34d;background:rgba(252,211,77,.1);padding:4px 10px;border-radius:20px;border:1px solid rgba(252,211,77,.3);display:none">⚠️ Set AS_URL to load live data</span>
     <span id="live-badge" style="display:none;font-size:10px;color:#6ee7b7;background:rgba(110,231,183,.15);padding:4px 10px;border-radius:20px;border:1px solid rgba(110,231,183,.3)">Live</span>
     <span id="loader" style="display:none;font-size:10px;color:rgba(255,255,255,.5)">⟳</span>
-    <a href="./index.html" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">🏠 Suite</a>
     <a href="./appSurveyManager.html#mortality" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">📋 Health-Monitoring Form</a>
     <a href="./appSurveyManager.html#leakage" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">🐄 Leakage Form</a>
-    <button onclick="toggleMRVPanel()" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap" id="mrv-toggle-btn">📍 MRV Field Visit</button>
+    <button onclick="arrAuthGet()?toggleMRVPanel():(window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href))" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap" id="mrv-toggle-btn" title="Sign in to use MRV Field Visit">📍 MRV Field Visit</button>
+    <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
+    <span id="arr-user-chip" class="arr-chip"></span>
   </div>
 </header>
 
@@ -1022,9 +1024,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hint = document.getElementById('setup-hint');
     if (hint) hint.style.display = 'inline';
   }
-  const _auth = arrAuthGet();
-  const userEl = document.getElementById('md-user');
-  if (_auth && userEl) userEl.textContent = '👤 ' + (_auth.name || _auth.email);
+  arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
   loadData();
 });
 

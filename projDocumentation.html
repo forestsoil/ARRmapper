@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Documentation v5 · Asha 1</title>
+<title>Documentation v6 · Asha 1</title>
 <style>
 .proj-tabs{display:none}
 .proj-tab:not(:first-child){display:none}
@@ -16,6 +16,8 @@
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--pale);color:var(--ink);min-height:100vh}
 
 /* HEADER */
+.arr-chip{font-size:11px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.85);cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
+.arr-chip:hover{background:rgba(255,255,255,.2)}
 header{background:var(--forest);padding:22px 32px 20px;display:flex;align-items:center;
   gap:16px;border-bottom:3px solid var(--leaf)}
 header a.back{color:var(--mist);text-decoration:none;font-size:13px;opacity:.8;
@@ -185,7 +187,8 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <h1>Project Documentation</h1>
     <p>FAQs, verification reports, SOPs and baseline documents by project</p>
   </div>
-  <a href="./index.html" style="font-size:11px;padding:4px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:#fff;text-decoration:none;margin-left:auto">🏠 Suite</a>
+  <a href="./index.html" class="arr-chip" style="margin-left:auto">🏠 Suite</a>
+  <span id="arr-user-chip" class="arr-chip"></span>
 </header>
 
 <nav class="proj-tabs">
@@ -285,7 +288,14 @@ function arrAuthRenderChip(containerId, onSignOut) {
           </div>
           <div class="restricted-badge">🔒 Restricted</div>
         </div>
-        <div class="card-body">
+        <div class="card-body" id="docs-body">
+          <div id="docs-auth-gate" style="padding:20px;text-align:center;display:none">
+            <div style="font-size:28px;margin-bottom:8px">🔒</div>
+            <div style="font-size:13px;font-weight:600;color:var(--forest);margin-bottom:6px">Sign in to access project documents</div>
+            <div style="font-size:11px;color:var(--mid);margin-bottom:14px">These files are restricted to authorised project partners</div>
+            <a href="./index.html?redirect=projDocumentation.html" style="display:inline-block;padding:8px 20px;background:var(--forest);color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">Sign in via Suite →</a>
+          </div>
+          <div id="docs-content">
 
           <div class="card-section-label">Verification &amp; Audit</div>
           <div class="doc-list">
@@ -355,6 +365,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
             </a>
           </div>
 
+          </div><!-- /docs-content -->
         </div>
       </div>
 
@@ -604,10 +615,8 @@ function arrAuthRenderChip(containerId, onSignOut) {
 </main>
 
 <footer>
-  ARR Project Suite &nbsp;·&nbsp; Developed by Nirmalya Chatterjee<br>
-  For use by authorised project partners, funders &amp; clients only &nbsp;·&nbsp;
-  <a href="privacy_policy.html">Privacy</a> &nbsp;·&nbsp;
-  <a href="terms_of_service.html">Terms</a>
+  ARR Project Suite &nbsp;·&nbsp; Developed by Nirmalya Chatterjee &nbsp;·&nbsp;
+  For use by authorised project partners, funders &amp; clients only
 </footer>
 
 <script>
@@ -625,6 +634,18 @@ function toggleFaq(el) {
   item.closest('.card-body').querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
   if (!wasOpen) item.classList.add('open');
 }
+
+// Auth gate for restricted documents section
+document.addEventListener('DOMContentLoaded', () => {
+  arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
+  const auth = arrAuthGet();
+  const gate = document.getElementById('docs-auth-gate');
+  const content = document.getElementById('docs-content');
+  if (!auth) {
+    if (gate)    gate.style.display = 'block';
+    if (content) content.style.display = 'none';
+  }
+});
 </script>
 
 </body>

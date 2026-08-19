@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <meta name="theme-color" content="#1a3d2b">
-<title>ARR Project Suite v21</title>
+<title>ARR Project Suite v22</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -69,6 +69,24 @@ footer a:hover{color:var(--canopy)}
   .app-card{width:100%}
 }
 
+/* ── Feature list modal ── */
+#feat-overlay{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:16px}
+#feat-overlay.open{display:flex}
+#feat-box{background:var(--card);border:1.5px solid var(--rule);border-radius:14px;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+#feat-box-hdr{padding:14px 16px 10px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:10px}
+#feat-box-hdr h2{font-size:15px;font-weight:700;color:var(--ink);flex:1;margin:0}
+#feat-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--mid);padding:2px 6px}
+#feat-tabs{display:flex;gap:0;border-bottom:1px solid var(--rule);flex-shrink:0;overflow-x:auto}
+.feat-tab{flex:0 0 auto;background:none;border:none;border-bottom:2px solid transparent;color:var(--mid);font-size:10px;padding:8px 10px;cursor:pointer;white-space:nowrap;font-family:inherit}
+.feat-tab.sel{color:var(--canopy);border-bottom-color:var(--canopy);font-weight:700}
+#feat-content{overflow-y:auto;padding:14px 16px;font-size:12px;color:var(--ink);line-height:1.7;flex:1}
+#feat-content h3{font-size:12px;font-weight:700;color:var(--canopy);margin:0 0 8px}
+#feat-content ul{padding-left:16px;margin:0 0 8px}
+#feat-content li{margin-bottom:3px}
+#feat-content .f-sub{font-size:10px;color:var(--mid);margin-bottom:10px}
+/* ── Legal links bar ── */
+.legal-bar{text-align:center;font-size:10px;color:var(--mid);padding:8px;border-top:1px solid var(--rule);display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.legal-bar a{color:var(--mid);text-decoration:none}.legal-bar a:hover{color:var(--canopy)}
 .auth-bar{background:rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;
   padding:8px 24px;font-size:12px;color:var(--mist);justify-content:center;flex-wrap:wrap}
 .theme-toggle{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
@@ -88,11 +106,12 @@ footer a:hover{color:var(--canopy)}
 <body>
 
 <header>
-  <img src="logo.png" alt="ARR Suite logo" onerror="this.style.display='none'"/>
+  <div style="width:80px;height:80px;flex-shrink:0"></div>
   <div class="hdr-text">
     <h1>ARR Project Suite</h1>
     <p>Field tools, monitoring and management<br>for ARR carbon projects</p>
   </div>
+  <button onclick="openFeatList()" title="Feature list" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--mist);cursor:pointer;flex-shrink:0">ℹ️ Features</button>
 </header>
 
 <div class="auth-bar" id="auth-bar">
@@ -378,13 +397,151 @@ function launcherSignOut() {
 }
 
 document.addEventListener('DOMContentLoaded', launcherInit);
+
+// ── Feature List ──────────────────────────────────────────────────
+const FEAT_APPLETS = [
+  { key:'mapper',  label:'🗺️ ARR Mapper',          access:'Full block — sign-in required',
+    features:[
+      'Vector Tool: GPS & manual capture of POIs, paths, and polygons',
+      'Polygon stage tagging: 7-step lifecycle (eligibility → negotiated → surveyed → cleared → final → revised)',
+      'Revision reason field (flood/fire/erosion/dropout/encroachment/other)',
+      'Plantation Mapper: species-based sapling grid placement with 20-species Asha list',
+      'Soil Mapper: hand-drawn soil type polygons (5 texture classes + Lowland/Organic)',
+      'MRV Tool: stratified random sampling, A+→D grading, height/DBH, quarterly photos',
+      'GPS walk polygons with modal stage picker before export',
+      'OPFS file queue with Drive sync; offline-first with IDB session persistence',
+      'KML/KMZ load, KML + SHP + JPG export with legend and north arrow',
+      'Files tab: on-device OPFS browser, GeoJSON → KML conversion',
+      'Legacy Plot Sync: pulls 2024–2026 fencing polygons from Drive _legacy/',
+      'Trilingual UI: English / Hindi / Bengali',
+    ]
+  },
+  { key:'survey',  label:'📋 Survey Manager',        access:'Full block — sign-in required',
+    features:[
+      'Seven form types: Beneficiary Baseline, Plantation Details, Fencing, Event Record, Biomass (Tree & Pole), Nursery Mapping, Grievance',
+      'Offline-first with OPFS file queue and row-first offline submission queue',
+      'Photo capture: 3MP/80% JPEG compression, EXIF preserved',
+      'Login-based surveyor_name auto-fill across all forms',
+      '👁 View / ⬇ Get functionality for submitted records',
+      'Patch-back mechanism for offline edits',
+      'Trilingual UI: English / Hindi / Bengali',
+    ]
+  },
+  { key:'hotspot', label:'🔥 Land Hotspotter',        access:'Full block — sign-in required',
+    features:[
+      'COG-based land suitability viewer (Cloud-Optimised GeoTIFF)',
+      '3-band RGB composite: R=drought stress, G=soil suitability, B=flood frequency',
+      'District/block cascade dropdowns with SOI village boundary overlays',
+      'Pre-processed COG .tif files served from arrm-cog static repo',
+      'No runtime GEE API calls — fully static frontend',
+    ]
+  },
+  { key:'dashboard',label:'🌡️ Plantation Dashboard',  access:'Fully open — no sign-in required',
+    features:[
+      'Live plantation map with year-on-year area tracking (2024–2026)',
+      'LPC-level drill-down: location, area, date planted, species breakdown, diversity indices',
+      'Beneficiary records: name, DBC, gender, occupation, social category',
+      'Links to plantation maps, soil maps, KML polygons, land documents and agreements',
+      'Live search by LPC, beneficiary name, or DBC with dropdown autocomplete',
+      'Species breakdown bar charts + Shannon/Simpson/Pielou diversity indices per plot',
+      'PII guard: contact numbers and Aadhaar not exposed in public view',
+    ]
+  },
+  { key:'monitoring',label:'🌿 Monitoring Dashboard', access:'Partial — view open; MRV form requires sign-in',
+    features:[
+      'Plantation survival and species health charts',
+      'Plot condition and leakage tracking (2024–2025 legacy + ongoing MRV)',
+      'MRV Field Visit Tool: stratified sampling, grading, height/DBH entry',
+      'Leakage form and Health-Monitoring form quick-links to Survey Manager',
+      'IDB caching for offline dashboard view',
+    ]
+  },
+  { key:'ccb',      label:'🦋 CCB & SDG Dashboard',   access:'Partial — view open; Upload Records requires sign-in',
+    features:[
+      'Biodiversity sightings map with EXIF GPS extraction (via exifr)',
+      'Cloud Vision API species identification from uploaded photos',
+      'Natural recruitment, wildlife events, and species sighting detail panels',
+      'BibTeX bibliography with Google Drive sync',
+      'Know Your Invasives modal (12 species)',
+      'SDG co-benefit indicators: 17-goal chip grid with project relevance notes',
+      'Labour equity metrics and FPIC & events records',
+      'Plantation diversity analysis panel',
+      'Photo inline rendering via lh3.googleusercontent.com/d/FILE_ID',
+    ]
+  },
+  { key:'inventory', label:'📦 Inventory & Resources', access:'Full block — sign-in required',
+    features:[
+      'Stock tracking: receive and dispatch materials per district and plot',
+      'Transaction types: stock-in, issue-out, return, audit',
+      'Materials: bamboo poles, netting, wire, fertilisers, tools and nursery inputs',
+      'Rate calculator for costing and budget reconciliation',
+      'Offline queue with outbox badge; network-aware sync',
+    ]
+  },
+  { key:'nursery',  label:'🌱 Nursery Dashboard',      access:'Partial — view open; data entry requires sign-in',
+    features:[
+      'Sapling dispatch tracking across 4 districts (APDE, APDW, JPG, CBH)',
+      'Nursery sources: TF Own (SALS/GRAS), MSAL, MEHB, MJAL, CHAL',
+      'Seed tree provenance mapping',
+      'Plan vs actual sapling count tracking',
+      'Nursery inspection records',
+      'Deterministic SHA-256 UUIDs for legacy dispatch rows',
+      'Offline queue with patch-back',
+    ]
+  },
+  { key:'docs',     label:'📚 Documentation & Reports',access:'FAQs open — project documents require sign-in',
+    features:[
+      'Project FAQs: open to all (no sign-in)',
+      'Verification reports, SOPs, project agreements (sign-in required)',
+      'Land document store and baseline documents (sign-in required)',
+      'Multi-project tabs: Asha 1, Asha 2, Arun, Banani',
+      'Links open Google Drive files directly in browser',
+    ]
+  },
+];
+
+function openFeatList() {
+  const overlay = document.getElementById('feat-overlay');
+  overlay.classList.add('open');
+  const tabs = document.getElementById('feat-tabs');
+  tabs.innerHTML = FEAT_APPLETS.map((a,i) =>
+    `<button class="feat-tab${i===0?' sel':''}" onclick="featTab(${i})">${a.label}</button>`
+  ).join('');
+  featTab(0);
+}
+function closeFeatList() {
+  document.getElementById('feat-overlay').classList.remove('open');
+}
+function featTab(i) {
+  document.querySelectorAll('.feat-tab').forEach((b,j) => b.classList.toggle('sel', j===i));
+  const a = FEAT_APPLETS[i];
+  document.getElementById('feat-content').innerHTML =
+    `<div class="f-sub">Access: ${a.access}</div>` +
+    `<h3>Features</h3><ul>${a.features.map(f=>`<li>${f}</li>`).join('')}</ul>`;
+}
 </script>
 
+<!-- Feature List Modal -->
+<div id="feat-overlay" onclick="if(event.target===this)closeFeatList()">
+  <div id="feat-box">
+    <div id="feat-box-hdr">
+      <span style="font-size:20px">📋</span>
+      <h2>ARR Suite — Feature List</h2>
+      <button id="feat-close" onclick="closeFeatList()">&times;</button>
+    </div>
+    <div id="feat-tabs"></div>
+    <div id="feat-content"></div>
+    <div class="legal-bar">
+      <a href="privacy_policy.html" target="_blank">Privacy Policy</a>
+      <a href="terms_of_service.html" target="_blank">Terms of Service</a>
+      <span>© 2025–2026 Nirmalya Chatterjee</span>
+    </div>
+  </div>
+</div>
+
 <footer>
-  ARR Project Suite &nbsp;·&nbsp; Developed by Nirmalya Chatterjee<br>
-  For use by authorised project partners, funders &amp; clients only &nbsp;·&nbsp;
-  <a href="privacy_policy.html">Privacy</a> &nbsp;·&nbsp;
-  <a href="terms_of_service.html">Terms</a>
+  ARR Project Suite &nbsp;·&nbsp; Developed by Nirmalya Chatterjee &nbsp;·&nbsp;
+  For use by authorised project partners, funders &amp; clients only
 </footer>
 
 </body>
