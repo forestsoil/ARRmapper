@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v18 · Asha 1</title>
+<title>Monitoring Dashboard v19 · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -513,7 +513,10 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ── Config ────────────────────────────────────────────────────────
-const AS_URL     = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec'; // ← paste /exec URL after deploy
+// Primary deployment (AS v2 — MRVVisits support)
+const AS_URL          = 'https://script.google.com/macros/s/AKfycbw4IadhskvZka5TlsmJOlavnMy7cybgZhI23--nBlzV5NuQAhPyi3l-YZXF-QFS14TH/exec';
+// Fallback: AS v1 deployment (monitoring records only, confirmed working in v13)
+const AS_URL_FALLBACK = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec';
 const IDB_NAME   = 'monitoring_dash';
 const IDB_STORE  = 'cache';
 const CACHE_KEY  = 'monitoring_data';
@@ -555,6 +558,7 @@ async function cacheSet(key, value) {
 // ── Data loading ──────────────────────────────────────────────────
 async function loadData() {
   const badge = document.getElementById('data-badge');
+  const hasUrl = !!(AS_URL || AS_URL_FALLBACK);
   if (badge) badge.textContent = 'Loading…';
 
   // 1. Try IDB cache first — serve immediately (offline-capable)
@@ -563,13 +567,12 @@ async function loadData() {
     ALL_DATA = cached.data;
     setStatus('cached', cached.ts);
     boot();
-    // Silent background refresh
-    if (navigator.onLine && AS_URL) fetchFromAS(true);
+    if (navigator.onLine && hasUrl) fetchFromAS(true);
     return;
   }
 
   // 2. Stale cache — serve immediately, refresh in background
-  if (cached && navigator.onLine && AS_URL) {
+  if (cached && navigator.onLine && hasUrl) {
     ALL_DATA = cached.data;
     setStatus('stale', cached.ts);
     boot();
@@ -578,7 +581,7 @@ async function loadData() {
   }
 
   // 3. No cache — fetch with visible progress
-  if (AS_URL && navigator.onLine) {
+  if (hasUrl && navigator.onLine) {
     if (badge) badge.textContent = 'Fetching data…';
     await fetchFromAS(false);
   } else if (cached) {
@@ -586,50 +589,87 @@ async function loadData() {
     setStatus('stale', cached.ts);
     boot();
   } else {
-    // No AS_URL set and no cache — show setup note
-    const badge = document.getElementById('data-badge');
-    if (badge) badge.textContent = AS_URL
+    if (badge) badge.textContent = hasUrl
       ? 'No cached data — connect to network to load'
       : 'Set AS_URL in source to enable live data';
-    // Still try to boot with empty data so UI is visible
     boot();
   }
 }
 
 async function fetchFromAS(background) {
-  try {
-    const url = AS_URL + '?action=getMonitoring&callback=_cb_monitoring';
-    await new Promise((res, rej) => {
-      const script = document.createElement('script');
-      window._cb_monitoring = data => {
-        delete window._cb_monitoring;
-        try { document.head.removeChild(script); } catch(_) {}
-        if (data.ok && data.records) {
-          ALL_DATA = data.records.map(normalise);
-          cacheSet(CACHE_KEY, {ts: Date.now(), data: ALL_DATA});
-          if (!background) { setStatus('live'); boot(); }
-          else { setStatus('live'); refresh(); }
-          res();
-        } else { rej(new Error(data.error || 'No records')); }
-      };
-      script.onerror = () => {
-        delete window._cb_monitoring;
-        try { document.head.removeChild(script); } catch(_) {}
-        rej(new Error('Network error'));
-      };
-      script.src = url;
-      document.head.appendChild(script);
-      setTimeout(() => {
-        if (window._cb_monitoring) {
-          delete window._cb_monitoring;
+  // Strategy: try direct fetch() first (GAS sets CORS * for Anyone-access deployments),
+  // then JSONP fallback (handles edge cases where CORS header is delayed),
+  // then fall back to the v1 URL if primary URL is unresponsive.
+  const tried = [];
+
+  async function tryFetch(url) {
+    tried.push(url);
+    // ── Method 1: direct fetch() ─────────────────────────────────
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 18000);
+      const res  = await fetch(url + '?action=getMonitoring', { signal: controller.signal });
+      clearTimeout(tid);
+      const data = await res.json();
+      if (data.ok && data.records) return data;
+    } catch(e) {
+      console.warn('[MD] fetch() failed on', url, '—', e.message, '— trying JSONP');
+    }
+
+    // ── Method 2: JSONP fallback ──────────────────────────────────
+    try {
+      const data = await new Promise((res, rej) => {
+        const cbName = '_cb_mon_' + Date.now();
+        const script = document.createElement('script');
+        window[cbName] = d => {
+          delete window[cbName];
           try { document.head.removeChild(script); } catch(_) {}
-          rej(new Error('Timeout'));
-        }
-      }, 20000);
-    });
+          res(d);
+        };
+        script.onerror = () => {
+          delete window[cbName];
+          try { document.head.removeChild(script); } catch(_) {}
+          rej(new Error('JSONP script error'));
+        };
+        script.src = url + '?action=getMonitoring&callback=' + cbName;
+        document.head.appendChild(script);
+        setTimeout(() => {
+          if (window[cbName]) {
+            delete window[cbName];
+            try { document.head.removeChild(script); } catch(_) {}
+            rej(new Error('JSONP timeout'));
+          }
+        }, 20000);
+      });
+      if (data.ok && data.records) return data;
+    } catch(e) {
+      console.warn('[MD] JSONP failed on', url, '—', e.message);
+    }
+
+    return null;
+  }
+
+  try {
+    // Try primary URL
+    let data = await tryFetch(AS_URL);
+
+    // Try fallback URL if primary failed
+    if (!data && AS_URL_FALLBACK && AS_URL_FALLBACK !== AS_URL) {
+      console.warn('[MD] Primary URL failed, trying fallback deploy');
+      data = await tryFetch(AS_URL_FALLBACK);
+    }
+
+    if (data && data.ok && data.records) {
+      ALL_DATA = data.records.map(normalise);
+      cacheSet(CACHE_KEY, {ts: Date.now(), data: ALL_DATA});
+      if (!background) { setStatus('live'); boot(); }
+      else             { setStatus('live'); refresh(); }
+    } else {
+      throw new Error('No valid data from any endpoint');
+    }
   } catch(e) {
     if (!background) setStatus('error', null, e.message);
-    console.warn('AS fetch failed:', e.message);
+    console.warn('[MD] All fetch attempts failed:', e.message);
   }
 }
 
@@ -1059,7 +1099,7 @@ function boot() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (!AS_URL) {
+  if (!AS_URL && !AS_URL_FALLBACK) {
     const hint = document.getElementById('setup-hint');
     if (hint) hint.style.display = 'inline';
   }
@@ -1125,7 +1165,6 @@ function guardedToggleMRV() {
   }
   toggleMRVPanel();
 }
-
 function toggleMRVPanel() {
   const card = document.getElementById('mrv-panel-card');
   const btn  = document.getElementById('mrv-toggle-btn');
@@ -1207,15 +1246,13 @@ async function uploadFile(filename, blob, toolFolder) {
 
 // ── POST MRV summary row to Asha1_MonitoringRegister ─────────────
 async function mrvPostToMonitoringSheet(visitData) {
-  if (!AS_URL) return;
+  const url = AS_URL || AS_URL_FALLBACK;
+  if (!url) return;
   try {
-    await fetch(AS_URL, {
+    await fetch(url, {
       method: 'POST', mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: 'submitMRVVisit',
-        payload: visitData,
-      }),
+      body: JSON.stringify({ action: 'submitMRVVisit', payload: visitData }),
     });
   } catch(e) { console.warn('Monitoring AS post failed:', e.message); }
 }
