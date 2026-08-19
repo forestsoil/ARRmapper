@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>appInventory – Project Asha</title>
+<style>
+  :root {
+    --bg: #f5f7f2;
+    --surface: #ffffff;
+    --surface2: #eef1ea;
+    --border: #c8d4be;
+    --text: #1a2416;
+    --text2: #4a5e40;
+    --accent: #2d6a2f;
+    --accent2: #4caf50;
+    --warn: #c0392b;
+    --warn-bg: #fdecea;
+    --badge-receive: #1b5e20;
+    --badge-dispatch: #e65100;
+    --badge-bg-r: #e8f5e9;
+    --badge-bg-d: #fff3e0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --radius: 8px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+    --mono: 'Cascadia Code', 'Fira Mono', monospace;
+  }
+  [data-theme="dark"] {
+    --bg: #0e1610;
+    --surface: #192b1b;
+    --surface2: #1e3320;
+    --border: #2e4a30;
+    --text: #d4e8c8;
+    --text2: #8aaf82;
+    --accent: #66bb6a;
+    --accent2: #81c784;
+    --warn: #ef9a9a;
+    --warn-bg: #2c1010;
+    --badge-receive: #a5d6a7;
+    --badge-dispatch: #ffcc80;
+    --badge-bg-r: #1b3320;
+    --badge-bg-d: #2e1e08;
+    --shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+
+  /* ── Header ── */
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
+  header h1 span { font-weight: 300; opacity: 0.8; font-size: 13px; margin-left: 6px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  #userLabel { font-size: 12px; opacity: 0.9; }
+  #themeBtn {
+    background: rgba(255,255,255,0.15); border: none; color: #fff;
+    padding: 4px 10px; border-radius: 20px; cursor: pointer; font-size: 13px;
+  }
+  #themeBtn:hover { background: rgba(255,255,255,0.25); }
+
+  /* ── Login overlay ── */
+  #loginOverlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center; z-index: 999;
+  }
+  .login-box {
+    background: var(--surface); border-radius: 12px; padding: 28px 32px;
+    width: 320px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .login-box h2 { font-size: 18px; color: var(--accent); margin-bottom: 4px; }
+  .login-box p { font-size: 12px; color: var(--text2); margin-bottom: 20px; }
+  .login-box select, .login-box input {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--surface2); color: var(--text);
+    font-size: 14px; margin-bottom: 12px;
+  }
+  .login-box button {
+    width: 100%; background: var(--accent); color: #fff;
+    border: none; padding: 10px; border-radius: 6px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .login-box button:hover { background: var(--accent2); }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex; gap: 2px; background: var(--surface2);
+    border-bottom: 2px solid var(--border); padding: 0 12px; overflow-x: auto;
+  }
+  .tab {
+    padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 500;
+    color: var(--text2); border-bottom: 3px solid transparent; white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── Content panels ── */
+  .panel { display: none; padding: 16px; max-width: 860px; margin: 0 auto; }
+  .panel.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 {
+    font-size: 14px; font-weight: 700; color: var(--accent);
+    margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: 0.6px;
+  }
+
+  /* ── Form elements ── */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-row.full { grid-template-columns: 1fr; }
+  .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  label { display: block; font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+  select, input[type="text"], input[type="number"], textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--surface2); color: var(--text);
+    font-size: 13px; font-family: var(--font);
+    transition: border-color 0.15s;
+  }
+  select:focus, input:focus, textarea:focus {
+    outline: none; border-color: var(--accent);
+  }
+  textarea { resize: vertical; min-height: 60px; }
+
+  .ts-display {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 10px; font-family: var(--mono);
+    font-size: 12px; color: var(--text2); letter-spacing: 0.3px;
+  }
+
+  .season-tag {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 10px; margin-left: 6px;
+    background: var(--badge-bg-r); color: var(--badge-receive);
+    vertical-align: middle; letter-spacing: 0.4px;
+  }
+  .season-tag.s24 { background: var(--badge-bg-d); color: var(--badge-dispatch); }
+  .season-tag.solar { background: #e3f2fd; color: #1565c0; }
+  [data-theme="dark"] .season-tag.solar { background: #0d2a3f; color: #90caf9; }
+
+  /* ── optgroup styling ── */
+  optgroup { font-weight: 700; }
+
+  /* ── Submit button ── */
+  .btn-submit {
+    background: var(--accent); color: #fff; border: none;
+    padding: 10px 28px; border-radius: 6px; font-size: 14px;
+    font-weight: 600; cursor: pointer; margin-top: 4px;
+    transition: background 0.15s;
+  }
+  .btn-submit:hover { background: var(--accent2); }
+  .btn-submit.dispatch { background: #e65100; }
+  .btn-submit.dispatch:hover { background: #bf360c; }
+
+  /* ── Status message ── */
+  .msg {
+    margin-top: 12px; padding: 10px 14px; border-radius: 6px;
+    font-size: 13px; display: none;
+  }
+  .msg.ok { background: var(--badge-bg-r); color: var(--badge-receive); display: block; }
+  .msg.err { background: var(--warn-bg); color: var(--warn); display: block; }
+
+  /* ── Records table ── */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    background: var(--surface2); color: var(--text2);
+    padding: 8px 10px; text-align: left; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.4px; font-weight: 700;
+    border-bottom: 2px solid var(--border);
+  }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+  tr:hover td { background: var(--surface2); }
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px; letter-spacing: 0.3px;
+  }
+  .badge.R { background: var(--badge-bg-r); color: var(--badge-receive); }
+  .badge.D { background: var(--badge-bg-d); color: var(--badge-dispatch); }
+
+  .empty-state { text-align: center; padding: 40px; color: var(--text2); font-size: 13px; }
+
+  /* ── District filter row ── */
+  .filter-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+  .filter-row select { width: auto; min-width: 140px; }
+  .filter-row label { margin: 0; align-self: center; white-space: nowrap; }
+
+  /* ── Qty display ── */
+  .qty-mono { font-family: var(--mono); font-size: 12px; }
+
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+    .form-row.three { grid-template-columns: 1fr 1fr; }
+    .panel { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <h2>appInventory</h2>
+    <p>Project Asha · Material Register</p>
+    <label>Project</label>
+    <select id="loginProject">
+      <option value="Asha1">Project Asha 1</option>
+      <option value="Asha2">Project Asha 2</option>
+      <option value="Arun">Project Arun</option>
+      <option value="Banani">Project Banani</option>
+    </select>
+    <label>Your Name</label>
+    <input type="text" id="loginName" placeholder="Enter your name" />
+    <button onclick="doLogin()">Enter</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <h1>appInventory <span id="projectLabel"></span></h1>
+  <div class="header-right">
+    <span id="userLabel"></span>
+    <button id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('receive')">📥 Receive Stock</div>
+  <div class="tab" onclick="showTab('dispatch')">📤 Issue / Dispatch</div>
+  <div class="tab" onclick="showTab('records')">📋 Records</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     TAB: RECEIVE
+══════════════════════════════════════════════════ -->
+<div id="panel-receive" class="panel active">
+  <div class="card">
+    <h3>📥 Receive Stock</h3>
+
+    <div class="form-row">
+      <div>
+        <label>Timestamp</label>
+        <div class="ts-display" id="tsReceive">—</div>
+      </div>
+      <div>
+        <label>Recorded By</label>
+        <div class="ts-display" id="byReceive">—</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>District</label>
+        <select id="r_district">
+          <option value="">— Select —</option>
+          <option value="APDE">Alipurduar East (APDE)</option>
+          <option value="APDW">Alipurduar West (APDW)</option>
+          <option value="JPG">Jalpaiguri (JPG)</option>
+          <option value="CBH">Coochbehar (CBH)</option>
+        </select>
+      </div>
+      <div>
+        <label>Block / Site</label>
+        <input type="text" id="r_block" placeholder="Block or site name" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Category</label>
+        <select id="r_category" onchange="populateItems('r')">
+          <option value="">— Select Category —</option>
+          <option value="fencing_all">Fencing (2024–present)</option>
+          <option value="fencing_2025">Fencing (2025 only)</option>
+          <option value="fencing_2024">Fencing (2024 only)</option>
+          <option value="fencing_solar">Jhatka-Solar Fence</option>
+          <option value="planting">Planting &amp; Nursery</option>
+          <option value="nursery">Nursery</option>
+        </select>
+      </div>
+      <div>
+        <label>Item</label>
+        <select id="r_item">
+          <option value="">— Select Item —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row three">
+      <div>
+        <label>Quantity</label>
+        <input type="number" id="r_qty" min="0" step="any" placeholder="0" />
+      </div>
+      <div>
+        <label>Unit</label>
+        <select id="r_unit">
+          <option value="nos">nos</option>
+          <option value="m">m (metre)</option>
+          <option value="kg">kg</option>
+          <option value="bag">bag</option>
+          <option value="bundle">bundle</option>
+          <option value="roll">roll</option>
+          <option value="piece">piece</option>
+          <option value="set">set</option>
+        </select>
+      </div>
+      <div>
+        <label>Supplier / Source</label>
+        <input type="text" id="r_supplier" placeholder="Supplier name" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Voucher / Challan No.</label>
+        <input type="text" id="r_voucher" placeholder="Optional" />
+      </div>
+      <div>
+        <label>Received At (Location)</label>
+        <input type="text" id="r_location" placeholder="Store / godown / field location" />
+      </div>
+    </div>
+
+    <div class="form-row full">
+      <div>
+        <label>Remarks</label>
+        <textarea id="r_remarks" placeholder="Condition, notes..."></textarea>
+      </div>
+    </div>
+
+    <button class="btn-submit" onclick="submitForm('receive')">Submit Receiving Entry</button>
+    <div class="msg" id="msg-receive"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     TAB: DISPATCH
+══════════════════════════════════════════════════ -->
+<div id="panel-dispatch" class="panel">
+  <div class="card">
+    <h3>📤 Issue / Dispatch</h3>
+
+    <div class="form-row">
+      <div>
+        <label>Timestamp</label>
+        <div class="ts-display" id="tsDispatch">—</div>
+      </div>
+      <div>
+        <label>Issued By</label>
+        <div class="ts-display" id="byDispatch">—</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>District</label>
+        <select id="d_district">
+          <option value="">— Select —</option>
+          <option value="APDE">Alipurduar East (APDE)</option>
+          <option value="APDW">Alipurduar West (APDW)</option>
+          <option value="JPG">Jalpaiguri (JPG)</option>
+          <option value="CBH">Coochbehar (CBH)</option>
+        </select>
+      </div>
+      <div>
+        <label>Block / Site</label>
+        <input type="text" id="d_block" placeholder="Block or site name" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Category</label>
+        <select id="d_category" onchange="populateItems('d')">
+          <option value="">— Select Category —</option>
+          <option value="fencing_all">Fencing (2024–present)</option>
+          <option value="fencing_2025">Fencing (2025 only)</option>
+          <option value="fencing_2024">Fencing (2024 only)</option>
+          <option value="fencing_solar">Jhatka-Solar Fence</option>
+          <option value="planting">Planting &amp; Nursery</option>
+          <option value="nursery">Nursery</option>
+        </select>
+      </div>
+      <div>
+        <label>Item</label>
+        <select id="d_item">
+          <option value="">— Select Item —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row three">
+      <div>
+        <label>Quantity</label>
+        <input type="number" id="d_qty" min="0" step="any" placeholder="0" />
+      </div>
+      <div>
+        <label>Unit</label>
+        <select id="d_unit">
+          <option value="nos">nos</option>
+          <option value="m">m (metre)</option>
+          <option value="kg">kg</option>
+          <option value="bag">bag</option>
+          <option value="bundle">bundle</option>
+          <option value="roll">roll</option>
+          <option value="piece">piece</option>
+          <option value="set">set</option>
+        </select>
+      </div>
+      <div>
+        <label>Issued To (Person)</label>
+        <input type="text" id="d_issuedTo" placeholder="Field staff / supervisor" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Work Area / Compartment</label>
+        <input type="text" id="d_workarea" placeholder="Parcel / compartment ref." />
+      </div>
+      <div>
+        <label>Purpose</label>
+        <select id="d_purpose">
+          <option value="Fencing">Fencing</option>
+          <option value="Planting">Planting</option>
+          <option value="Maintenance">Maintenance</option>
+          <option value="Nursery">Nursery</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row full">
+      <div>
+        <label>Remarks</label>
+        <textarea id="d_remarks" placeholder="Notes, reference..."></textarea>
+      </div>
+    </div>
+
+    <button class="btn-submit dispatch" onclick="submitForm('dispatch')">Submit Dispatch Entry</button>
+    <div class="msg" id="msg-dispatch"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     TAB: RECORDS
+══════════════════════════════════════════════════ -->
+<div id="panel-records" class="panel">
+  <div class="card">
+    <h3>📋 Local Records (This Session)</h3>
+    <div class="filter-row">
+      <label>Filter:</label>
+      <select onchange="renderTable(this.value, document.getElementById('filterItem').value)">
+        <option value="">All types</option>
+        <option value="R">Receive only</option>
+        <option value="D">Dispatch only</option>
+      </select>
+      <input type="text" id="filterItem" placeholder="Search item..." oninput="renderTable()" style="min-width:160px;" />
+      <button onclick="exportCSV()" style="background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:12px;">⬇ CSV</button>
+    </div>
+    <div class="tbl-wrap">
+      <table id="recordsTable">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Timestamp</th>
+            <th>District</th>
+            <th>Block</th>
+            <th>Category</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Unit</th>
+            <th>By</th>
+            <th>Detail</th>
+          </tr>
+        </thead>
+        <tbody id="recordsTbody">
+          <tr><td colspan="10" class="empty-state">No records yet this session.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+const ITEMS = {
+  fencing_all: [
+    "Bamboo pole 1.2m–1.3m (4'–5')",
+    "Nylon Net (Tortoise brand or equiv.)",
+    "GI Wire Gauge 12 (Fencing Guide)",
+    "MS Wire Gauge 16 – Guna tar (Tying)",
+    "Topa Bamboo stick 1.5m 5' (bata/kathi)",
+    "Topa Net"
+  ],
+  fencing_2025: [
+    "Live Fence Pole"
+  ],
+  fencing_2024: [
+    "Iron Angle Pole",
+    "Cement",
+    "Sand",
+    "Stone Chips",
+    "MS Barbed Wire – Kanta tar (Fencing)"
+  ],
+  fencing_solar: [
+    "Conductor Wire",
+    "Energizer (Jhatka) Machine",
+    "Rubber Isolators",
+    "Wire Springs",
+    "Tubular Battery",
+    "Solar Panel",
+    "Battery Charger"
+  ],
+  planting: [
+    "Vermicompost",
+    "Bone Meal",
+    "Neem Cake",
+    "Mancozeb (Anti-fungal)",
+    "Dry Cow Dung"
+  ],
+  nursery: [
+    "Green Shade Net",
+    "Black Seedling Polybag 9\"×7\"",
+    "Black Seedling Polybag 4\"×6\""
+  ]
+};
+
+const CAT_LABELS = {
+  fencing_all: "Fencing (2024–present)",
+  fencing_2025: "Fencing (2025 only)",
+  fencing_2024: "Fencing (2024 only)",
+  fencing_solar: "Jhatka-Solar Fence",
+  planting: "Planting & Nursery",
+  nursery: "Nursery"
+};
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let currentUser = "";
+let currentProject = "";
+let records = JSON.parse(localStorage.getItem("inv_records") || "[]");
+let dark = localStorage.getItem("inv_theme") === "dark";
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+window.onload = () => {
+  if (dark) document.documentElement.setAttribute("data-theme","dark");
+  updateThemeBtn();
+  setInterval(updateTimestamps, 1000);
+  updateTimestamps();
+  renderTable();
+  const savedUser = localStorage.getItem("inv_user");
+  const savedProj = localStorage.getItem("inv_project");
+  if (savedUser && savedProj) {
+    currentUser = savedUser;
+    currentProject = savedProj;
+    applyLogin();
+  }
+};
+
+function updateTimestamps() {
+  const ts = nowIST();
+  ["tsReceive","tsDispatch"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = ts;
+  });
+}
+
+function nowIST() {
+  return new Date().toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false
+  }).replace(",", "");
+}
+
+// ══════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════
+function doLogin() {
+  const name = document.getElementById("loginName").value.trim();
+  const proj = document.getElementById("loginProject").value;
+  if (!name) { alert("Please enter your name."); return; }
+  currentUser = name;
+  currentProject = proj;
+  localStorage.setItem("inv_user", name);
+  localStorage.setItem("inv_project", proj);
+  applyLogin();
+}
+
+function applyLogin() {
+  document.getElementById("loginOverlay").style.display = "none";
+  document.getElementById("projectLabel").textContent = "· " + currentProject;
+  document.getElementById("userLabel").textContent = "👤 " + currentUser;
+  document.getElementById("byReceive").textContent = currentUser;
+  document.getElementById("byDispatch").textContent = currentUser;
+}
+
+// ══════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════
+function toggleTheme() {
+  dark = !dark;
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "");
+  localStorage.setItem("inv_theme", dark ? "dark" : "light");
+  updateThemeBtn();
+}
+function updateThemeBtn() {
+  document.getElementById("themeBtn").textContent = dark ? "☀ Light" : "🌙 Dark";
+}
+
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("panel-" + id).classList.add("active");
+  event.target.classList.add("active");
+  if (id === "records") renderTable();
+}
+
+// ══════════════════════════════════════════
+// ITEM POPULATION
+// ══════════════════════════════════════════
+function populateItems(prefix) {
+  const cat = document.getElementById(prefix + "_category").value;
+  const sel = document.getElementById(prefix + "_item");
+  sel.innerHTML = '<option value="">— Select Item —</option>';
+  if (!cat || !ITEMS[cat]) return;
+  ITEMS[cat].forEach(item => {
+    const o = document.createElement("option");
+    o.value = item; o.textContent = item;
+    sel.appendChild(o);
+  });
+}
+
+// ══════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════
+function submitForm(type) {
+  const p = type === "receive" ? "r" : "d";
+  const district = document.getElementById(p + "_district").value;
+  const block    = document.getElementById(p + "_block").value.trim();
+  const cat      = document.getElementById(p + "_category").value;
+  const item     = document.getElementById(p + "_item").value;
+  const qty      = document.getElementById(p + "_qty").value;
+  const unit     = document.getElementById(p + "_unit").value;
+  const remarks  = document.getElementById(p + "_remarks").value.trim();
+  const msgEl    = document.getElementById("msg-" + type);
+
+  // Validation
+  if (!district || !item || !qty || parseFloat(qty) <= 0) {
+    showMsg(msgEl, "Please fill District, Item, and Quantity.", "err");
+    return;
+  }
+
+  const record = {
+    uuid: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36),
+    type: type === "receive" ? "R" : "D",
+    timestamp: nowIST(),
+    project: currentProject,
+    recorded_by: currentUser,
+    district, block,
+    category: CAT_LABELS[cat] || cat,
+    item, qty: parseFloat(qty), unit, remarks
+  };
+
+  // Type-specific extras
+  if (type === "receive") {
+    record.supplier  = document.getElementById("r_supplier").value.trim();
+    record.voucher   = document.getElementById("r_voucher").value.trim();
+    record.location  = document.getElementById("r_location").value.trim();
+  } else {
+    record.issued_to = document.getElementById("d_issuedTo").value.trim();
+    record.workarea  = document.getElementById("d_workarea").value.trim();
+    record.purpose   = document.getElementById("d_purpose").value;
+  }
+
+  records.push(record);
+  localStorage.setItem("inv_records", JSON.stringify(records));
+
+  // POST to Apps Script (no-cors)
+  sendToSheet(record);
+
+  resetForm(p, type);
+  showMsg(msgEl, "✓ Entry recorded. " + (navigator.onLine ? "Syncing to Sheet..." : "Offline — will sync when online."), "ok");
+  setTimeout(() => { msgEl.style.display = "none"; }, 5000);
+}
+
+function showMsg(el, text, cls) {
+  el.className = "msg " + cls;
+  el.textContent = text;
+  el.style.display = "block";
+}
+
+function resetForm(p, type) {
+  ["_district","_block","_category","_item","_qty","_unit","_remarks"].forEach(f => {
+    const el = document.getElementById(p + f);
+    if (!el) return;
+    el.tagName === "SELECT" ? (el.selectedIndex = 0) : (el.value = "");
+  });
+  if (type === "receive") {
+    ["r_supplier","r_voucher","r_location"].forEach(id => { const e = document.getElementById(id); if(e) e.value=""; });
+  } else {
+    ["d_issuedTo","d_workarea"].forEach(id => { const e = document.getElementById(id); if(e) e.value=""; });
+  }
+  populateItems(p);
+}
+
+// ══════════════════════════════════════════
+// APPS SCRIPT POST
+// ══════════════════════════════════════════
+const AS_URL = "https://script.google.com/macros/s/AKfycbyv1LAvEJ4Kho32m6ToPAAjUSeeEvdYJQTUVQW182fHzO3Peok-rxVXxT8Vi2Ltw5Rs0w/exec"; // replace after deployment
+
+function sendToSheet(record) {
+  if (!AS_URL || AS_URL.startsWith("YOUR_")) return; // skip if not configured
+  fetch(AS_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(record)
+  }).catch(e => console.warn("Sync failed:", e));
+}
+
+// ══════════════════════════════════════════
+// RECORDS TABLE
+// ══════════════════════════════════════════
+function renderTable(typeFilter, itemFilter) {
+  const type = typeFilter !== undefined ? typeFilter : (document.querySelector('.filter-row select') ? document.querySelector('.filter-row select').value : "");
+  const search = (document.getElementById("filterItem") ? document.getElementById("filterItem").value : "").toLowerCase();
+  const tbody = document.getElementById("recordsTbody");
+  let filtered = records.filter(r => {
+    if (type && r.type !== type) return false;
+    if (search && !r.item.toLowerCase().includes(search)) return false;
+    return true;
+  });
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No records match.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.slice().reverse().map(r => `
+    <tr>
+      <td><span class="badge ${r.type}">${r.type === "R" ? "Receive" : "Dispatch"}</span></td>
+      <td class="qty-mono" style="white-space:nowrap;">${r.timestamp}</td>
+      <td>${r.district}</td>
+      <td>${r.block || "—"}</td>
+      <td style="font-size:11px;">${r.category}</td>
+      <td>${r.item}</td>
+      <td class="qty-mono">${r.qty}</td>
+      <td>${r.unit}</td>
+      <td>${r.recorded_by}</td>
+      <td style="font-size:11px;color:var(--text2);">${r.type==="R" ? (r.supplier||"") : (r.issued_to||"")}${r.remarks ? " · "+r.remarks : ""}</td>
+    </tr>
+  `).join("");
+}
+
+// ══════════════════════════════════════════
+// CSV EXPORT
+// ══════════════════════════════════════════
+function exportCSV() {
+  if (!records.length) { alert("No records to export."); return; }
+  const headers = ["uuid","type","timestamp","project","recorded_by","district","block","category","item","qty","unit","supplier","voucher","location","issued_to","workarea","purpose","remarks"];
+  const rows = records.map(r => headers.map(h => JSON.stringify(r[h]||"")).join(","));
+  const csv = [headers.join(","), ...rows].join("\n");
+  const a = document.createElement("a");
+  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+  a.download = "inventory_" + currentProject + "_" + new Date().toISOString().slice(0,10) + ".csv";
+  a.click();
+}
+</script>
+</body>
+</html>
