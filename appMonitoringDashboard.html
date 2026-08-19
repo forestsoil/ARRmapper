@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v19 · Asha 1</title>
+<title>Monitoring Dashboard v20 · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -561,115 +561,107 @@ async function loadData() {
   const hasUrl = !!(AS_URL || AS_URL_FALLBACK);
   if (badge) badge.textContent = 'Loading…';
 
-  // 1. Try IDB cache first — serve immediately (offline-capable)
-  const cached = await cacheGet(CACHE_KEY);
-  if (cached && (Date.now() - cached.ts < CACHE_TTL)) {
-    ALL_DATA = cached.data;
-    setStatus('cached', cached.ts);
-    boot();
-    if (navigator.onLine && hasUrl) fetchFromAS(true);
-    return;
-  }
+  try {
+    // 1. Try IDB cache first — serve immediately (offline-capable)
+    const cached = await cacheGet(CACHE_KEY);
+    if (cached && (Date.now() - cached.ts < CACHE_TTL)) {
+      ALL_DATA = cached.data;
+      setStatus('cached', cached.ts);
+      boot();
+      if (navigator.onLine && hasUrl) fetchFromAS(true); // background refresh
+      return;
+    }
 
-  // 2. Stale cache — serve immediately, refresh in background
-  if (cached && navigator.onLine && hasUrl) {
-    ALL_DATA = cached.data;
-    setStatus('stale', cached.ts);
-    boot();
-    fetchFromAS(true);
-    return;
-  }
+    // 2. Stale cache — serve immediately, refresh in background
+    if (cached && navigator.onLine && hasUrl) {
+      ALL_DATA = cached.data;
+      setStatus('stale', cached.ts);
+      boot();
+      fetchFromAS(true);
+      return;
+    }
 
-  // 3. No cache — fetch with visible progress
-  if (hasUrl && navigator.onLine) {
-    if (badge) badge.textContent = 'Fetching data…';
-    await fetchFromAS(false);
-  } else if (cached) {
-    ALL_DATA = cached.data;
-    setStatus('stale', cached.ts);
-    boot();
-  } else {
-    if (badge) badge.textContent = hasUrl
-      ? 'No cached data — connect to network to load'
-      : 'Set AS_URL in source to enable live data';
+    // 3. No cache — fetch with visible progress
+    if (hasUrl && navigator.onLine) {
+      if (badge) badge.textContent = 'Fetching data…';
+      await fetchFromAS(false);
+    } else if (cached) {
+      ALL_DATA = cached.data;
+      setStatus('stale', cached.ts);
+      boot();
+    } else {
+      if (badge) badge.textContent = hasUrl
+        ? 'No cached data — connect to network to load'
+        : 'Set AS_URL in source to enable live data';
+      boot();
+    }
+  } catch(e) {
+    // Safety net — always render UI even if something unexpected throws
+    console.error('[MD] loadData error:', e);
+    if (badge) badge.textContent = 'Load error — ' + e.message;
     boot();
   }
 }
 
 async function fetchFromAS(background) {
-  // Strategy: try direct fetch() first (GAS sets CORS * for Anyone-access deployments),
-  // then JSONP fallback (handles edge cases where CORS header is delayed),
-  // then fall back to the v1 URL if primary URL is unresponsive.
-  const tried = [];
+  // GAS /exec redirects through script.googleusercontent.com which blocks
+  // cross-origin fetch() from github.io. JSONP is the only working method.
+  // Tries primary URL, then fallback URL if primary times out or errors.
 
-  async function tryFetch(url) {
-    tried.push(url);
-    // ── Method 1: direct fetch() ─────────────────────────────────
-    try {
-      const controller = new AbortController();
-      const tid = setTimeout(() => controller.abort(), 18000);
-      const res  = await fetch(url + '?action=getMonitoring', { signal: controller.signal });
-      clearTimeout(tid);
-      const data = await res.json();
-      if (data.ok && data.records) return data;
-    } catch(e) {
-      console.warn('[MD] fetch() failed on', url, '—', e.message, '— trying JSONP');
-    }
-
-    // ── Method 2: JSONP fallback ──────────────────────────────────
-    try {
-      const data = await new Promise((res, rej) => {
-        const cbName = '_cb_mon_' + Date.now();
-        const script = document.createElement('script');
-        window[cbName] = d => {
-          delete window[cbName];
-          try { document.head.removeChild(script); } catch(_) {}
-          res(d);
-        };
-        script.onerror = () => {
-          delete window[cbName];
-          try { document.head.removeChild(script); } catch(_) {}
-          rej(new Error('JSONP script error'));
-        };
-        script.src = url + '?action=getMonitoring&callback=' + cbName;
-        document.head.appendChild(script);
-        setTimeout(() => {
-          if (window[cbName]) {
-            delete window[cbName];
-            try { document.head.removeChild(script); } catch(_) {}
-            rej(new Error('JSONP timeout'));
-          }
-        }, 20000);
-      });
-      if (data.ok && data.records) return data;
-    } catch(e) {
-      console.warn('[MD] JSONP failed on', url, '—', e.message);
-    }
-
-    return null;
+  function jsonp(url) {
+    return new Promise((res, rej) => {
+      const cbName = '_cb_mon_' + Date.now();
+      const script  = document.createElement('script');
+      const tid = setTimeout(() => {
+        if (!window[cbName]) return;
+        delete window[cbName];
+        try { document.head.removeChild(script); } catch(_) {}
+        rej(new Error('Timeout 30s'));
+      }, 30000);
+      window[cbName] = data => {
+        clearTimeout(tid);
+        delete window[cbName];
+        try { document.head.removeChild(script); } catch(_) {}
+        res(data);
+      };
+      script.onerror = () => {
+        clearTimeout(tid);
+        delete window[cbName];
+        try { document.head.removeChild(script); } catch(_) {}
+        rej(new Error('Script load error'));
+      };
+      script.src = url + '?action=getMonitoring&callback=' + cbName;
+      document.head.appendChild(script);
+    });
   }
 
-  try {
-    // Try primary URL
-    let data = await tryFetch(AS_URL);
+  const urls = [AS_URL, AS_URL_FALLBACK]
+    .filter(Boolean)
+    .filter((u, i, a) => a.indexOf(u) === i);
 
-    // Try fallback URL if primary failed
-    if (!data && AS_URL_FALLBACK && AS_URL_FALLBACK !== AS_URL) {
-      console.warn('[MD] Primary URL failed, trying fallback deploy');
-      data = await tryFetch(AS_URL_FALLBACK);
+  let data = null;
+  for (const url of urls) {
+    try {
+      const result = await jsonp(url);
+      if (result && result.ok && result.records) { data = result; break; }
+      console.warn('[MD] Bad response from', url, result);
+    } catch(e) {
+      console.warn('[MD] JSONP failed:', url, '—', e.message);
     }
+  }
 
-    if (data && data.ok && data.records) {
-      ALL_DATA = data.records.map(normalise);
-      cacheSet(CACHE_KEY, {ts: Date.now(), data: ALL_DATA});
-      if (!background) { setStatus('live'); boot(); }
-      else             { setStatus('live'); refresh(); }
-    } else {
-      throw new Error('No valid data from any endpoint');
+  if (data && data.ok && data.records) {
+    ALL_DATA = data.records.map(normalise);
+    cacheSet(CACHE_KEY, {ts: Date.now(), data: ALL_DATA});
+    if (!background) { setStatus('live'); boot(); }
+    else             { setStatus('live'); refresh(); }
+  } else {
+    const msg = 'No data from ' + urls.length + ' endpoint(s)';
+    if (!background) {
+      setStatus('error', null, msg);
+      boot(); // always render UI shell even on error
     }
-  } catch(e) {
-    if (!background) setStatus('error', null, e.message);
-    console.warn('[MD] All fetch attempts failed:', e.message);
+    console.warn('[MD]', msg);
   }
 }
 
