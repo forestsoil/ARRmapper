@@ -6,59 +6,42 @@
 <title>appInventory – Project Asha</title>
 <style>
   :root {
-    --bg: #f5f7f2;
-    --surface: #ffffff;
-    --surface2: #eef1ea;
-    --border: #c8d4be;
-    --text: #1a2416;
-    --text2: #4a5e40;
-    --accent: #2d6a2f;
-    --accent2: #4caf50;
-    --warn: #c0392b;
-    --warn-bg: #fdecea;
-    --badge-receive: #1b5e20;
-    --badge-dispatch: #e65100;
-    --badge-bg-r: #e8f5e9;
-    --badge-bg-d: #fff3e0;
-    --shadow: 0 2px 8px rgba(0,0,0,0.08);
-    --radius: 8px;
+    --bg: #f5f7f2; --surface: #ffffff; --surface2: #eef1ea;
+    --border: #c8d4be; --text: #1a2416; --text2: #4a5e40;
+    --accent: #2d6a2f; --accent2: #4caf50;
+    --warn: #c0392b; --warn-bg: #fdecea;
+    --badge-receive: #1b5e20; --badge-dispatch: #e65100;
+    --badge-bg-r: #e8f5e9; --badge-bg-d: #fff3e0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08); --radius: 8px;
     --font: 'Segoe UI', system-ui, sans-serif;
     --mono: 'Cascadia Code', 'Fira Mono', monospace;
+    --outbox-bg: #fff8e1; --outbox-border: #f9a825; --outbox-text: #5d4037;
+    --synced-bg: #e8f5e9; --synced-text: #1b5e20;
   }
   [data-theme="dark"] {
-    --bg: #0e1610;
-    --surface: #192b1b;
-    --surface2: #1e3320;
-    --border: #2e4a30;
-    --text: #d4e8c8;
-    --text2: #8aaf82;
-    --accent: #66bb6a;
-    --accent2: #81c784;
-    --warn: #ef9a9a;
-    --warn-bg: #2c1010;
-    --badge-receive: #a5d6a7;
-    --badge-dispatch: #ffcc80;
-    --badge-bg-r: #1b3320;
-    --badge-bg-d: #2e1e08;
+    --bg: #0e1610; --surface: #192b1b; --surface2: #1e3320;
+    --border: #2e4a30; --text: #d4e8c8; --text2: #8aaf82;
+    --accent: #66bb6a; --accent2: #81c784;
+    --warn: #ef9a9a; --warn-bg: #2c1010;
+    --badge-receive: #a5d6a7; --badge-dispatch: #ffcc80;
+    --badge-bg-r: #1b3320; --badge-bg-d: #2e1e08;
     --shadow: 0 2px 8px rgba(0,0,0,0.4);
+    --outbox-bg: #2a2000; --outbox-border: #f9a825; --outbox-text: #ffe082;
+    --synced-bg: #1b3320; --synced-text: #a5d6a7;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
 
   /* ── Header ── */
   header {
-    background: var(--accent);
-    color: #fff;
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
+    background: var(--accent); color: #fff;
+    padding: 10px 16px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 100;
     box-shadow: 0 2px 6px rgba(0,0,0,0.25);
   }
   header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
   header h1 span { font-weight: 300; opacity: 0.8; font-size: 13px; margin-left: 6px; }
-  .header-right { display: flex; align-items: center; gap: 10px; }
+  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   #userLabel { font-size: 12px; opacity: 0.9; }
   #themeBtn {
     background: rgba(255,255,255,0.15); border: none; color: #fff;
@@ -66,7 +49,23 @@
   }
   #themeBtn:hover { background: rgba(255,255,255,0.25); }
 
-  /* ── Login overlay ── */
+  /* ── Outbox pill in header ── */
+  #outboxPill {
+    display: none; background: #f9a825; color: #3e2723;
+    font-size: 11px; font-weight: 700; padding: 3px 10px;
+    border-radius: 12px; cursor: pointer; white-space: nowrap;
+  }
+  #outboxPill.has-items { display: inline-block; }
+
+  /* ── Online/offline dot ── */
+  #netStatus {
+    font-size: 11px; opacity: 0.9;
+    display: flex; align-items: center; gap: 4px;
+  }
+  #netDot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; display: inline-block; }
+  #netDot.offline { background: #ef5350; }
+
+  /* ── Login ── */
   #loginOverlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.6);
     display: flex; align-items: center; justify-content: center; z-index: 999;
@@ -95,15 +94,15 @@
     border-bottom: 2px solid var(--border); padding: 0 12px; overflow-x: auto;
   }
   .tab {
-    padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 500;
+    padding: 10px 14px; cursor: pointer; font-size: 13px; font-weight: 500;
     color: var(--text2); border-bottom: 3px solid transparent; white-space: nowrap;
     transition: color 0.15s, border-color 0.15s;
   }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-  /* ── Content panels ── */
-  .panel { display: none; padding: 16px; max-width: 860px; margin: 0 auto; }
+  /* ── Panels ── */
+  .panel { display: none; padding: 16px; max-width: 900px; margin: 0 auto; }
   .panel.active { display: block; }
 
   /* ── Cards ── */
@@ -113,10 +112,26 @@
     box-shadow: var(--shadow);
   }
   .card h3 {
-    font-size: 14px; font-weight: 700; color: var(--accent);
+    font-size: 13px; font-weight: 700; color: var(--accent);
     margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
     text-transform: uppercase; letter-spacing: 0.6px;
   }
+
+  /* ── Outbox banner ── */
+  .outbox-banner {
+    background: var(--outbox-bg); border: 1px solid var(--outbox-border);
+    border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px;
+    display: none; color: var(--outbox-text);
+  }
+  .outbox-banner.visible { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .outbox-banner strong { font-size: 13px; }
+  .outbox-banner span { font-size: 12px; }
+  .btn-retry {
+    background: var(--outbox-border); color: #3e2723;
+    border: none; padding: 6px 14px; border-radius: 5px;
+    font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .btn-retry:hover { filter: brightness(1.1); }
 
   /* ── Form elements ── */
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
@@ -126,60 +141,40 @@
   select, input[type="text"], input[type="number"], textarea {
     width: 100%; padding: 8px 10px; border: 1px solid var(--border);
     border-radius: 6px; background: var(--surface2); color: var(--text);
-    font-size: 13px; font-family: var(--font);
-    transition: border-color 0.15s;
+    font-size: 13px; font-family: var(--font); transition: border-color 0.15s;
   }
-  select:focus, input:focus, textarea:focus {
-    outline: none; border-color: var(--accent);
-  }
+  select:focus, input:focus, textarea:focus { outline: none; border-color: var(--accent); }
   textarea { resize: vertical; min-height: 60px; }
-
   .ts-display {
     background: var(--surface2); border: 1px solid var(--border);
     border-radius: 6px; padding: 8px 10px; font-family: var(--mono);
     font-size: 12px; color: var(--text2); letter-spacing: 0.3px;
   }
-
-  .season-tag {
-    display: inline-block; font-size: 10px; font-weight: 700;
-    padding: 2px 7px; border-radius: 10px; margin-left: 6px;
-    background: var(--badge-bg-r); color: var(--badge-receive);
-    vertical-align: middle; letter-spacing: 0.4px;
-  }
-  .season-tag.s24 { background: var(--badge-bg-d); color: var(--badge-dispatch); }
-  .season-tag.solar { background: #e3f2fd; color: #1565c0; }
-  [data-theme="dark"] .season-tag.solar { background: #0d2a3f; color: #90caf9; }
-
-  /* ── optgroup styling ── */
   optgroup { font-weight: 700; }
 
-  /* ── Submit button ── */
+  /* ── Buttons ── */
   .btn-submit {
     background: var(--accent); color: #fff; border: none;
     padding: 10px 28px; border-radius: 6px; font-size: 14px;
-    font-weight: 600; cursor: pointer; margin-top: 4px;
-    transition: background 0.15s;
+    font-weight: 600; cursor: pointer; margin-top: 4px; transition: background 0.15s;
   }
   .btn-submit:hover { background: var(--accent2); }
   .btn-submit.dispatch { background: #e65100; }
   .btn-submit.dispatch:hover { background: #bf360c; }
 
-  /* ── Status message ── */
-  .msg {
-    margin-top: 12px; padding: 10px 14px; border-radius: 6px;
-    font-size: 13px; display: none;
-  }
+  /* ── Status msg ── */
+  .msg { margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: 13px; display: none; }
   .msg.ok { background: var(--badge-bg-r); color: var(--badge-receive); display: block; }
   .msg.err { background: var(--warn-bg); color: var(--warn); display: block; }
+  .msg.queued { background: var(--outbox-bg); color: var(--outbox-text); display: block; }
 
   /* ── Records table ── */
   .tbl-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
   th {
-    background: var(--surface2); color: var(--text2);
-    padding: 8px 10px; text-align: left; font-size: 11px;
-    text-transform: uppercase; letter-spacing: 0.4px; font-weight: 700;
-    border-bottom: 2px solid var(--border);
+    background: var(--surface2); color: var(--text2); padding: 8px 10px;
+    text-align: left; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.4px; font-weight: 700; border-bottom: 2px solid var(--border);
   }
   td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
   tr:hover td { background: var(--surface2); }
@@ -189,21 +184,71 @@
   }
   .badge.R { background: var(--badge-bg-r); color: var(--badge-receive); }
   .badge.D { background: var(--badge-bg-d); color: var(--badge-dispatch); }
-
+  .badge.Q { background: var(--outbox-bg); color: var(--outbox-text); }
+  .badge.S { background: var(--synced-bg); color: var(--synced-text); }
   .empty-state { text-align: center; padding: 40px; color: var(--text2); font-size: 13px; }
-
-  /* ── District filter row ── */
   .filter-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
   .filter-row select { width: auto; min-width: 140px; }
   .filter-row label { margin: 0; align-self: center; white-space: nowrap; }
-
-  /* ── Qty display ── */
   .qty-mono { font-family: var(--mono); font-size: 12px; }
+
+  /* ── Rate Calculator ── */
+  .calc-section { margin-bottom: 24px; }
+  .calc-section h4 {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; color: var(--text2); margin-bottom: 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  .rate-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  .rate-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 14px;
+  }
+  .rate-item .ri-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .rate-item .ri-meta { font-size: 11px; color: var(--text2); margin-bottom: 8px; }
+  .rate-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+  .rate-row input[type="number"] {
+    width: 90px; padding: 5px 8px; font-size: 13px; font-family: var(--mono);
+  }
+  .rate-row .unit-label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+  .rate-result {
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    color: var(--accent); margin-top: 8px;
+  }
+
+  .labour-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  .labour-table th {
+    background: var(--surface2); color: var(--text2); padding: 7px 10px;
+    text-align: left; font-size: 11px; text-transform: uppercase; font-weight: 700;
+    border-bottom: 2px solid var(--border);
+  }
+  .labour-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .labour-table input[type="number"] { width: 80px; padding: 4px 6px; font-size: 12px; }
+  .labour-table .calc-out { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent); }
+  .labour-table .rate-range { color: var(--text2); font-size: 11px; }
+
+  .total-box {
+    background: var(--accent); color: #fff; border-radius: 6px;
+    padding: 14px 18px; margin-top: 16px; display: flex;
+    align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  .total-box .label { font-size: 13px; font-weight: 600; }
+  .total-box .amount { font-family: var(--mono); font-size: 22px; font-weight: 700; }
+  .total-box .sub { font-size: 11px; opacity: 0.8; }
+
+  .btn-sm {
+    background: var(--surface2); color: var(--text); border: 1px solid var(--border);
+    padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;
+  }
+  .btn-sm:hover { background: var(--border); }
+  .btn-sm.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-sm.primary:hover { background: var(--accent2); border-color: var(--accent2); }
 
   @media (max-width: 600px) {
     .form-row { grid-template-columns: 1fr; }
     .form-row.three { grid-template-columns: 1fr 1fr; }
     .panel { padding: 12px; }
+    .rate-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -213,7 +258,7 @@
 <div id="loginOverlay">
   <div class="login-box">
     <h2>appInventory</h2>
-    <p>Project Asha · Material Register</p>
+    <p>Project Asha · Material & Labour Register</p>
     <label>Project</label>
     <select id="loginProject">
       <option value="Asha1">Project Asha 1</option>
@@ -231,36 +276,40 @@
 <header>
   <h1>appInventory <span id="projectLabel"></span></h1>
   <div class="header-right">
+    <span id="netStatus"><span id="netDot"></span><span id="netText">Online</span></span>
+    <span id="outboxPill" onclick="showTab('records', true)" title="Tap to see queued records">📤 <span id="outboxCount">0</span> queued</span>
     <span id="userLabel"></span>
     <button id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
   </div>
 </header>
 
 <!-- TABS -->
-<div class="tabs">
-  <div class="tab active" onclick="showTab('receive')">📥 Receive Stock</div>
-  <div class="tab" onclick="showTab('dispatch')">📤 Issue / Dispatch</div>
+<div class="tabs" id="tabBar">
+  <div class="tab active" onclick="showTab('receive')">📥 Receive</div>
+  <div class="tab" onclick="showTab('dispatch')">📤 Dispatch</div>
   <div class="tab" onclick="showTab('records')">📋 Records</div>
+  <div class="tab" onclick="showTab('rates')">🧮 Rate Calc</div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
      TAB: RECEIVE
 ══════════════════════════════════════════════════ -->
 <div id="panel-receive" class="panel active">
+
+  <div class="outbox-banner" id="banner-receive">
+    <div>
+      <strong>📤 <span id="banner-count-r">0</span> record(s) queued offline</strong><br>
+      <span>They will sync automatically when network is available.</span>
+    </div>
+    <button class="btn-retry" onclick="drainOutbox()">Retry Now</button>
+  </div>
+
   <div class="card">
     <h3>📥 Receive Stock</h3>
-
     <div class="form-row">
-      <div>
-        <label>Timestamp</label>
-        <div class="ts-display" id="tsReceive">—</div>
-      </div>
-      <div>
-        <label>Recorded By</label>
-        <div class="ts-display" id="byReceive">—</div>
-      </div>
+      <div><label>Timestamp</label><div class="ts-display" id="tsReceive">—</div></div>
+      <div><label>Recorded By</label><div class="ts-display" id="byReceive">—</div></div>
     </div>
-
     <div class="form-row">
       <div>
         <label>District</label>
@@ -272,12 +321,8 @@
           <option value="CBH">Coochbehar (CBH)</option>
         </select>
       </div>
-      <div>
-        <label>Block / Site</label>
-        <input type="text" id="r_block" placeholder="Block or site name" />
-      </div>
+      <div><label>Block / Site</label><input type="text" id="r_block" placeholder="Block or site name" /></div>
     </div>
-
     <div class="form-row">
       <div>
         <label>Category</label>
@@ -293,54 +338,29 @@
       </div>
       <div>
         <label>Item</label>
-        <select id="r_item">
-          <option value="">— Select Item —</option>
-        </select>
+        <select id="r_item"><option value="">— Select Item —</option></select>
       </div>
     </div>
-
     <div class="form-row three">
-      <div>
-        <label>Quantity</label>
-        <input type="number" id="r_qty" min="0" step="any" placeholder="0" />
-      </div>
+      <div><label>Quantity</label><input type="number" id="r_qty" min="0" step="any" placeholder="0" /></div>
       <div>
         <label>Unit</label>
         <select id="r_unit">
-          <option value="nos">nos</option>
-          <option value="m">m (metre)</option>
-          <option value="kg">kg</option>
-          <option value="bag">bag</option>
-          <option value="bundle">bundle</option>
-          <option value="roll">roll</option>
-          <option value="piece">piece</option>
-          <option value="set">set</option>
+          <option value="nos">nos</option><option value="m">m (metre)</option>
+          <option value="kg">kg</option><option value="quintal">quintal (100 kg)</option>
+          <option value="bag">bag</option><option value="bundle">bundle</option>
+          <option value="roll">roll</option><option value="piece">piece</option><option value="set">set</option>
         </select>
       </div>
-      <div>
-        <label>Supplier / Source</label>
-        <input type="text" id="r_supplier" placeholder="Supplier name" />
-      </div>
+      <div><label>Supplier / Source</label><input type="text" id="r_supplier" placeholder="Supplier name" /></div>
     </div>
-
     <div class="form-row">
-      <div>
-        <label>Voucher / Challan No.</label>
-        <input type="text" id="r_voucher" placeholder="Optional" />
-      </div>
-      <div>
-        <label>Received At (Location)</label>
-        <input type="text" id="r_location" placeholder="Store / godown / field location" />
-      </div>
+      <div><label>Voucher / Challan No.</label><input type="text" id="r_voucher" placeholder="Optional" /></div>
+      <div><label>Received At (Location)</label><input type="text" id="r_location" placeholder="Store / godown / field location" /></div>
     </div>
-
     <div class="form-row full">
-      <div>
-        <label>Remarks</label>
-        <textarea id="r_remarks" placeholder="Condition, notes..."></textarea>
-      </div>
+      <div><label>Remarks</label><textarea id="r_remarks" placeholder="Condition, notes..."></textarea></div>
     </div>
-
     <button class="btn-submit" onclick="submitForm('receive')">Submit Receiving Entry</button>
     <div class="msg" id="msg-receive"></div>
   </div>
@@ -350,20 +370,21 @@
      TAB: DISPATCH
 ══════════════════════════════════════════════════ -->
 <div id="panel-dispatch" class="panel">
+
+  <div class="outbox-banner" id="banner-dispatch">
+    <div>
+      <strong>📤 <span id="banner-count-d">0</span> record(s) queued offline</strong><br>
+      <span>They will sync automatically when network is available.</span>
+    </div>
+    <button class="btn-retry" onclick="drainOutbox()">Retry Now</button>
+  </div>
+
   <div class="card">
     <h3>📤 Issue / Dispatch</h3>
-
     <div class="form-row">
-      <div>
-        <label>Timestamp</label>
-        <div class="ts-display" id="tsDispatch">—</div>
-      </div>
-      <div>
-        <label>Issued By</label>
-        <div class="ts-display" id="byDispatch">—</div>
-      </div>
+      <div><label>Timestamp</label><div class="ts-display" id="tsDispatch">—</div></div>
+      <div><label>Issued By</label><div class="ts-display" id="byDispatch">—</div></div>
     </div>
-
     <div class="form-row">
       <div>
         <label>District</label>
@@ -375,12 +396,8 @@
           <option value="CBH">Coochbehar (CBH)</option>
         </select>
       </div>
-      <div>
-        <label>Block / Site</label>
-        <input type="text" id="d_block" placeholder="Block or site name" />
-      </div>
+      <div><label>Block / Site</label><input type="text" id="d_block" placeholder="Block or site name" /></div>
     </div>
-
     <div class="form-row">
       <div>
         <label>Category</label>
@@ -396,41 +413,24 @@
       </div>
       <div>
         <label>Item</label>
-        <select id="d_item">
-          <option value="">— Select Item —</option>
-        </select>
+        <select id="d_item"><option value="">— Select Item —</option></select>
       </div>
     </div>
-
     <div class="form-row three">
-      <div>
-        <label>Quantity</label>
-        <input type="number" id="d_qty" min="0" step="any" placeholder="0" />
-      </div>
+      <div><label>Quantity</label><input type="number" id="d_qty" min="0" step="any" placeholder="0" /></div>
       <div>
         <label>Unit</label>
         <select id="d_unit">
-          <option value="nos">nos</option>
-          <option value="m">m (metre)</option>
-          <option value="kg">kg</option>
-          <option value="bag">bag</option>
-          <option value="bundle">bundle</option>
-          <option value="roll">roll</option>
-          <option value="piece">piece</option>
-          <option value="set">set</option>
+          <option value="nos">nos</option><option value="m">m (metre)</option>
+          <option value="kg">kg</option><option value="quintal">quintal (100 kg)</option>
+          <option value="bag">bag</option><option value="bundle">bundle</option>
+          <option value="roll">roll</option><option value="piece">piece</option><option value="set">set</option>
         </select>
       </div>
-      <div>
-        <label>Issued To (Person)</label>
-        <input type="text" id="d_issuedTo" placeholder="Field staff / supervisor" />
-      </div>
+      <div><label>Issued To (Person)</label><input type="text" id="d_issuedTo" placeholder="Field staff / supervisor" /></div>
     </div>
-
     <div class="form-row">
-      <div>
-        <label>Work Area / Compartment</label>
-        <input type="text" id="d_workarea" placeholder="Parcel / compartment ref." />
-      </div>
+      <div><label>Work Area / Compartment</label><input type="text" id="d_workarea" placeholder="Parcel / compartment ref." /></div>
       <div>
         <label>Purpose</label>
         <select id="d_purpose">
@@ -442,14 +442,9 @@
         </select>
       </div>
     </div>
-
     <div class="form-row full">
-      <div>
-        <label>Remarks</label>
-        <textarea id="d_remarks" placeholder="Notes, reference..."></textarea>
-      </div>
+      <div><label>Remarks</label><textarea id="d_remarks" placeholder="Notes, reference..."></textarea></div>
     </div>
-
     <button class="btn-submit dispatch" onclick="submitForm('dispatch')">Submit Dispatch Entry</button>
     <div class="msg" id="msg-dispatch"></div>
   </div>
@@ -460,45 +455,101 @@
 ══════════════════════════════════════════════════ -->
 <div id="panel-records" class="panel">
   <div class="card">
-    <h3>📋 Local Records (This Session)</h3>
+    <h3>📋 Records</h3>
     <div class="filter-row">
-      <label>Filter:</label>
-      <select onchange="renderTable(this.value, document.getElementById('filterItem').value)">
-        <option value="">All types</option>
-        <option value="R">Receive only</option>
-        <option value="D">Dispatch only</option>
+      <label>Type:</label>
+      <select id="filterType" onchange="renderTable()">
+        <option value="">All</option>
+        <option value="R">Receive</option>
+        <option value="D">Dispatch</option>
       </select>
-      <input type="text" id="filterItem" placeholder="Search item..." oninput="renderTable()" style="min-width:160px;" />
-      <button onclick="exportCSV()" style="background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:12px;">⬇ CSV</button>
+      <label>Sync:</label>
+      <select id="filterSync" onchange="renderTable()">
+        <option value="">All</option>
+        <option value="Q">Queued</option>
+        <option value="S">Synced</option>
+      </select>
+      <input type="text" id="filterItem" placeholder="Search item..." oninput="renderTable()" style="min-width:150px;" />
+      <button class="btn-sm primary" onclick="drainOutbox()">↑ Sync Now</button>
+      <button class="btn-sm" onclick="exportCSV()">⬇ CSV</button>
     </div>
     <div class="tbl-wrap">
-      <table id="recordsTable">
+      <table>
         <thead>
           <tr>
-            <th>Type</th>
-            <th>Timestamp</th>
-            <th>District</th>
-            <th>Block</th>
-            <th>Category</th>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Unit</th>
-            <th>By</th>
-            <th>Detail</th>
+            <th>Type</th><th>Sync</th><th>Timestamp</th><th>District</th>
+            <th>Block</th><th>Item</th><th>Qty</th><th>Unit</th><th>By</th><th>Detail</th>
           </tr>
         </thead>
         <tbody id="recordsTbody">
-          <tr><td colspan="10" class="empty-state">No records yet this session.</td></tr>
+          <tr><td colspan="10" class="empty-state">No records yet.</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     TAB: RATE CALCULATOR
+══════════════════════════════════════════════════ -->
+<div id="panel-rates" class="panel">
+
+  <!-- LABOUR COSTING -->
+  <div class="card">
+    <h3>👷 Labour Costing</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">Enter quantity (ha, plants, topos, etc.) — rates from Rate Chart v1. Use mid-range rate for estimate.</p>
+    <div style="overflow-x:auto;">
+    <table class="labour-table" id="labourTable">
+      <thead>
+        <tr>
+          <th>#</th><th>Activity</th><th>Unit</th><th>Rate (₹)</th><th>Qty</th><th>Total (₹)</th>
+        </tr>
+      </thead>
+      <tbody id="labourTbody"></tbody>
+    </table>
+    </div>
+    <div class="total-box" id="labourTotal">
+      <div>
+        <div class="label">Labour Total</div>
+        <div class="sub">Approximate estimate</div>
+      </div>
+      <div class="amount" id="labourTotalAmt">₹ 0</div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;">
+      <button class="btn-sm" onclick="resetLabour()">Reset</button>
+      <button class="btn-sm primary" onclick="exportLabourCSV()">⬇ Export Labour CSV</button>
+    </div>
+  </div>
+
+  <!-- INVENTORY COSTING -->
+  <div class="card">
+    <h3>📦 Inventory / Material Costing</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">Enter unit rate (₹) and quantity to calculate cost. Rate Chart v1 lists unit of billing only — fill rates from current market.</p>
+    <div class="rate-grid" id="inventoryGrid"></div>
+    <div class="total-box" id="inventoryTotal">
+      <div>
+        <div class="label">Materials Total</div>
+        <div class="sub">Approximate estimate</div>
+      </div>
+      <div class="amount" id="inventoryTotalAmt">₹ 0</div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;">
+      <button class="btn-sm" onclick="resetInventory()">Reset</button>
+      <button class="btn-sm primary" onclick="exportInventoryCSV()">⬇ Export Materials CSV</button>
+    </div>
+  </div>
+
+</div><!-- end panel-rates -->
+
 <script>
-// ══════════════════════════════════════════
-// DATA
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════
+const AS_URL = "https://script.google.com/macros/s/AKfycbyv1LAvEJ4Kho32m6ToPAAjUSeeEvdYJQTUVQW182fHzO3Peok-rxVXxT8Vi2Ltw5Rs0w/exec"; // replace after deployment
+
+// ════════════════════════════════════════════════════
+// ITEM DATA
+// ════════════════════════════════════════════════════
 const ITEMS = {
   fencing_all: [
     "Bamboo pole 1.2m–1.3m (4'–5')",
@@ -508,72 +559,94 @@ const ITEMS = {
     "Topa Bamboo stick 1.5m 5' (bata/kathi)",
     "Topa Net"
   ],
-  fencing_2025: [
-    "Live Fence Pole"
-  ],
+  fencing_2025: ["Live Fence Pole"],
   fencing_2024: [
-    "Iron Angle Pole",
-    "Cement",
-    "Sand",
-    "Stone Chips",
+    "Iron Angle Pole","Cement","Sand","Stone Chips",
     "MS Barbed Wire – Kanta tar (Fencing)"
   ],
   fencing_solar: [
-    "Conductor Wire",
-    "Energizer (Jhatka) Machine",
-    "Rubber Isolators",
-    "Wire Springs",
-    "Tubular Battery",
-    "Solar Panel",
-    "Battery Charger"
+    "Conductor Wire","Energizer (Jhatka) Machine","Rubber Isolators",
+    "Wire Springs","Tubular Battery","Solar Panel","Battery Charger"
   ],
-  planting: [
-    "Vermicompost",
-    "Bone Meal",
-    "Neem Cake",
-    "Mancozeb (Anti-fungal)",
-    "Dry Cow Dung"
-  ],
-  nursery: [
-    "Green Shade Net",
-    "Black Seedling Polybag 9\"×7\"",
-    "Black Seedling Polybag 4\"×6\""
-  ]
+  planting: ["Vermicompost","Bone Meal","Neem Cake","Mancozeb (Anti-fungal)","Dry Cow Dung"],
+  nursery: ["Green Shade Net","Black Seedling Polybag 9\"×7\"","Black Seedling Polybag 4\"×6\""]
 };
 
 const CAT_LABELS = {
-  fencing_all: "Fencing (2024–present)",
-  fencing_2025: "Fencing (2025 only)",
-  fencing_2024: "Fencing (2024 only)",
-  fencing_solar: "Jhatka-Solar Fence",
-  planting: "Planting & Nursery",
-  nursery: "Nursery"
+  fencing_all:"Fencing (2024–present)", fencing_2025:"Fencing (2025 only)",
+  fencing_2024:"Fencing (2024 only)", fencing_solar:"Jhatka-Solar Fence",
+  planting:"Planting & Nursery", nursery:"Nursery"
 };
 
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
+// RATE DATA (from Labour___Materials_Rate_Chart_v1.xlsx)
+// ════════════════════════════════════════════════════
+const LABOUR_RATES = [
+  { id:"l1", activity:"Ground Clearance (Labour)", unit:"per ha", rateMin:350, rateMax:380, remark:"Depends on Area" },
+  { id:"l2", activity:"Running Fencing Erection (Labour)", unit:"per ha", rateMin:350, rateMax:380, remark:"Depends on Area" },
+  { id:"l3", activity:"Topa Fencing Erection (Labour)", unit:"per Topa", rateMin:16, rateMax:18, remark:"Depends on Area" },
+  { id:"l4", activity:"Jhatka Fencing Erection (Labour)", unit:"per ha", rateMin:36000, rateMax:36000, remark:"Depends on Area" },
+  { id:"l5", activity:"Pit Digging, Fertilizer Mixing & Plantation", unit:"per plant", rateMin:8, rateMax:10, remark:"Depends on Area" },
+  { id:"l6", activity:"Pit Digging & Fertilizer Mixing & Replantation", unit:"per plant", rateMin:8, rateMax:10, remark:"Depends on Area" },
+  { id:"l7", activity:"Ring Chapan (sapling collar fertilizer application)", unit:"per plant", rateMin:4, rateMax:5, remark:"Depends on Area" },
+  { id:"l8", activity:"Plant Area Clean (collar ring clearance, 60 cm)", unit:"per plant", rateMin:2, rateMax:3, remark:"If required" },
+  { id:"l9", activity:"Pesticide Spray", unit:"per plant", rateMin:0.5, rateMax:1.0, remark:"Depends on Area" },
+];
+
+// Approx perimeter to area note: 400 m/ha
+const PERIMETER_PER_HA = 400;
+
+const INVENTORY_ITEMS = [
+  { id:"i1",  group:"Fertilizer",          name:"Vermicompost",                     billingUnit:"quintal (100 kg)" },
+  { id:"i2",  group:"Fertilizer",          name:"Neem Cake",                        billingUnit:"quintal (100 kg)" },
+  { id:"i3",  group:"Fertilizer",          name:"Bone Meal",                        billingUnit:"quintal (100 kg)" },
+  { id:"i4",  group:"Fertilizer",          name:"Lime",                             billingUnit:"quintal (100 kg)" },
+  { id:"i5",  group:"Fertilizer",          name:"Fungicide for Root Treatment",      billingUnit:"quintal (100 kg)" },
+  { id:"i6",  group:"Fertilizer",          name:"Neem Oil",                         billingUnit:"L" },
+  { id:"i7",  group:"Fertilizer",          name:"Growth Stimulant",                 billingUnit:"L" },
+  { id:"i8",  group:"Fertilizer",          name:"Biosar-2 (Root Hormone)",          billingUnit:"L" },
+  { id:"i9",  group:"Fencing Materials",   name:"Bamboo Pole",                      billingUnit:"per piece" },
+  { id:"i10", group:"Fencing Materials",   name:"Bamboo Stick (bata)",              billingUnit:"per piece" },
+  { id:"i11", group:"Fencing Materials",   name:"Nylon Net",                        billingUnit:"per piece" },
+  { id:"i12", group:"Fencing Materials",   name:"Topa Net",                         billingUnit:"per piece" },
+  { id:"i13", group:"Fencing Materials",   name:"GI Wire for hanging (12 gauge)",   billingUnit:"ton (1000 kg)" },
+  { id:"i14", group:"Fencing Materials",   name:"GI Nail",                          billingUnit:"ton (1000 kg)" },
+  { id:"i15", group:"Fencing Materials",   name:"GI Wire for Binding – Guna tar",   billingUnit:"ton (1000 kg)" },
+];
+
+// ════════════════════════════════════════════════════
 // STATE
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
 let currentUser = "";
 let currentProject = "";
-let records = JSON.parse(localStorage.getItem("inv_records") || "[]");
-let dark = localStorage.getItem("inv_theme") === "dark";
+let records  = JSON.parse(localStorage.getItem("inv_records")  || "[]");
+let outbox   = JSON.parse(localStorage.getItem("inv_outbox")   || "[]");
+let dark     = localStorage.getItem("inv_theme") === "dark";
+let draining = false;
 
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
 // INIT
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
 window.onload = () => {
   if (dark) document.documentElement.setAttribute("data-theme","dark");
   updateThemeBtn();
   setInterval(updateTimestamps, 1000);
   updateTimestamps();
   renderTable();
+  updateOutboxUI();
+  buildLabourTable();
+  buildInventoryGrid();
+
   const savedUser = localStorage.getItem("inv_user");
   const savedProj = localStorage.getItem("inv_project");
   if (savedUser && savedProj) {
-    currentUser = savedUser;
-    currentProject = savedProj;
-    applyLogin();
+    currentUser = savedUser; currentProject = savedProj; applyLogin();
   }
+
+  // Network listeners
+  window.addEventListener("online",  onNetworkChange);
+  window.addEventListener("offline", onNetworkChange);
+  onNetworkChange();
 };
 
 function updateTimestamps() {
@@ -586,27 +659,35 @@ function updateTimestamps() {
 
 function nowIST() {
   return new Date().toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-    hour12: false
-  }).replace(",", "");
+    timeZone:"Asia/Kolkata", year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false
+  }).replace(",","");
 }
 
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
+// NETWORK STATE
+// ════════════════════════════════════════════════════
+function onNetworkChange() {
+  const online = navigator.onLine;
+  const dot  = document.getElementById("netDot");
+  const text = document.getElementById("netText");
+  dot.className  = online ? "" : "offline";
+  text.textContent = online ? "Online" : "Offline";
+  if (online && outbox.length > 0) drainOutbox();
+}
+
+// ════════════════════════════════════════════════════
 // LOGIN
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
 function doLogin() {
   const name = document.getElementById("loginName").value.trim();
   const proj = document.getElementById("loginProject").value;
   if (!name) { alert("Please enter your name."); return; }
-  currentUser = name;
-  currentProject = proj;
+  currentUser = name; currentProject = proj;
   localStorage.setItem("inv_user", name);
   localStorage.setItem("inv_project", proj);
   applyLogin();
 }
-
 function applyLogin() {
   document.getElementById("loginOverlay").style.display = "none";
   document.getElementById("projectLabel").textContent = "· " + currentProject;
@@ -615,9 +696,9 @@ function applyLogin() {
   document.getElementById("byDispatch").textContent = currentUser;
 }
 
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
 // THEME
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
 function toggleTheme() {
   dark = !dark;
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "");
@@ -628,20 +709,24 @@ function updateThemeBtn() {
   document.getElementById("themeBtn").textContent = dark ? "☀ Light" : "🌙 Dark";
 }
 
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
 // TABS
-// ══════════════════════════════════════════
-function showTab(id) {
+// ════════════════════════════════════════════════════
+function showTab(id, scrollToQueued) {
   document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
   document.getElementById("panel-" + id).classList.add("active");
-  event.target.classList.add("active");
-  if (id === "records") renderTable();
+  // Highlight correct tab
+  const tabs = document.querySelectorAll(".tab");
+  const tabOrder = ["receive","dispatch","records","rates"];
+  const idx = tabOrder.indexOf(id);
+  if (idx >= 0 && tabs[idx]) tabs[idx].classList.add("active");
+  if (id === "records") { renderTable(); if (scrollToQueued) { document.getElementById("filterSync").value="Q"; renderTable(); } }
 }
 
-// ══════════════════════════════════════════
-// ITEM POPULATION
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
+// ITEM DROPDOWN
+// ════════════════════════════════════════════════════
 function populateItems(prefix) {
   const cat = document.getElementById(prefix + "_category").value;
   const sel = document.getElementById(prefix + "_item");
@@ -649,62 +734,71 @@ function populateItems(prefix) {
   if (!cat || !ITEMS[cat]) return;
   ITEMS[cat].forEach(item => {
     const o = document.createElement("option");
-    o.value = item; o.textContent = item;
-    sel.appendChild(o);
+    o.value = item; o.textContent = item; sel.appendChild(o);
   });
 }
 
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
 // SUBMIT
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
 function submitForm(type) {
   const p = type === "receive" ? "r" : "d";
-  const district = document.getElementById(p + "_district").value;
-  const block    = document.getElementById(p + "_block").value.trim();
-  const cat      = document.getElementById(p + "_category").value;
-  const item     = document.getElementById(p + "_item").value;
-  const qty      = document.getElementById(p + "_qty").value;
-  const unit     = document.getElementById(p + "_unit").value;
-  const remarks  = document.getElementById(p + "_remarks").value.trim();
-  const msgEl    = document.getElementById("msg-" + type);
+  const district = document.getElementById(p+"_district").value;
+  const item     = document.getElementById(p+"_item").value;
+  const qty      = document.getElementById(p+"_qty").value;
+  const msgEl    = document.getElementById("msg-"+type);
 
-  // Validation
   if (!district || !item || !qty || parseFloat(qty) <= 0) {
-    showMsg(msgEl, "Please fill District, Item, and Quantity.", "err");
-    return;
+    showMsg(msgEl, "Please fill District, Item, and Quantity.", "err"); return;
   }
 
   const record = {
-    uuid: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36),
-    type: type === "receive" ? "R" : "D",
-    timestamp: nowIST(),
-    project: currentProject,
+    uuid:        genUUID(),
+    sync_status: "Q",  // Queued
+    type:        type === "receive" ? "R" : "D",
+    timestamp:   nowIST(),
+    project:     currentProject,
     recorded_by: currentUser,
-    district, block,
-    category: CAT_LABELS[cat] || cat,
-    item, qty: parseFloat(qty), unit, remarks
+    district,
+    block:    document.getElementById(p+"_block").value.trim(),
+    category: CAT_LABELS[document.getElementById(p+"_category").value] || "",
+    item,
+    qty:  parseFloat(qty),
+    unit: document.getElementById(p+"_unit").value,
+    remarks: document.getElementById(p+"_remarks").value.trim()
   };
 
-  // Type-specific extras
   if (type === "receive") {
-    record.supplier  = document.getElementById("r_supplier").value.trim();
-    record.voucher   = document.getElementById("r_voucher").value.trim();
-    record.location  = document.getElementById("r_location").value.trim();
+    record.supplier = document.getElementById("r_supplier").value.trim();
+    record.voucher  = document.getElementById("r_voucher").value.trim();
+    record.location = document.getElementById("r_location").value.trim();
   } else {
     record.issued_to = document.getElementById("d_issuedTo").value.trim();
     record.workarea  = document.getElementById("d_workarea").value.trim();
     record.purpose   = document.getElementById("d_purpose").value;
   }
 
+  // Save to local records
   records.push(record);
   localStorage.setItem("inv_records", JSON.stringify(records));
 
-  // POST to Apps Script (no-cors)
-  sendToSheet(record);
+  // Add to outbox
+  outbox.push(record);
+  localStorage.setItem("inv_outbox", JSON.stringify(outbox));
+  updateOutboxUI();
 
   resetForm(p, type);
-  showMsg(msgEl, "✓ Entry recorded. " + (navigator.onLine ? "Syncing to Sheet..." : "Offline — will sync when online."), "ok");
-  setTimeout(() => { msgEl.style.display = "none"; }, 5000);
+
+  if (navigator.onLine) {
+    showMsg(msgEl, "✓ Entry saved. Syncing to Sheet...", "ok");
+    drainOutbox().then(() => {
+      showMsg(msgEl, "✓ Entry saved and synced.", "ok");
+      setTimeout(() => { msgEl.style.display="none"; }, 4000);
+    });
+  } else {
+    showMsg(msgEl, "✓ Entry saved offline. Will sync when network is available.", "queued");
+    setTimeout(() => { msgEl.style.display="none"; }, 6000);
+  }
 }
 
 function showMsg(el, text, cls) {
@@ -715,77 +809,267 @@ function showMsg(el, text, cls) {
 
 function resetForm(p, type) {
   ["_district","_block","_category","_item","_qty","_unit","_remarks"].forEach(f => {
-    const el = document.getElementById(p + f);
+    const el = document.getElementById(p+f);
     if (!el) return;
-    el.tagName === "SELECT" ? (el.selectedIndex = 0) : (el.value = "");
+    el.tagName === "SELECT" ? (el.selectedIndex=0) : (el.value="");
   });
-  if (type === "receive") {
-    ["r_supplier","r_voucher","r_location"].forEach(id => { const e = document.getElementById(id); if(e) e.value=""; });
+  if (type==="receive") {
+    ["r_supplier","r_voucher","r_location"].forEach(id => { const e=document.getElementById(id); if(e) e.value=""; });
   } else {
-    ["d_issuedTo","d_workarea"].forEach(id => { const e = document.getElementById(id); if(e) e.value=""; });
+    ["d_issuedTo","d_workarea"].forEach(id => { const e=document.getElementById(id); if(e) e.value=""; });
   }
   populateItems(p);
 }
 
-// ══════════════════════════════════════════
-// APPS SCRIPT POST
-// ══════════════════════════════════════════
-const AS_URL = "https://script.google.com/macros/s/AKfycbyv1LAvEJ4Kho32m6ToPAAjUSeeEvdYJQTUVQW182fHzO3Peok-rxVXxT8Vi2Ltw5Rs0w/exec"; // replace after deployment
+// ════════════════════════════════════════════════════
+// OUTBOX / SYNC
+// ════════════════════════════════════════════════════
+async function drainOutbox() {
+  if (draining) return;
+  if (!navigator.onLine) return;
+  if (outbox.length === 0) return;
+  if (!AS_URL || AS_URL.startsWith("YOUR_")) {
+    console.warn("AS_URL not configured — skipping sync.");
+    return;
+  }
 
-function sendToSheet(record) {
-  if (!AS_URL || AS_URL.startsWith("YOUR_")) return; // skip if not configured
-  fetch(AS_URL, {
+  draining = true;
+  const remaining = [];
+
+  for (const record of outbox) {
+    const sent = await postRecord(record);
+    if (sent) {
+      // Mark synced in records[]
+      const r = records.find(x => x.uuid === record.uuid);
+      if (r) r.sync_status = "S";
+    } else {
+      remaining.push(record);
+    }
+  }
+
+  outbox = remaining;
+  localStorage.setItem("inv_outbox",  JSON.stringify(outbox));
+  localStorage.setItem("inv_records", JSON.stringify(records));
+  draining = false;
+  updateOutboxUI();
+  renderTable();
+}
+
+function postRecord(record) {
+  return fetch(AS_URL, {
     method: "POST",
     mode: "no-cors",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(record)
-  }).catch(e => console.warn("Sync failed:", e));
+  })
+  .then(() => true)   // no-cors: opaque response, treat as success
+  .catch(() => false);
 }
 
-// ══════════════════════════════════════════
+function updateOutboxUI() {
+  const n = outbox.length;
+  const pill = document.getElementById("outboxPill");
+  document.getElementById("outboxCount").textContent = n;
+  pill.className = n > 0 ? "has-items" : "";
+
+  // Banners on receive/dispatch tabs
+  ["receive","dispatch"].forEach(tab => {
+    const banner = document.getElementById("banner-"+tab);
+    if (!banner) return;
+    if (n > 0) {
+      banner.classList.add("visible");
+      const countEl = document.getElementById("banner-count-"+tab[0]);
+      if (countEl) countEl.textContent = n;
+    } else {
+      banner.classList.remove("visible");
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════
 // RECORDS TABLE
-// ══════════════════════════════════════════
-function renderTable(typeFilter, itemFilter) {
-  const type = typeFilter !== undefined ? typeFilter : (document.querySelector('.filter-row select') ? document.querySelector('.filter-row select').value : "");
-  const search = (document.getElementById("filterItem") ? document.getElementById("filterItem").value : "").toLowerCase();
+// ════════════════════════════════════════════════════
+function renderTable() {
+  const typeF = document.getElementById("filterType")  ? document.getElementById("filterType").value  : "";
+  const syncF = document.getElementById("filterSync")  ? document.getElementById("filterSync").value  : "";
+  const search= document.getElementById("filterItem")  ? document.getElementById("filterItem").value.toLowerCase() : "";
   const tbody = document.getElementById("recordsTbody");
-  let filtered = records.filter(r => {
-    if (type && r.type !== type) return false;
+
+  const filtered = records.filter(r => {
+    if (typeF && r.type !== typeF) return false;
+    if (syncF && r.sync_status !== syncF) return false;
     if (search && !r.item.toLowerCase().includes(search)) return false;
     return true;
   });
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No records match.</td></tr>';
-    return;
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No records match.</td></tr>'; return;
   }
-  tbody.innerHTML = filtered.slice().reverse().map(r => `
-    <tr>
-      <td><span class="badge ${r.type}">${r.type === "R" ? "Receive" : "Dispatch"}</span></td>
-      <td class="qty-mono" style="white-space:nowrap;">${r.timestamp}</td>
+
+  tbody.innerHTML = filtered.slice().reverse().map(r => {
+    const sLabel = r.sync_status === "S" ? "Synced" : "Queued";
+    const detail = r.type==="R" ? (r.supplier||"") : (r.issued_to||"");
+    return `<tr>
+      <td><span class="badge ${r.type}">${r.type==="R"?"Receive":"Dispatch"}</span></td>
+      <td><span class="badge ${r.sync_status||'Q'}">${sLabel}</span></td>
+      <td class="qty-mono" style="white-space:nowrap;font-size:11px;">${r.timestamp}</td>
       <td>${r.district}</td>
-      <td>${r.block || "—"}</td>
-      <td style="font-size:11px;">${r.category}</td>
+      <td>${r.block||"—"}</td>
       <td>${r.item}</td>
       <td class="qty-mono">${r.qty}</td>
       <td>${r.unit}</td>
       <td>${r.recorded_by}</td>
-      <td style="font-size:11px;color:var(--text2);">${r.type==="R" ? (r.supplier||"") : (r.issued_to||"")}${r.remarks ? " · "+r.remarks : ""}</td>
-    </tr>
-  `).join("");
+      <td style="font-size:11px;color:var(--text2);">${detail}${r.remarks?" · "+r.remarks:""}</td>
+    </tr>`;
+  }).join("");
 }
 
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
 // CSV EXPORT
-// ══════════════════════════════════════════
+// ════════════════════════════════════════════════════
 function exportCSV() {
   if (!records.length) { alert("No records to export."); return; }
-  const headers = ["uuid","type","timestamp","project","recorded_by","district","block","category","item","qty","unit","supplier","voucher","location","issued_to","workarea","purpose","remarks"];
+  const headers = ["uuid","sync_status","type","timestamp","project","recorded_by",
+    "district","block","category","item","qty","unit","supplier","voucher","location",
+    "issued_to","workarea","purpose","remarks"];
   const rows = records.map(r => headers.map(h => JSON.stringify(r[h]||"")).join(","));
-  const csv = [headers.join(","), ...rows].join("\n");
+  dlCSV([headers.join(","), ...rows].join("\n"), "inventory_"+currentProject);
+}
+
+function dlCSV(csv, name) {
   const a = document.createElement("a");
   a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-  a.download = "inventory_" + currentProject + "_" + new Date().toISOString().slice(0,10) + ".csv";
+  a.download = name + "_" + new Date().toISOString().slice(0,10) + ".csv";
   a.click();
+}
+
+function genUUID() {
+  return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+// ════════════════════════════════════════════════════
+// RATE CALCULATOR — LABOUR
+// ════════════════════════════════════════════════════
+function buildLabourTable() {
+  const tbody = document.getElementById("labourTbody");
+  tbody.innerHTML = LABOUR_RATES.map(r => {
+    const isSame = r.rateMin === r.rateMax;
+    const rateDisplay = isSame ? r.rateMin : r.rateMin + "–" + r.rateMax;
+    const midRate = isSame ? r.rateMin : ((r.rateMin + r.rateMax) / 2);
+    return `<tr>
+      <td style="color:var(--text2)">${r.id}</td>
+      <td>${r.activity}<br><span style="font-size:10px;color:var(--text2)">${r.remark}</span></td>
+      <td style="font-size:11px;color:var(--text2)">${r.unit}</td>
+      <td>
+        <span class="rate-range">₹ ${rateDisplay}</span><br>
+        <input type="number" id="rate_${r.id}" value="${midRate}" min="0" step="0.5"
+          oninput="calcLabour()" style="width:80px;margin-top:4px;" />
+      </td>
+      <td><input type="number" id="qty_${r.id}" value="" min="0" step="any" placeholder="0"
+        oninput="calcLabour()" style="width:80px;" /></td>
+      <td class="calc-out" id="out_${r.id}">—</td>
+    </tr>`;
+  }).join("");
+}
+
+function calcLabour() {
+  let total = 0;
+  LABOUR_RATES.forEach(r => {
+    const rate = parseFloat(document.getElementById("rate_"+r.id).value) || 0;
+    const qty  = parseFloat(document.getElementById("qty_"+r.id).value)  || 0;
+    const sub  = rate * qty;
+    const outEl = document.getElementById("out_"+r.id);
+    outEl.textContent = sub > 0 ? "₹ " + fmt(sub) : "—";
+    total += sub;
+  });
+  document.getElementById("labourTotalAmt").textContent = "₹ " + fmt(total);
+}
+
+function resetLabour() {
+  LABOUR_RATES.forEach(r => {
+    const midRate = (r.rateMin + r.rateMax) / 2;
+    document.getElementById("rate_"+r.id).value = midRate;
+    document.getElementById("qty_"+r.id).value  = "";
+    document.getElementById("out_"+r.id).textContent = "—";
+  });
+  document.getElementById("labourTotalAmt").textContent = "₹ 0";
+}
+
+function exportLabourCSV() {
+  const rows = [["Activity","Unit","Rate (₹)","Qty","Total (₹)","Remark"]];
+  LABOUR_RATES.forEach(r => {
+    const rate = parseFloat(document.getElementById("rate_"+r.id).value) || 0;
+    const qty  = parseFloat(document.getElementById("qty_"+r.id).value)  || 0;
+    rows.push([r.activity, r.unit, rate, qty, rate*qty, r.remark]);
+  });
+  dlCSV(rows.map(row => row.map(c => JSON.stringify(c)).join(",")).join("\n"), "labour_costing");
+}
+
+// ════════════════════════════════════════════════════
+// RATE CALCULATOR — INVENTORY
+// ════════════════════════════════════════════════════
+function buildInventoryGrid() {
+  const grid = document.getElementById("inventoryGrid");
+  let lastGroup = "";
+  let html = "";
+  INVENTORY_ITEMS.forEach(item => {
+    if (item.group !== lastGroup) {
+      html += `<div style="grid-column:1/-1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text2);padding:4px 0 2px;border-bottom:1px solid var(--border);margin-top:${lastGroup?'8px':'0'}">${item.group}</div>`;
+      lastGroup = item.group;
+    }
+    html += `<div class="rate-item">
+      <div class="ri-name">${item.name}</div>
+      <div class="ri-meta">Billing: ${item.billingUnit}</div>
+      <div class="rate-row">
+        <input type="number" id="irate_${item.id}" placeholder="Rate ₹" min="0" step="any" oninput="calcInventory()" />
+        <span class="unit-label">₹ / ${item.billingUnit}</span>
+      </div>
+      <div class="rate-row">
+        <input type="number" id="iqty_${item.id}" placeholder="Qty" min="0" step="any" oninput="calcInventory()" />
+        <span class="unit-label">${item.billingUnit}</span>
+      </div>
+      <div class="rate-result" id="iout_${item.id}">—</div>
+    </div>`;
+  });
+  grid.innerHTML = html;
+}
+
+function calcInventory() {
+  let total = 0;
+  INVENTORY_ITEMS.forEach(item => {
+    const rate = parseFloat(document.getElementById("irate_"+item.id).value) || 0;
+    const qty  = parseFloat(document.getElementById("iqty_"+item.id).value)  || 0;
+    const sub  = rate * qty;
+    document.getElementById("iout_"+item.id).textContent = sub > 0 ? "₹ " + fmt(sub) : "—";
+    total += sub;
+  });
+  document.getElementById("inventoryTotalAmt").textContent = "₹ " + fmt(total);
+}
+
+function resetInventory() {
+  INVENTORY_ITEMS.forEach(item => {
+    document.getElementById("irate_"+item.id).value = "";
+    document.getElementById("iqty_"+item.id).value  = "";
+    document.getElementById("iout_"+item.id).textContent = "—";
+  });
+  document.getElementById("inventoryTotalAmt").textContent = "₹ 0";
+}
+
+function exportInventoryCSV() {
+  const rows = [["Group","Item","Billing Unit","Rate (₹)","Qty","Total (₹)"]];
+  INVENTORY_ITEMS.forEach(item => {
+    const rate = parseFloat(document.getElementById("irate_"+item.id).value) || 0;
+    const qty  = parseFloat(document.getElementById("iqty_"+item.id).value)  || 0;
+    rows.push([item.group, item.name, item.billingUnit, rate, qty, rate*qty]);
+  });
+  dlCSV(rows.map(row => row.map(c => JSON.stringify(c)).join(",")).join("\n"), "materials_costing");
+}
+
+// ════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════
+function fmt(n) {
+  return n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 }
 </script>
 </body>
