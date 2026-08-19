@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>ARR Mapper v76 · Asha 1</title>
+<title>ARR Mapper v77 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -215,13 +215,6 @@ select option{background:#1f2937}
   padding:12px 8px;font-size:12px;color:#d1d5db;cursor:pointer;text-align:center;line-height:1.3;
 }
 .proj-btn.sel{border-color:#3b82f6;color:#fff;background:#1e3a5f}
-#google-signin-btn{
-  background:#2563eb;border:none;border-radius:8px;
-  padding:12px 24px;font-size:14px;font-weight:600;color:#fff;cursor:pointer;
-  width:100%;max-width:320px;display:flex;align-items:center;justify-content:center;gap:8px;
-}
-#google-signin-btn:disabled{opacity:.4;pointer-events:none}
-#setup-status{font-size:11px;color:#9ca3af;text-align:center;min-height:16px}
 
 /* ── About overlay ── */
 .tb-uni-btn{background:#006688;border:1.5px solid #005577;border-radius:5px;color:#fff;font-size:15px;padding:0;cursor:pointer;text-align:center;width:32px;height:32px;white-space:nowrap;transition:background .15s;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -304,7 +297,7 @@ body.lang-bn .pm-label, body.lang-hi .pm-label { font-size: 14px; }
   #sidebar:not(.collapsed) ~ #sb-tap-close{display:block}
 }
 </style>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <script>
 // ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
 // Shared across all applets via localStorage keys:
@@ -408,12 +401,8 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <!-- ── First-run setup overlay ── -->
 <div id="setup-overlay">
   <div class="setup-title">🌳 Field Mapping Tool</div>
-  <div class="setup-sub">Select your project, then sign in with Google</div>
+  <div class="setup-sub">Select your project to continue</div>
   <div class="proj-grid" id="proj-grid"></div>
-  <div id="google-signin-btn" style="width:100%;max-width:320px;min-height:44px;display:flex;align-items:center;justify-content:center;opacity:.4;pointer-events:none">
-    <span style="color:#9ca3af;font-size:12px">Select a project first</span>
-  </div>
-  <div id="setup-status">Choose a project first</div>
 </div>
 
 <div id="app">
@@ -711,7 +700,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
 // APP CONFIG  —  edit only this block when onboarding a new client
 // ═══════════════════════════════════════════════════════════════════════
 const APP_CONFIG = {
-  oauthClientId: '348880490660-o21fd3cm0as45qns22lkot6n162tdo7c.apps.googleusercontent.com',
   mapsApiKey: 'AIzaSyA0yiR28GzzeNoaWxtLNgrF14Q8L3XzZIk',
   projects: {
     'Asha1':  { label: 'Asha 1 (2023)', scriptUrl: 'https://script.google.com/macros/s/AKfycbwLfbyg-C2CgYi7cfxjBZrGaYrKkuD2I1SQXIBecqyfWVdtJkWQVG9Sb1F7s45i1u5R/exec'  },
@@ -1486,11 +1474,11 @@ function init() {
   buildSpeciesGrid();
   buildSoilGrid();
   updatePMDisplays();
-  // Check shared launcher auth before showing setup overlay
+  // Require launcher-level sign-in; redirect immediately if missing
   const launcherAuth = arrAuthGet();
-  if (launcherAuth) {
-    window._pendingLauncherEmail = launcherAuth.email;
-    window._pendingLauncherName  = launcherAuth.name;
+  if (!launcherAuth) {
+    window.location.href = './index.html?redirect=' + encodeURIComponent(window.location.href);
+    return;
   }
   loadSessionFromIDB();
 }
@@ -2570,11 +2558,12 @@ async function vecExportKML(geomType, coords, stage, revision_reason) {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-// FIRST-RUN SETUP  —  project selection + Google sign-in + IndexedDB
+// ═══════════════════════════════════════════════════════════════════════
+// FIRST-RUN SETUP  —  project selection only (auth from launcher)
 // On subsequent loads, session is restored from IDB without any prompt.
 // ═══════════════════════════════════════════════════════════════════════
 
-let _setupProjectKey = null;   // selected during first-run flow
+let _setupProjectKey = null;
 
 function setupBuildProjectGrid() {
   const grid = document.getElementById('proj-grid');
@@ -2584,72 +2573,22 @@ function setupBuildProjectGrid() {
     const b = document.createElement('button');
     b.className = 'proj-btn';
     b.textContent = cfg.label;
-    b.onclick = () => {
+    b.onclick = async () => {
       _setupProjectKey = key;
       grid.querySelectorAll('.proj-btn').forEach(x => x.classList.remove('sel'));
       b.classList.add('sel');
-      setupRenderGoogleButton();
-      const st = document.getElementById('setup-status');
-      if (st) st.textContent = cfg.label + ' \u2014 tap Sign in with Google';
+      // Derive userFolder from launcher auth (already confirmed at startup)
+      const auth = arrAuthGet();
+      if (!auth) {
+        window.location.href = './index.html?redirect=' + encodeURIComponent(window.location.href);
+        return;
+      }
+      const userFolder = makeUserFolder(auth.email);
+      await setupConfirm(userFolder);
     };
     grid.appendChild(b);
   });
 }
-
-function setupRenderGoogleButton() {
-  const container = document.getElementById('google-signin-btn');
-  if (!container) return;
-
-  // Guard: GSI script blocked (e.g. sandboxed iframe) or not yet loaded
-  if (typeof google === 'undefined' || !google.accounts) {
-    container.innerHTML = '<span style="color:#f87171;font-size:11px">Google sign-in unavailable in this context. Open in a real browser tab.</span>';
-    container.style.opacity = '1';
-    container.style.pointerEvents = 'none';
-    return;
-  }
-
-  // Initialise GSI with renderButton — works correctly with multiple
-  // signed-in accounts on desktop (shows account chooser popup) and
-  // with a single account on mobile (auto-selects or shows One Tap).
-  // Avoids the prompt() / isSkippedMoment path which hangs on desktop.
-  google.accounts.id.initialize({
-    client_id: APP_CONFIG.oauthClientId,
-    callback:  setupHandleCredential,
-    auto_select: false,   // don't auto-select — user must explicitly choose
-  });
-
-  container.innerHTML = '';
-  container.style.opacity = '1';
-  container.style.pointerEvents = 'auto';
-
-  google.accounts.id.renderButton(container, {
-    theme: 'filled_blue',
-    size:  'large',
-    width: 320,
-    text:  'signin_with',
-    logo_alignment: 'left',
-  });
-}
-
-// setupGoogleSignIn kept as a no-op alias in case anything references it
-function setupGoogleSignIn() { setupRenderGoogleButton(); }
-
-function setupHandleCredential(response) {
-  // Decode JWT payload (base64url, no verification needed — we trust Google's issuance)
-  try {
-    const payload = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-    const email      = payload.email || '';
-    const userFolder = makeUserFolder(email);
-    if (!userFolder) throw new Error('Could not extract username from email');
-    // Write to shared auth so other applets can use this session
-    arrAuthSet(email, payload.name || '');
-    setupConfirm(userFolder);
-  } catch(e) {
-    const st = document.getElementById('setup-status');
-    if (st) { st.textContent = 'Sign-in error: ' + e.message; st.style.color = '#f87171'; }
-  }
-}
-
 async function setupConfirm(userFolder) {
   SESSION.projectKey = _setupProjectKey;
   SESSION.userFolder = userFolder;
@@ -2683,8 +2622,11 @@ function openSettingsCallout(anchor) {
     const info = document.createElement('div');
     info.style.cssText = 'font-size:11px;color:#d1d5db;margin:4px 0 8px';
     const proj = SESSION.projectKey ? APP_CONFIG.projects[SESSION.projectKey]?.label || SESSION.projectKey : '\u2014';
+    const auth = arrAuthGet();
     info.innerHTML = '<div style="color:#9ca3af;font-size:10px">User</div>'
       + '<div style="font-weight:600;margin-bottom:6px">' + (SESSION.userFolder || '\u2014') + '</div>'
+      + '<div style="color:#9ca3af;font-size:10px">Signed in as</div>'
+      + '<div style="font-weight:600;margin-bottom:6px">' + (auth?.email || '\u2014') + '</div>'
       + '<div style="color:#9ca3af;font-size:10px">Project</div>'
       + '<div style="font-weight:600">' + proj + '</div>';
     box.appendChild(info);
@@ -2704,44 +2646,30 @@ function openSettingsCallout(anchor) {
       if (overlay) {
         overlay.classList.remove('hidden');
         setupBuildProjectGrid();
-        const btn = document.getElementById('google-signin-btn');
-        if (btn) { btn.disabled = true; btn.textContent = 'Sign in with Google'; }
-        const st = document.getElementById('setup-status');
-        if (st) { st.textContent = 'Choose a project first'; st.style.color = ''; }
       }
     };
     row.appendChild(chProj);
 
-    const signOut = document.createElement('button');
-    signOut.className = 'copt';
-    signOut.textContent = '\ud83d\udeaa Sign out';
-    signOut.style.borderColor = '#dc2626';
-    signOut.onclick = async () => {
-      closeCallout();
-      await idbClear();
-      SESSION = { projectKey: null, userFolder: null, setupDone: false };
-      const overlay = document.getElementById('setup-overlay');
-      if (overlay) {
-        overlay.classList.remove('hidden');
-        setupBuildProjectGrid();
-        const btn = document.getElementById('google-signin-btn');
-        if (btn) { btn.disabled = true; btn.textContent = 'Sign in with Google'; }
-        const st = document.getElementById('setup-status');
-        if (st) { st.textContent = 'Choose a project first'; st.style.color = ''; }
-      }
-      const settingsBtn = document.getElementById('tb-settings-btn');
-      if (settingsBtn) settingsBtn.style.display = 'none'; // session btn
-    };
-    row.appendChild(signOut);
-    box.appendChild(row);
-  });
-}
+    const goLauncher = document.createElement('button');
+    goLauncher.className = 'copt';
+    goLauncher.textContent = '\ud83c\udfe0 Suite / Sign out';
+    goLauncher.style.borderColor = '#4b5563';
+    goLauncher.onclick = () => { window.location.href = './index.html'; };
+    row.appendChild(goLauncher);
+
+
+
 
 // ── Load session from IDB on startup ─────────────────────────────────
 async function loadSessionFromIDB() {
   try {
     const stored = await idbGet('session');
     if (stored && stored.projectKey && stored.userFolder) {
+      // Also re-check launcher auth is still valid
+      if (!arrAuthGet()) {
+        window.location.href = './index.html?redirect=' + encodeURIComponent(window.location.href);
+        return false;
+      }
       SESSION.projectKey = stored.projectKey;
       SESSION.userFolder = stored.userFolder;
       SESSION.setupDone  = true;
@@ -2750,6 +2678,7 @@ async function loadSessionFromIDB() {
       return true;
     }
   } catch(e) { console.warn('IDB session load failed:', e); }
+  // No stored session — show project picker (auth already confirmed above)
   return false;
 }
 
@@ -3657,6 +3586,14 @@ const ABOUT_CONTENT = {
   log: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Changelog — ARR Mapper</h3>
 <div style="color:#9ca3af;font-size:10px;margin-bottom:12px">Cumulative changelog &mdash; latest first</div>
 
+<div class="abt-ver">v77 <span class="abt-date">Aug 2026</span></div>
+<ul class="abt-ul">
+  <li>Auth: removed independent Google Sign-In — now requires launcher-level login; hard redirect to index.html if no valid session</li>
+  <li>Setup overlay: project selection only; userFolder derived from launcher auth email (no GSI JWT step)</li>
+  <li>Settings callout: shows signed-in email; Sign out replaced with 🏠 Suite / Sign out (redirects to launcher)</li>
+  <li>Removed: GSI script tag, oauthClientId, setupRenderGoogleButton, setupHandleCredential, google-signin-btn HTML/CSS</li>
+  <li>IDB session restore re-checks launcher auth validity on startup</li>
+</ul>
 <div class="abt-ver">v68 DEV3 <span class="abt-date">Jul 2026</span></div>
 <ul class="abt-ul">
   <li>Vector Tool: polygon stage tagging — eligibility / negotiated / surveyed / cleared / final / revised</li>
