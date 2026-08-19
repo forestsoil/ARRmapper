@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <meta name="theme-color" content="#1a3d2b">
-<title>ARR Project Suite v22</title>
+<title>ARR Project Suite v23</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -111,7 +111,6 @@ footer a:hover{color:var(--canopy)}
     <h1>ARR Project Suite</h1>
     <p>Field tools, monitoring and management<br>for ARR carbon projects</p>
   </div>
-  <button onclick="openFeatList()" title="Feature list" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--mist);cursor:pointer;flex-shrink:0">ℹ️ Features</button>
 </header>
 
 <div class="auth-bar" id="auth-bar">
@@ -120,6 +119,7 @@ footer a:hover{color:var(--canopy)}
   <span id="auth-user-pill" class="user-pill" style="display:none"></span>
   <button id="auth-signout-btn" onclick="launcherSignOut()" style="display:none;font-size:11px;padding:4px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:var(--mist);cursor:pointer">Sign out</button>
   <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
+  <button class="theme-toggle" onclick="openFeatList()" title="Feature list" style="margin-left:0">ℹ️ Features</button>
 </div>
 
 <main>
@@ -438,13 +438,16 @@ const FEAT_APPLETS = [
   },
   { key:'dashboard',label:'🌡️ Plantation Dashboard',  access:'Fully open — no sign-in required',
     features:[
-      'Live plantation map with year-on-year area tracking (2024–2026)',
-      'LPC-level drill-down: location, area, date planted, species breakdown, diversity indices',
-      'Beneficiary records: name, DBC, gender, occupation, social category',
-      'Links to plantation maps, soil maps, KML polygons, land documents and agreements',
-      'Live search by LPC, beneficiary name, or DBC with dropdown autocomplete',
-      'Species breakdown bar charts + Shannon/Simpson/Pielou diversity indices per plot',
-      'PII guard: contact numbers and Aadhaar not exposed in public view',
+      'Interactive Leaflet map with year-coded plantation polygons (2024–2026)',
+      'Topbar filter bar: Year, District, Block, GP, Gender, SSCAT, LPC/Name/DBC search',
+      'Stats bar: plots, hectares, beneficiaries, saplings, tribal count, female %',
+      'Sidebar: species pool bar chart + Shannon/Simpson/Pielou/Richness diversity indices',
+      'LPC drill-down panel: location, area, date planted, species breakdown, per-plot diversity',
+      'Beneficiary records: name, DBC, gender, occupation, social category, agreement & land doc links',
+      'PII guard: contact numbers and Aadhaar stripped before render',
+      'Light/dark theme toggle; results table with all filtered plots',
+      'Data pipeline: field-verified GeoPackages (EPSG:24345 → WGS84) merged with annual XLSX databases',
+      'Credits: Python dashboard — Satyajit Chakraborty · Web app & pipeline — Nirmalya Chatterjee',
     ]
   },
   { key:'monitoring',label:'🌿 Monitoring Dashboard', access:'Partial — view open; MRV form requires sign-in',

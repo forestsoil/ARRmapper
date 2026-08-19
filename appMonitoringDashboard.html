@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v15 · Asha 1</title>
+<title>Monitoring Dashboard v16 · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -195,7 +195,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
   if (!el) return;
   if (!auth) { el.textContent = ''; return; }
   const display = auth.name && !auth.email.endsWith('@device') ? auth.name : auth.email;
-  el.textContent = display;
+  el.textContent = '👤 ' + display;
   el.title = auth.email;
   el.style.cursor = 'pointer';
   el.onclick = () => {
@@ -572,7 +572,13 @@ async function fetchFromAS(background) {
     const url = AS_URL + '?action=getMonitoring&callback=_cb_monitoring';
     await new Promise((res, rej) => {
       const script = document.createElement('script');
+      const tid = setTimeout(() => {
+        delete window._cb_monitoring;
+        try { document.head.removeChild(script); } catch(_) {}
+        rej(new Error('Timeout'));
+      }, 15000);
       window._cb_monitoring = data => {
+        clearTimeout(tid);
         delete window._cb_monitoring;
         document.head.removeChild(script);
         if (data.ok && data.records) {
@@ -583,10 +589,14 @@ async function fetchFromAS(background) {
           res();
         } else { rej(new Error(data.error || 'No records')); }
       };
-      script.onerror = () => { delete window._cb_monitoring; document.head.removeChild(script); rej(new Error('Network error')); };
+      script.onerror = () => {
+        clearTimeout(tid);
+        delete window._cb_monitoring;
+        try { document.head.removeChild(script); } catch(_) {}
+        rej(new Error('Network error'));
+      };
       script.src = url;
       document.head.appendChild(script);
-      setTimeout(() => rej(new Error('Timeout')), 15000);
     });
   } catch(e) {
     if (!background) setStatus('error', null, e.message);
