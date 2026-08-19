@@ -290,7 +290,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
     <button class="lang-btn" id="lang-btn" onclick="cycleLang()">EN</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
-    <span class="ver">v1 DEV30</span>
+    <span class="ver">v1 DEV31</span>
     <div id="user-chip">Loading…</div>
   </div>
   <div id="main">
@@ -307,25 +307,6 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
         <button class="back-btn" onclick="showProjects()">← Back</button>
         <span class="proj-tag" id="proj-tag" style="font-weight:700;font-size:16px"></span>
         <span style="font-size:13px;color:var(--c-muted);flex:1" id="proj-full-label"></span>
-      </div>
-      <!-- Filter bar -->
-      <div class="filter-bar" id="form-filter-bar">
-        <div class="filter-row">
-          <span class="filter-label">Filter</span>
-          <select class="filter-sel" id="ff-district" onchange="updateFormFilters()">
-            <option value="">All districts</option>
-          </select>
-          <select class="filter-sel" id="ff-block" onchange="updateFormFilters()">
-            <option value="">All blocks</option>
-          </select>
-          <button class="filter-clear" onclick="clearFormFilters()">✕ Clear</button>
-          <span class="filter-count" id="ff-count"></span>
-        </div>
-        <div class="filter-row">
-          <input type="text" class="filter-search" id="ff-search"
-            placeholder="Search beneficiary, LPC, village, GP…"
-            oninput="updateFormFilters()">
-        </div>
       </div>
       <div class="form-btn-list" id="form-btn-list"></div>
     </div>
@@ -361,11 +342,26 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
         </select>
         <button id="rec-export-btn" onclick="exportRecordsXLSX()" style="display:none;font-size:11px;padding:5px 10px;background:var(--c-accent2);border:none;border-radius:var(--radius);color:#fff;font-weight:600;cursor:pointer">⬇ XLSX</button>
       </div>
-      <div class="rec-search-bar">
-      <input type="text" class="rec-search-inp" id="rec-search"
-        placeholder="Search across all columns…" oninput="filterRecordTable()">
-      <span id="rec-status" style="font-size:11px;color:var(--c-muted);white-space:nowrap"></span>
-    </div>
+      <div class="rec-search-bar" style="display:none"><!-- replaced --></div>
+      <!-- Records filter bar -->
+      <div class="filter-bar" id="rec-filter-bar" style="margin-bottom:8px">
+        <div class="filter-row">
+          <span class="filter-label">Filter</span>
+          <select class="filter-sel" id="rf-district" onchange="updateRecordFilters()">
+            <option value="">All districts</option>
+          </select>
+          <select class="filter-sel" id="rf-block" onchange="updateRecordFilters()">
+            <option value="">All blocks</option>
+          </select>
+          <button class="filter-clear" onclick="clearRecordFilters()">✕</button>
+        </div>
+        <div class="filter-row">
+          <input type="text" class="filter-search" id="rec-search"
+            placeholder="Search LPC, beneficiary, village, GP…"
+            oninput="updateRecordFilters()">
+          <span id="rec-status" style="font-size:11px;color:var(--c-muted);white-space:nowrap;flex-shrink:0"></span>
+        </div>
+      </div>
       <div id="rec-table-wrap" style="overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 180px);border:1px solid var(--c-border);border-radius:var(--radius)">
         <table id="rec-table" style="border-collapse:collapse;width:100%;font-size:11px;min-width:600px">
           <thead id="rec-thead" style="position:sticky;top:0;z-index:2;background:var(--c-surface)"></thead>
@@ -391,7 +387,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
 // APP_CONFIG
 // ═══════════════════════════════════════════════════════
 const APP_CONFIG = {
-  version: 'v1_DEV30',
+  version: 'v1_DEV31',
   toolFolder: 'appSurveyManager',
   oauthClientId: '348880490660-lmovs9s5ml5s87p0tlnv8l41njibqukb.apps.googleusercontent.com',
   scriptUrl: {
@@ -3859,8 +3855,7 @@ function selectProject(proj) {
       row.appendChild(getBtn);
       list.appendChild(row);
     });
-    // Init filter bar for this project
-    initFormFilters();
+
   });
 
   showScreen('screen-forms');
@@ -6751,87 +6746,75 @@ async function fetchAndExportXLSX(formId, formName) {
 let _filterFeatures = null;
 let _filterDistMap  = {}; // distCode → Set of blockCodes
 
-async function initFormFilters() {
-  // Populate district dropdown from schema admin_hierarchy
-  // Guard: only populate if project changed or dropdown is empty
-  const dists = SCHEMA.admin_hierarchy[S.project]?.districts || {};
-  const dsel = document.getElementById('ff-district');
+// ── Record viewer filter (district/block cascade + search) ───────────
+function initRecordFilters() {
+  // Populate district dropdown from actual loaded records
+  if (!_recData.length) return;
+  const dists = [...new Set(_recData.map(r =>
+    r.district_code || r.district || ''
+  ).filter(Boolean))].sort();
+  const dsel = document.getElementById('rf-district');
   if (!dsel) return;
-  // Only rebuild if project changed
-  if (dsel.dataset.project === S.project) return;
-  dsel.dataset.project = S.project;
-  // Clear and repopulate
-  dsel.innerHTML = '<option value="">All districts</option>';
-  Object.entries(dists).forEach(([code, info]) => {
-    const o = document.createElement('option');
-    o.value = code;
-    o.textContent = info.label || info.name || code;
-    dsel.appendChild(o);
-  });
-  // Reset block dropdown too
-  const bsel = document.getElementById('ff-block');
-  if (bsel) { bsel.innerHTML = '<option value="">All blocks</option>'; bsel.dataset.district = ''; }
+  const cur = dsel.value;
+  dsel.innerHTML = '<option value="">All districts</option>' +
+    dists.map(d => `<option value="${d}">${d}</option>`).join('');
+  dsel.value = dists.includes(cur) ? cur : '';
+  updateRecordFilters(); // refresh block dropdown
 }
 
-function updateFormFilters() {
-  const distVal   = document.getElementById('ff-district')?.value || '';
-  const blockVal  = document.getElementById('ff-block')?.value    || '';
-  const search    = (document.getElementById('ff-search')?.value  || '').toLowerCase().trim();
+function updateRecordFilters() {
+  const distVal  = document.getElementById('rf-district')?.value || '';
+  const blockVal = document.getElementById('rf-block')?.value    || '';
+  const search   = (document.getElementById('rec-search')?.value || '').toLowerCase().trim();
 
   // Update block dropdown based on district
-  const blockSel = document.getElementById('ff-block');
+  const blockSel = document.getElementById('rf-block');
   if (blockSel && distVal !== blockSel.dataset.district) {
     blockSel.dataset.district = distVal;
-    blockSel.innerHTML = '<option value="">All blocks</option>';
-    if (distVal) {
-      const dists = SCHEMA.admin_hierarchy[S.project]?.districts || {};
-      const blocks = dists[distVal]?.blocks || {};
-      Object.entries(blocks).forEach(([code, info]) => {
-        const o = document.createElement('option');
-        o.value = code;
-        o.textContent = (typeof info === 'string' ? info : info.name) || code;
-        blockSel.appendChild(o);
-      });
-    }
+    const blocks = distVal
+      ? [...new Set(_recData
+          .filter(r => (r.district_code||r.district||'') === distVal)
+          .map(r => r.block_circle_code || r.block_circle || r.block || '')
+          .filter(Boolean))].sort()
+      : [];
+    blockSel.innerHTML = '<option value="">All blocks</option>' +
+      blocks.map(b => `<option value="${b}">${b}</option>`).join('');
   }
 
-  // Filter form list — store filter state for LPC lookup pre-population
-  S._filter = { district: distVal, block: blockVal, search };
-
-  // Show/hide form buttons based on search (search is across form names/subs only here)
-  const rows = document.querySelectorAll('.form-btn-row');
-  let visible = 0;
-  rows.forEach(row => {
-    const text = row.textContent.toLowerCase();
-    const show = !search || text.includes(search);
-    row.style.display = show ? '' : 'none';
-    if (show) visible++;
+  // Apply filters to table rows
+  let shown = 0;
+  document.querySelectorAll('#rec-tbody tr').forEach((tr, i) => {
+    const row = _recData[i];
+    if (!row) return;
+    const rDist  = row.district_code || row.district || '';
+    const rBlock = row.block_circle_code || row.block_circle || row.block || '';
+    const matchDist  = !distVal  || rDist  === distVal;
+    const matchBlock = !blockVal || rBlock === blockVal;
+    const matchSearch = !search  || tr.textContent.toLowerCase().includes(search);
+    const show = matchDist && matchBlock && matchSearch;
+    tr.style.display = show ? '' : 'none';
+    if (show) shown++;
   });
 
-  const cnt = document.getElementById('ff-count');
-  if (cnt) cnt.textContent = search ? visible + ' forms' : '';
-
-  // Pre-populate district/block in form values when filter is set
-  if (distVal) S.values.district_code = distVal;
-  if (blockVal) S.values.block_circle_code = blockVal;
+  const cnt = document.getElementById('rec-status');
+  if (cnt) cnt.textContent = (distVal||blockVal||search)
+    ? shown + ' of ' + _recData.length + ' records'
+    : _recData.length + ' records';
 }
 
-function clearFormFilters() {
-  ['ff-district','ff-block','ff-search'].forEach(id => {
+function clearRecordFilters() {
+  ['rf-district','rf-block','rec-search'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  const blockSel = document.getElementById('ff-block');
+  const blockSel = document.getElementById('rf-block');
   if (blockSel) {
     blockSel.innerHTML = '<option value="">All blocks</option>';
     blockSel.dataset.district = '';
   }
-  S._filter = {};
-  S.values.district_code = '';
-  S.values.block_circle_code = '';
-  document.querySelectorAll('.form-btn-row').forEach(r => r.style.display = '');
-  const cnt = document.getElementById('ff-count');
-  if (cnt) cnt.textContent = '';
+  document.querySelectorAll('#rec-tbody tr').forEach(tr => tr.style.display = '');
+  const cnt = document.getElementById('rec-status');
+  if (cnt) cnt.textContent = _recData.length + ' records';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -6840,24 +6823,6 @@ function clearFormFilters() {
 
 let _allRecRows = []; // cache for search filtering
 
-function filterRecordTable() {
-  const q = (document.getElementById('rec-search')?.value || '').toLowerCase();
-  if (!q) {
-    // Show all rows
-    document.querySelectorAll('#rec-tbody tr').forEach(tr => tr.style.display = '');
-    document.getElementById('rec-status').textContent =
-      _recData.length + ' records';
-    return;
-  }
-  let shown = 0;
-  document.querySelectorAll('#rec-tbody tr').forEach((tr, i) => {
-    const text = tr.textContent.toLowerCase();
-    const match = text.includes(q);
-    tr.style.display = match ? '' : 'none';
-    if (match) shown++;
-  });
-  document.getElementById('rec-status').textContent =
-    shown + ' of ' + _recData.length + ' records';
-}
+// filterRecordTable replaced by updateRecordFilters
 
 </script>
