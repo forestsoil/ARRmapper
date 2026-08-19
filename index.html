@@ -8,14 +8,22 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo.png">
 <meta name="theme-color" content="#1a3d2b">
-<title>ARR Project Suite</title>
+<title>ARR Project Suite v21</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --forest:#1a3d2b;--canopy:#2d6a4f;--leaf:#52b788;--mist:#d8f3dc;
   --ink:#1c2b20;--mid:#4a6741;--pale:#f4faf6;--rule:rgba(82,183,136,.25);
+  --card:#fff;
+  --card-name:#1a3d2b;
 }
-body{font-family:'Noto Sans','Segoe UI',system-ui,sans-serif;background:var(--pale);color:var(--ink);min-height:100vh}
+[data-theme="dark"]{
+  --forest:#0d2218;--canopy:#52b788;--leaf:#52b788;--mist:#a8d5be;
+  --ink:#e2ede7;--mid:#8fba9f;--pale:#111c16;--rule:rgba(82,183,136,.2);
+  --card:#1a2e22;
+  --card-name:#a8d5be;
+}
+body{font-family:'Noto Sans','Segoe UI',system-ui,sans-serif;background:var(--pale);color:var(--ink);min-height:100vh;transition:background .2s,color .2s}
 header{background:var(--forest);padding:20px 32px;display:flex;flex-direction:row;
   align-items:center;justify-content:center;gap:18px;border-bottom:3px solid var(--leaf)}
 header img{width:110px;height:110px;object-fit:contain;flex-shrink:0}
@@ -24,7 +32,7 @@ header img{width:110px;height:110px;object-fit:contain;flex-shrink:0}
 .hdr-text p{font-size:12px;color:var(--mist);line-height:1.6;max-width:340px}
 main{max-width:960px;margin:0 auto;padding:32px 20px 48px;text-align:center}
 .grid{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-bottom:0}
-.app-card{background:#fff;border:1.5px solid var(--rule);border-radius:12px;padding:20px 18px 16px;
+.app-card{background:var(--card);border:1.5px solid var(--rule);border-radius:12px;padding:20px 18px 16px;
   text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:8px;
   transition:box-shadow .15s,border-color .15s,transform .1s;cursor:pointer;position:relative;
   overflow:hidden;width:260px;text-align:left}
@@ -34,7 +42,7 @@ main{max-width:960px;margin:0 auto;padding:32px 20px 48px;text-align:center}
 .app-card:hover::before{opacity:1}
 .app-card.coming-soon{opacity:.6;cursor:default;pointer-events:none}
 .card-icon{font-size:28px;line-height:1;margin-bottom:2px}
-.card-name{font-size:15px;font-weight:700;color:var(--forest);line-height:1.2}
+.card-name{font-size:15px;font-weight:700;color:var(--card-name);line-height:1.2}
 .card-sub{font-size:11px;color:var(--mid);line-height:1.4}
 .card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .tag{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
@@ -49,7 +57,7 @@ main{max-width:960px;margin:0 auto;padding:32px 20px 48px;text-align:center}
 .card-arrow{position:absolute;bottom:16px;right:16px;font-size:16px;
   color:var(--accent,var(--leaf));opacity:0;transition:opacity .15s,transform .15s}
 .app-card:hover .card-arrow{opacity:1;transform:translateX(3px)}
-footer{text-align:center;font-size:11px;color:#9ca3af;padding:20px;
+footer{text-align:center;font-size:11px;color:var(--mid);padding:20px;
   border-top:1px solid var(--rule);line-height:1.8}
 footer a{color:var(--mid);text-decoration:none}
 footer a:hover{color:var(--canopy)}
@@ -62,7 +70,11 @@ footer a:hover{color:var(--canopy)}
 }
 
 .auth-bar{background:rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;
-  padding:8px 24px;font-size:12px;color:var(--mist);justify-content:flex-end}
+  padding:8px 24px;font-size:12px;color:var(--mist);justify-content:center;flex-wrap:wrap}
+.theme-toggle{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  border-radius:20px;padding:4px 12px;cursor:pointer;font-size:11px;color:var(--mist);
+  transition:background .15s;margin-left:auto}
+.theme-toggle:hover{background:rgba(255,255,255,.22)}
 .auth-bar .user-pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
   border-radius:20px;padding:4px 12px;cursor:pointer;transition:background .15s}
 .auth-bar .user-pill:hover{background:rgba(255,255,255,.22)}
@@ -88,6 +100,7 @@ footer a:hover{color:var(--canopy)}
   <div id="gsi-btn-wrap"></div>
   <span id="auth-user-pill" class="user-pill" style="display:none"></span>
   <button id="auth-signout-btn" onclick="launcherSignOut()" style="display:none;font-size:11px;padding:4px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:var(--mist);cursor:pointer">Sign out</button>
+  <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
 </div>
 
 <main>
@@ -165,14 +178,15 @@ footer a:hover{color:var(--canopy)}
     </a>
 
     <!-- Row 3: Operations -->
-    <a class="app-card coming-soon" href="#" style="--accent:#b45309">
+    <a class="app-card" href="appInventory.html" style="--accent:#b45309">
       <div class="card-icon">📦</div>
       <div class="card-name">Inventory &amp; Resources</div>
-      <div class="card-sub">Plot-linked material calculator — fencing, pits, fertiliser, planting labour — and nursery raising schedule</div>
+      <div class="card-sub">Stock tracking, material dispatch and receipt — fencing, pits, fertiliser, tools per district and plot</div>
       <div class="card-tags">
         <span class="tag operations">Operations</span>
-        <span class="tag soon">Coming soon</span>
+        <span class="tag new">Live</span>
       </div>
+      <div class="card-arrow">→</div>
     </a>
 
     <a class="app-card" href="appNurseryDashboard.html" style="--accent:#16a34a">
@@ -275,6 +289,25 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
 // ── Launcher auth ─────────────────────────────────────────────────
 const OAUTH_CLIENT_ID = '348880490660-o21fd3cm0as45qns22lkot6n162tdo7c.apps.googleusercontent.com';
+
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next   = isDark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('arr_theme', next);
+  document.getElementById('theme-toggle-btn').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
+function applyStoredTheme() {
+  const stored = localStorage.getItem('arr_theme') || 'light';
+  if (stored === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    const btn = document.getElementById('theme-toggle-btn');
+    if (btn) btn.textContent = '☀️';
+  }
+}
+applyStoredTheme();
 
 function launcherInit() {
   // Handle redirect return — if ?redirect= param present after auth
