@@ -338,7 +338,7 @@ function arrAuthCheck(redirectIfMissing = true) {
   const auth = arrAuthGet();
   if (!auth && redirectIfMissing) {
     const returnUrl = encodeURIComponent(window.location.href);
-    window.location.href = '/ARRmapper/index.html?redirect=' + returnUrl;
+    window.location.href = './index.html?redirect=' + returnUrl;
     return null;
   }
   return auth;
@@ -358,7 +358,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
     if (confirm('Signed in as ' + auth.email + '\n\nSign out?')) {
       arrAuthClear();
       if (typeof onSignOut === 'function') onSignOut();
-      else window.location.href = '/ARRmapper/index.html';
+      else window.location.href = './index.html';
     }
   };
 }
@@ -2666,11 +2666,6 @@ async function loadSessionFromIDB() {
   try {
     const stored = await idbGet('session');
     if (stored && stored.projectKey && stored.userFolder) {
-      // Also re-check launcher auth is still valid
-      if (!arrAuthGet()) {
-        window.location.href = './index.html?redirect=' + encodeURIComponent(window.location.href);
-        return false;
-      }
       SESSION.projectKey = stored.projectKey;
       SESSION.userFolder = stored.userFolder;
       SESSION.setupDone  = true;
@@ -2679,7 +2674,7 @@ async function loadSessionFromIDB() {
       return true;
     }
   } catch(e) { console.warn('IDB session load failed:', e); }
-  // No stored session — show project picker (auth already confirmed above)
+  // No stored session — overlay stays, user picks project
   return false;
 }
 
@@ -3589,8 +3584,11 @@ const ABOUT_CONTENT = {
 
 <div class="abt-ver">v78 <span class="abt-date">Aug 2026</span></div>
 <ul class="abt-ul">
-  <li>Fix: openSettingsCallout missing closing braces (broke all JS below it)</li>
+  <li>Fix: openSettingsCallout missing closing braces (broke all JS below it — loadSessionFromIDB and everything after was dead code)</li>
+  <li>Fix: loadSessionFromIDB redundant auth re-check removed (init() already guards); session now restores correctly on launch</li>
   <li>Fix: switchTab garbled comment and broken ternary from v68 MRV removal</li>
+  <li>Fix: arrAuthCheck redirect used absolute /ARRmapper/index.html — normalised to ./index.html</li>
+  <li>Cleanup: removed dead tab_mrv:'' key from all three lang objects (EN/HI/BN)</li>
   <li>Cleanup: removed dead tab_mrv:'' key from all three lang objects (EN/HI/BN)</li>l if no valid session</li>
   <li>Setup overlay: project selection only; userFolder derived from launcher auth email (no GSI JWT step)</li>
   <li>Settings callout: shows signed-in email; Sign out replaced with 🏠 Suite / Sign out (redirects to launcher)</li>
