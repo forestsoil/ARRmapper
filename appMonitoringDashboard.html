@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v21 · Asha 1</title>
+<title>Monitoring Dashboard v12 · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -16,17 +16,8 @@
   --radius:10px; --shadow:0 2px 10px rgba(0,0,0,.07);
   --font:'Segoe UI',system-ui,sans-serif;
 }
-html.dark {
-  --ink:#e8f4e8; --bg:#0f1c14; --card:#1c2a17;
-  --forest:#0d2414; --canopy:#2d6940; --leaf:#6ee7b7; --pale:#1a3020;
-  --amber:#fbbf24; --amber-pale:#2a1a00;
-  --red:#f87171; --red-pale:#2a0a0a;
-  --teal:#6ee7b7; --teal-pale:#0a2a22;
-  --rule:rgba(110,231,183,.15);
-  --shadow:0 2px 10px rgba(0,0,0,.3);
-}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;transition:background .2s,color .2s}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px}
 
 /* ── Header ───────────────────────────────────────────────────── */
 header{background:var(--forest);padding:16px 24px;display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--leaf)}
@@ -36,27 +27,11 @@ header{background:var(--forest);padding:16px 24px;display:flex;align-items:cente
 .hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
 #data-badge{font-size:10px;color:rgba(255,255,255,.6);background:rgba(255,255,255,.1);padding:4px 10px;border-radius:20px}
 #live-badge{display:none;font-size:10px;color:#6ee7b7;background:rgba(110,231,183,.15);padding:4px 10px;border-radius:20px;border:1px solid rgba(110,231,183,.3)}
-.arr-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 11px;color:#fff;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none;display:inline-block}
-.arr-chip:hover{background:rgba(255,255,255,.22)}
-#arr-user-chip{display:none}
-.theme-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 9px;font-size:12px;cursor:pointer;color:#fff;font-family:inherit;transition:background .15s}
-.theme-btn:hover{background:rgba(255,255,255,.22)}
-
-/* ── Auth gate overlay ────────────────────────────────────────── */
-#auth-gate{display:none;position:fixed;inset:0;z-index:8500;background:rgba(0,0,0,.6);align-items:center;justify-content:center}
-#auth-gate.open{display:flex}
-#auth-gate-box{background:var(--card);border:1.5px solid var(--rule);border-radius:var(--radius);padding:28px 32px;text-align:center;max-width:360px;width:90%;box-shadow:var(--shadow)}
-.ag-icon{font-size:36px;margin-bottom:10px}
-#auth-gate-box h2{font-size:15px;font-weight:700;color:var(--forest);margin-bottom:6px}
-#auth-gate-box p{font-size:12px;color:#6b7280;margin-bottom:18px;line-height:1.6}
-.ag-btn{display:inline-block;padding:9px 22px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:var(--font);margin:4px;text-decoration:none}
-.ag-btn-primary{background:var(--canopy);color:#fff}.ag-btn-primary:hover{background:var(--forest)}
-.ag-btn-secondary{background:var(--pale);color:var(--canopy);border:1.5px solid var(--leaf)}.ag-btn-secondary:hover{background:var(--leaf);color:#fff}
 
 /* ── Filter bar ───────────────────────────────────────────────── */
-.filterbar{background:var(--card);border-bottom:1px solid var(--rule);padding:10px 24px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.filterbar{background:#fff;border-bottom:1px solid var(--rule);padding:10px 24px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.05)}
 .filterbar label{font-size:11px;font-weight:600;color:var(--canopy);text-transform:uppercase;letter-spacing:.05em}
-select,input[type=number]{font-family:var(--font);font-size:12px;padding:5px 8px;border:1.5px solid var(--rule);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer;min-width:120px}
+select,input[type=number]{font-family:var(--font);font-size:12px;padding:5px 8px;border:1.5px solid var(--rule);border-radius:6px;background:#fff;color:var(--ink);cursor:pointer;min-width:120px}
 select:focus,input:focus{outline:none;border-color:var(--leaf)}
 .filter-group{display:flex;align-items:center;gap:5px}
 .btn-reset{font-size:11px;padding:5px 12px;background:var(--pale);border:1.5px solid var(--leaf);border-radius:6px;color:var(--canopy);font-weight:600;cursor:pointer}
@@ -116,7 +91,7 @@ tbody td{padding:6px 10px;vertical-align:top}
 
 /* ── Source toggle ────────────────────────────────────────────── */
 .source-toggle{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-.src-btn{font-size:10px;padding:3px 10px;border-radius:20px;border:1.5px solid var(--rule);background:var(--card);color:#6b7280;cursor:pointer;font-weight:600}
+.src-btn{font-size:10px;padding:3px 10px;border-radius:20px;border:1.5px solid var(--rule);background:#fff;color:#6b7280;cursor:pointer;font-weight:600}
 .src-btn.active{border-color:var(--leaf);background:var(--pale);color:var(--canopy)}
 
 /* ── Flag panel ───────────────────────────────────────────────── */
@@ -137,6 +112,14 @@ tbody td{padding:6px 10px;vertical-align:top}
 /* ── Remarks chip ─────────────────────────────────────────────── */
 .remark-chip{font-size:10px;color:#4b5563;background:#f3f4f6;border-radius:4px;padding:2px 6px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;cursor:help}
 
+@media(max-width:768px){
+  .row2,.row3{grid-template-columns:1fr}
+  .kpi{min-width:120px}
+  .filterbar{padding:8px 12px}
+  .kpi-row{padding:12px 12px 0}
+  .sections{padding:12px 12px 40px}
+}
+
 /* ── MRV Field Visit Tool ─────────────────────────────────────── */
 .mrv-pm-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1f2937;gap:4px}
 .mrv-pm-label{font-size:10px;color:#9ca3af;flex:1;min-width:0;line-height:1.3}
@@ -147,6 +130,8 @@ tbody td{padding:6px 10px;vertical-align:top}
 .mrv-vbtn{background:#1f2937;border:1.5px solid #374151;border-radius:6px;color:#d1d5db;font-size:11px;padding:5px 9px;cursor:pointer;white-space:nowrap}
 .mrv-vbtn.sel{background:#0d7377;border-color:#0fa3a8;color:#fff}
 .mrv-grade-btn{background:#1f2937;border:2px solid #374151;border-radius:6px;color:#d1d5db;font-size:13px;font-weight:700;padding:8px 4px;cursor:pointer;text-align:center}
+
+/* ── MRV panel ─────────────────────────────────────────────────── */
 .mrv-panel{background:#111827;border-radius:10px;padding:16px;margin-top:8px;color:#f3f4f6}
 .mrv-sec-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;margin-bottom:6px;margin-top:12px}
 .mrv-panel input[type=text],.mrv-panel input[type=date],.mrv-panel select{width:100%;background:#1f2937;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px 7px;font-family:var(--font)}
@@ -154,21 +139,21 @@ tbody td{padding:6px 10px;vertical-align:top}
 .icon-btn{border:none;border-radius:6px;color:#fff;font-size:12px;padding:6px 10px;cursor:pointer;font-weight:600}
 .icon-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .b-teal-btn{background:#0d7377}.b-green-btn{background:#059669}.b-amber-btn{background:#b45a0c}.b-gray-btn{background:#374151}.b-red-btn{background:#7f1d1d}.b-off{opacity:.4;pointer-events:none}
-
-@media(max-width:768px){
-  .row2,.row3{grid-template-columns:1fr}
-  .kpi{min-width:120px}
-  .filterbar{padding:8px 12px}
-  .kpi-row{padding:12px 12px 0}
-  .sections{padding:12px 12px 40px}
-}
 </style>
 <script>
-// ── ARR Suite Shared Auth ─────────────────────────────────────────
+// ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
+// Shared across all applets via localStorage keys:
+//   arr_user_email  — Google email or @device fallback
+//   arr_user_name   — display name
+//   arr_auth_ts     — timestamp of last auth (ms)
+// Auth expires after 12 hours; re-login required.
+// On expiry or missing auth, applets redirect to index.html?redirect={href}
+
 const ARR_AUTH_EMAIL_KEY = 'arr_user_email';
 const ARR_AUTH_NAME_KEY  = 'arr_user_name';
 const ARR_AUTH_TS_KEY    = 'arr_auth_ts';
-const ARR_AUTH_TTL       = 12 * 60 * 60 * 1000;
+const ARR_AUTH_TTL       = 12 * 60 * 60 * 1000; // 12 hours
+
 function arrAuthGet() {
   const email = localStorage.getItem(ARR_AUTH_EMAIL_KEY);
   const name  = localStorage.getItem(ARR_AUTH_NAME_KEY) || '';
@@ -177,65 +162,52 @@ function arrAuthGet() {
   if (Date.now() - ts > ARR_AUTH_TTL) { arrAuthClear(); return null; }
   return { email, name };
 }
+
+function arrAuthSet(email, name) {
+  localStorage.setItem(ARR_AUTH_EMAIL_KEY, email);
+  localStorage.setItem(ARR_AUTH_NAME_KEY,  name || '');
+  localStorage.setItem(ARR_AUTH_TS_KEY,    String(Date.now()));
+}
+
 function arrAuthClear() {
   localStorage.removeItem(ARR_AUTH_EMAIL_KEY);
   localStorage.removeItem(ARR_AUTH_NAME_KEY);
   localStorage.removeItem(ARR_AUTH_TS_KEY);
 }
+
+// Call on applet load — returns auth object or redirects to launcher
+function arrAuthCheck(redirectIfMissing = true) {
+  const auth = arrAuthGet();
+  if (!auth && redirectIfMissing) {
+    const returnUrl = encodeURIComponent(window.location.href);
+    window.location.href = '/ARRmapper/index.html?redirect=' + returnUrl;
+    return null;
+  }
+  return auth;
+}
+
+// Render a compact user chip element into a container element
 function arrAuthRenderChip(containerId, onSignOut) {
   const auth = arrAuthGet();
   const el   = document.getElementById(containerId);
   if (!el) return;
-  if (!auth) { el.textContent = ''; el.style.display = 'none'; return; }
+  if (!auth) { el.textContent = ''; return; }
   const display = auth.name && !auth.email.endsWith('@device') ? auth.name : auth.email;
-  el.textContent = '👤 ' + display;
+  el.textContent = display;
   el.title = auth.email;
-  el.style.display = 'inline';
   el.style.cursor = 'pointer';
   el.onclick = () => {
     if (confirm('Signed in as ' + auth.email + '\n\nSign out?')) {
       arrAuthClear();
       if (typeof onSignOut === 'function') onSignOut();
-      else window.location.href = './index.html';
+      else window.location.href = '/ARRmapper/index.html';
     }
   };
 }
 
-// ── Theme toggle ──────────────────────────────────────────────────
-let _darkMode = false;
-function toggleTheme() {
-  _darkMode = !_darkMode;
-  document.documentElement.classList.toggle('dark', _darkMode);
-  const btn = document.getElementById('theme-btn');
-  if (btn) btn.textContent = _darkMode ? '☀️' : '🌙';
-  localStorage.setItem('mdTheme', _darkMode ? 'dark' : 'light');
-}
-(function(){
-  if (localStorage.getItem('mdTheme') === 'dark') {
-    _darkMode = true;
-    document.documentElement.classList.add('dark');
-    document.addEventListener('DOMContentLoaded', () => {
-      const b = document.getElementById('theme-btn');
-      if (b) b.textContent = '☀️';
-    });
-  }
-})();
 </script>
 </head>
 <body>
-
-<!-- Auth gate — dashboard open to all; MRV write requires sign-in -->
-<div id="auth-gate" onclick="if(event.target===this)closeAuthGate()">
-  <div id="auth-gate-box">
-    <div class="ag-icon">🔒</div>
-    <h2>Sign in to record MRV data</h2>
-    <p>The monitoring dashboard is open to all viewers.<br>Recording field visits requires an authorised project account.</p>
-    <div>
-      <button class="ag-btn ag-btn-primary" onclick="window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href)">Sign in via Suite →</button>
-      <button class="ag-btn ag-btn-secondary" onclick="closeAuthGate()">Continue viewing</button>
-    </div>
-  </div>
-</div>
 
 <header>
   <div>
@@ -247,15 +219,15 @@ function toggleTheme() {
   </div>
 
   <div class="hdr-right">
+    <a href="./index.html" style="font-size:11px;padding:4px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:#fff;text-decoration:none">🏠</a>
+    <span id="md-user" style="font-size:10px;color:rgba(255,255,255,.5);margin-right:4px"></span>
     <span id="data-badge" style="font-size:10px;color:rgba(255,255,255,.6);background:rgba(255,255,255,.1);padding:4px 10px;border-radius:20px">Loading…</span>
     <span id="live-badge" style="display:none;font-size:10px;color:#6ee7b7;background:rgba(110,231,183,.15);padding:4px 10px;border-radius:20px;border:1px solid rgba(110,231,183,.3)">Live</span>
     <span id="loader" style="display:none;font-size:10px;color:rgba(255,255,255,.5)">⟳</span>
-    <a href="./appSurveyManager.html?form=mortality" class="arr-chip" style="text-decoration:none">📋 Health-Monitoring Form</a>
-    <a href="./appSurveyManager.html?form=leakage" class="arr-chip" style="text-decoration:none">🐄 Leakage Form</a>
-    <button onclick="guardedToggleMRV()" class="arr-chip" id="mrv-toggle-btn">📍 MRV Field Visit</button>
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
-    <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
-    <span id="arr-user-chip" class="arr-chip"></span>
+    <a href="./index.html" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">🏠 App Suite</a>
+    <a href="./appSurveyManager.html#mortality" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">📋 Health-Monitoring Form</a>
+    <a href="./appSurveyManager.html#leakage" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;text-decoration:none;white-space:nowrap">🐄 Leakage Form</a>
+    <button onclick="toggleMRVPanel()" style="font-size:11px;font-weight:600;padding:6px 12px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap" id="mrv-toggle-btn">📍 MRV Field Visit</button>
   </div>
 </header>
 
@@ -279,7 +251,7 @@ function toggleTheme() {
     <select id="f-source">
       <option value="">All sources</option>
       <option value="legacy_xlsx">Legacy XLSX</option>
-      <option value="form">Health &amp; Mortality Form</option>
+      <option value="form">Health-Monitoring Form</option>
     </select>
   </div>
   <div class="filter-group">
@@ -319,7 +291,7 @@ function toggleTheme() {
   <!-- Row 2: Species survival (full width bar chart) -->
   <div class="card">
     <div class="card-title">Species Survival Rate</div>
-    <div class="chart-wrap" style="height:260px"><canvas id="ch-species"></canvas></div>
+    <div class="chart-wrap" style="height:380px"><canvas id="ch-species"></canvas></div>
   </div>
 
   <!-- Row 3: Year comparison + Plots needing attention -->
@@ -380,7 +352,6 @@ function toggleTheme() {
     </div>
   </div>
 
-  <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px">
 
   <!-- MRV Field Visit Tool -->
   <div class="card" id="mrv-panel-card" style="display:none">
@@ -388,6 +359,7 @@ function toggleTheme() {
       <span style="font-size:9px;font-weight:400;color:#9ca3af;margin-left:8px">GPS-sampled tree grading · saves to Drive + Asha1_MonitoringRegister</span>
     </div>
     <div class="mrv-panel">
+
     <div class="sec">
       <div class="sec-t">📋 Plot</div>
       <select id="mrv-plot-sel" onchange="mrvOnPlotSelect(this.value)" style="font-size:12px;width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;padding:5px">
@@ -430,11 +402,11 @@ function toggleTheme() {
     </div>
     <div class="sec" id="mrv-sec-ctrl" style="display:none">
       <div class="icon-row">
-        <button class="icon-btn b-teal" id="mrv-btn-start"     onclick="mrvStartVisit()"   style="font-size:13px;width:auto;padding:0 12px">▶ Start</button>
-        <button class="icon-btn b-green b-off" id="mrv-btn-next"    onclick="mrvNextPoint()"  style="font-size:13px;width:auto;padding:0 10px">Next ▶</button>
-        <button class="icon-btn b-amber b-off" id="mrv-btn-photo"   onclick="mrvTakePhoto()"  style="font-size:18px">📷</button>
-        <button class="icon-btn b-gray  b-off" id="mrv-btn-finish"  onclick="mrvFinishVisit()" style="font-size:13px;width:auto;padding:0 10px">✅ Done</button>
-        <button class="icon-btn b-red   b-off" id="mrv-btn-cancel"  onclick="mrvCancelVisit()" style="font-size:13px;width:auto;padding:0 10px">✕ Cancel</button>
+        <button class="icon-btn b-teal" id="mrv-btn-start"  onclick="mrvStartVisit()"  style="font-size:13px;width:auto;padding:0 12px">▶ Start</button>
+        <button class="icon-btn b-green b-off" id="mrv-btn-next"   onclick="mrvNextPoint()"  style="font-size:13px;width:auto;padding:0 10px">Next ▶</button>
+        <button class="icon-btn b-amber b-off" id="mrv-btn-photo"  onclick="mrvTakePhoto()"  style="font-size:18px">📷</button>
+        <button class="icon-btn b-gray  b-off" id="mrv-btn-finish" onclick="mrvFinishVisit()" style="font-size:13px;width:auto;padding:0 10px">✅ Done</button>
+        <button class="icon-btn b-red   b-off" id="mrv-btn-cancel" onclick="mrvCancelVisit()" style="font-size:13px;width:auto;padding:0 10px">✕ Cancel</button>
         <button class="icon-btn b-gray  b-off" id="mrv-btn-walkalong" onclick="mrvWalkAlongTap()" style="font-size:13px;width:auto;padding:0 10px">👁 Obs</button>
       </div>
     </div>
@@ -498,13 +470,12 @@ function toggleTheme() {
       <button onclick="mrvWalkAlongSave()" style="width:100%;background:#0d7377;border:none;border-radius:6px;color:#fff;font-size:13px;padding:8px;cursor:pointer">Save observation</button>
     </div>
     <input type="file" id="mrv-photo-input" accept="image/*" capture="environment" style="display:none" onchange="mrvHandlePhoto(this)"/>
-    <div id="mrv-status-msg" style="display:none;font-size:11px;color:#6ee7b7;margin-top:8px;padding:6px;background:rgba(110,231,183,.1);border-radius:5px"></div>
+      <div id="mrv-status-msg" style="display:none;font-size:11px;color:#6ee7b7;margin-top:8px;padding:6px;background:rgba(110,231,183,.1);border-radius:5px"></div>
     </div>
   </div>
 
   <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px">
     Data: Legacy XLSX 2024–2025 (flat CSV paste) + Health-Monitoring form submissions (live via Apps Script) · Asha 1 VCS 4866 · ARR Project Suite
-  </div>
   </div>
 </div>
 
@@ -552,24 +523,34 @@ async function cacheSet(key, value) {
 
 // ── Data loading ──────────────────────────────────────────────────
 async function loadData() {
-  setStatus('loading');
+  const badge = document.getElementById('data-badge');
+  if (badge) badge.textContent = 'Loading…';
 
-  // 1. Try IDB cache first (serves offline) — skip if empty
+  // 1. Try IDB cache first — serve immediately (offline-capable)
   const cached = await cacheGet(CACHE_KEY);
-  if (cached && cached.data && cached.data.length > 0 && (Date.now() - cached.ts < CACHE_TTL)) {
+  if (cached && (Date.now() - cached.ts < CACHE_TTL)) {
     ALL_DATA = cached.data;
     setStatus('cached', cached.ts);
     boot();
-    // Refresh in background if online
+    // Silent background refresh
     if (navigator.onLine && AS_URL) fetchFromAS(true);
     return;
   }
 
-  // 2. Try network
+  // 2. Stale cache — serve immediately, refresh in background
+  if (cached && navigator.onLine && AS_URL) {
+    ALL_DATA = cached.data;
+    setStatus('stale', cached.ts);
+    boot();
+    fetchFromAS(true);
+    return;
+  }
+
+  // 3. No cache — fetch with visible progress
   if (AS_URL && navigator.onLine) {
+    if (badge) badge.textContent = 'Fetching data…';
     await fetchFromAS(false);
   } else if (cached) {
-    // Stale cache — use it with warning
     ALL_DATA = cached.data;
     setStatus('stale', cached.ts);
     boot();
@@ -800,27 +781,118 @@ function renderCondChart() {
   charts['condition']=new Chart(document.getElementById('ch-condition'),{
     type:'doughnut',
     data:{labels:['Excellent ≥90%','Good 70-89%','Fair 50-69%','Poor <50%'],
-      datasets:[{data:b,backgroundColor:['#059669','#0e9f6e','#d97706','#dc2626'],borderWidth:2,borderColor:'#fff'}]},
+      datasets:[{data:b,backgroundColor:['#059669','#3b82f6','#f59e0b','#dc2626'],borderWidth:2,borderColor:'#fff'}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}}}}});
 }
 
 function renderSpeciesChart() {
   dc('species');
-  const sp={};
+
+  // Species colours — matches ARRmapper SPECIES_COLORS exactly
+  const SPP_COLOR = {
+    'Teak/Shegun': '#00FF00',
+    'Jarul':       '#DD88FF',
+    'Chikrashi':   '#FF0000',
+    'Shimul':      '#888888',
+    'Neem':        '#7B9E3A',
+    'Khayer':      '#FFBB88',
+    'Jam':         '#8800FF',
+    'Gamar':       '#FF8800',
+    'Panisaj':     '#7DC3E1',
+    'Mahagoni':    '#880000',
+    'Champ':       '#FFDD66',
+    'Boyra':       '#0000FF',
+    'Kalo Shirish':'#FFDDFF',
+    'Kathal':      '#006600',
+  };
+
+  // Build per-species per-year survival
+  const years = [...new Set(FILTERED.map(p=>p.data_year))].filter(Boolean).sort();
+  const spNames = new Set();
+  FILTERED.forEach(p=>(p.species||[]).forEach(s=>{ if(s.name) spNames.add(s.name); }));
+
+  // Aggregate by species across all years for sort order
+  const spTotals = {};
+  spNames.forEach(n=>{ spTotals[n]={planted:0,alive:0}; });
   FILTERED.forEach(p=>(p.species||[]).forEach(s=>{
-    if(!sp[s.name])sp[s.name]={planted:0,alive:0};
-    sp[s.name].planted+=s.planted||0; sp[s.name].alive+=s.alive||0;
+    if(!s.name)return;
+    spTotals[s.name].planted+=s.planted||0;
+    spTotals[s.name].alive+=s.alive||0;
   }));
-  const sorted=Object.entries(sp).filter(([,v])=>v.planted>0)
-    .map(([k,v])=>({name:k,pct:Math.round(100*v.alive/v.planted)}))
-    .sort((a,b)=>b.pct-a.pct);
-  const colors=sorted.map(x=>x.pct>=80?'rgba(5,150,105,.75)':x.pct>=60?'rgba(217,119,6,.75)':'rgba(220,38,38,.75)');
-  charts['species']=new Chart(document.getElementById('ch-species'),{
+  const sorted = [...spNames]
+    .filter(n=>spTotals[n].planted>0)
+    .sort((a,b)=>{
+      const sa=spTotals[a].alive/spTotals[a].planted;
+      const sb=spTotals[b].alive/spTotals[b].planted;
+      return sb-sa;
+    });
+
+  // Year opacity: earlier years more transparent
+  const yearAlpha = ['cc','ff']; // 2024=80%, 2025=100%
+
+  const datasets = years.map((yr,i)=>{
+    const data = sorted.map(name=>{
+      let pl=0,al=0;
+      FILTERED.filter(p=>p.data_year===yr).forEach(p=>
+        (p.species||[]).filter(s=>s.name===name).forEach(s=>{
+          pl+=s.planted||0; al+=s.alive||0;
+        })
+      );
+      return pl>0 ? Math.round(100*al/pl) : null;
+    });
+    // Per-species colour with year opacity
+    const bgColors = sorted.map(n=>{
+      const hex = SPP_COLOR[n]||'#aaaaaa';
+      const alpha = yearAlpha[Math.min(i,yearAlpha.length-1)];
+      return hex + alpha;
+    });
+    return {
+      label: String(yr),
+      data,
+      backgroundColor: bgColors,
+      borderRadius: 3,
+      borderSkipped: false,
+    };
+  });
+
+  charts['species'] = new Chart(document.getElementById('ch-species'),{
     type:'bar',
-    data:{labels:sorted.map(x=>x.name),datasets:[{label:'Survival %',data:sorted.map(x=>x.pct),backgroundColor:colors,borderRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},
-      scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+    data:{ labels: sorted, datasets },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      indexAxis:'y',
+      plugins:{
+        legend:{
+          position:'top',
+          labels:{
+            font:{size:11,weight:'600'},
+            generateLabels: chart => years.map((yr,i)=>({
+              text: String(yr),
+              fillStyle: '#555',
+              strokeStyle: '#555',
+              lineWidth: 0,
+              hidden: false,
+              datasetIndex: i,
+            }))
+          }
+        },
+        tooltip:{
+          callbacks:{
+            label: ctx => {
+              const v = ctx.parsed.x;
+              return v !== null ? ` ${ctx.dataset.label}: ${v}%` : ' No data';
+            }
+          }
+        }
+      },
+      scales:{
+        x:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},
+        y:{ticks:{font:{size:10},autoSkip:false}}
+      }
+    }
+  });
 }
 
 function renderYearChart() {
@@ -940,34 +1012,16 @@ function boot() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Seed MRV session from launcher auth if already signed in
-  const auth = arrAuthGet();
-  if (auth && !MRV_SESSION.setupDone) {
-    MRV_SESSION.userFolder = auth.email.split('@')[0].replace(/[^a-zA-Z0-9._-]/g, '_');
-    MRV_SESSION.setupDone  = true;
-  }
-  arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
+  const _auth = arrAuthGet();
+  const userEl = document.getElementById('md-user');
+  if (_auth && userEl) userEl.textContent = '👤 ' + (_auth.name || _auth.email);
   loadData();
 });
 
-function closeAuthGate() {
-  document.getElementById('auth-gate').classList.remove('open');
-}
-
-function guardedToggleMRV() {
-  const auth = arrAuthGet();
-  if (!auth) {
-    document.getElementById('auth-gate').classList.add('open');
-    return;
-  }
-  if (!MRV_SESSION.setupDone) {
-    MRV_SESSION.userFolder = auth.email.split('@')[0].replace(/[^a-zA-Z0-9._-]/g, '_');
-    MRV_SESSION.setupDone  = true;
-  }
-  toggleMRVPanel();
-}
+// ─────────────────────────────────────────────────────────────────
 
 // ══════════════════════════════════════════════════════════════════
+// MRV FIELD VISIT TOOL — lifted from appARRmapper v67
 // Adapted for appMonitoringDashboard context
 // Writes GeoJSON to Drive (via FieldTool AS) AND summary row to
 // Asha1_MonitoringRegister (via Monitoring AS)
@@ -1006,7 +1060,17 @@ function toggleMRVPanel() {
   const visible = card.style.display !== 'none';
   card.style.display = visible ? 'none' : 'block';
   btn.style.background = visible ? 'rgba(255,255,255,.12)' : 'rgba(13,115,119,.8)';
-  if (!visible) mrvLoadPlots();
+  if (!visible) {
+    mrvLoadPlots();
+    // Prompt for user folder if not set
+    if (!MRV_SESSION.setupDone) {
+      const email = prompt('Enter your email for MRV upload attribution:');
+      if (email) {
+        MRV_SESSION.userFolder = email.split('@')[0].replace(/[^a-zA-Z0-9._-]/g,'_');
+        MRV_SESSION.setupDone  = true;
+      }
+    }
+  }
 }
 
 // ── OPFS helpers (minimal — same logic as ARRmapper) ──────────────
@@ -1776,7 +1840,6 @@ function mrvReset(keepPlot) {
   ['mrv-btn-next','mrv-btn-photo','mrv-btn-finish','mrv-btn-cancel','mrv-btn-walkalong'].forEach(id=>document.getElementById(id).classList.add('b-off'));
   if(!keepPlot){mrvActivePlot=null;document.getElementById('mrv-plot-sel').value='';document.getElementById('mrv-plot-info').textContent='';['mrv-sec-visit','mrv-sec-meta','mrv-sec-plotmetrics','mrv-sec-ctrl'].forEach(id=>document.getElementById(id).style.display='none');if(mrvLayer)mrvLayer.clearLayers();}
 }
-
 
 </script>
 
