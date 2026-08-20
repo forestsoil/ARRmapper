@@ -3,36 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>appInventory v5 – Project Asha</title>
+<title>appInventory v6 – Project Asha</title>
 <!-- proj4js for CRS reprojection -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 <!-- shpjs for shapefile zip parsing -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/shpjs/3.6.3/shp.js"></script>
 <style>
   :root {
-    --bg:#f5f7f2; --surface:#ffffff; --surface2:#eef1ea;
-    --border:#c8d4be; --text:#1a2416; --text2:#4a5e40;
-    --accent:#2d6a2f; --accent2:#4caf50;
+    --bg:#f0f5f2; --surface:#ffffff; --surface2:#e6f2ec;
+    --border:#c8ddd2; --text:#0f2419; --text2:#5a7a68;
+    --accent:#1a5c38; --accent2:#2d9e60;
     --warn:#c0392b; --warn-bg:#fdecea;
-    --badge-receive:#1b5e20; --badge-dispatch:#e65100;
-    --badge-bg-r:#e8f5e9; --badge-bg-d:#fff3e0;
+    --badge-receive:#1a5c38; --badge-dispatch:#e65100;
+    --badge-bg-r:#e6f2ec; --badge-bg-d:#fff3e0;
     --shadow:0 2px 8px rgba(0,0,0,0.08); --radius:8px;
     --font:'Segoe UI',system-ui,sans-serif;
     --mono:'Cascadia Code','Fira Mono',monospace;
     --outbox-bg:#fff8e1; --outbox-border:#f9a825; --outbox-text:#5d4037;
-    --synced-bg:#e8f5e9; --synced-text:#1b5e20;
+    --synced-bg:#e6f2ec; --synced-text:#1a5c38;
     --warn-amber:#f57f17;
   }
   [data-theme="dark"] {
-    --bg:#0e1610; --surface:#192b1b; --surface2:#1e3320;
-    --border:#2e4a30; --text:#d4e8c8; --text2:#8aaf82;
-    --accent:#66bb6a; --accent2:#81c784;
+    --bg:#0a1a10; --surface:#0f2419; --surface2:#162e1e;
+    --border:#1e4029; --text:#d4f0e0; --text2:#6aad86;
+    --accent:#34c97a; --accent2:#4ade80;
     --warn:#ef9a9a; --warn-bg:#2c1010;
-    --badge-receive:#a5d6a7; --badge-dispatch:#ffcc80;
-    --badge-bg-r:#1b3320; --badge-bg-d:#2e1e08;
+    --badge-receive:#4ade80; --badge-dispatch:#ffcc80;
+    --badge-bg-r:#0f2419; --badge-bg-d:#2e1e08;
     --shadow:0 2px 8px rgba(0,0,0,0.4);
     --outbox-bg:#2a2000; --outbox-border:#f9a825; --outbox-text:#ffe082;
-    --synced-bg:#1b3320; --synced-text:#a5d6a7;
+    --synced-bg:#0f2419; --synced-text:#4ade80;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh;}
@@ -63,7 +63,7 @@
   }
   #outboxPill.has-items{display:inline-block;}
   #netStatus{font-size:11px;opacity:.9;display:flex;align-items:center;gap:4px;}
-  #netDot{width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;}
+  #netDot{width:8px;height:8px;border-radius:50%;background:#2d9e60;display:inline-block;}
   #netDot.offline{background:#ef5350;}
 
   /* ── Login overlay ── */
