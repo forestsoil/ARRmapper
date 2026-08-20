@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v12 · Asha 1</title>
+<title>Monitoring Dashboard · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -140,72 +140,6 @@ tbody td{padding:6px 10px;vertical-align:top}
 .icon-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .b-teal-btn{background:#0d7377}.b-green-btn{background:#059669}.b-amber-btn{background:#b45a0c}.b-gray-btn{background:#374151}.b-red-btn{background:#7f1d1d}.b-off{opacity:.4;pointer-events:none}
 </style>
-<script>
-// ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
-// Shared across all applets via localStorage keys:
-//   arr_user_email  — Google email or @device fallback
-//   arr_user_name   — display name
-//   arr_auth_ts     — timestamp of last auth (ms)
-// Auth expires after 12 hours; re-login required.
-// On expiry or missing auth, applets redirect to index.html?redirect={href}
-
-const ARR_AUTH_EMAIL_KEY = 'arr_user_email';
-const ARR_AUTH_NAME_KEY  = 'arr_user_name';
-const ARR_AUTH_TS_KEY    = 'arr_auth_ts';
-const ARR_AUTH_TTL       = 12 * 60 * 60 * 1000; // 12 hours
-
-function arrAuthGet() {
-  const email = localStorage.getItem(ARR_AUTH_EMAIL_KEY);
-  const name  = localStorage.getItem(ARR_AUTH_NAME_KEY) || '';
-  const ts    = parseInt(localStorage.getItem(ARR_AUTH_TS_KEY) || '0');
-  if (!email) return null;
-  if (Date.now() - ts > ARR_AUTH_TTL) { arrAuthClear(); return null; }
-  return { email, name };
-}
-
-function arrAuthSet(email, name) {
-  localStorage.setItem(ARR_AUTH_EMAIL_KEY, email);
-  localStorage.setItem(ARR_AUTH_NAME_KEY,  name || '');
-  localStorage.setItem(ARR_AUTH_TS_KEY,    String(Date.now()));
-}
-
-function arrAuthClear() {
-  localStorage.removeItem(ARR_AUTH_EMAIL_KEY);
-  localStorage.removeItem(ARR_AUTH_NAME_KEY);
-  localStorage.removeItem(ARR_AUTH_TS_KEY);
-}
-
-// Call on applet load — returns auth object or redirects to launcher
-function arrAuthCheck(redirectIfMissing = true) {
-  const auth = arrAuthGet();
-  if (!auth && redirectIfMissing) {
-    const returnUrl = encodeURIComponent(window.location.href);
-    window.location.href = '/ARRmapper/index.html?redirect=' + returnUrl;
-    return null;
-  }
-  return auth;
-}
-
-// Render a compact user chip element into a container element
-function arrAuthRenderChip(containerId, onSignOut) {
-  const auth = arrAuthGet();
-  const el   = document.getElementById(containerId);
-  if (!el) return;
-  if (!auth) { el.textContent = ''; return; }
-  const display = auth.name && !auth.email.endsWith('@device') ? auth.name : auth.email;
-  el.textContent = display;
-  el.title = auth.email;
-  el.style.cursor = 'pointer';
-  el.onclick = () => {
-    if (confirm('Signed in as ' + auth.email + '\n\nSign out?')) {
-      arrAuthClear();
-      if (typeof onSignOut === 'function') onSignOut();
-      else window.location.href = '/ARRmapper/index.html';
-    }
-  };
-}
-
-</script>
 </head>
 <body>
 
@@ -219,8 +153,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
   </div>
 
   <div class="hdr-right">
-    <a href="./index.html" style="font-size:11px;padding:4px 10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;color:#fff;text-decoration:none">🏠</a>
-    <span id="md-user" style="font-size:10px;color:rgba(255,255,255,.5);margin-right:4px"></span>
     <span id="data-badge" style="font-size:10px;color:rgba(255,255,255,.6);background:rgba(255,255,255,.1);padding:4px 10px;border-radius:20px">Loading…</span>
     <span id="live-badge" style="display:none;font-size:10px;color:#6ee7b7;background:rgba(110,231,183,.15);padding:4px 10px;border-radius:20px;border:1px solid rgba(110,231,183,.3)">Live</span>
     <span id="loader" style="display:none;font-size:10px;color:rgba(255,255,255,.5)">⟳</span>
@@ -523,34 +455,24 @@ async function cacheSet(key, value) {
 
 // ── Data loading ──────────────────────────────────────────────────
 async function loadData() {
-  const badge = document.getElementById('data-badge');
-  if (badge) badge.textContent = 'Loading…';
+  setStatus('loading');
 
-  // 1. Try IDB cache first — serve immediately (offline-capable)
+  // 1. Try IDB cache first (serves offline)
   const cached = await cacheGet(CACHE_KEY);
   if (cached && (Date.now() - cached.ts < CACHE_TTL)) {
     ALL_DATA = cached.data;
     setStatus('cached', cached.ts);
     boot();
-    // Silent background refresh
+    // Refresh in background if online
     if (navigator.onLine && AS_URL) fetchFromAS(true);
     return;
   }
 
-  // 2. Stale cache — serve immediately, refresh in background
-  if (cached && navigator.onLine && AS_URL) {
-    ALL_DATA = cached.data;
-    setStatus('stale', cached.ts);
-    boot();
-    fetchFromAS(true);
-    return;
-  }
-
-  // 3. No cache — fetch with visible progress
+  // 2. Try network
   if (AS_URL && navigator.onLine) {
-    if (badge) badge.textContent = 'Fetching data…';
     await fetchFromAS(false);
   } else if (cached) {
+    // Stale cache — use it with warning
     ALL_DATA = cached.data;
     setStatus('stale', cached.ts);
     boot();
@@ -1011,12 +933,7 @@ function boot() {
   document.getElementById('f-surv').addEventListener('input', applyFilters);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const _auth = arrAuthGet();
-  const userEl = document.getElementById('md-user');
-  if (_auth && userEl) userEl.textContent = '👤 ' + (_auth.name || _auth.email);
-  loadData();
-});
+document.addEventListener('DOMContentLoaded', loadData);
 
 // ─────────────────────────────────────────────────────────────────
 
