@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CCB &amp; SDG Dashboard v25 · Asha 1</title>
+<title>CCB &amp; SDG Dashboard v22 · Asha 1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.cjs"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
@@ -184,39 +184,10 @@ function exportBibTeX() {
 // ── Load sightings from Sheet ─────────────────────────────────────────
 async function loadSightingsFromSheet() {
   if (!CCB_CONFIG.scriptUrl) return;
-  const statusEl = document.getElementById('sightings-load-status');
-  if (statusEl) { statusEl.textContent = '⏳ Fetching…'; statusEl.style.color = 'var(--teal)'; }
   try {
-    // Use JSONP — GAS GET redirects to login with fetch() even on "Anyone" deployments
-    const data = await new Promise((resolve, reject) => {
-      const cbName = '_cb_ccb_' + Date.now();
-      const script = document.createElement('script');
-      const timer = setTimeout(() => {
-        delete window[cbName];
-        try { document.head.removeChild(script); } catch(_) {}
-        reject(new Error('Timeout after 20s'));
-      }, 20000);
-      window[cbName] = d => {
-        clearTimeout(timer);
-        delete window[cbName];
-        try { document.head.removeChild(script); } catch(_) {}
-        resolve(d);
-      };
-      script.onerror = () => {
-        clearTimeout(timer);
-        delete window[cbName];
-        try { document.head.removeChild(script); } catch(_) {}
-        reject(new Error('Script load error'));
-      };
-      script.src = CCB_CONFIG.scriptUrl + '?action=getSightings&callback=' + cbName;
-      document.head.appendChild(script);
-    });
-
-    if (!data.success || !data.rows) {
-      if (statusEl) { statusEl.textContent = '⚠️ GAS returned no records (success=' + data.success + ')'; statusEl.style.color = 'var(--amber)'; }
-      console.warn('getSightings response:', data);
-      return;
-    }
+    const res  = await fetch(CCB_CONFIG.scriptUrl + '?action=getSightings');
+    const data = await res.json();
+    if (!data.success || !data.rows) return;
     const sheetSightings = data.rows
       .filter(r => r.type === 'sighting' && r.species)
       .map(r => ({
@@ -235,23 +206,17 @@ async function loadSightingsFromSheet() {
         ai_species:   r.ai_species   || '',
         notable:      r.notable      || false,
       }));
-    let added = 0;
+    // Merge — avoid duplicates by date+species+recorder
     sheetSightings.forEach(s => {
       const exists = bioSightings.find(b =>
         b.date===s.date && b.species===s.species && b.recorder===s.recorder);
-      if (!exists) { bioSightings.push(s); added++; }
+      if (!exists) bioSightings.push(s);
     });
-    if (statusEl) {
-      statusEl.textContent = `✓ ${bioSightings.length} records (${added} new)`;
-      statusEl.style.color = 'var(--teal)';
-      setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000);
-    }
     updateBioKPIs();
     renderRecentSightings();
     if (bioMap) populateBioFilters();
     renderBioMap();
   } catch(e) {
-    if (statusEl) { statusEl.textContent = '⚠️ ' + e.message; statusEl.style.color = 'var(--rose)'; }
     console.warn('loadSightingsFromSheet failed:', e);
   }
 }
@@ -348,7 +313,7 @@ function renderInvasivesPages() {
       card.className = 'inv-card';
       card.innerHTML = `
         ${inv.img ? `<img class="inv-card-photo" src="${inv.img}" alt="${inv.name}"
-          onerror="this.style.background='var(--border)';this.style.minHeight='140px'"/>` : '<div class="inv-card-photo"></div>'}
+          onerror="this.style.background='#1e3a52';this.style.minHeight='140px'"/>` : '<div class="inv-card-photo"></div>'}
         <div class="inv-card-body">
           <div class="inv-card-name">${inv.name}</div>
           <div class="inv-card-sci">${inv.sci}</div>
@@ -392,7 +357,6 @@ function invPage(dir) {
 }
 
 function quickSubmitInvasive(name, sci, tag) {
-  if (!arrAuthGet()) { closeInvasivesModal(); showAuthGate(); return; }
   closeInvasivesModal();
   document.getElementById('s-species').value = name;
   document.getElementById('s-sci').value = sci;
@@ -603,16 +567,9 @@ async function submitSighting() {
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0f1c14;--surface:#162010;--card:#1c2a17;--border:#2a3d20;
-  --leaf:#6ee7b7;--canopy:#2d6a4f;--mist:#d8f3dc;
-  --teal:#6ee7b7;--green:#4ade80;--amber:#fbbf24;--rose:#f43f5e;--violet:#a78bfa;
-  --ink:#e8f4e8;--mid:#a0ccaa;--dim:#5a8060;--font:'Segoe UI',system-ui,sans-serif;
-}
-html.light{
-  --bg:#e8ffe8;--surface:#d0f0d8;--card:#b8e8c8;--border:#88c8a0;
-  --leaf:#1a7a3a;--canopy:#2d6a4f;--mist:#0a3a1a;
-  --teal:#1a7a3a;--green:#166534;--amber:#92400e;--rose:#9f1239;--violet:#5b21b6;
-  --ink:#0a2010;--mid:#2a5a3a;--dim:#4a7a5a;
+  --bg:#0d1f2d;--surface:#102030;--card:#142638;--border:#1e3a52;
+  --teal:#2dd4bf;--green:#4ade80;--amber:#fbbf24;--rose:#f43f5e;--violet:#a78bfa;
+  --ink:#e2f0ff;--mid:#7ba8c4;--dim:#3a6080;--font:'Segoe UI',system-ui,sans-serif;
 }
 html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--ink)}
 #app{display:grid;grid-template-columns:280px 1fr;height:100vh}
@@ -633,50 +590,17 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 .sb-section-lbl{font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
   color:var(--dim);padding:10px 18px 4px}
 
-/* ── Submit sidebar btn ── */
-.sb-submit-btn{width:100%;background:var(--canopy);border:none;border-radius:7px;
-  color:#fff;font-size:13px;font-weight:700;padding:9px 14px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:7px;
-  font-family:var(--font);letter-spacing:.02em;transition:background .15s}
-.sb-submit-btn:hover{background:var(--leaf);color:#0f1c14}
-.sb-submit-btn.locked{background:var(--border);color:var(--dim);cursor:default}
-.sb-invasive-btn{width:100%;background:transparent;border:1.5px solid var(--teal);
-  border-radius:7px;color:var(--teal);font-size:12px;font-weight:700;padding:7px 14px;
-  cursor:pointer;font-family:var(--font);letter-spacing:.02em;transition:all .15s}
-.sb-invasive-btn:hover{background:var(--canopy);color:#fff}
-
 /* ── Main ── */
 #main{display:flex;flex-direction:column;overflow:hidden}
-.arr-chip{font-size:11px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
-  border-radius:20px;padding:4px 10px;color:var(--ink);cursor:pointer;white-space:nowrap;
-  transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
+.arr-chip{font-size:11px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;color:var(--ink);cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
 .arr-chip:hover{background:rgba(255,255,255,.22)}
-#arr-user-chip{max-width:160px;overflow:hidden;text-overflow:ellipsis}
 #topbar{background:var(--surface);border-bottom:1px solid var(--border);
-  padding:0 16px;height:40px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+  padding:0 16px;height:40px;display:flex;align-items:center;gap:12px;flex-shrink:0}
 #topbar .title{font-size:12px;font-weight:700;color:var(--ink)}
 #topbar .spacer{flex:1}
-.tb-theme-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
-  border-radius:20px;padding:4px 9px;font-size:12px;cursor:pointer;color:var(--ink);
-  flex-shrink:0;line-height:1;font-family:inherit;transition:background .15s}
-.tb-theme-btn:hover{background:rgba(255,255,255,.22)}
+#topbar a{font-size:11px;color:var(--dim);text-decoration:none}
+#topbar a:hover{color:var(--teal)}
 #content{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
-
-/* ── Auth gate overlay ── */
-#auth-gate{display:none;position:fixed;inset:0;z-index:8500;
-  background:rgba(0,0,0,.65);align-items:center;justify-content:center}
-#auth-gate.open{display:flex}
-#auth-gate-box{background:var(--card);border:1.5px solid var(--border);border-radius:14px;
-  padding:28px 32px;text-align:center;max-width:360px;width:90%}
-#auth-gate-box .ag-icon{font-size:36px;margin-bottom:10px}
-#auth-gate-box h2{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px}
-#auth-gate-box p{font-size:12px;color:var(--mid);margin-bottom:18px;line-height:1.6}
-.ag-btn{display:inline-block;padding:9px 22px;border-radius:7px;font-size:13px;
-  font-weight:700;cursor:pointer;border:none;font-family:var(--font);margin:4px}
-.ag-btn-primary{background:var(--canopy);color:#fff}
-.ag-btn-primary:hover{background:var(--leaf);color:#0f1c14}
-.ag-btn-secondary{background:var(--border);color:var(--mid)}
-.ag-btn-secondary:hover{background:var(--dim);color:#fff}
 
 /* ── Panels ── */
 .panel{display:none}
@@ -752,7 +676,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 .ref-item a:hover{text-decoration:underline}
 .ref-sort-btn{background:var(--surface);border:1px solid var(--border);border-radius:4px;
   color:var(--mid);font-size:9px;padding:2px 8px;cursor:pointer}
-.ref-sort-btn.active{background:var(--canopy);border-color:var(--canopy);color:#fff;font-weight:700}
+.ref-sort-btn.active{background:var(--teal);border-color:var(--teal);color:#0d1f2d;font-weight:700}
 .ref-del{background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;
   float:right;padding:0 2px;line-height:1}
 .ref-del:hover{color:var(--rose)}
@@ -773,9 +697,9 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 #sd-body{padding:16px}
 .sd-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:baseline}
 .sd-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
-.sd-val{font-size:12px;color:var(--ink)}
+.sd-val{font-size:12px;color:var(--fg)}
 .sighting-row{cursor:pointer;transition:background .15s}
-.sighting-row:hover{background:rgba(110,231,183,.08)}
+.sighting-row:hover{background:rgba(45,212,191,.08)}
 #submit-box{background:var(--card);border:1px solid var(--border);border-radius:12px;
   width:520px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column}
 #submit-box-head{padding:14px 16px;border-bottom:1px solid var(--border);
@@ -793,16 +717,16 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 .tag-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
 .tag-btn{background:var(--surface);border:1.5px solid var(--border);border-radius:6px;
   color:var(--mid);font-size:11px;padding:4px 10px;cursor:pointer;transition:all .12s}
-.tag-btn.sel{background:var(--canopy);border-color:var(--canopy);color:#fff}
+.tag-btn.sel{background:#be185d;border-color:#be185d;color:#fff}
 .photo-preview{width:100%;max-height:160px;object-fit:cover;border-radius:6px;margin-top:4px;display:none}
-.ai-result{background:rgba(110,231,183,.08);border:1px solid rgba(110,231,183,.2);
+.ai-result{background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.2);
   border-radius:6px;padding:8px 10px;font-size:11px;color:var(--teal);display:none}
 .ai-result .ai-sp{font-size:13px;font-weight:700;color:var(--ink)}
 .ai-result .ai-sci{font-style:italic;color:var(--mid);font-size:10px}
 .coord-row{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--dim);flex-wrap:wrap}
 .coord-pill{background:var(--surface);border:1px solid var(--border);border-radius:4px;
   padding:2px 7px;font-size:9px;font-family:monospace}
-.submit-btn{background:var(--canopy);border:none;border-radius:6px;color:#fff;font-size:12px;
+.submit-btn{background:#be185d;border:none;border-radius:6px;color:#fff;font-size:12px;
   font-weight:700;padding:8px 20px;cursor:pointer;font-family:var(--font)}
 .submit-btn:disabled{opacity:.5;cursor:default}
 .cancel-btn{background:var(--border);border:none;border-radius:6px;color:var(--mid);
@@ -812,42 +736,39 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 #invasives-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);
   z-index:9100;align-items:center;justify-content:center}
 #invasives-modal.open{display:flex}
-#invasives-box{background:var(--card);border:1px solid var(--border);border-radius:14px;
+#invasives-box{background:#0d1f2d;border:1px solid #1e3a52;border-radius:14px;
   width:520px;max-width:95vw;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
-#invasives-head{padding:14px 16px 10px;border-bottom:1px solid var(--border);
+#invasives-head{padding:14px 16px 10px;border-bottom:1px solid #1e3a52;
   display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-#invasives-head h2{font-size:14px;font-weight:700;color:var(--ink)}
-#invasives-close{background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer}
+#invasives-head h2{font-size:14px;font-weight:700;color:#e2f0ff}
+#invasives-close{background:none;border:none;color:#3a6080;font-size:20px;cursor:pointer}
 #invasives-pages{display:flex;transition:transform .35s ease;flex-shrink:0}
-.inv-page{width:100%;padding:10px 14px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
-.inv-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+.inv-page{width:100%;padding:10px 14px;display:flex;
+  flex-direction:column;gap:8px;flex-shrink:0}
+.inv-card{background:#102030;border:1px solid #1e3a52;border-radius:8px;
   padding:8px;display:flex;flex-direction:row;gap:10px;cursor:pointer;
   transition:border-color .15s;align-items:center}
 .inv-card-photo{width:120px;height:120px;object-fit:cover;border-radius:6px;
-  flex-shrink:0;background:var(--border)}
+  flex-shrink:0;background:#1e3a52}
 .inv-card-body{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
-.inv-card:hover{border-color:var(--teal)}
-.inv-card-name{font-size:14px;font-weight:700;color:var(--ink);line-height:1.2}
-.inv-card-sci{font-size:11px;font-style:italic;color:var(--mid)}
+.inv-card:hover{border-color:#2dd4bf}
+.inv-card-name{font-size:14px;font-weight:700;color:#e2f0ff;line-height:1.2}
+.inv-card-sci{font-size:11px;font-style:italic;color:#7ba8c4}
 .inv-card-threat{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;
   display:inline-block;margin-top:2px}
-.threat-high{background:rgba(244,63,94,.15);color:var(--rose)}
-.threat-med{background:rgba(251,191,36,.12);color:var(--amber)}
-.inv-card-tip{font-size:11px;color:var(--mid);margin-top:2px;line-height:1.5}
-.inv-card-submit{font-size:11px;color:var(--teal);margin-top:auto;cursor:pointer;font-weight:600}
-#invasives-footer{padding:10px 16px;border-top:1px solid var(--border);
+.threat-high{background:rgba(244,63,94,.15);color:#f43f5e}
+.threat-med{background:rgba(251,191,36,.12);color:#fbbf24}
+.inv-card-tip{font-size:11px;color:#7ba8c4;margin-top:2px;line-height:1.5}
+.inv-card-submit{font-size:11px;color:#2dd4bf;margin-top:auto;cursor:pointer;font-weight:600}
+#invasives-footer{padding:10px 16px;border-top:1px solid #1e3a52;
   display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.inv-dot{width:8px;height:8px;border-radius:50%;background:var(--border);
+.inv-dot{width:8px;height:8px;border-radius:50%;background:#1e3a52;
   cursor:pointer;transition:background .15s}
-.inv-dot.active{background:var(--teal)}
-.inv-nav-btn{background:none;border:1px solid var(--border);border-radius:5px;
-  color:var(--mid);font-size:12px;padding:4px 12px;cursor:pointer}
-.inv-nav-btn:hover{border-color:var(--teal);color:var(--teal)}
+.inv-dot.active{background:#2dd4bf}
+.inv-nav-btn{background:none;border:1px solid #1e3a52;border-radius:5px;
+  color:#7ba8c4;font-size:12px;padding:4px 12px;cursor:pointer}
+.inv-nav-btn:hover{border-color:#2dd4bf;color:#2dd4bf}
 .inv-nav-btn:disabled{opacity:.3;cursor:default}
-
-/* ── pop-link ── */
-.pop-link{color:var(--teal);text-decoration:none}
-.pop-link:hover{text-decoration:underline}
 </style>
 <script>
 // ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
@@ -900,17 +821,16 @@ function arrAuthRenderChip(containerId, onSignOut) {
   const auth = arrAuthGet();
   const el   = document.getElementById(containerId);
   if (!el) return;
-  if (!auth) { el.textContent = ''; el.style.display = 'none'; return; }
+  if (!auth) { el.textContent = ''; return; }
   const display = auth.name && !auth.email.endsWith('@device') ? auth.name : auth.email;
-  el.textContent = '👤 ' + display;
+  el.textContent = display;
   el.title = auth.email;
-  el.style.display = 'inline';
   el.style.cursor = 'pointer';
   el.onclick = () => {
     if (confirm('Signed in as ' + auth.email + '\n\nSign out?')) {
       arrAuthClear();
       if (typeof onSignOut === 'function') onSignOut();
-      else window.location.href = './index.html';
+      else window.location.href = '/ARRmapper/index.html';
     }
   };
 }
@@ -918,19 +838,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
 </script>
 </head>
 <body>
-<!-- Auth gate overlay — shown when write action attempted without sign-in -->
-<div id="auth-gate" onclick="if(event.target===this)document.getElementById('auth-gate').classList.remove('open')">
-  <div id="auth-gate-box">
-    <div class="ag-icon">🔒</div>
-    <h2>Sign in to submit records</h2>
-    <p>Viewing this dashboard is open to all.<br>Submitting sightings and uploading records requires an authorised project account.</p>
-    <div>
-      <button class="ag-btn ag-btn-primary" onclick="window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href)">Sign in via Suite →</button>
-      <button class="ag-btn ag-btn-secondary" onclick="document.getElementById('auth-gate').classList.remove('open')">Continue viewing</button>
-    </div>
-  </div>
-</div>
-
 <div id="app">
 
   <!-- Sidebar -->
@@ -942,12 +849,18 @@ function arrAuthRenderChip(containerId, onSignOut) {
       <p>Asha ARR · Climate, Community &amp; Biodiversity</p>
     </div>
     <div style="padding:10px 10px 2px">
-      <button class="sb-submit-btn" id="sb-submit-btn" onclick="guardedOpenSubmitModal()">
+      <button onclick="openSubmitModal()" style="width:100%;background:#be185d;border:none;
+        border-radius:7px;color:#fff;font-size:13px;font-weight:700;padding:9px 14px;
+        cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;
+        font-family:var(--font);letter-spacing:.02em">
         📍 Submit Sighting / Event
       </button>
     </div>
     <div style="padding:2px 10px 6px">
-      <button class="sb-invasive-btn" onclick="openInvasivesModal()">
+      <button onclick="openInvasivesModal()" style="width:100%;background:transparent;
+        border:1.5px solid #2dd4bf;border-radius:7px;color:#2dd4bf;font-size:12px;
+        font-weight:700;padding:7px 14px;cursor:pointer;font-family:var(--font);
+        letter-spacing:.02em">
         🌿 Know Your Invasives
       </button>
     </div>
@@ -966,7 +879,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
       <button class="sb-btn" onclick="showPanel('sdg-diversity')">🌈 Plantation diversity</button>
       <div class="sb-divider"></div>
       <div class="sb-section-lbl">Data</div>
-      <button class="sb-btn" onclick="guardedUpload()" title="Sign in to upload records">📤 Upload records</button>
+      <button class="sb-btn" onclick="arrAuthGet()?showPanel('data-upload'):(window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href))" title="Sign in to upload records">📤 Upload records</button>
     </div>
   </div>
 
@@ -975,7 +888,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <div id="topbar">
       <span class="title" id="panel-title">Biodiversity Overview</span>
       <span class="spacer"></span>
-      <button class="tb-theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
       <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
       <span id="arr-user-chip" class="arr-chip"></span>
     </div>
@@ -988,7 +900,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
             border-radius:5px;color:var(--teal);font-size:10px;padding:4px 10px;cursor:pointer">
             🔄 Refresh sightings
           </button>
-          <span id="sightings-load-status" style="font-size:10px;color:var(--teal);margin-left:8px"></span>
         </div>
         <div class="kpi-row">
           <div class="kpi-card">
@@ -1047,13 +958,13 @@ function arrAuthRenderChip(containerId, onSignOut) {
         <div class="map-wrap">
           <h3>Biodiversity sightings map</h3>
           <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid rgba(255,255,255,.1);position:relative;z-index:10">
-            <select id="f-district" onchange="populateBioFilters();filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--surface);color:var(--ink);border:1px solid var(--border)">
+            <select id="f-district" onchange="populateBioFilters();filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
               <option value="">All districts</option>
             </select>
-            <select id="f-block" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--surface);color:var(--ink);border:1px solid var(--border)">
+            <select id="f-block" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
               <option value="">All blocks</option>
             </select>
-            <select id="f-sighting-type" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--surface);color:var(--ink);border:1px solid var(--border)">
+            <select id="f-sighting-type" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
               <option value="">All sighting types</option>
               <option value="fauna">🦅 Fauna</option>
               <option value="flora">🌿 Flora</option>
@@ -1061,11 +972,11 @@ function arrAuthRenderChip(containerId, onSignOut) {
               <option value="recruitment">🌱 Recruitment</option>
               <option value="incident">🐾 Wildlife incident</option>
             </select>
-            <select id="f-species-bio" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--surface);color:var(--ink);border:1px solid var(--border)">
+            <select id="f-species-bio" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
               <option value="">All species</option>
             </select>
-            <input type="text" id="f-bio-search" oninput="filterBioMap()" placeholder="Search…" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--surface);color:var(--ink);border:1px solid var(--border);width:90px">
-            <button onclick="clearBioFilters()" style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--border);color:var(--ink);border:none;cursor:pointer">✕</button>
+            <input type="text" id="f-bio-search" oninput="filterBioMap()" placeholder="Search…" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151;width:90px">
+            <button onclick="clearBioFilters()" style="font-size:10px;padding:3px 8px;border-radius:4px;background:#374151;color:#e5e7eb;border:none;cursor:pointer">✕</button>
           </div>
           <div style="padding:8px 12px;display:flex;gap:10px;flex-wrap:wrap;font-size:10px">
             <label><input type="checkbox" id="f-fauna" checked onchange="filterBioMap()"> 🦅 Fauna</label>
@@ -1167,7 +1078,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
                 font-family:monospace;resize:vertical"></textarea>
             <div style="display:flex;flex-direction:column;gap:6px">
               <button onclick="parseBibTeX()" style="background:var(--teal);border:none;
-                border-radius:5px;color:#0f1c14;font-size:11px;font-weight:700;
+                border-radius:5px;color:#0d1f2d;font-size:11px;font-weight:700;
                 padding:6px 12px;cursor:pointer;white-space:nowrap">+ Add</button>
               <button onclick="document.getElementById('bib-file-input').click()"
                 style="background:var(--border);border:none;border-radius:5px;color:var(--mid);
@@ -1779,39 +1690,6 @@ function closeSightingDetail() {
   document.getElementById('sighting-detail-modal').classList.remove('open');
 }
 
-// ── Auth guards ───────────────────────────────────────────────────────
-function showAuthGate() {
-  document.getElementById('auth-gate').classList.add('open');
-}
-function guardedOpenSubmitModal() {
-  if (arrAuthGet()) { openSubmitModal(); }
-  else { showAuthGate(); }
-}
-function guardedUpload() {
-  if (arrAuthGet()) { showPanel('data-upload'); }
-  else { showAuthGate(); }
-}
-
-// ── Theme toggle ──────────────────────────────────────────────────────
-let _ccbLightTheme = false;
-function toggleTheme() {
-  _ccbLightTheme = !_ccbLightTheme;
-  document.documentElement.classList.toggle('light', _ccbLightTheme);
-  const btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = _ccbLightTheme ? '🌙' : '☀️';
-  localStorage.setItem('ccbTheme', _ccbLightTheme ? 'light' : 'dark');
-}
-(function(){
-  if (localStorage.getItem('ccbTheme') === 'light') {
-    _ccbLightTheme = true;
-    document.documentElement.classList.add('light');
-    document.addEventListener('DOMContentLoaded', () => {
-      const b = document.getElementById('theme-toggle');
-      if (b) b.textContent = '🌙';
-    });
-  }
-})();
-
 // ── Init ──────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
   renderSDGChips();
@@ -1819,13 +1697,6 @@ window.addEventListener('load', () => {
   renderRefs();
   loadBibFromDrive();
   loadSightingsFromSheet();
-  // Update submit button appearance based on auth state
-  const auth = arrAuthGet();
-  const sbBtn = document.getElementById('sb-submit-btn');
-  if (sbBtn && !auth) {
-    sbBtn.classList.add('locked');
-    sbBtn.title = 'Sign in via Suite to submit sightings';
-  }
   arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
 });
 
@@ -2027,6 +1898,386 @@ function exportBibTeX() {
 }
 
 
+// ── Load sightings from Sheet ─────────────────────────────────────────
+async function loadSightingsFromSheet() {
+  if (!CCB_CONFIG.scriptUrl) return;
+  try {
+    const res  = await fetch(CCB_CONFIG.scriptUrl + '?action=getSightings');
+    const data = await res.json();
+    if (!data.success || !data.rows) return;
+    const sheetSightings = data.rows
+      .filter(r => r.type === 'sighting' && r.species)
+      .map(r => ({
+        date:         r.date         || '',
+        species:      r.species      || '',
+        category:     r.category     || 'fauna',
+        lat:          parseFloat(r.lat_used) || NaN,
+        lon:          parseFloat(r.lon_used) || NaN,
+        lpc:          r.lpc          || '',
+        notes:        r.notes        || '',
+        recorder:     r.submitter    || '',
+        photo_url:    r.photo_url    || '',
+        district:     r.district     || '',
+        block:        r.block        || '',
+        coord_source: r.coord_source || '',
+        ai_species:   r.ai_species   || '',
+        notable:      r.notable      || false,
+      }));
+    // Merge — avoid duplicates by date+species+recorder
+    sheetSightings.forEach(s => {
+      const exists = bioSightings.find(b =>
+        b.date===s.date && b.species===s.species && b.recorder===s.recorder);
+      if (!exists) bioSightings.push(s);
+    });
+    updateBioKPIs();
+    renderRecentSightings();
+    if (bioMap) renderBioMap();
+  } catch(e) {
+    console.warn('loadSightingsFromSheet failed:', e);
+  }
+}
+
+
+// ── Know Your Invasives ───────────────────────────────────────────────
+const INVASIVES = [
+  // Page 1
+  {name:'Mile-a-minute',sci:'Mikania micrantha',threat:'high',
+   img:'invasiveImages/mikania_micrantha.jpg',
+   tip:'Fast-growing vine, smothers sapling canopy. Arrow-shaped leaves, white flower clusters.',
+   tag:'invasive'},
+  {name:'Siam weed',sci:'Chromolaena odorata',threat:'high',
+   img:'invasiveImages/chromolaena_odorata.jpg',
+   tip:'Shrubby herb, dense monocultures. Triangular toothed leaves, purple-white flowers.',
+   tag:'invasive'},
+  {name:'Lantana',sci:'Lantana camara',threat:'high',
+   img:'invasiveImages/lantana_camara.jpg',
+   tip:'Woody shrub, toxic to livestock. Multi-coloured flower clusters, rough toothed leaves.',
+   tag:'invasive'},
+  {name:'Congress grass',sci:'Parthenium hysterophorus',threat:'high',
+   img:'invasiveImages/parthenium_hysterophorus.jpg',
+   tip:'Erect herb, white tiny flowers. Highly allergenic — avoid skin contact.',
+   tag:'invasive'},
+  {name:'Billy goat weed',sci:'Ageratum conyzoides',threat:'med',
+   img:'invasiveImages/ageratum_conyzoides.jpg',
+   tip:'Low herb, blue-purple flowers. Common in disturbed ground around plantations.',
+   tag:'invasive'},
+  {name:'Crofton weed',sci:'Ageratina adenophora',threat:'high',
+   img:'invasiveImages/ageratina_adenophora.jpg',
+   tip:'Shrub 1–2m tall, white flowers. Toxic to horses. Dense stands at forest edges.',
+   tag:'invasive'},
+  // Page 2
+  {name:'Water hyacinth',sci:'Pontederia crassipes',threat:'high',
+   img:'invasiveImages/pontederia_crassipes.jpg',
+   tip:'Free-floating rosette, purple flowers. Chokes wetlands near flood-prone plots.',
+   tag:'invasive'},
+  {name:'Giant salvinia',sci:'Salvinia molesta',threat:'high',
+   img:'invasiveImages/salvinia_molesta.jpg',
+   tip:'Floating fern, velvety leaves. Covers water surface completely.',
+   tag:'invasive'},
+  {name:'Giant sensitive plant',sci:'Mimosa invisa',threat:'med',
+   img:'invasiveImages/mimosa_invisa.webp',
+   tip:'Prickly sprawling shrub, pink pompom flowers. Forms impenetrable thickets.',
+   tag:'invasive'},
+  {name:'Pink morning glory',sci:'Ipomoea carnea',threat:'med',
+   img:'invasiveImages/ipomoea_carnea.jpg',
+   tip:'Woody shrub on riverbanks, large pink trumpet flowers. Toxic to livestock.',
+   tag:'invasive'},
+  {name:'Senna / Whitebark',sci:'Senna spectabilis',threat:'high',
+   img:'invasiveImages/senna_spectabilis.jpg',
+   tip:'Fast-growing tree 5–10m, yellow flowers. Naturalising in disturbed forest edges.',
+   tag:'invasive'},
+  {name:'Mexican sunflower',sci:'Tithonia diversifolia',threat:'med',
+   img:'invasiveImages/tithonia_diversifolia.jpg',
+   tip:'Tall herb 2–3m, bright orange daisy flowers. Spreading along road margins.',
+   tag:'invasive'},
+];
+
+const INV_PER_PAGE = 4;  // 4 per page, 3 pages
+let _invPageIdx = 0;
+const _invTotalPages = 3; // 12 species, 3 pages of 4
+
+function openInvasivesModal() {
+  _invPageIdx = 0;
+  renderInvasivesPages();
+  document.getElementById('invasives-modal').classList.add('open');
+}
+function closeInvasivesModal() {
+  document.getElementById('invasives-modal').classList.remove('open');
+}
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') { closeInvasivesModal(); closeSubmitModal(); closeSightingDetail(); }
+});
+
+function renderInvasivesPages() {
+  const container = document.getElementById('invasives-pages');
+  const dots = document.getElementById('inv-dots');
+  // Set width
+  const boxW = document.getElementById('invasives-box')?.offsetWidth || 520;
+  container.style.width = (boxW * _invTotalPages) + 'px';
+  // Render pages
+  container.innerHTML = '';
+  for (let p=0; p<_invTotalPages; p++) {
+    const page = document.createElement('div');
+    page.className = 'inv-page';
+    const bW = document.getElementById('invasives-box')?.offsetWidth || 520;
+    page.style.width = bW + 'px';
+    page.style.maxWidth = '95vw';
+    page.style.flexShrink = '0';
+    const items = INVASIVES.slice(p*INV_PER_PAGE, (p+1)*INV_PER_PAGE);
+    items.forEach(inv => {
+      const card = document.createElement('div');
+      card.className = 'inv-card';
+      card.innerHTML = `
+        ${inv.img ? `<img class="inv-card-photo" src="${inv.img}" alt="${inv.name}"
+          onerror="this.style.background='#1e3a52';this.style.minHeight='140px'"/>` : '<div class="inv-card-photo"></div>'}
+        <div class="inv-card-body">
+          <div class="inv-card-name">${inv.name}</div>
+          <div class="inv-card-sci">${inv.sci}</div>
+          <span class="inv-card-threat threat-${inv.threat}">
+            ${inv.threat==='high'?'⚠️ High threat':'🟡 Medium threat'}
+          </span>
+          <div class="inv-card-tip">${inv.tip}</div>
+          <div class="inv-card-submit" onclick="quickSubmitInvasive('${inv.name}','${inv.sci}','${inv.tag}')">
+            + Submit sighting →
+          </div>
+        </div>`;
+      page.appendChild(card);
+    });
+    container.appendChild(page);
+  }
+  // Dots
+  dots.innerHTML = '';
+  for (let i=0;i<_invTotalPages;i++) {
+    const dot = document.createElement('div');
+    dot.className = 'inv-dot' + (i===_invPageIdx?' active':'');
+    dot.onclick = () => { _invPageIdx=i; updateInvasivesPage(); };
+    dots.appendChild(dot);
+  }
+  updateInvasivesPage();
+}
+
+function updateInvasivesPage() {
+  const container = document.getElementById('invasives-pages');
+  // Get actual rendered width
+  const pageW = document.getElementById('invasives-box')?.offsetWidth || 520;
+  container.style.transform = `translateX(-${_invPageIdx * pageW}px)`;
+  document.querySelectorAll('.inv-dot').forEach((d,i)=>
+    d.classList.toggle('active', i===_invPageIdx));
+  document.getElementById('inv-prev').disabled = _invPageIdx===0;
+  document.getElementById('inv-next').disabled = _invPageIdx===_invTotalPages-1;
+}
+
+function invPage(dir) {
+  _invPageIdx = Math.max(0, Math.min(_invTotalPages-1, _invPageIdx+dir));
+  updateInvasivesPage();
+}
+
+function quickSubmitInvasive(name, sci, tag) {
+  closeInvasivesModal();
+  document.getElementById('s-species').value = name;
+  document.getElementById('s-sci').value = sci;
+  document.querySelectorAll('.tag-btn').forEach(b=>{
+    if(b.dataset.tag===tag){b.classList.add('sel');_submitTag=tag;}
+  });
+  openSubmitModal();
+}
+
+// ── Submit modal ──────────────────────────────────────────────────────
+let _submitTag=null,_browserCoord=null,_exifCoord=null,_photoBase64=null,_photoBlob=null;
+
+function openSubmitModal() {
+  document.getElementById('submit-modal').classList.add('open');
+  document.getElementById('s-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('s-status').textContent='';
+  getBrowserGPS();
+  populateSubmitDistrict();
+}
+function closeSubmitModal() {
+  document.getElementById('submit-modal').classList.remove('open');
+  resetSubmitForm();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSubmitModal();});
+
+function resetSubmitForm() {
+  _submitTag=null;_browserCoord=null;_exifCoord=null;_photoBase64=null;_photoBlob=null;
+  ['s-species','s-sci','s-notes','s-name','s-lat','s-lon'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('s-photo-preview').style.display='none';
+  document.getElementById('s-ai-result').style.display='none';
+  document.getElementById('s-browser-coord').textContent='getting…';
+  document.getElementById('s-exif-coord').textContent='—';
+  document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('s-status').textContent='';
+}
+
+function getBrowserGPS() {
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    _browserCoord={lat:pos.coords.latitude,lon:pos.coords.longitude};
+    document.getElementById('s-browser-coord').textContent=
+      _browserCoord.lat.toFixed(5)+', '+_browserCoord.lon.toFixed(5);
+    if(!_exifCoord){
+      document.getElementById('s-lat').value=_browserCoord.lat.toFixed(6);
+      document.getElementById('s-lon').value=_browserCoord.lon.toFixed(6);
+    }
+  },()=>{document.getElementById('s-browser-coord').textContent='unavailable';});
+}
+
+
+async function handleSubmitPhoto(input) {
+  const file=input.files[0];if(!file)return;
+  input.value='';
+  _photoBlob=file;
+  const url=URL.createObjectURL(file);
+  const prev=document.getElementById('s-photo-preview');
+  prev.src=url;prev.style.display='block';
+  // EXIF GPS via exifr
+  try {
+    const gps = typeof exifr !== 'undefined' ? await exifr.gps(file) : null;
+    if(gps&&gps.latitude&&gps.longitude){
+      _exifCoord={lat:gps.latitude,lon:gps.longitude};
+      document.getElementById('s-exif-coord').textContent=gps.latitude.toFixed(5)+', '+gps.longitude.toFixed(5);
+      document.getElementById('s-lat').value=gps.latitude.toFixed(6);
+      document.getElementById('s-lon').value=gps.longitude.toFixed(6);
+    } else {
+      document.getElementById('s-exif-coord').textContent='no GPS in photo';
+    }
+  } catch(e){ document.getElementById('s-exif-coord').textContent='EXIF unavailable'; }
+  const reader=new FileReader();
+  reader.onload=async e=>{_photoBase64=e.target.result.split(',')[1];await callVisionAPI(_photoBase64);};
+  reader.readAsDataURL(file);
+}
+
+async function callVisionAPI(base64) {
+  const status=document.getElementById('s-status');
+  status.textContent='🔍 Identifying species…';status.style.color='var(--teal)';
+  try{
+    const res=await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${CCB_CONFIG.visionApiKey}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({requests:[{image:{content:base64},
+        features:[{type:'LABEL_DETECTION',maxResults:10},{type:'WEB_DETECTION',maxResults:5}]}]})
+    });
+    const data=await res.json();
+    const resp=data.responses?.[0];
+    const webEntities=resp?.webDetection?.webEntities||[];
+    const bestEntity=webEntities.find(e=>e.score>0.5&&e.description)||webEntities[0];
+    const labels=resp?.labelAnnotations||[];
+    const labelDesc=labels.map(l=>l.description.toLowerCase());
+    let category='fauna',tag=null;
+    if(labelDesc.some(l=>['bird','avian','raptor','songbird'].some(x=>l.includes(x)))){category='fauna';tag='bird';}
+    else if(labelDesc.some(l=>['mammal','wildlife'].some(x=>l.includes(x)))){category='fauna';tag='mammal';}
+    else if(labelDesc.some(l=>['reptile','snake','lizard'].some(x=>l.includes(x)))){category='fauna';tag='reptile';}
+    else if(labelDesc.some(l=>['fish','aquatic'].some(x=>l.includes(x)))){category='fauna';tag='fish';}
+    else if(labelDesc.some(l=>['insect','butterfly','moth'].some(x=>l.includes(x)))){category='fauna';tag='insect';}
+    else if(labelDesc.some(l=>['invasive','lantana','mikania','chromolaena'].some(x=>l.includes(x)))){category='invasive';tag='invasive';}
+    else if(labelDesc.some(l=>['plant','tree','flower','shrub','vegetation'].some(x=>l.includes(x)))){category='flora';tag='native tree';}
+    const notable=labels.some(l=>['endangered','threatened','protected'].includes(l.description.toLowerCase()));
+    const confidence=bestEntity?.score?Math.round(bestEntity.score*100)+'%':
+      (labels[0]?.score?Math.round(labels[0].score*100)+'%':'—');
+    const spName=bestEntity?.description||labels[0]?.description||'—';
+    const sciName=webEntities.find(e=>e.description?.match(/^[A-Z][a-z]+ [a-z]+$/))?.description||'';
+    document.getElementById('s-ai-species').textContent=spName;
+    document.getElementById('s-ai-sci').textContent=sciName;
+    document.getElementById('s-ai-cat').textContent=category;
+    document.getElementById('s-ai-conf').textContent=confidence;
+    document.getElementById('s-ai-notable').textContent=notable?'⚠️ Notable species':'';
+    document.getElementById('s-ai-result').style.display='block';
+    if(!document.getElementById('s-species').value)document.getElementById('s-species').value=spName;
+    if(!document.getElementById('s-sci').value)document.getElementById('s-sci').value=sciName;
+    if(tag){document.querySelectorAll('.tag-btn').forEach(b=>{
+      if(b.dataset.tag===tag){b.classList.add('sel');_submitTag=tag;}
+    });}
+    status.textContent='✓ Species identified';status.style.color='var(--green)';
+  }catch(e){status.textContent='Vision API error — fill manually';status.style.color='var(--rose)';}
+}
+
+const TAG_CATEGORY={bird:'fauna',mammal:'fauna',reptile:'fauna',fish:'fauna',insect:'fauna',
+  'native tree':'flora','recruitment':'flora',invasive:'invasive',incident:'incident'};
+
+function setTag(btn) {
+  document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');_submitTag=btn.dataset.tag;
+}
+
+function populateSubmitDistrict() {
+  const sel=document.getElementById('s-district');
+  if(sel.options.length>1)return;
+  const dists=[...new Set(plantationData.map(f=>f.properties.DISTRICT).filter(Boolean))].sort();
+  dists.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
+}
+function filterSubmitBlock() {
+  const dist=document.getElementById('s-district').value;
+  const sel=document.getElementById('s-block');
+  sel.innerHTML='<option value="">— all blocks —</option>';
+  [...new Set(plantationData.filter(f=>!dist||f.properties.DISTRICT===dist)
+    .map(f=>f.properties.BLOCK).filter(Boolean))].sort()
+    .forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;sel.appendChild(o);});
+  filterSubmitLPC();
+}
+function filterSubmitLPC() {
+  const dist=document.getElementById('s-district').value;
+  const block=document.getElementById('s-block').value;
+  const sel=document.getElementById('s-lpc');
+  sel.innerHTML='<option value="">— select LPC —</option>';
+  plantationData.filter(f=>(!dist||f.properties.DISTRICT===dist)&&(!block||f.properties.BLOCK===block))
+    .sort((a,b)=>a.properties.LPC-b.properties.LPC)
+    .forEach(f=>{const p=f.properties;const o=document.createElement('option');
+      o.value=p.LPC;o.textContent=(p.LPC+' — '+(p.BENNAMES||'')).slice(0,60);sel.appendChild(o);});
+}
+
+async function submitSighting() {
+  const btn=document.getElementById('s-submit-btn');
+  const status=document.getElementById('s-status');
+  const species=document.getElementById('s-species').value.trim();
+  const lat=parseFloat(document.getElementById('s-lat').value);
+  const lon=parseFloat(document.getElementById('s-lon').value);
+  if(!species){status.textContent='⚠️ Species/description required';status.style.color='var(--rose)';return;}
+  if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ No GPS — submitting without location';status.style.color='var(--amber)';}
+  btn.disabled=true;btn.textContent='Submitting…';
+  const category=TAG_CATEGORY[_submitTag]||'fauna';
+  const ts=new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
+  const fname=_photoBase64?`CCB_${(document.getElementById('s-lpc').value)||'noLPC'}_${_submitTag||'sighting'}_${ts}.jpg`:null;
+  const payload={
+    action:'ccb_sighting',
+    data:{
+      timestamp:new Date().toISOString(),
+      submitter:(arrAuthGet()?.email || document.getElementById('s-name').value.trim() || 'unknown'),
+      date:document.getElementById('s-date').value,
+      species,sci:document.getElementById('s-sci').value.trim(),
+      tag:_submitTag||'',category,
+      lat_used:lat,lon_used:lon,
+      lat_browser:_browserCoord?.lat||'',lon_browser:_browserCoord?.lon||'',
+      lat_exif:_exifCoord?.lat||'',lon_exif:_exifCoord?.lon||'',
+      coord_source:_exifCoord?'EXIF':(_browserCoord?'GPS':'manual'),
+      lpc:document.getElementById('s-lpc').value,
+      district:document.getElementById('s-district').value,
+      block:document.getElementById('s-block').value,
+      notes:document.getElementById('s-notes').value.trim(),
+      ai_species:document.getElementById('s-ai-species').textContent,
+      notable:document.getElementById('s-ai-notable').textContent.includes('Notable'),
+    },
+    fileData:_photoBase64||null,
+    filename:fname,
+    mimeType:'image/jpeg',
+  };
+  if(CCB_CONFIG.scriptUrl){
+    try{await fetch(CCB_CONFIG.scriptUrl,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify(payload)});}catch(e){}
+  }
+  const rec=payload.data;
+  bioSightings.push({date:rec.date,species:rec.species,category:rec.category,
+    lat,lon,lpc:rec.lpc,notes:rec.notes,recorder:rec.submitter,
+    photo_url:_photoBase64?('pending_'+fname):'',
+    district:rec.district||'',block:rec.block||'',
+    coord_source:rec.coord_source||'',ai_species:rec.ai_species||'',notable:rec.notable||false});
+  updateBioKPIs();renderRecentSightings();if(bioMap)renderBioMap();
+  status.textContent='✅ Submitted'+(CCB_CONFIG.scriptUrl?'':' (local only — set scriptUrl to save to Sheet)');
+  status.style.color='var(--green)';
+  btn.disabled=false;btn.textContent='Submit & Save';
+  setTimeout(()=>closeSubmitModal(),1800);
+}
 
 </script>
 
