@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CCB &amp; SDG Dashboard v24 · Asha 1</title>
+<title>CCB &amp; SDG Dashboard v25 · Asha 1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.cjs"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
@@ -616,7 +616,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
   border-radius:20px;padding:4px 10px;color:var(--ink);cursor:pointer;white-space:nowrap;
   transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
 .arr-chip:hover{background:rgba(255,255,255,.22)}
-#arr-user-chip{display:none}
+#arr-user-chip{max-width:160px;overflow:hidden;text-overflow:ellipsis}
 #topbar{background:var(--surface);border-bottom:1px solid var(--border);
   padding:0 16px;height:40px;display:flex;align-items:center;gap:8px;flex-shrink:0}
 #topbar .title{font-size:12px;font-weight:700;color:var(--ink)}
@@ -1011,13 +1011,13 @@ function arrAuthRenderChip(containerId, onSignOut) {
         <div class="map-wrap">
           <h3>Biodiversity sightings map</h3>
           <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid rgba(255,255,255,.1);position:relative;z-index:10">
-            <select id="f-district" onchange="populateBioFilters();filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
+            <select id="f-district" onchange="populateBioFilters();filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--surface);color:var(--ink);border:1px solid var(--border)">
               <option value="">All districts</option>
             </select>
-            <select id="f-block" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
+            <select id="f-block" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--surface);color:var(--ink);border:1px solid var(--border)">
               <option value="">All blocks</option>
             </select>
-            <select id="f-sighting-type" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
+            <select id="f-sighting-type" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--surface);color:var(--ink);border:1px solid var(--border)">
               <option value="">All sighting types</option>
               <option value="fauna">🦅 Fauna</option>
               <option value="flora">🌿 Flora</option>
@@ -1025,11 +1025,11 @@ function arrAuthRenderChip(containerId, onSignOut) {
               <option value="recruitment">🌱 Recruitment</option>
               <option value="incident">🐾 Wildlife incident</option>
             </select>
-            <select id="f-species-bio" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
+            <select id="f-species-bio" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--surface);color:var(--ink);border:1px solid var(--border)">
               <option value="">All species</option>
             </select>
-            <input type="text" id="f-bio-search" oninput="filterBioMap()" placeholder="Search…" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151;width:90px">
-            <button onclick="clearBioFilters()" style="font-size:10px;padding:3px 8px;border-radius:4px;background:#374151;color:#e5e7eb;border:none;cursor:pointer">✕</button>
+            <input type="text" id="f-bio-search" oninput="filterBioMap()" placeholder="Search…" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--surface);color:var(--ink);border:1px solid var(--border);width:90px">
+            <button onclick="clearBioFilters()" style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--border);color:var(--ink);border:none;cursor:pointer">✕</button>
           </div>
           <div style="padding:8px 12px;display:flex;gap:10px;flex-wrap:wrap;font-size:10px">
             <label><input type="checkbox" id="f-fauna" checked onchange="filterBioMap()"> 🦅 Fauna</label>
