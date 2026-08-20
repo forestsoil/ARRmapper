@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v21 · Asha 1</title>
+<title>Monitoring Dashboard v24 · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -15,15 +15,17 @@
   --rule:rgba(74,158,92,.18);
   --radius:10px; --shadow:0 2px 10px rgba(0,0,0,.07);
   --font:'Segoe UI',system-ui,sans-serif;
+  --muted:#6b7280;
 }
 html.dark {
-  --ink:#e8f4e8; --bg:#0f1c14; --card:#1c2a17;
-  --forest:#0d2414; --canopy:#2d6940; --leaf:#6ee7b7; --pale:#1a3020;
-  --amber:#fbbf24; --amber-pale:#2a1a00;
-  --red:#f87171; --red-pale:#2a0a0a;
-  --teal:#6ee7b7; --teal-pale:#0a2a22;
+  --ink:#d1fae5; --bg:#0f1c14; --card:#1c2a17;
+  --forest:#0d2414; --canopy:#4ade80; --leaf:#6ee7b7; --pale:#1a3020;
+  --amber:#fcd34d; --amber-pale:#2d1f00;
+  --red:#fca5a5; --red-pale:#3b0d0d;
+  --teal:#5eead4; --teal-pale:#0a2a22;
   --rule:rgba(110,231,183,.15);
   --shadow:0 2px 10px rgba(0,0,0,.3);
+  --muted:#94a3b8;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;transition:background .2s,color .2s}
@@ -48,7 +50,7 @@ header{background:var(--forest);padding:16px 24px;display:flex;align-items:cente
 #auth-gate-box{background:var(--card);border:1.5px solid var(--rule);border-radius:var(--radius);padding:28px 32px;text-align:center;max-width:360px;width:90%;box-shadow:var(--shadow)}
 .ag-icon{font-size:36px;margin-bottom:10px}
 #auth-gate-box h2{font-size:15px;font-weight:700;color:var(--forest);margin-bottom:6px}
-#auth-gate-box p{font-size:12px;color:#6b7280;margin-bottom:18px;line-height:1.6}
+#auth-gate-box p{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.6}
 .ag-btn{display:inline-block;padding:9px 22px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:var(--font);margin:4px;text-decoration:none}
 .ag-btn-primary{background:var(--canopy);color:#fff}.ag-btn-primary:hover{background:var(--forest)}
 .ag-btn-secondary{background:var(--pale);color:var(--canopy);border:1.5px solid var(--leaf)}.ag-btn-secondary:hover{background:var(--leaf);color:#fff}
@@ -61,14 +63,14 @@ select:focus,input:focus{outline:none;border-color:var(--leaf)}
 .filter-group{display:flex;align-items:center;gap:5px}
 .btn-reset{font-size:11px;padding:5px 12px;background:var(--pale);border:1.5px solid var(--leaf);border-radius:6px;color:var(--canopy);font-weight:600;cursor:pointer}
 .btn-reset:hover{background:var(--leaf);color:#fff}
-#result-count{font-size:11px;color:#6b7280;margin-left:auto}
+#result-count{font-size:11px;color:var(--muted);margin-left:auto}
 
 /* ── KPI row ──────────────────────────────────────────────────── */
 .kpi-row{display:flex;flex-wrap:wrap;gap:12px;padding:18px 24px 0}
 .kpi{background:var(--card);border:1.5px solid var(--rule);border-radius:var(--radius);padding:14px 18px;flex:1;min-width:150px;box-shadow:var(--shadow)}
 .kpi-val{font-size:28px;font-weight:700;line-height:1;color:var(--forest)}
-.kpi-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;margin-top:4px}
-.kpi-sub{font-size:11px;color:#9ca3af;margin-top:2px}
+.kpi-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:4px}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:2px}
 .kpi.warn .kpi-val{color:var(--amber)}
 .kpi.danger .kpi-val{color:var(--red)}
 
@@ -87,7 +89,7 @@ select:focus,input:focus{outline:none;border-color:var(--leaf)}
 .surv-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--rule)}
 .surv-row:last-child{border-bottom:none}
 .surv-label{font-size:11px;color:var(--ink);width:100px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.surv-bar-wrap{flex:1;background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden}
+.surv-bar-wrap{flex:1;background:var(--rule);border-radius:4px;height:8px;overflow:hidden}
 .surv-bar{height:8px;border-radius:4px;transition:width .4s}
 .surv-pct{font-size:10px;font-weight:700;width:38px;text-align:right;flex-shrink:0}
 
@@ -111,12 +113,18 @@ tbody td{padding:6px 10px;vertical-align:top}
 .cond-bucket .lbl{font-size:10px;margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 .c-excellent{background:#d1fae5;color:#065f46}
 .c-good{background:#e0f4f7;color:#0e5f6e}
-.c-fair{background:var(--amber-pale);color:#92400e}
-.c-poor{background:var(--red-pale);color:#7f1d1d}
+.c-fair{background:var(--amber-pale);color:var(--amber)}
+.c-poor{background:var(--red-pale);color:var(--red)}
+html.dark .c-excellent{background:#064e3b;color:#6ee7b7}
+html.dark .c-good{background:#0a2a22;color:#5eead4}
+html.dark .b-green{background:#064e3b;color:#6ee7b7}
+html.dark .b-amber{background:#2d1f00;color:#fcd34d}
+html.dark .b-red{background:#3b0d0d;color:#fca5a5}
+html.dark .b-teal{background:#0a2a22;color:#5eead4}
 
 /* ── Source toggle ────────────────────────────────────────────── */
 .source-toggle{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-.src-btn{font-size:10px;padding:3px 10px;border-radius:20px;border:1.5px solid var(--rule);background:var(--card);color:#6b7280;cursor:pointer;font-weight:600}
+.src-btn{font-size:10px;padding:3px 10px;border-radius:20px;border:1.5px solid var(--rule);background:var(--card);color:var(--muted);cursor:pointer;font-weight:600}
 .src-btn.active{border-color:var(--leaf);background:var(--pale);color:var(--canopy)}
 
 /* ── Flag panel ───────────────────────────────────────────────── */
@@ -124,18 +132,18 @@ tbody td{padding:6px 10px;vertical-align:top}
 .flag-item:last-child{border:none}
 .flag-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
 .flag-lpc{font-size:11px;font-weight:700;color:var(--forest)}
-.flag-detail{font-size:10px;color:#6b7280;margin-top:1px}
+.flag-detail{font-size:10px;color:var(--muted);margin-top:1px}
 .flag-surv{font-size:12px;font-weight:700}
 
 /* ── District pills ───────────────────────────────────────────── */
 .dist-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .dpill{border-radius:6px;padding:10px 14px;flex:1;min-width:100px;text-align:center;border:1.5px solid var(--rule)}
 .dpill .dn{font-size:18px;font-weight:700}
-.dpill .dl{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.dpill .dl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
 .dpill .ds{font-size:11px;font-weight:600;margin-top:3px}
 
 /* ── Remarks chip ─────────────────────────────────────────────── */
-.remark-chip{font-size:10px;color:#4b5563;background:#f3f4f6;border-radius:4px;padding:2px 6px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;cursor:help}
+.remark-chip{font-size:10px;color:var(--muted);background:var(--pale);border-radius:4px;padding:2px 6px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;cursor:help}
 
 /* ── MRV Field Visit Tool ─────────────────────────────────────── */
 .mrv-pm-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1f2937;gap:4px}
@@ -209,6 +217,7 @@ function toggleTheme() {
   const btn = document.getElementById('theme-btn');
   if (btn) btn.textContent = _darkMode ? '☀️' : '🌙';
   localStorage.setItem('mdTheme', _darkMode ? 'dark' : 'light');
+  if (ALL_DATA.length) { renderDistPills(); renderDistChart(); renderCondChart(); renderSpeciesChart(); renderYearChart(); }
 }
 (function(){
   if (localStorage.getItem('mdTheme') === 'dark') {
@@ -330,7 +339,7 @@ function toggleTheme() {
       <div class="chart-wrap"><canvas id="ch-yearcomp"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">⚠️ Plots Needing Attention <span style="font-size:10px;color:#9ca3af;font-weight:400">(survival &lt;60%)</span></div>
+      <div class="card-title">⚠️ Plots Needing Attention <span style="font-size:10px;color:var(--muted);font-weight:400">(survival &lt;60%)</span></div>
       <div id="flag-list" style="max-height:240px;overflow-y:auto"></div>
     </div>
   </div>
@@ -726,10 +735,11 @@ function plotSurvival(plot) {
   return p > 0 ? a/p : null;
 }
 function survColor(pct) {
-  if (pct === null) return '#9ca3af';
-  if (pct >= 0.8)   return '#059669';
-  if (pct >= 0.6)   return '#d97706';
-  return '#dc2626';
+  const dark = document.documentElement.classList.contains('dark');
+  if (pct === null) return dark ? '#64748b' : '#9ca3af';
+  if (pct >= 0.8)   return dark ? '#34d399' : '#059669';
+  if (pct >= 0.6)   return dark ? '#fcd34d' : '#d97706';
+  return dark ? '#fca5a5' : '#dc2626';
 }
 function pctBadge(pct) {
   if (pct === null) return '<span class="badge b-teal">N/A</span>';
@@ -813,8 +823,13 @@ function renderDistPills() {
   });
   document.getElementById('dist-pills').innerHTML = Object.entries(byDist).map(([d,v])=>{
     const s = v.planted>0 ? Math.round(100*v.alive/v.planted) : 0;
-    const col  = s>=80?'#d1fae5':s>=60?'#fef3e2':'#fde8e8';
-    const tcol = s>=80?'#065f46':s>=60?'#92400e':'#7f1d1d';
+    const dark = document.documentElement.classList.contains('dark');
+    const col  = dark
+      ? (s>=80?'#064e3b':s>=60?'#2d1f00':'#3b0d0d')
+      : (s>=80?'#d1fae5':s>=60?'#fef3e2':'#fde8e8');
+    const tcol = dark
+      ? (s>=80?'#34d399':s>=60?'#fcd34d':'#fca5a5')
+      : (s>=80?'#065f46':s>=60?'#92400e':'#7f1d1d');
     return `<div class="dpill" style="background:${col};border-color:${col}">
       <div class="dn" style="color:${tcol}">${s}%</div>
       <div class="dl">${d}</div>
@@ -841,6 +856,13 @@ function renderCondGrid() {
 // ── Charts ────────────────────────────────────────────────────────
 function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 
+function _chartColors(pct) {
+  const dk = document.documentElement.classList.contains('dark');
+  if (pct >= 80) return dk ? 'rgba(52,211,153,.8)'  : 'rgba(5,150,105,.7)';
+  if (pct >= 60) return dk ? 'rgba(252,211,77,.8)'  : 'rgba(217,119,6,.7)';
+  return                     dk ? 'rgba(252,165,165,.8)' : 'rgba(220,38,38,.7)';
+}
+
 function renderDistChart() {
   dc('district');
   const byDist={};
@@ -852,7 +874,7 @@ function renderDistChart() {
   const survs=labels.map(d=>byDist[d].planted>0?Math.round(100*byDist[d].alive/byDist[d].planted):0);
   charts['district']=new Chart(document.getElementById('ch-district'),{
     type:'bar',data:{labels,datasets:[{label:'Survival %',data:survs,
-      backgroundColor:survs.map(s=>s>=80?'rgba(5,150,105,.7)':s>=60?'rgba(217,119,6,.7)':'rgba(220,38,38,.7)'),borderRadius:5}]},
+      backgroundColor:survs.map(s=>_chartColors(s)),borderRadius:5}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
       scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}}}});
 }
@@ -862,10 +884,14 @@ function renderCondChart() {
   const b=[0,0,0,0];
   FILTERED.forEach(r=>{const c=r.plot_condition;if(c===null||c===undefined)return;
     if(c>=0.9)b[0]++;else if(c>=0.7)b[1]++;else if(c>=0.5)b[2]++;else b[3]++;});
+  const dk = document.documentElement.classList.contains('dark');
+  const condColors = dk
+    ? ['#34d399','#5eead4','#fcd34d','#fca5a5']
+    : ['#059669','#0e9f6e','#d97706','#dc2626'];
   charts['condition']=new Chart(document.getElementById('ch-condition'),{
     type:'doughnut',
     data:{labels:['Excellent ≥90%','Good 70-89%','Fair 50-69%','Poor <50%'],
-      datasets:[{data:b,backgroundColor:['#059669','#0e9f6e','#d97706','#dc2626'],borderWidth:2,borderColor:'#fff'}]},
+      datasets:[{data:b,backgroundColor:condColors,borderWidth:2,borderColor:dk?'#1c2a17':'#fff'}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}}}}});
 }
@@ -880,7 +906,7 @@ function renderSpeciesChart() {
   const sorted=Object.entries(sp).filter(([,v])=>v.planted>0)
     .map(([k,v])=>({name:k,pct:Math.round(100*v.alive/v.planted)}))
     .sort((a,b)=>b.pct-a.pct);
-  const colors=sorted.map(x=>x.pct>=80?'rgba(5,150,105,.75)':x.pct>=60?'rgba(217,119,6,.75)':'rgba(220,38,38,.75)');
+  const colors=sorted.map(x=>_chartColors(x.pct));
   charts['species']=new Chart(document.getElementById('ch-species'),{
     type:'bar',
     data:{labels:sorted.map(x=>x.name),datasets:[{label:'Survival %',data:sorted.map(x=>x.pct),backgroundColor:colors,borderRadius:4}]},
@@ -918,13 +944,13 @@ function renderFlagList() {
       <div class="flag-item">
         <div class="flag-dot" style="background:${survColor(s)}"></div>
         <div style="flex:1;min-width:0">
-          <div class="flag-lpc">LPC ${p.lpc} <span style="font-size:10px;color:#6b7280;font-weight:400">${p.district} · ${p.data_year}</span></div>
+          <div class="flag-lpc">LPC ${p.lpc} <span style="font-size:10px;color:var(--muted);font-weight:400">${p.district} · ${p.data_year}</span></div>
           <div class="flag-detail">${(p.beneficiary||'').slice(0,50)}${(p.beneficiary||'').length>50?'…':''}</div>
           ${p.remarks?`<div class="flag-detail" style="font-style:italic;margin-top:2px">${p.remarks.slice(0,80)}…</div>`:''}
         </div>
         <div class="flag-surv" style="color:${survColor(s)}">${Math.round(s*100)}%</div>
       </div>`).join('')
-    : '<div style="font-size:12px;color:#9ca3af;padding:20px 0;text-align:center">No plots below threshold in current filter</div>';
+    : '<div style="font-size:12px;color:var(--muted);padding:20px 0;text-align:center">No plots below threshold in current filter</div>';
 }
 
 // ── Plot table ─────────────────────────────────────────────────────
@@ -943,14 +969,14 @@ function renderPlotTable() {
       <td>${(p.area_ha||0).toFixed(2)}</td>
       <td>${fmt(pl)}</td><td>${fmt(al)}</td>
       <td>${pctBadge(s)}</td>
-      <td><span style="color:${p.plot_condition>=0.7?'#059669':p.plot_condition>=0.5?'#d97706':'#dc2626'};font-weight:600">${condLabel(p.plot_condition)}</span></td>
+      <td><span style="color:${(()=>{const dk=document.documentElement.classList.contains('dark');return p.plot_condition>=0.7?(dk?'#34d399':'#059669'):p.plot_condition>=0.5?(dk?'#fcd34d':'#d97706'):(dk?'#fca5a5':'#dc2626')})()};font-weight:600">${condLabel(p.plot_condition)}</span></td>
       <td>${src}</td>
       <td>${p.remarks?`<span class="remark-chip" title="${p.remarks}">${p.remarks.slice(0,45)}…</span>`:''}</td>
     </tr>`;
   }).join('');
   if(FILTERED.length>300){
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td colspan="11" style="text-align:center;color:#9ca3af;font-size:11px;padding:8px">Showing 300 of ${FILTERED.length} — use filters to narrow</td>`;
+    tr.innerHTML=`<td colspan="11" style="text-align:center;color:var(--muted);font-size:11px;padding:8px">Showing 300 of ${FILTERED.length} — use filters to narrow</td>`;
     tbody.appendChild(tr);
   }
 }
@@ -971,14 +997,16 @@ function renderSpeciesTable() {
   document.getElementById('species-table-body').innerHTML=sorted.map(([name,v])=>{
     const s=v.planted>0?v.alive/v.planted:null;
     const bw=s!==null?Math.round(s*100):0;
-    const bc=s>=0.8?'#059669':s>=0.6?'#d97706':'#dc2626';
+    const bc=survColor(s);
+    const deadCol = document.documentElement.classList.contains('dark') ? '#fca5a5' : '#dc2626';
+    const barBg   = document.documentElement.classList.contains('dark') ? 'rgba(110,231,183,.12)' : '#e5e7eb';
     return `<tr>
       <td style="font-weight:600">${name}</td>
       <td>${v.plots.size}</td><td>${fmt(v.planted)}</td>
       <td>${fmt(v.alive)}</td>
-      <td style="color:#dc2626">${fmt(v.dead)}</td>
+      <td style="color:${deadCol}">${fmt(v.dead)}</td>
       <td>${pctBadge(s)}</td>
-      <td><div style="background:#e5e7eb;border-radius:3px;height:8px;width:120px;overflow:hidden">
+      <td><div style="background:${barBg};border-radius:3px;height:8px;width:120px;overflow:hidden">
         <div style="background:${bc};height:8px;width:${bw}px;border-radius:3px"></div></div></td>
     </tr>`;
   }).join('');
