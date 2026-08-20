@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v25 · Asha 1</title>
+<title>Monitoring Dashboard v26 · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -171,6 +171,7 @@ html.dark .b-teal{background:#0a2a22;color:#5eead4}
 #mrv-topbar .mrv-tb-title{font-size:13px;font-weight:700;color:#6ee7b7;flex:1}
 .mrv-tb-btn{background:#1f2937;border:1.5px solid #374151;border-radius:6px;color:#d1d5db;font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer;white-space:nowrap}
 .mrv-tb-btn:hover{background:#374151}
+.mrv-tb-btn.src-active{background:#0d7377;border-color:#0fa3a8;color:#fff}
 .mrv-tb-btn.danger{border-color:#7f1d1d;color:#fca5a5}
 .mrv-tb-btn.danger:hover{background:#7f1d1d}
 #mrv-body{display:flex;flex:1;overflow:hidden}
@@ -255,6 +256,9 @@ function toggleTheme() {
   }
 })();
 </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/shpjs@4.0.4/dist/shp.js"></script>
 </head>
 <body>
 
@@ -423,10 +427,32 @@ function toggleTheme() {
 <!-- ── MRV full-screen view ──────────────────────────────────── -->
 <div id="mrv-view">
   <div id="mrv-topbar">
-    <span class="mrv-tb-title">📍 MRV Field Visit · Asha 1</span>
-    <span id="mrv-tb-user" style="font-size:10px;color:#9ca3af"></span>
-    <button class="mrv-tb-btn" onclick="mrvBackToDashboard()">← Dashboard</button>
-    <button class="mrv-tb-btn danger" id="mrv-tb-cancel-btn" onclick="mrvCancelVisit()" style="display:none">✕ Cancel visit</button>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span class="mrv-tb-title">📍 MRV Field Visit · Asha 1</span>
+      <span id="mrv-tb-user" style="font-size:10px;color:#9ca3af"></span>
+      <span id="mrv-load-status" style="font-size:10px;color:#6ee7b7"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">
+      <!-- Source buttons -->
+      <button class="mrv-tb-btn src-active" id="src-btn-plantation" onclick="mrvSetSource('plantation')" title="All LPC polygons from asha_plantation.geojson">🗺 Plantation</button>
+      <button class="mrv-tb-btn" id="src-btn-opfs" onclick="mrvSetSource('opfs')" title="Sapling-points data from ARRmapper OPFS">📂 OPFS</button>
+      <button class="mrv-tb-btn" id="src-btn-zip" onclick="document.getElementById('mrv-zip-input').click()" title="Upload shapefile ZIP">📦 ZIP</button>
+      <button class="mrv-tb-btn" id="src-btn-history" onclick="mrvSetSource('history')" title="Previously saved MRV visits from this tool">🕐 History</button>
+      <input type="file" id="mrv-zip-input" accept=".zip" style="display:none" onchange="mrvLoadZip(this)"/>
+      <span style="color:#374151;font-size:14px">|</span>
+      <!-- District / Block / LPC filters (plantation source only) -->
+      <select id="mrv-f-district" onchange="mrvApplyFilters()" style="font-size:11px;background:#1f2937;border:1px solid #374151;border-radius:5px;color:#d1d5db;padding:3px 6px;display:none">
+        <option value="">All districts</option>
+      </select>
+      <select id="mrv-f-block" onchange="mrvApplyFilters()" style="font-size:11px;background:#1f2937;border:1px solid #374151;border-radius:5px;color:#d1d5db;padding:3px 6px;display:none">
+        <option value="">All blocks</option>
+      </select>
+      <input id="mrv-f-lpc" type="text" placeholder="LPC…" maxlength="10" oninput="mrvApplyFilters()" style="font-size:11px;background:#1f2937;border:1px solid #374151;border-radius:5px;color:#d1d5db;padding:3px 6px;width:80px;display:none"/>
+      <span id="mrv-f-count" style="font-size:10px;color:#6b7280;display:none"></span>
+      <!-- Action buttons -->
+      <button class="mrv-tb-btn" onclick="mrvBackToDashboard()">← Dashboard</button>
+      <button class="mrv-tb-btn danger" id="mrv-tb-cancel-btn" onclick="mrvCancelVisit()" style="display:none">✕ Cancel visit</button>
+    </div>
   </div>
   <div id="mrv-body">
     <div id="mrv-sidebar">
@@ -1114,18 +1140,14 @@ function guardedToggleMRV() {
 }
 
 function openMRVView() {
-  // Collapse dashboard
   document.getElementById('mrv-view').classList.add('open');
   document.getElementById('dash-strip').classList.add('visible');
-  // Update topbar user label
   const auth = arrAuthGet();
   const userEl = document.getElementById('mrv-tb-user');
-  if (userEl && auth) userEl.textContent = '👤 ' + (auth.name || auth.email);
-  // Init map on first open
+  if (userEl && auth) userEl.textContent = '\u{1F464} ' + (auth.name || auth.email);
   mrvInitMap();
   setTimeout(() => mrvMap && mrvMap.invalidateSize(), 100);
-  // Load plots into dropdown + draw all polygons on map
-  mrvLoadPlots();
+  mrvSetSource('plantation');
 }
 
 function mrvBackToDashboard() {
@@ -1139,333 +1161,359 @@ function mrvBackToDashboard() {
   if (btn) btn.style.background = '';
 }
 
-
-
-
-// ══════════════════════════════════════════════════════════════════
-// MRV FIELD VISIT TOOL
-// Writes GeoJSON to Drive (via FieldTool AS) AND summary row to
-// Asha1_MonitoringRegister (via Monitoring AS)
-// ══════════════════════════════════════════════════════════════════
-
-// ── MRV grading constants (from ARRmapper v67) ─────────────────────
-const MRV_GRADES           = ['A+','A','B+','B','C+','C','D+','D'];
-const MRV_GRADE_SCORE      = {'A+':8,'A':7,'B+':6,'B':5,'C+':4,'C':3,'D+':2,'D':1};
-const MRV_INTERIOR_PER_BLOCK = 3;
-const MRV_MAX_SAMPLE       = 120;
-const MRV_ANNUAL_MONTHS    = [9,10,11];
-const MRV_MORTALITY_MONTHS = [9,10,11];
-const MRV_DENSITY_SAMPLE   = [{maxDens:550,perHa:15},{maxDens:999,perHa:25},{maxDens:Infinity,perHa:35}];
-
-// ── Leaflet map (initialised on first MRV open) ────────────────────
-let mrvMap = null;
-let mrvLayer = null;
-let mrvAllPlotsLayer = null; // all LPC polygons overlay
-
-// ── IDB helpers for sample cache ──────────────────────────────────
-async function idbMrvSampleGet(key) {
-  const db = await openDB();
-  return new Promise((res,rej) => {
-    const req = db.transaction('mrvSamples','readonly').objectStore('mrvSamples').get(key);
-    req.onsuccess = e => res(e.target.result);
-    req.onerror   = e => rej(e.target.error);
+// ── Source switching ──────────────────────────────────────────────
+function mrvSetSource(src) {
+  mrvCurrentSource = src;
+  ['plantation','opfs','zip','history'].forEach(s => {
+    const b = document.getElementById('src-btn-' + s);
+    if (b) b.classList.toggle('src-active', s === src);
   });
-}
-async function idbMrvSampleSet(key, v) {
-  const db = await openDB();
-  return new Promise((res,rej) => {
-    const tx = db.transaction('mrvSamples','readwrite');
-    tx.objectStore('mrvSamples').put(v, key);
-    tx.oncomplete = () => res();
-    tx.onerror    = e => rej(e.target.error);
+  const showFilters = src === 'plantation';
+  ['mrv-f-district','mrv-f-block','mrv-f-lpc','mrv-f-count'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = showFilters ? '' : 'none';
   });
+  mrvLoadPlots();
 }
 
-// ── MRV config ────────────────────────────────────────────────────
-const MRV_TOOL_FOLDER  = 'MRVTool';
-const LEGACY_OPFS_PATH = ['geojson', 'VectorTool', '_legacy'];
-
-// ── FieldTool AS URL (for Drive GeoJSON upload) ───────────────────
-// Same URL used by ARRmapper for Drive file uploads
-const FIELD_TOOL_AS_URL = ''; // ← paste FieldTool /exec URL
-
-// ── Lightweight session for MRV uploads ──────────────────────────
-const MRV_SESSION = {
-  projectKey:  'Asha1',
-  userFolder:  '',  // set on first use from login prompt
-  setupDone:   false,
-};
-
-// ── Language stub (English only in dashboard) ─────────────────────
-const Lang = { th_soiltype: 'Soil type' };
-
-// ── MRV status message ─────────────────────────────────────────────
-function mrvSetStatusMsg(msg) {
-  const el = document.getElementById('mrv-status-msg');
-  if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
-  console.log('[MRV]', msg);
+function mrvApplyFilters() {
+  if (mrvCurrentSource !== 'plantation') return;
+  mrvRenderPlantationPlots(mrvPlantationGJ);
 }
 
-// ── OPFS helpers (minimal — same logic as ARRmapper) ──────────────
-async function opfsRoot() {
-  return await navigator.storage.getDirectory();
-}
-async function opfsDir(pathParts, create = true) {
-  let dir = await opfsRoot();
-  for (const part of pathParts) {
-    dir = await dir.getDirectoryHandle(part, { create });
-  }
-  return dir;
-}
-async function opfsWrite(dir, filename, blob) {
-  const fh = await dir.getFileHandle(filename, { create: true });
-  const w  = await fh.createWritable();
-  await w.write(blob); await w.close();
-}
-async function opfsReadBlob(dir, filename) {
-  const fh = await dir.getFileHandle(filename);
-  return await fh.getFile();
-}
-async function opfsList(dir) {
-  const names = [];
-  for await (const [name, handle] of dir.entries()) {
-    if (handle.kind === 'file') names.push(name);
-  }
-  return names;
-}
-async function opfsSaveGeoJSON(toolFolder, filename, geojson) {
-  try {
-    const dir = await opfsDir(['geojson', toolFolder]);
-    const blob = new Blob([JSON.stringify(geojson, null, 2)], { type:'application/geo+json' });
-    await opfsWrite(dir, filename, blob);
-  } catch(e) { console.warn('OPFS GeoJSON write failed:', e.message); }
-}
-async function opfsSaveToSent(toolFolder, filename, blob) {
-  try {
-    const dir = await opfsDir(['sent', toolFolder]);
-    await opfsWrite(dir, filename, blob);
-  } catch(e) { console.warn('OPFS sent write failed:', e.message); }
+function _filterVal(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
 }
 
-// ── blobToBase64 ───────────────────────────────────────────────────
-function blobToBase64(blob) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload  = () => res(r.result.split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(blob);
-  });
-}
-
-// ── Upload GeoJSON to Drive via FieldTool AS ──────────────────────
-async function uploadFile(filename, blob, toolFolder) {
-  if (!FIELD_TOOL_AS_URL || !MRV_SESSION.setupDone) return;
-  try {
-    const b64 = await blobToBase64(blob);
-    await fetch(FIELD_TOOL_AS_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        username: MRV_SESSION.userFolder,
-        toolFolder, filename,
-        fileData: b64,
-        mimeType: blob.type || 'application/octet-stream',
-      }),
-    });
-  } catch(e) { console.warn('Drive upload failed:', e.message); }
-}
-
-// ── POST MRV summary row to Asha1_MonitoringRegister ─────────────
-async function mrvPostToMonitoringSheet(visitData) {
-  const url = AS_URL || AS_URL_FALLBACK;
-  if (!url) return;
-  try {
-    await fetch(url, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: 'submitMRVVisit',
-        payload: visitData,
-      }),
-    });
-  } catch(e) { console.warn('Monitoring AS post failed:', e.message); }
-}
-
-// ── Outbox stubs (not needed in dashboard — drive upload is direct) ──
-async function outboxEnqueue(filename, blob, toolFolder) { return Date.now(); }
-async function outboxMarkSent(item) {}
-function outboxUpdateBadge() {}
-
-let mrvPlots=[], mrvActivePlot=null, mrvVisitType=null, mrvMortalityWarnShown=false;
-let mrvSamplePts=[], mrvCurrentIdx=0, mrvObservations=[], mrvPhotoBlobs=[];
-let mrvCurrentHeight=null, mrvCurrentDBH=null, mrvCurrentGrade=null;
-let mrvVisitActive=false;
-let mrvPlotMetricVals = {}; // {id: score 1–8}
-
-function mrvInitMap() {
-  if (mrvMap) return; // already initialised
-  mrvMap = L.map('mrv-map', { zoomControl: true }).setView([26.72, 88.43], 12);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: '© Esri', maxZoom: 21, maxNativeZoom: 17
-  }).addTo(mrvMap);
-  mrvLayer         = L.layerGroup().addTo(mrvMap);
-  mrvAllPlotsLayer = L.layerGroup().addTo(mrvMap);
+function mrvLoadStatus(msg) {
+  const el = document.getElementById('mrv-load-status');
+  if (el) el.textContent = msg;
 }
 
 async function mrvLoadPlots() {
   const sel = document.getElementById('mrv-plot-sel');
-  sel.innerHTML = '<option value="">— select plot —</option>';
+  sel.innerHTML = '<option value="">\u2014 loading\u2026 \u2014</option>';
   mrvPlots = [];
   if (mrvAllPlotsLayer) mrvAllPlotsLayer.clearLayers();
+  if      (mrvCurrentSource === 'plantation') await mrvLoadPlantation();
+  else if (mrvCurrentSource === 'opfs')       await mrvLoadOPFS();
+  else if (mrvCurrentSource === 'history')    await mrvLoadHistory();
+  if (mrvCurrentSource !== 'zip' && mrvPlots.length === 0) {
+    sel.innerHTML = '<option value="">\u2014 no plots found \u2014</option>';
+    mrvLoadStatus('');
+  }
+}
 
-  // ── 1. sapling_points GeoJSONs from PlantationMapper ──────────────
+// ─── SOURCE 1: asha_plantation.geojson ───────────────────────────
+async function mrvLoadPlantation() {
+  mrvLoadStatus('Fetching plantation data\u2026');
   try {
-    const dir = await opfsDir(['geojson','PlantationMapper'], false);
-    const files = await opfsList(dir);
-    for (const fname of files.filter(f=>f.includes('sapling_points'))) {
-      try {
-        const blob = await opfsReadBlob(dir, fname);
-        const gj = JSON.parse(await blob.text());
-        if (!gj.features || !gj.features.length) continue;
+    if (!mrvPlantationGJ) {
+      const resp = await fetch('./asha_plantation.geojson');
+      mrvPlantationGJ = await resp.json();
+      _buildPlantationFilters(mrvPlantationGJ);
+    }
+    mrvOpfsLPCSet = new Set();
+    try {
+      const dir = await opfsDir(['geojson','PlantationMapper'], false);
+      const files = await opfsList(dir);
+      files.filter(f=>f.includes('sapling_points')).forEach(f => {
+        mrvOpfsLPCSet.add(f.replace('_sapling_points','').replace(/\.geojson$/,''));
+      });
+    } catch(e){}
+    mrvRenderPlantationPlots(mrvPlantationGJ);
+  } catch(e) {
+    mrvLoadStatus('\u26a0\ufe0f Could not load asha_plantation.geojson');
+    document.getElementById('mrv-plot-sel').innerHTML = '<option value="">\u2014 load failed \u2014</option>';
+  }
+}
+
+function _buildPlantationFilters(gj) {
+  const districts = [...new Set(gj.features.map(f=>f.properties.DISTRICT).filter(Boolean))].sort();
+  const distSel = document.getElementById('mrv-f-district');
+  if (distSel && distSel.options.length <= 1) {
+    districts.forEach(d => {
+      const o = document.createElement('option'); o.value=d; o.textContent=d; distSel.appendChild(o);
+    });
+  }
+}
+
+function _buildBlockOptions(district, gj) {
+  const blockSel = document.getElementById('mrv-f-block');
+  if (!blockSel) return;
+  const current = blockSel.value;
+  blockSel.innerHTML = '<option value="">All blocks</option>';
+  const blocks = [...new Set(
+    gj.features.filter(f=>!district||f.properties.DISTRICT===district).map(f=>f.properties.BLOCK).filter(Boolean)
+  )].sort();
+  blocks.forEach(b => {
+    const o = document.createElement('option'); o.value=b; o.textContent=b;
+    if (b===current) o.selected=true; blockSel.appendChild(o);
+  });
+}
+
+function mrvRenderPlantationPlots(gj) {
+  if (!gj) return;
+  const sel = document.getElementById('mrv-plot-sel');
+  sel.innerHTML = '<option value="">\u2014 select plot \u2014</option>';
+  mrvPlots = [];
+  if (mrvAllPlotsLayer) mrvAllPlotsLayer.clearLayers();
+  const fDistrict = _filterVal('mrv-f-district');
+  const fBlock    = _filterVal('mrv-f-block');
+  const fLPC      = _filterVal('mrv-f-lpc');
+  _buildBlockOptions(fDistrict, gj);
+  let visible = 0;
+  gj.features.forEach(feat => {
+    const p = feat.properties;
+    const lpcStr = String(p.LPC);
+    if (fDistrict && p.DISTRICT !== fDistrict) return;
+    if (fBlock    && p.BLOCK    !== fBlock)    return;
+    if (fLPC      && !lpcStr.includes(fLPC))   return;
+    visible++;
+    const hasSpecies = p.species && Object.keys(p.species).length > 0;
+    const hasPoints  = mrvOpfsLPCSet.has(lpcStr);
+    const features   = _plantationToFeatures(feat);
+    const coords     = _polyCoords(feat.geometry);
+    const lons=coords.map(c=>c[0]), lats=coords.map(c=>c[1]);
+    const cLon=(Math.max(...lons)+Math.min(...lons))/2;
+    const cLat=(Math.max(...lats)+Math.min(...lats))/2;
+    mrvPlots.push({
+      plotKey:lpcStr, lpc:lpcStr,
+      source: hasPoints ? 'current' : 'plantation',
+      features, boundary:feat.geometry,
+      areaHa:p.AREA_HA||0,
+      density: p.TOTALPLANT&&p.AREA_HA ? p.TOTALPLANT/p.AREA_HA : 0,
+      plantYear:String(p.YEAR||''), district:p.DISTRICT||'',
+      block:p.BLOCK||'', village:p.VILLAGE||'',
+      totalPlant:p.TOTALPLANT||0,
+      hasSpecies, hasPoints, centroid:[cLon,cLat]
+    });
+    const opt=document.createElement('option'); opt.value=lpcStr;
+    const ind = hasPoints ? '\u2705' : hasSpecies ? '\u{1F33F}' : '\u25cb';
+    opt.textContent = ind+' '+lpcStr+' \u00b7 '+p.DISTRICT+' \u00b7 '+p.BLOCK+' \u00b7 '+p.YEAR;
+    sel.appendChild(opt);
+    if (mrvAllPlotsLayer) {
+      const llC = coords.map(([lon,lat])=>[lat,lon]);
+      const color = hasPoints ? '#34d399' : hasSpecies ? '#6ee7b7' : '#6b7280';
+      let tip = 'LPC '+lpcStr+' \u00b7 '+p.DISTRICT+' \u00b7 '+p.BLOCK;
+      if (p.YEAR)       tip += ' \u00b7 '+p.YEAR;
+      if (p.TOTALPLANT) tip += ' \u00b7 '+p.TOTALPLANT+' plants';
+      if (!hasSpecies)  tip += ' \u00b7 \u26a0\ufe0f no species data';
+      if (!hasPoints)   tip += ' \u00b7 no OPFS points';
+      L.polygon(llC,{color,weight:1.5,fillColor:color,fillOpacity:0.1,interactive:true})
+        .bindTooltip(tip,{sticky:true})
+        .on('click',()=>{ sel.value=lpcStr; mrvOnPlotSelect(lpcStr); })
+        .addTo(mrvAllPlotsLayer);
+    }
+  });
+  if (mrvAllPlotsLayer&&mrvMap&&visible>0) {
+    try { mrvMap.fitBounds(mrvAllPlotsLayer.getBounds(),{padding:[20,20]}); } catch(e){}
+  }
+  const countEl=document.getElementById('mrv-f-count');
+  if (countEl) { countEl.textContent=visible+' plots'; countEl.style.display=''; }
+  mrvLoadStatus(visible ? '' : 'No plots match filter');
+}
+
+function _plantationToFeatures(feat) {
+  const p=feat.properties, sp=p.species||{};
+  const coords=_polyCoords(feat.geometry);
+  const lons=coords.map(c=>c[0]),lats=coords.map(c=>c[1]);
+  const cLon=(Math.max(...lons)+Math.min(...lons))/2;
+  const cLat=(Math.max(...lats)+Math.min(...lats))/2;
+  const features=[];
+  Object.entries(sp).forEach(([key,count]) => {
+    const info=SP_MAP[key]||{code:key,color:'#9ca3af',label:key};
+    const n=Math.min(count,300);
+    for(let i=0;i<n;i++){
+      const lon=Math.min(...lons)+Math.random()*(Math.max(...lons)-Math.min(...lons));
+      const lat=Math.min(...lats)+Math.random()*(Math.max(...lats)-Math.min(...lats));
+      features.push({type:'Feature',properties:{species:info.label,color:info.color,code:info.code,synthetic:true},geometry:{type:'Point',coordinates:[lon,lat]}});
+    }
+  });
+  if(!features.length) features.push({type:'Feature',properties:{species:'Unknown',color:'#6b7280',synthetic:true},geometry:{type:'Point',coordinates:[cLon,cLat]}});
+  return features;
+}
+
+function _polyCoords(geom) {
+  if (geom.type==='Polygon') return geom.coordinates[0];
+  if (geom.type==='MultiPolygon') return geom.coordinates[0][0];
+  return [[0,0]];
+}
+
+// ─── SOURCE 2: OPFS PlantationMapper sapling_points ──────────────
+async function mrvLoadOPFS() {
+  mrvLoadStatus('Scanning OPFS\u2026');
+  const sel=document.getElementById('mrv-plot-sel');
+  sel.innerHTML='<option value="">\u2014 select plot \u2014</option>';
+  mrvPlots=[]; if(mrvAllPlotsLayer)mrvAllPlotsLayer.clearLayers();
+  let count=0;
+  try {
+    const dir=await opfsDir(['geojson','PlantationMapper'],false);
+    const files=await opfsList(dir);
+    for(const fname of files.filter(f=>f.includes('sapling_points'))){
+      try{
+        const blob=await opfsReadBlob(dir,fname);
+        const gj=JSON.parse(await blob.text());
+        if(!gj.features?.length) continue;
         const lons=gj.features.map(f=>f.geometry.coordinates[0]);
         const lats=gj.features.map(f=>f.geometry.coordinates[1]);
-        const dLon=Math.max(...lons)-Math.min(...lons), dLat=Math.max(...lats)-Math.min(...lats);
-        const cLat=(Math.max(...lats)+Math.min(...lats))/2;
-        const areaHa=(dLon*111320*Math.cos(cLat*Math.PI/180)*dLat*110540)/10000;
-        const density=areaHa>0?gj.features.length/areaHa:1000;
-        const ym=fname.match(/_(\d{4})\d{4}_/);
-        const plantYear=ym?ym[1]:'????';
-        const lpc = fname.replace('_sapling_points','').replace(/\.geojson$/,'');
-        const plot = {plotKey:fname,filename:fname,features:gj.features,areaHa,density,plantYear,lpc,source:'current'};
-        mrvPlots.push(plot);
-        const opt=document.createElement('option');
-        opt.value=fname; opt.textContent=lpc;
-        sel.appendChild(opt);
-        // Draw convex hull on all-plots layer (clickable)
-        if (mrvAllPlotsLayer && gj.features.length > 1) {
-          const llCoords = gj.features.map(f=>[f.geometry.coordinates[1], f.geometry.coordinates[0]]);
-          const poly = L.polygon(llCoords, {color:'#6ee7b7',weight:1.5,fillColor:'#6ee7b7',fillOpacity:0.06,interactive:true});
-          poly.bindTooltip(lpc + ' · ' + plantYear, {sticky:true});
-          poly.on('click', () => { sel.value = fname; mrvOnPlotSelect(fname); });
-          poly.addTo(mrvAllPlotsLayer);
-        }
-      } catch(e){}
-    }
-  } catch(e){}
-
-  // ── 2. Legacy LP polygons from _legacy/ ───────────────────────────
-  try {
-    const legacyDir = await opfsDir(LEGACY_OPFS_PATH, false);
-    const legacyFiles = await opfsList(legacyDir);
-    legacyFiles.sort();
-    if (legacyFiles.length) {
-      const grp = document.createElement('optgroup');
-      grp.label = '── Legacy plots (2024–2026) ──';
-      sel.appendChild(grp);
-    }
-    for (const fname of legacyFiles.filter(f=>f.endsWith('.geojson'))) {
-      try {
-        const blob = await opfsReadBlob(legacyDir, fname);
-        const gj = JSON.parse(await blob.text());
-        if (!gj.features || !gj.features.length) continue;
-        const feat = gj.features[0];
-        const coords = feat.geometry.type === 'Polygon'
-          ? feat.geometry.coordinates[0]
-          : feat.geometry.coordinates[0][0];
-        const lons = coords.map(c=>c[0]), lats = coords.map(c=>c[1]);
-        const cLon = (Math.max(...lons)+Math.min(...lons))/2;
-        const cLat = (Math.max(...lats)+Math.min(...lats))/2;
-        const dLon = Math.max(...lons)-Math.min(...lons);
-        const dLat = Math.max(...lats)-Math.min(...lats);
-        const areaHa = (dLon*111320*Math.cos(cLat*Math.PI/180)*dLat*110540)/10000;
-        const ym = fname.match(/legacy(\d{4})/);
-        const plantYear = ym ? ym[1] : '????';
-        const lpc = feat.properties.name || fname.replace(/_LP_poly_gps_legacy\d+\.geojson$/,'');
-        const pseudoFeatures = [{
-          type:'Feature',
-          properties:{ species:'Legacy plot', color:'#facc15', lpc },
-          geometry:{ type:'Point', coordinates:[cLon, cLat] }
-        }];
-        const plot = {plotKey:fname,filename:fname,features:pseudoFeatures,boundary:feat.geometry,areaHa,density:0,plantYear,lpc,source:'legacy'};
-        mrvPlots.push(plot);
-        const opt = document.createElement('option');
-        opt.value = fname; opt.textContent = lpc + ' (' + plantYear + ')';
-        sel.appendChild(opt);
-        // Draw polygon on all-plots layer (clickable)
-        if (mrvAllPlotsLayer) {
-          const llCoords = coords.map(([lon,lat])=>[lat,lon]);
-          // Check if current plot has sapling data in OPFS
-          const hasPoints = mrvPlots.some(p=>p.source==='current' && p.lpc===lpc);
-          const poly = L.polygon(llCoords, {color:'#facc15',weight:1.5,fillColor:'#facc15',fillOpacity:0.06,interactive:true});
-          poly.bindTooltip(lpc + ' · ' + plantYear + (!hasPoints?' · ⚠️ no sapling data':''), {sticky:true});
-          poly.on('click', () => {
-            if (!hasPoints) {
-              const el = document.getElementById('mrv-plot-info');
-              if (el) el.textContent = '⚠️ No sapling_points data in OPFS for this LPC — visit will use boundary centroid only.';
-            }
-            sel.value = fname; mrvOnPlotSelect(fname);
+        const dLon=Math.max(...lons)-Math.min(...lons),dLat=Math.max(...lats)-Math.min(...lats);
+        const cLat2=(Math.max(...lats)+Math.min(...lats))/2;
+        const areaHa=(dLon*111320*Math.cos(cLat2*Math.PI/180)*dLat*110540)/10000;
+        const lpc=fname.replace('_sapling_points','').replace(/\.geojson$/,'');
+        const ym=fname.match(/_(\d{4})\d{4}_/); const plantYear=ym?ym[1]:'????';
+        mrvPlots.push({plotKey:fname,lpc,filename:fname,features:gj.features,areaHa,
+          density:areaHa>0?gj.features.length/areaHa:1000,plantYear,source:'current',hasPoints:true});
+        const opt=document.createElement('option'); opt.value=fname;
+        opt.textContent='\u2705 '+lpc+' \u00b7 '+plantYear;
+        sel.appendChild(opt); count++;
+        if(mrvAllPlotsLayer){
+          gj.features.forEach(f=>{
+            const[lon,lat]=f.geometry.coordinates;
+            L.circleMarker([lat,lon],{radius:2,color:'transparent',fillColor:f.properties.color||'#6ee7b7',fillOpacity:0.5,interactive:false}).addTo(mrvAllPlotsLayer);
           });
-          poly.addTo(mrvAllPlotsLayer);
         }
-      } catch(e){}
+      }catch(e){}
     }
-  } catch(e){}
+    // Legacy boundaries
+    try{
+      const legDir=await opfsDir(LEGACY_OPFS_PATH,false);
+      const legFiles=await opfsList(legDir);
+      if(legFiles.length){const grp=document.createElement('optgroup');grp.label='\u2500\u2500 Legacy boundaries \u2500\u2500';sel.appendChild(grp);}
+      for(const fname of legFiles.filter(f=>f.endsWith('.geojson'))){
+        try{
+          const blob=await opfsReadBlob(legDir,fname);
+          const gj=JSON.parse(await blob.text());
+          if(!gj.features?.length) continue;
+          const feat=gj.features[0]; const coords=_polyCoords(feat.geometry);
+          const lons2=coords.map(c=>c[0]),lats2=coords.map(c=>c[1]);
+          const cLon=(Math.max(...lons2)+Math.min(...lons2))/2,cLat3=(Math.max(...lats2)+Math.min(...lats2))/2;
+          const dLon2=Math.max(...lons2)-Math.min(...lons2),dLat2=Math.max(...lats2)-Math.min(...lats2);
+          const areaHa=(dLon2*111320*Math.cos(cLat3*Math.PI/180)*dLat2*110540)/10000;
+          const ym2=fname.match(/legacy(\d{4})/); const plantYear=ym2?ym2[1]:'????';
+          const lpc=feat.properties.name||fname.replace(/_LP_poly_gps_legacy\d+\.geojson$/,'');
+          mrvPlots.push({plotKey:fname,lpc,filename:fname,
+            features:[{type:'Feature',properties:{species:'Legacy',color:'#facc15'},geometry:{type:'Point',coordinates:[cLon,cLat3]}}],
+            boundary:feat.geometry,areaHa,density:0,plantYear,source:'legacy'});
+          const opt=document.createElement('option'); opt.value=fname;
+          opt.textContent='\u25cb '+lpc+' ('+plantYear+')';
+          sel.appendChild(opt); count++;
+          L.polygon(coords.map(([lon,lat])=>[lat,lon]),{color:'#facc15',weight:1.5,fillColor:'#facc15',fillOpacity:0.06,interactive:true})
+            .bindTooltip(lpc+' \u00b7 '+plantYear+' \u00b7 boundary only',{sticky:true})
+            .on('click',()=>{sel.value=fname;mrvOnPlotSelect(fname);})
+            .addTo(mrvAllPlotsLayer);
+        }catch(e){}
+      }
+    }catch(e){}
+  }catch(e){mrvLoadStatus('\u26a0\ufe0f OPFS not available');return;}
+  if(mrvAllPlotsLayer&&mrvMap&&count>0){try{mrvMap.fitBounds(mrvAllPlotsLayer.getBounds(),{padding:[20,20]});}catch(e){}}
+  mrvLoadStatus(count ? count+' plots in OPFS' : 'No OPFS plots found');
+}
 
-  // Fit map to all plots if any loaded
-  if (mrvAllPlotsLayer && mrvMap) {
-    try { mrvMap.fitBounds(mrvAllPlotsLayer.getBounds(), {padding:[20,20]}); } catch(e){}
-  }
-
-  if (!mrvPlots.length) {
-    document.getElementById('mrv-plot-info').textContent = 'No plots in OPFS yet. Sync legacy plots via ARRmapper Files tab.';
+// ─── SOURCE 3: ZIP shapefile upload ──────────────────────────────
+async function mrvLoadZip(input) {
+  const file=input.files[0]; if(!file)return; input.value='';
+  mrvCurrentSource='zip';
+  ['plantation','opfs','zip','history'].forEach(s=>{
+    const b=document.getElementById('src-btn-'+s); if(b)b.classList.toggle('src-active',s==='zip');
+  });
+  ['mrv-f-district','mrv-f-block','mrv-f-lpc','mrv-f-count'].forEach(id=>{
+    const el=document.getElementById(id); if(el)el.style.display='none';
+  });
+  mrvLoadStatus('Parsing ZIP\u2026');
+  const sel=document.getElementById('mrv-plot-sel');
+  sel.innerHTML='<option value="">\u2014 loading\u2026 \u2014</option>';
+  mrvPlots=[]; if(mrvAllPlotsLayer)mrvAllPlotsLayer.clearLayers();
+  try{
+    if(typeof shp==='undefined') throw new Error('shpjs not loaded');
+    const buf=await file.arrayBuffer();
+    const gj=await shp(buf);
+    const collections=Array.isArray(gj)?gj:[gj];
+    sel.innerHTML='<option value="">\u2014 select plot \u2014</option>';
+    let count=0;
+    for(const fc of collections){
+      if(!fc.features) continue;
+      for(const feat of fc.features){
+        if(!feat.geometry) continue;
+        const p=feat.properties||{};
+        const lpcKey=Object.keys(p).find(k=>k.toUpperCase()==='LPC')||Object.keys(p)[0];
+        const lpcStr=String(p[lpcKey]||'plot_'+(count+1));
+        const yearKey=Object.keys(p).find(k=>k.toUpperCase()==='YEAR'||k.toUpperCase()==='PLANT_YEAR');
+        const plantYear=yearKey?String(p[yearKey]):'????';
+        const areaKey=Object.keys(p).find(k=>k.toUpperCase()==='AREA_HA'||k.toUpperCase()==='AREA');
+        const coords=_polyCoords(feat.geometry);
+        const lons=coords.map(c=>c[0]),lats=coords.map(c=>c[1]);
+        const cLon=(Math.max(...lons)+Math.min(...lons))/2,cLat=(Math.max(...lats)+Math.min(...lats))/2;
+        const dLon=Math.max(...lons)-Math.min(...lons),dLat=Math.max(...lats)-Math.min(...lats);
+        const areaHa=areaKey?parseFloat(p[areaKey]):(dLon*111320*Math.cos(cLat*Math.PI/180)*dLat*110540)/10000;
+        mrvPlots.push({plotKey:lpcStr,lpc:lpcStr,source:'zip',
+          features:[{type:'Feature',properties:{species:'Plot',color:'#a78bfa'},geometry:{type:'Point',coordinates:[cLon,cLat]}}],
+          boundary:feat.geometry,areaHa,density:0,plantYear,hasSpecies:false,hasPoints:false,centroid:[cLon,cLat]});
+        const opt=document.createElement('option'); opt.value=lpcStr;
+        opt.textContent='\u{1F4E6} '+lpcStr+' \u00b7 '+plantYear;
+        sel.appendChild(opt); count++;
+        L.polygon(coords.map(([lon,lat])=>[lat,lon]),{color:'#a78bfa',weight:1.5,fillColor:'#a78bfa',fillOpacity:0.08,interactive:true})
+          .bindTooltip('ZIP: '+lpcStr+' \u00b7 '+plantYear,{sticky:true})
+          .on('click',()=>{sel.value=lpcStr;mrvOnPlotSelect(lpcStr);})
+          .addTo(mrvAllPlotsLayer);
+      }
+    }
+    if(mrvAllPlotsLayer&&mrvMap&&count>0){try{mrvMap.fitBounds(mrvAllPlotsLayer.getBounds(),{padding:[20,20]});}catch(e){}}
+    mrvLoadStatus(count?'ZIP: '+count+' plots loaded':'No polygon features found');
+    if(!count) sel.innerHTML='<option value="">\u2014 no polygon features found \u2014</option>';
+  }catch(e){
+    mrvLoadStatus('\u26a0\ufe0f ZIP parse failed: '+e.message);
+    sel.innerHTML='<option value="">\u2014 parse error \u2014</option>';
   }
 }
 
-function mrvOnPlotSelect(plotKey) {
-  mrvReset(true);
-  if (!plotKey) return;
-  mrvActivePlot = mrvPlots.find(p=>p.plotKey===plotKey)||null;
-  if (!mrvActivePlot) return;
-  const p = mrvActivePlot;
-  ['mrv-sec-visit','mrv-sec-meta','mrv-sec-plotmetrics','mrv-sec-ctrl'].forEach(id=>document.getElementById(id).style.display='');
-  document.getElementById('mrv-date').value = new Date().toISOString().slice(0,10);
-  if (p.source==='legacy' && p.lpc) {
-    const lpcEl = document.getElementById('mrv-lpc');
-    if (!lpcEl.value) lpcEl.value = p.lpc;
-  }
-  mrvInitPlotMetrics();
-  if (mrvLayer) mrvLayer.clearLayers();
-
-  if (p.source==='legacy' && p.boundary) {
-    const llCoords = (p.boundary.type==='Polygon'
-      ? p.boundary.coordinates[0]
-      : p.boundary.coordinates[0][0]
-    ).map(([lon,lat])=>[lat,lon]);
-    const poly = L.polygon(llCoords,{color:'#facc15',weight:2,fillColor:'#facc15',fillOpacity:0.1,interactive:false});
-    poly.addTo(mrvLayer);
-    mrvMap.fitBounds(poly.getBounds(),{padding:[30,30]});
-    document.getElementById('mrv-plot-info').textContent = `Legacy · ${p.lpc} · ${p.areaHa.toFixed(2)} ha · ${p.plantYear} · boundary only`;
-  } else {
-    const spCount = new Set(p.features.map(f=>f.properties.species||'unknown')).size;
-    const estMonthly = spCount*(1+MRV_INTERIOR_PER_BLOCK);
-    document.getElementById('mrv-plot-info').textContent = `${p.features.length} saplings · ${p.areaHa.toFixed(2)} ha · ${spCount} spp · monthly ~${estMonthly} pts`;
-    p.features.forEach(f=>{
-      const [lon,lat]=f.geometry.coordinates;
-      L.circleMarker([lat,lon],{radius:2,color:'transparent',fillColor:f.properties.color||'#6ee7b7',fillOpacity:0.4,interactive:false}).addTo(mrvLayer);
-    });
-    const previewPts = mrvDrawSample(p.features).filter(s=>s.walkType==='centroid');
-    if (previewPts.length>1) {
-      L.polyline(previewPts.map(s=>[s.lat,s.lon]),{color:'#facc15',weight:1.5,opacity:0.4,dashArray:'4,4',interactive:false}).addTo(mrvLayer);
+// ─── SOURCE 4: Previously saved MRV visits (OPFS/MRVTool) ────────
+async function mrvLoadHistory() {
+  mrvLoadStatus('Loading MRV history\u2026');
+  const sel=document.getElementById('mrv-plot-sel');
+  sel.innerHTML='<option value="">\u2014 select visit \u2014</option>';
+  mrvPlots=[]; if(mrvAllPlotsLayer)mrvAllPlotsLayer.clearLayers();
+  let count=0;
+  try{
+    const dir=await opfsDir(['geojson',MRV_TOOL_FOLDER],false);
+    const files=(await opfsList(dir)).filter(f=>f.endsWith('.geojson')).sort().reverse();
+    for(const fname of files){
+      try{
+        const blob=await opfsReadBlob(dir,fname);
+        const gj=JSON.parse(await blob.text());
+        const meta=gj.properties||{};
+        const lpc=meta.lpc||fname.split('_')[0];
+        const vt=meta.visitType||'?';
+        const date=meta.visit_date||meta.date||'';
+        const grade=meta.finalGrade||'';
+        const features=(gj.features||[]).map(f=>({...f,properties:{...f.properties,color:'#a78bfa',species:f.properties.species||'unknown'}}));
+        if(!features.length) continue;
+        const lons=features.map(f=>f.geometry.coordinates[0]);
+        const lats=features.map(f=>f.geometry.coordinates[1]);
+        const cLon=(Math.max(...lons)+Math.min(...lons))/2,cLat=(Math.max(...lats)+Math.min(...lats))/2;
+        mrvPlots.push({plotKey:fname,lpc,filename:fname,source:'history',features,areaHa:0,density:0,plantYear:'',visitType:vt,visitDate:date,grade,centroid:[cLon,cLat]});
+        const opt=document.createElement('option'); opt.value=fname;
+        opt.textContent='\u{1F550} '+lpc+' \u00b7 '+vt+' \u00b7 '+date+(grade?' \u00b7 '+grade:'');
+        sel.appendChild(opt); count++;
+        features.forEach(f=>{
+          const[lon,lat]=f.geometry.coordinates;
+          const g=f.properties.grade||'?';
+          const col=(MRV_GRADE_SCORE[g]||0)>=6?'#34d399':(MRV_GRADE_SCORE[g]||0)>=4?'#fcd34d':'#fca5a5';
+          L.circleMarker([lat,lon],{radius:4,color:col,weight:1.5,fillColor:col,fillOpacity:0.7,interactive:true})
+            .bindTooltip((f.properties.species||'?')+' \u00b7 '+g,{sticky:true}).addTo(mrvAllPlotsLayer);
+        });
+        L.circleMarker([cLat,cLon],{radius:8,color:'#a78bfa',weight:2,fillColor:'#a78bfa',fillOpacity:0.2,interactive:true})
+          .bindTooltip(lpc+' \u00b7 '+vt+' \u00b7 '+date+(grade?' \u2192 '+grade:''),{sticky:true})
+          .on('click',()=>{sel.value=fname;mrvOnPlotSelect(fname);})
+          .addTo(mrvAllPlotsLayer);
+      }catch(e){}
     }
-    if (p.features.length) {
-      const [lon0,lat0]=p.features[0].geometry.coordinates;
-      mrvMap.setView([lat0,lon0],17);
-    }
-  }
-  // Show topbar cancel if visit is active
-  const cancelBtn = document.getElementById('mrv-tb-cancel-btn');
-  if (cancelBtn) cancelBtn.style.display = 'none';
+  }catch(e){mrvLoadStatus('No MRV history in OPFS');return;}
+  if(mrvAllPlotsLayer&&mrvMap&&count>0){try{mrvMap.fitBounds(mrvAllPlotsLayer.getBounds(),{padding:[20,20]});}catch(e){}}
+  mrvLoadStatus(count ? count+' past visits' : 'No saved visits found');
 }
+
 
 // ── Annual exhaustive sample (Sep-Nov) — density-tiered stratified random ──
 function mrvDrawSampleAnnual(features) {
@@ -1981,6 +2029,71 @@ function mrvWalkAlongSave() {
   mrvUpdateProgress();
   mrvWalkAlongClose();
   setStatus('Walk-along observation saved.','');
+}
+
+function mrvOnPlotSelect(plotKey) {
+  mrvReset(true);
+  if (!plotKey) return;
+  mrvActivePlot = mrvPlots.find(p=>p.plotKey===plotKey)||null;
+  if (!mrvActivePlot) return;
+  const p = mrvActivePlot;
+  ['mrv-sec-visit','mrv-sec-meta','mrv-sec-plotmetrics','mrv-sec-ctrl'].forEach(id=>document.getElementById(id).style.display='');
+  document.getElementById('mrv-date').value = new Date().toISOString().slice(0,10);
+  // Pre-fill LPC
+  const lpcEl = document.getElementById('mrv-lpc');
+  if (lpcEl && !lpcEl.value) lpcEl.value = p.lpc || '';
+  mrvInitPlotMetrics();
+  if (mrvLayer) mrvLayer.clearLayers();
+
+  // Draw boundary on map
+  if (p.boundary) {
+    const coords = _polyCoords(p.boundary);
+    const llCoords = coords.map(([lon,lat])=>[lat,lon]);
+    const color = p.source==='plantation' ? '#6ee7b7' : p.source==='zip' ? '#a78bfa' : '#facc15';
+    const poly = L.polygon(llCoords,{color,weight:2,fillColor:color,fillOpacity:0.1,interactive:false});
+    poly.addTo(mrvLayer);
+    mrvMap.fitBounds(poly.getBounds(),{padding:[30,30]});
+  }
+
+  // Draw sapling dots if we have real point features
+  if (p.source === 'current' && p.features?.length) {
+    p.features.forEach(f=>{
+      const [lon,lat]=f.geometry.coordinates;
+      L.circleMarker([lat,lon],{radius:2,color:'transparent',fillColor:f.properties.color||'#6ee7b7',fillOpacity:0.4,interactive:false}).addTo(mrvLayer);
+    });
+    const previewPts = mrvDrawSample(p.features).filter(s=>s.walkType==='centroid');
+    if (previewPts.length>1) {
+      L.polyline(previewPts.map(s=>[s.lat,s.lon]),{color:'#facc15',weight:1.5,opacity:0.4,dashArray:'4,4',interactive:false}).addTo(mrvLayer);
+    }
+    if (p.features.length) {
+      const [lon0,lat0]=p.features[0].geometry.coordinates;
+      mrvMap.setView([lat0,lon0],17);
+    }
+  } else if (p.centroid) {
+    mrvMap.setView([p.centroid[1],p.centroid[0]],15);
+  }
+
+  // Info line
+  let info = '';
+  if (p.source==='plantation') {
+    const spNames = p.features ? [...new Set(p.features.map(f=>f.properties.species).filter(s=>s!=='Unknown'))].slice(0,4).join(', ') : '';
+    info = p.district+' \u00b7 '+p.block+(p.village?' \u00b7 '+p.village:'')+' \u00b7 '+p.areaHa.toFixed(2)+' ha';
+    if (p.totalPlant) info += ' \u00b7 '+p.totalPlant+' plants';
+    if (spNames) info += ' \u00b7 '+spNames;
+    if (!p.hasSpecies) info += ' \u00b7 \u26a0\ufe0f no species data \u2014 visit uses centroid';
+    if (!p.hasPoints) info += ' \u00b7 sampling from polygon';
+  } else if (p.source==='history') {
+    info = 'Past visit \u00b7 '+p.visitType+' \u00b7 '+p.visitDate+(p.grade?' \u00b7 Grade: '+p.grade:'');
+  } else if (p.source==='current') {
+    const spCount = new Set(p.features.map(f=>f.properties.species||'unknown')).size;
+    const est = spCount*(1+MRV_INTERIOR_PER_BLOCK);
+    info = p.features.length+' saplings \u00b7 '+p.areaHa.toFixed(2)+' ha \u00b7 '+spCount+' spp \u00b7 monthly ~'+est+' pts';
+  } else if (p.source==='zip') {
+    info = 'ZIP upload \u00b7 '+p.areaHa.toFixed(2)+' ha \u00b7 '+p.plantYear;
+  }
+  document.getElementById('mrv-plot-info').textContent = info;
+  const cancelBtn = document.getElementById('mrv-tb-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = 'none';
 }
 
 function mrvCancelVisit() {
