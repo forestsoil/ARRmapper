@@ -184,10 +184,39 @@ function exportBibTeX() {
 // ── Load sightings from Sheet ─────────────────────────────────────────
 async function loadSightingsFromSheet() {
   if (!CCB_CONFIG.scriptUrl) return;
+  const statusEl = document.getElementById('sightings-load-status');
+  if (statusEl) { statusEl.textContent = '⏳ Fetching…'; statusEl.style.color = 'var(--teal)'; }
   try {
-    const res  = await fetch(CCB_CONFIG.scriptUrl + '?action=getSightings');
-    const data = await res.json();
-    if (!data.success || !data.rows) return;
+    // Use JSONP — GAS GET redirects to login with fetch() even on "Anyone" deployments
+    const data = await new Promise((resolve, reject) => {
+      const cbName = '_cb_ccb_' + Date.now();
+      const script = document.createElement('script');
+      const timer = setTimeout(() => {
+        delete window[cbName];
+        try { document.head.removeChild(script); } catch(_) {}
+        reject(new Error('Timeout after 20s'));
+      }, 20000);
+      window[cbName] = d => {
+        clearTimeout(timer);
+        delete window[cbName];
+        try { document.head.removeChild(script); } catch(_) {}
+        resolve(d);
+      };
+      script.onerror = () => {
+        clearTimeout(timer);
+        delete window[cbName];
+        try { document.head.removeChild(script); } catch(_) {}
+        reject(new Error('Script load error'));
+      };
+      script.src = CCB_CONFIG.scriptUrl + '?action=getSightings&callback=' + cbName;
+      document.head.appendChild(script);
+    });
+
+    if (!data.success || !data.rows) {
+      if (statusEl) { statusEl.textContent = '⚠️ GAS returned no records (success=' + data.success + ')'; statusEl.style.color = 'var(--amber)'; }
+      console.warn('getSightings response:', data);
+      return;
+    }
     const sheetSightings = data.rows
       .filter(r => r.type === 'sighting' && r.species)
       .map(r => ({
@@ -206,17 +235,23 @@ async function loadSightingsFromSheet() {
         ai_species:   r.ai_species   || '',
         notable:      r.notable      || false,
       }));
-    // Merge — avoid duplicates by date+species+recorder
+    let added = 0;
     sheetSightings.forEach(s => {
       const exists = bioSightings.find(b =>
         b.date===s.date && b.species===s.species && b.recorder===s.recorder);
-      if (!exists) bioSightings.push(s);
+      if (!exists) { bioSightings.push(s); added++; }
     });
+    if (statusEl) {
+      statusEl.textContent = `✓ ${bioSightings.length} records (${added} new)`;
+      statusEl.style.color = 'var(--teal)';
+      setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000);
+    }
     updateBioKPIs();
     renderRecentSightings();
     if (bioMap) populateBioFilters();
     renderBioMap();
   } catch(e) {
+    if (statusEl) { statusEl.textContent = '⚠️ ' + e.message; statusEl.style.color = 'var(--rose)'; }
     console.warn('loadSightingsFromSheet failed:', e);
   }
 }
@@ -953,6 +988,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
             border-radius:5px;color:var(--teal);font-size:10px;padding:4px 10px;cursor:pointer">
             🔄 Refresh sightings
           </button>
+          <span id="sightings-load-status" style="font-size:10px;color:var(--teal);margin-left:8px"></span>
         </div>
         <div class="kpi-row">
           <div class="kpi-card">
