@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CCB &amp; SDG Dashboard v22 · Asha 1</title>
+<title>CCB &amp; SDG Dashboard v27 · Asha 1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.cjs"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
@@ -567,9 +567,16 @@ async function submitSighting() {
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0d1f2d;--surface:#102030;--card:#142638;--border:#1e3a52;
-  --teal:#2dd4bf;--green:#4ade80;--amber:#fbbf24;--rose:#f43f5e;--violet:#a78bfa;
-  --ink:#e2f0ff;--mid:#7ba8c4;--dim:#3a6080;--font:'Segoe UI',system-ui,sans-serif;
+  --bg:#0f1c14;--surface:#162010;--card:#1c2a17;--border:#2a3d20;
+  --leaf:#6ee7b7;--canopy:#2d6a4f;--mist:#d8f3dc;
+  --teal:#6ee7b7;--green:#4ade80;--amber:#fbbf24;--rose:#f43f5e;--violet:#a78bfa;
+  --ink:#e8f4e8;--mid:#a0ccaa;--dim:#5a8060;--font:'Segoe UI',system-ui,sans-serif;
+}
+html.light{
+  --bg:#e8ffe8;--surface:#d0f0d8;--card:#b8e8c8;--border:#88c8a0;
+  --leaf:#1a7a3a;--canopy:#2d6a4f;--mist:#0a3a1a;
+  --teal:#1a7a3a;--green:#166534;--amber:#92400e;--rose:#9f1239;--violet:#5b21b6;
+  --ink:#0a2010;--mid:#2a5a3a;--dim:#4a7a5a;
 }
 html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--ink)}
 #app{display:grid;grid-template-columns:280px 1fr;height:100vh}
@@ -598,8 +605,12 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
   padding:0 16px;height:40px;display:flex;align-items:center;gap:12px;flex-shrink:0}
 #topbar .title{font-size:12px;font-weight:700;color:var(--ink)}
 #topbar .spacer{flex:1}
-#topbar a{font-size:11px;color:var(--dim);text-decoration:none}
+#topbar a{font-size:11px;color:var(--mid);text-decoration:none}
 #topbar a:hover{color:var(--teal)}
+.tb-theme-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  border-radius:20px;padding:4px 9px;font-size:12px;cursor:pointer;color:var(--ink);
+  flex-shrink:0;line-height:1;font-family:inherit;transition:background .15s}
+.tb-theme-btn:hover{background:rgba(255,255,255,.22)}
 #content{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
 
 /* ── Panels ── */
@@ -759,7 +770,22 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 .threat-high{background:rgba(244,63,94,.15);color:#f43f5e}
 .threat-med{background:rgba(251,191,36,.12);color:#fbbf24}
 .inv-card-tip{font-size:11px;color:#7ba8c4;margin-top:2px;line-height:1.5}
-.inv-card-submit{font-size:11px;color:#2dd4bf;margin-top:auto;cursor:pointer;font-weight:600}
+.inv-card-submit{font-size:11px;color:var(--teal);margin-top:auto;cursor:pointer;font-weight:600}
+/* ── Auth gate overlay ── */
+#auth-gate{display:none;position:fixed;inset:0;z-index:8500;
+  background:rgba(0,0,0,.65);align-items:center;justify-content:center}
+#auth-gate.open{display:flex}
+#auth-gate-box{background:var(--card);border:1.5px solid var(--border);border-radius:14px;
+  padding:28px 32px;text-align:center;max-width:360px;width:90%}
+#auth-gate-box .ag-icon{font-size:36px;margin-bottom:10px}
+#auth-gate-box h2{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px}
+#auth-gate-box p{font-size:12px;color:var(--mid);margin-bottom:18px;line-height:1.6}
+.ag-btn{display:inline-block;padding:9px 22px;border-radius:7px;font-size:13px;
+  font-weight:700;cursor:pointer;border:none;font-family:var(--font);margin:4px}
+.ag-btn-primary{background:var(--canopy);color:#fff}
+.ag-btn-primary:hover{background:var(--teal);color:#0f1c14}
+.ag-btn-secondary{background:var(--border);color:var(--mid)}
+.ag-btn-secondary:hover{background:var(--dim);color:#fff}
 #invasives-footer{padding:10px 16px;border-top:1px solid #1e3a52;
   display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .inv-dot{width:8px;height:8px;border-radius:50%;background:#1e3a52;
@@ -838,6 +864,18 @@ function arrAuthRenderChip(containerId, onSignOut) {
 </script>
 </head>
 <body>
+<div id="auth-gate" onclick="if(event.target===this)this.classList.remove('open')">
+  <div id="auth-gate-box">
+    <div class="ag-icon">🔒</div>
+    <h2>Sign in to submit records</h2>
+    <p>Viewing this dashboard is open to all.<br>Submitting sightings and uploading records requires an authorised project account.</p>
+    <div>
+      <button class="ag-btn ag-btn-primary" onclick="window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href)">Sign in via Suite →</button>
+      <button class="ag-btn ag-btn-secondary" onclick="document.getElementById('auth-gate').classList.remove('open')">Continue viewing</button>
+    </div>
+  </div>
+</div>
+
 <div id="app">
 
   <!-- Sidebar -->
@@ -849,7 +887,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
       <p>Asha ARR · Climate, Community &amp; Biodiversity</p>
     </div>
     <div style="padding:10px 10px 2px">
-      <button onclick="openSubmitModal()" style="width:100%;background:#be185d;border:none;
+      <button onclick="guardedOpenSubmitModal()" style="width:100%;background:#be185d;border:none;
         border-radius:7px;color:#fff;font-size:13px;font-weight:700;padding:9px 14px;
         cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;
         font-family:var(--font);letter-spacing:.02em">
@@ -879,7 +917,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
       <button class="sb-btn" onclick="showPanel('sdg-diversity')">🌈 Plantation diversity</button>
       <div class="sb-divider"></div>
       <div class="sb-section-lbl">Data</div>
-      <button class="sb-btn" onclick="arrAuthGet()?showPanel('data-upload'):(window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href))" title="Sign in to upload records">📤 Upload records</button>
+      <button class="sb-btn" onclick="guardedUpload()" title="Sign in to upload records">📤 Upload records</button>
     </div>
   </div>
 
@@ -888,6 +926,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <div id="topbar">
       <span class="title" id="panel-title">Biodiversity Overview</span>
       <span class="spacer"></span>
+      <button class="tb-theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
       <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
       <span id="arr-user-chip" class="arr-chip"></span>
     </div>
@@ -895,7 +934,8 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
       <!-- BIO OVERVIEW -->
       <div class="panel active" id="panel-bio-overview">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:6px">
+          <span id="sightings-load-status" style="font-size:10px;color:var(--teal)"></span>
           <button onclick="loadSightingsFromSheet()" style="background:var(--surface);border:1px solid var(--border);
             border-radius:5px;color:var(--teal);font-size:10px;padding:4px 10px;cursor:pointer">
             🔄 Refresh sightings
@@ -958,13 +998,13 @@ function arrAuthRenderChip(containerId, onSignOut) {
         <div class="map-wrap">
           <h3>Biodiversity sightings map</h3>
           <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid rgba(255,255,255,.1);position:relative;z-index:10">
-            <select id="f-district" onchange="populateBioFilters();filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
+            <select id="f-district" onchange="populateBioFilters();filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
               <option value="">All districts</option>
             </select>
-            <select id="f-block" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
+            <select id="f-block" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
               <option value="">All blocks</option>
             </select>
-            <select id="f-sighting-type" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
+            <select id="f-sighting-type" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
               <option value="">All sighting types</option>
               <option value="fauna">🦅 Fauna</option>
               <option value="flora">🌿 Flora</option>
@@ -972,11 +1012,11 @@ function arrAuthRenderChip(containerId, onSignOut) {
               <option value="recruitment">🌱 Recruitment</option>
               <option value="incident">🐾 Wildlife incident</option>
             </select>
-            <select id="f-species-bio" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151">
+            <select id="f-species-bio" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
               <option value="">All species</option>
             </select>
-            <input type="text" id="f-bio-search" oninput="filterBioMap()" placeholder="Search…" style="font-size:10px;padding:3px 6px;border-radius:4px;background:#1f2937;color:#e5e7eb;border:1px solid #374151;width:90px">
-            <button onclick="clearBioFilters()" style="font-size:10px;padding:3px 8px;border-radius:4px;background:#374151;color:#e5e7eb;border:none;cursor:pointer">✕</button>
+            <input type="text" id="f-bio-search" oninput="filterBioMap()" placeholder="Search…" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border);width:90px">
+            <button onclick="clearBioFilters()" style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--border);color:var(--ink);border:none;cursor:pointer">✕</button>
           </div>
           <div style="padding:8px 12px;display:flex;gap:10px;flex-wrap:wrap;font-size:10px">
             <label><input type="checkbox" id="f-fauna" checked onchange="filterBioMap()"> 🦅 Fauna</label>
@@ -1691,6 +1731,37 @@ function closeSightingDetail() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────
+// ── Theme ─────────────────────────────────────────────────────────────
+let _ccbLightTheme = false;
+function toggleTheme() {
+  _ccbLightTheme = !_ccbLightTheme;
+  document.documentElement.classList.toggle('light', _ccbLightTheme);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = _ccbLightTheme ? '🌙' : '☀️';
+  localStorage.setItem('ccbTheme', _ccbLightTheme ? 'light' : 'dark');
+}
+(function() {
+  if (localStorage.getItem('ccbTheme') === 'light') {
+    _ccbLightTheme = true;
+    document.documentElement.classList.add('light');
+    const b = document.getElementById('theme-toggle');
+    if (b) b.textContent = '🌙';
+  }
+})();
+
+// ── Auth guards ───────────────────────────────────────────────────────
+function showAuthGate() {
+  document.getElementById('auth-gate').classList.add('open');
+}
+function guardedOpenSubmitModal() {
+  if (arrAuthGet()) { openSubmitModal(); }
+  else { showAuthGate(); }
+}
+function guardedUpload() {
+  if (arrAuthGet()) { showPanel('data-upload'); }
+  else { showAuthGate(); }
+}
+
 window.addEventListener('load', () => {
   renderSDGChips();
   loadPlantationData();
@@ -1698,6 +1769,13 @@ window.addEventListener('load', () => {
   loadBibFromDrive();
   loadSightingsFromSheet();
   arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
+  // Restore theme
+  if (localStorage.getItem('ccbTheme') === 'light') {
+    _ccbLightTheme = true;
+    document.documentElement.classList.add('light');
+    const b = document.getElementById('theme-toggle');
+    if (b) b.textContent = '🌙';
+  }
 });
 
 
