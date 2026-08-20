@@ -3,17 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Documentation v6 · Asha 1</title>
+<title>Documentation v7 · Asha 1</title>
 <style>
 .proj-tabs{display:none}
 .proj-tab:not(:first-child){display:none}
 
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --forest:#1a3d2b;--canopy:#2d6a4f;--leaf:#52b788;--mist:#d8f3dc;
-  --ink:#1c2b20;--mid:#4a6741;--pale:#f4faf6;--rule:rgba(82,183,136,.25);
+  --forest:#1b3d24;--canopy:#2d6940;--leaf:#4a9e5c;--pale:#f2f5f1;
+  --ink:#0f1c0e;--mid:#4a6741;--mist:#e8f3e9;--rule:rgba(74,158,92,.2);
+  --card:#fff;--border:#c8ddd2;--radius:10px;--shadow:0 2px 10px rgba(0,0,0,.07);
+  --font:'Segoe UI',system-ui,sans-serif;
 }
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--pale);color:var(--ink);min-height:100vh}
+html.dark{
+  --forest:#0d2414;--canopy:#4ade80;--leaf:#6ee7b7;--pale:#0f1c14;
+  --ink:#d1fae5;--mid:#86b896;--mist:#1a3020;--rule:rgba(110,231,183,.15);
+  --card:#1c2a17;--border:#2a3d20;--shadow:0 2px 10px rgba(0,0,0,.3);
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--pale);color:var(--ink);min-height:100vh;transition:background .2s,color .2s}
 
 /* HEADER */
 .arr-chip{font-size:11px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.85);cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
@@ -44,7 +51,7 @@ main{max-width:900px;margin:0 auto;padding:32px 20px 60px}
 
 /* PROJECT META STRIP */
 .proj-meta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px}
-.meta-chip{background:#fff;border:1.5px solid var(--rule);border-radius:8px;
+.meta-chip{background:var(--card);border:1.5px solid var(--rule);border-radius:8px;
   padding:8px 14px;font-size:11px;color:var(--mid);line-height:1.4}
 .meta-chip strong{display:block;font-size:13px;font-weight:700;color:var(--forest);margin-bottom:1px}
 
@@ -52,7 +59,7 @@ main{max-width:900px;margin:0 auto;padding:32px 20px 60px}
 .cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 
 /* SECTION CARDS */
-.section-card{background:#fff;border:1.5px solid var(--rule);border-radius:12px;overflow:hidden}
+.section-card{background:var(--card);border:1.5px solid var(--rule);border-radius:12px;overflow:hidden}
 .card-header{padding:14px 18px 12px;border-bottom:1px solid var(--rule);
   display:flex;align-items:center;gap:10px}
 .card-header-icon{font-size:20px;line-height:1}
@@ -90,7 +97,7 @@ main{max-width:900px;margin:0 auto;padding:32px 20px 60px}
 .doc-arrow{font-size:13px;color:var(--leaf);flex-shrink:0;opacity:.6;transition:opacity .15s,transform .15s}
 .doc-row:hover .doc-arrow{opacity:1;transform:translateX(3px)}
 
-.no-docs{font-size:12px;color:#9ca3af;text-align:center;padding:24px 0;font-style:italic}
+.no-docs{font-size:12px;color:var(--mid);text-align:center;padding:24px 0;font-style:italic}
 
 /* SECTION LABEL inside card */
 .card-section-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
@@ -98,10 +105,24 @@ main{max-width:900px;margin:0 auto;padding:32px 20px 60px}
 .card-section-label:first-child{margin-top:0}
 
 /* FOOTER */
-footer{text-align:center;font-size:11px;color:#9ca3af;padding:20px;
+footer{text-align:center;font-size:11px;color:var(--mid);padding:20px;
   border-top:1px solid var(--rule);line-height:1.8}
 footer a{color:var(--mid);text-decoration:none}
 footer a:hover{color:var(--canopy)}
+/* ── Dark mode text overrides ── */
+html.dark .meta-chip strong,
+html.dark .card-header-title,
+html.dark .faq-q,
+html.dark .doc-title{color:var(--leaf)}
+html.dark .faq-a,
+html.dark .card-header-sub,
+html.dark .doc-date,
+html.dark .no-docs,
+html.dark footer,
+html.dark footer a,
+html.dark .proj-meta-row{color:var(--mid)}
+html.dark .meta-chip{background:var(--mist);border-color:var(--rule)}
+html.dark .section-card{border-color:var(--rule)}
 
 @media(max-width:680px){
   header{padding:14px 16px;gap:10px}
@@ -187,7 +208,8 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <h1>Project Documentation</h1>
     <p>FAQs, verification reports, SOPs and baseline documents by project</p>
   </div>
-  <a href="./index.html" class="arr-chip" style="margin-left:auto">🏠 Suite</a>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 11px;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;margin-left:auto">☀️</button>
+  <a href="./index.html" class="arr-chip" style="margin-left:0">🏠 Suite</a>
   <span id="arr-user-chip" class="arr-chip"></span>
 </header>
 
@@ -291,7 +313,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
         <div class="card-body" id="docs-body">
           <div id="docs-auth-gate" style="padding:20px;text-align:center;display:none">
             <div style="font-size:28px;margin-bottom:8px">🔒</div>
-            <div style="font-size:13px;font-weight:600;color:var(--forest);margin-bottom:6px">Sign in to access project documents</div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px">Sign in to access project documents</div>
             <div style="font-size:11px;color:var(--mid);margin-bottom:14px">These files are restricted to authorised project partners</div>
             <a href="./index.html?redirect=projDocumentation.html" style="display:inline-block;padding:8px 20px;background:var(--forest);color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">Sign in via Suite →</a>
           </div>
@@ -637,6 +659,21 @@ function toggleFaq(el) {
 
 // Auth gate for restricted documents section
 document.addEventListener('DOMContentLoaded', () => {
+// ── Theme ─────────────────────────────────────────────────────────────
+let _darkTheme = localStorage.getItem('projDocTheme') !== 'light';
+function toggleTheme() {
+  _darkTheme = !_darkTheme;
+  document.documentElement.classList.toggle('dark', _darkTheme);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = _darkTheme ? '☀️' : '🌙';
+  localStorage.setItem('projDocTheme', _darkTheme ? 'dark' : 'light');
+}
+(function initTheme() {
+  if (_darkTheme) document.documentElement.classList.add('dark');
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = _darkTheme ? '☀️' : '🌙';
+})();
+
   arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
   const auth = arrAuthGet();
   const gate = document.getElementById('docs-auth-gate');

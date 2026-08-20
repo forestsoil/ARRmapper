@@ -3,46 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>appInventory v6 – Project Asha</title>
+<title>appInventory v7 – Project Asha</title>
 <!-- proj4js for CRS reprojection -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 <!-- shpjs for shapefile zip parsing -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/shpjs/3.6.3/shp.js"></script>
 <style>
   :root {
-    --bg:#f0f5f2; --surface:#ffffff; --surface2:#e6f2ec;
-    --border:#c8ddd2; --text:#0f2419; --text2:#5a7a68;
-    --accent:#1a5c38; --accent2:#2d9e60;
-    --warn:#c0392b; --warn-bg:#fdecea;
-    --badge-receive:#1a5c38; --badge-dispatch:#e65100;
-    --badge-bg-r:#e6f2ec; --badge-bg-d:#fff3e0;
+    --bg:#f2f5f1; --surface:#ffffff; --surface2:#e8f3e9;
+    --border:#c8ddd2; --text:#0f1c0e; --text2:#4a6741;
+    --accent:#2d6940; --accent2:#4a9e5c;
+    --forest:#1b3d24; --leaf:#4a9e5c; --pale:#e8f3e9;
+    --warn:#c0392b; --warn-bg:#fde8e8;
+    --badge-receive:#1b3d24; --badge-dispatch:#e65100;
+    --badge-bg-r:#e8f3e9; --badge-bg-d:#fff3e0;
     --shadow:0 2px 8px rgba(0,0,0,0.08); --radius:8px;
     --font:'Segoe UI',system-ui,sans-serif;
     --mono:'Cascadia Code','Fira Mono',monospace;
     --outbox-bg:#fff8e1; --outbox-border:#f9a825; --outbox-text:#5d4037;
-    --synced-bg:#e6f2ec; --synced-text:#1a5c38;
+    --synced-bg:#e8f3e9; --synced-text:#1b3d24;
     --warn-amber:#f57f17;
   }
   [data-theme="dark"] {
-    --bg:#0a1a10; --surface:#0f2419; --surface2:#162e1e;
-    --border:#1e4029; --text:#d4f0e0; --text2:#6aad86;
-    --accent:#34c97a; --accent2:#4ade80;
-    --warn:#ef9a9a; --warn-bg:#2c1010;
+    --bg:#0f1c14; --surface:#1c2a17; --surface2:#243320;
+    --border:#2a3d20; --text:#d1fae5; --text2:#a0ccaa;
+    --accent:#4ade80; --accent2:#6ee7b7;
+    --forest:#0d2414; --leaf:#6ee7b7; --pale:#1a3020;
+    --warn:#fca5a5; --warn-bg:#3b0d0d;
     --badge-receive:#4ade80; --badge-dispatch:#ffcc80;
-    --badge-bg-r:#0f2419; --badge-bg-d:#2e1e08;
+    --badge-bg-r:#1a3020; --badge-bg-d:#2e1e08;
     --shadow:0 2px 8px rgba(0,0,0,0.4);
     --outbox-bg:#2a2000; --outbox-border:#f9a825; --outbox-text:#ffe082;
-    --synced-bg:#0f2419; --synced-text:#4ade80;
+    --synced-bg:#1a3020; --synced-text:#4ade80;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh;}
 
   /* ── Header ── */
   header{
-    background:var(--accent);color:#fff;padding:10px 16px;
+    background:var(--forest);color:#fff;padding:10px 16px;
     display:flex;align-items:center;justify-content:space-between;
     position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,0.25);
-    flex-wrap:wrap;gap:8px;
+    flex-wrap:wrap;gap:8px;border-bottom:2px solid var(--leaf);
   }
   header h1{font-size:16px;font-weight:700;letter-spacing:.5px;}
   header h1 span{font-weight:300;opacity:.8;font-size:13px;margin-left:6px;}
@@ -63,7 +65,7 @@
   }
   #outboxPill.has-items{display:inline-block;}
   #netStatus{font-size:11px;opacity:.9;display:flex;align-items:center;gap:4px;}
-  #netDot{width:8px;height:8px;border-radius:50%;background:#2d9e60;display:inline-block;}
+  #netDot{width:8px;height:8px;border-radius:50%;background:var(--accent2);display:inline-block;}
   #netDot.offline{background:#ef5350;}
 
   /* ── Login overlay ── */
@@ -697,7 +699,7 @@ let currentUser    = "";
 let currentProject = "";
 let records  = JSON.parse(localStorage.getItem("inv_records") || "[]");
 let outbox   = JSON.parse(localStorage.getItem("inv_outbox")  || "[]");
-let dark     = localStorage.getItem("inv_theme") === "dark";
+let dark     = localStorage.getItem("inv_theme") !== "light";
 let draining = false;
 let spatialAreaHa   = null;
 let spatialPerimM   = null;
@@ -716,6 +718,7 @@ const AUTH_TTL_MS    = 12 * 60 * 60 * 1000; // 12 hours
 // ════════════════════════════════════════════════════
 window.onload = async () => {
   if (dark) document.documentElement.setAttribute("data-theme","dark");
+  updateThemeBtn();
   updateThemeBtn();
   setInterval(updateTimestamps,1000);
   updateTimestamps();
@@ -843,7 +846,7 @@ function toggleTheme() {
   updateThemeBtn();
 }
 function updateThemeBtn() {
-  document.getElementById("themeBtn").textContent = dark ? "☀ Light" : "🌙 Dark";
+  document.getElementById("themeBtn").textContent = dark ? "☀️ Light" : "🌙 Dark";
 }
 
 // ════════════════════════════════════════════════════
