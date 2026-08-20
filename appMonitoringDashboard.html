@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v24 · Asha 1</title>
+<title>Monitoring Dashboard v25 · Asha 1</title>
 <style>
 /* ── Design tokens ─────────────────────────────────────────────── */
 :root {
@@ -49,7 +49,7 @@ header{background:var(--forest);padding:16px 24px;display:flex;align-items:cente
 #auth-gate.open{display:flex}
 #auth-gate-box{background:var(--card);border:1.5px solid var(--rule);border-radius:var(--radius);padding:28px 32px;text-align:center;max-width:360px;width:90%;box-shadow:var(--shadow)}
 .ag-icon{font-size:36px;margin-bottom:10px}
-#auth-gate-box h2{font-size:15px;font-weight:700;color:var(--forest);margin-bottom:6px}
+#auth-gate-box h2{font-size:15px;font-weight:700;color:var(--canopy);margin-bottom:6px}
 #auth-gate-box p{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.6}
 .ag-btn{display:inline-block;padding:9px 22px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:var(--font);margin:4px;text-decoration:none}
 .ag-btn-primary{background:var(--canopy);color:#fff}.ag-btn-primary:hover{background:var(--forest)}
@@ -155,13 +155,38 @@ html.dark .b-teal{background:#0a2a22;color:#5eead4}
 .mrv-vbtn{background:#1f2937;border:1.5px solid #374151;border-radius:6px;color:#d1d5db;font-size:11px;padding:5px 9px;cursor:pointer;white-space:nowrap}
 .mrv-vbtn.sel{background:#0d7377;border-color:#0fa3a8;color:#fff}
 .mrv-grade-btn{background:#1f2937;border:2px solid #374151;border-radius:6px;color:#d1d5db;font-size:13px;font-weight:700;padding:8px 4px;cursor:pointer;text-align:center}
-.mrv-panel{background:#111827;border-radius:10px;padding:16px;margin-top:8px;color:#f3f4f6}
+.mrv-grade-btn.sel{background:#0d7377;border-color:#0fa3a8;color:#fff}
+.mrv-panel{background:#111827;border-radius:10px;padding:16px;color:#f3f4f6}
 .mrv-sec-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;margin-bottom:6px;margin-top:12px}
 .mrv-panel input[type=text],.mrv-panel input[type=date],.mrv-panel select{width:100%;background:#1f2937;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px 7px;font-family:var(--font)}
 .pm-btn{background:#374151;border:none;color:#e5e7eb;border-radius:4px;width:26px;height:26px;font-size:14px;cursor:pointer}
 .icon-btn{border:none;border-radius:6px;color:#fff;font-size:12px;padding:6px 10px;cursor:pointer;font-weight:600}
 .icon-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .b-teal-btn{background:#0d7377}.b-green-btn{background:#059669}.b-amber-btn{background:#b45a0c}.b-gray-btn{background:#374151}.b-red-btn{background:#7f1d1d}.b-off{opacity:.4;pointer-events:none}
+
+/* ── MRV full-screen view ──────────────────────────────────────── */
+#mrv-view{display:none;position:fixed;inset:0;z-index:2000;flex-direction:column;background:#0f1c14}
+#mrv-view.open{display:flex}
+#mrv-topbar{background:#111827;border-bottom:2px solid #374151;padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+#mrv-topbar .mrv-tb-title{font-size:13px;font-weight:700;color:#6ee7b7;flex:1}
+.mrv-tb-btn{background:#1f2937;border:1.5px solid #374151;border-radius:6px;color:#d1d5db;font-size:11px;font-weight:600;padding:5px 12px;cursor:pointer;white-space:nowrap}
+.mrv-tb-btn:hover{background:#374151}
+.mrv-tb-btn.danger{border-color:#7f1d1d;color:#fca5a5}
+.mrv-tb-btn.danger:hover{background:#7f1d1d}
+#mrv-body{display:flex;flex:1;overflow:hidden}
+#mrv-sidebar{width:30%;min-width:260px;max-width:380px;background:#111827;border-right:2px solid #374151;overflow-y:auto;padding:10px;flex-shrink:0}
+#mrv-map-wrap{flex:1;position:relative}
+#mrv-map{width:100%;height:100%}
+.mrv-map-warn{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:1000;background:rgba(251,191,36,.95);color:#111;font-size:11px;font-weight:700;padding:6px 14px;border-radius:20px;pointer-events:none;white-space:nowrap}
+.sec{margin-bottom:10px}
+.sec-t{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6ee7b7;margin-bottom:5px}
+.pm-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.pm-label{font-size:11px;color:#9ca3af;flex:1}
+
+/* ── Dashboard strip (shown when MRV open) ─────────────────────── */
+#dash-strip{display:none;position:fixed;bottom:0;left:0;right:0;z-index:1999;background:var(--forest);border-top:2px solid var(--leaf);padding:6px 16px;cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:rgba(255,255,255,.7)}
+#dash-strip:hover{background:var(--canopy);color:#fff}
+#dash-strip.visible{display:block}
 
 @media(max-width:768px){
   .row2,.row3{grid-template-columns:1fr}
@@ -390,133 +415,153 @@ function toggleTheme() {
     </div>
   </div>
 
-  <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px">
-
-  <!-- MRV Field Visit Tool -->
-  <div class="card" id="mrv-panel-card" style="display:none">
-    <div class="card-title">📍 MRV Field Visit Tool
-      <span style="font-size:9px;font-weight:400;color:#9ca3af;margin-left:8px">GPS-sampled tree grading · saves to Drive + Asha1_MonitoringRegister</span>
-    </div>
-    <div class="mrv-panel">
-    <div class="sec">
-      <div class="sec-t">📋 Plot</div>
-      <select id="mrv-plot-sel" onchange="mrvOnPlotSelect(this.value)" style="font-size:12px;width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;padding:5px">
-        <option value="">— select plot —</option>
-      </select>
-      <div id="mrv-plot-info" style="font-size:10px;color:#6b7280;margin-top:3px;min-height:14px"></div>
-    </div>
-    <div class="sec" id="mrv-sec-visit" style="display:none">
-      <div class="sec-t">Visit type</div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
-        <button class="mrv-vbtn" data-vt="growth"    onclick="mrvSetVisitType('growth')"   >🌱 Growth</button>
-        <button class="mrv-vbtn" data-vt="condition" onclick="mrvSetVisitType('condition')" >🔍 Condition</button>
-        <button class="mrv-vbtn" data-vt="mortality" onclick="mrvSetVisitType('mortality')" >💀 Mortality</button>
-        <button class="mrv-vbtn" data-vt="annual"    onclick="mrvSetVisitType('annual')"    >📅 Annual</button>
-      </div>
-      <div id="mrv-mortality-warn" style="display:none;font-size:10px;color:#fbbf24;margin-top:4px">⚠️ Mortality assessments are normally Sep–Nov. Tap again to override.</div>
-    </div>
-    <div class="sec" id="mrv-sec-meta" style="display:none">
-      <div class="pm-row">
-        <span class="pm-label">LPC</span>
-        <input id="mrv-lpc" type="text" maxlength="20" placeholder="e.g. 4060006" style="flex:1;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px 7px"/>
-      </div>
-      <div class="pm-row" style="margin-top:4px">
-        <span class="pm-label">Date</span>
-        <input id="mrv-date" type="date" style="flex:1;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px 7px"/>
-      </div>
-    </div>
-    <div class="sec" id="mrv-sec-plotmetrics" style="display:none">
-      <div class="sec-t">📊 Plot Metrics <span style="font-size:9px;color:#6b7280;font-weight:400">(each 7% weight)</span></div>
-      <div id="mrv-pm-rows" style="margin-top:6px"></div>
-    </div>
-    <div class="sec" id="mrv-sec-progress" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:10px;color:#9ca3af">Sample points</span>
-        <span id="mrv-progress-lbl" style="font-size:11px;font-weight:700;color:#6ee7b7">0 / 0</span>
-      </div>
-      <div style="background:#374151;border-radius:4px;height:6px;margin-top:4px">
-        <div id="mrv-progress-bar" style="background:#6ee7b7;height:6px;border-radius:4px;width:0%;transition:width .3s"></div>
-      </div>
-    </div>
-    <div class="sec" id="mrv-sec-ctrl" style="display:none">
-      <div class="icon-row">
-        <button class="icon-btn b-teal" id="mrv-btn-start"     onclick="mrvStartVisit()"   style="font-size:13px;width:auto;padding:0 12px">▶ Start</button>
-        <button class="icon-btn b-green b-off" id="mrv-btn-next"    onclick="mrvNextPoint()"  style="font-size:13px;width:auto;padding:0 10px">Next ▶</button>
-        <button class="icon-btn b-amber b-off" id="mrv-btn-photo"   onclick="mrvTakePhoto()"  style="font-size:18px">📷</button>
-        <button class="icon-btn b-gray  b-off" id="mrv-btn-finish"  onclick="mrvFinishVisit()" style="font-size:13px;width:auto;padding:0 10px">✅ Done</button>
-        <button class="icon-btn b-red   b-off" id="mrv-btn-cancel"  onclick="mrvCancelVisit()" style="font-size:13px;width:auto;padding:0 10px">✕ Cancel</button>
-        <button class="icon-btn b-gray  b-off" id="mrv-btn-walkalong" onclick="mrvWalkAlongTap()" style="font-size:13px;width:auto;padding:0 10px">👁 Obs</button>
-      </div>
-    </div>
-    <div class="sec" id="mrv-sec-grade" style="display:none">
-      <div style="font-size:10px;color:#9ca3af;margin-bottom:4px">
-        Point <span id="mrv-pt-idx" style="color:#f3f4f6;font-weight:700">1</span>
-        of <span id="mrv-pt-total" style="color:#f3f4f6">0</span>
-        — <span id="mrv-pt-species" style="color:#a78bfa"></span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px" id="mrv-grade-grid">
-        <button class="mrv-grade-btn" data-g="A+" onclick="mrvSetGrade('A+')">A+</button>
-        <button class="mrv-grade-btn" data-g="A"  onclick="mrvSetGrade('A')">A</button>
-        <button class="mrv-grade-btn" data-g="B+" onclick="mrvSetGrade('B+')">B+</button>
-        <button class="mrv-grade-btn" data-g="B"  onclick="mrvSetGrade('B')">B</button>
-        <button class="mrv-grade-btn" data-g="C+" onclick="mrvSetGrade('C+')">C+</button>
-        <button class="mrv-grade-btn" data-g="C"  onclick="mrvSetGrade('C')">C</button>
-        <button class="mrv-grade-btn" data-g="D+" onclick="mrvSetGrade('D+')">D+</button>
-        <button class="mrv-grade-btn" data-g="D"  onclick="mrvSetGrade('D')">D</button>
-      </div>
-      <div class="pm-row">
-        <span class="pm-label">Height (cm)</span>
-        <button class="pm-btn" onclick="mrvAdjHeight(-5)">−</button>
-        <span id="mrv-height-val" style="font-size:12px;font-weight:700;color:#f3f4f6;min-width:44px;text-align:center">—</span>
-        <button class="pm-btn" onclick="mrvAdjHeight(+5)">+</button>
-      </div>
-      <div class="pm-row" style="margin-top:2px">
-        <span class="pm-label" style="color:#6b7280">DBH (cm) <span style="font-weight:400;font-size:9px">if &gt;5cm</span></span>
-        <button class="pm-btn" onclick="mrvAdjDBH(-0.5)" style="opacity:.6">−</button>
-        <span id="mrv-dbh-val" style="font-size:12px;color:#6b7280;min-width:44px;text-align:center">—</span>
-        <button class="pm-btn" onclick="mrvAdjDBH(+0.5)" style="opacity:.6">+</button>
-      </div>
-      <input id="mrv-pt-notes" type="text" maxlength="80" placeholder="notes (optional)…" style="width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:11px;padding:5px 7px;margin-top:6px"/>
-    </div>
-    <div class="sec" id="mrv-sec-summary" style="display:none">
-      <div class="sec-t">📊 Visit summary</div>
-      <div id="mrv-summary-body" style="font-size:10px;color:#d1d5db;margin-top:4px;line-height:1.8"></div>
-      <div class="icon-row" style="margin-top:8px" id="mrv-summary-btns">
-        <button class="icon-btn b-green" onclick="mrvExportVisit()" style="font-size:13px;width:auto;padding:0 12px">📦 Save &amp; Upload</button>
-        <button class="icon-btn b-gray"  onclick="mrvReset()"       style="font-size:13px;width:auto;padding:0 10px">↩ New visit</button>
-      </div>
-    </div>
-    <div id="mrv-walkalong-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1f2937;border-top:2px solid #374151;z-index:4000;padding:12px 14px 20px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:12px;font-weight:700;color:#f3f4f6">👁 Walk-along observation</span>
-        <button onclick="mrvWalkAlongClose()" style="background:none;border:none;color:#9ca3af;font-size:18px;cursor:pointer">✕</button>
-      </div>
-      <div style="font-size:10px;color:#9ca3af;margin-bottom:6px">Species</div>
-      <select id="mrv-wa-species" style="width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px;margin-bottom:8px"></select>
-      <div style="font-size:10px;color:#9ca3af;margin-bottom:6px">Grade</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px" id="mrv-wa-grade-grid">
-        <button class="mrv-grade-btn" data-wg="A+" onclick="mrvWaSetGrade('A+')">A+</button>
-        <button class="mrv-grade-btn" data-wg="A"  onclick="mrvWaSetGrade('A')">A</button>
-        <button class="mrv-grade-btn" data-wg="B+" onclick="mrvWaSetGrade('B+')">B+</button>
-        <button class="mrv-grade-btn" data-wg="B"  onclick="mrvWaSetGrade('B')">B</button>
-        <button class="mrv-grade-btn" data-wg="C+" onclick="mrvWaSetGrade('C+')">C+</button>
-        <button class="mrv-grade-btn" data-wg="C"  onclick="mrvWaSetGrade('C')">C</button>
-        <button class="mrv-grade-btn" data-wg="D+" onclick="mrvWaSetGrade('D+')">D+</button>
-        <button class="mrv-grade-btn" data-wg="D"  onclick="mrvWaSetGrade('D')">D</button>
-      </div>
-      <input id="mrv-wa-notes" type="text" maxlength="80" placeholder="notes (optional)…" style="width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:11px;padding:5px 7px;margin-bottom:10px"/>
-      <button onclick="mrvWalkAlongSave()" style="width:100%;background:#0d7377;border:none;border-radius:6px;color:#fff;font-size:13px;padding:8px;cursor:pointer">Save observation</button>
-    </div>
-    <input type="file" id="mrv-photo-input" accept="image/*" capture="environment" style="display:none" onchange="mrvHandlePhoto(this)"/>
-    <div id="mrv-status-msg" style="display:none;font-size:11px;color:#6ee7b7;margin-top:8px;padding:6px;background:rgba(110,231,183,.1);border-radius:5px"></div>
-    </div>
-  </div>
-
-  <div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px">
-    Data: Legacy XLSX 2024–2025 (flat CSV paste) + Health-Monitoring form submissions (live via Apps Script) · Asha 1 VCS 4866 · ARR Project Suite
-  </div>
+  <div style="font-size:10px;color:var(--muted);text-align:center;padding:8px">
+    Data: Legacy XLSX 2024–2025 + Health-Monitoring form submissions (live via Apps Script) · Asha 1 VCS 4866 · ARR Project Suite
   </div>
 </div>
+
+<!-- ── MRV full-screen view ──────────────────────────────────── -->
+<div id="mrv-view">
+  <div id="mrv-topbar">
+    <span class="mrv-tb-title">📍 MRV Field Visit · Asha 1</span>
+    <span id="mrv-tb-user" style="font-size:10px;color:#9ca3af"></span>
+    <button class="mrv-tb-btn" onclick="mrvBackToDashboard()">← Dashboard</button>
+    <button class="mrv-tb-btn danger" id="mrv-tb-cancel-btn" onclick="mrvCancelVisit()" style="display:none">✕ Cancel visit</button>
+  </div>
+  <div id="mrv-body">
+    <div id="mrv-sidebar">
+      <div class="mrv-panel">
+
+        <div class="sec">
+          <div class="sec-t">📋 Plot</div>
+          <select id="mrv-plot-sel" onchange="mrvOnPlotSelect(this.value)" style="font-size:12px;width:100%;background:#1f2937;border:1px solid #374151;border-radius:5px;color:#f3f4f6;padding:5px">
+            <option value="">— select plot —</option>
+          </select>
+          <div id="mrv-plot-info" style="font-size:10px;color:#6b7280;margin-top:3px;min-height:14px"></div>
+        </div>
+
+        <div class="sec" id="mrv-sec-visit" style="display:none">
+          <div class="sec-t">Visit type</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
+            <button class="mrv-vbtn" data-vt="growth"    onclick="mrvSetVisitType('growth')">🌱 Growth</button>
+            <button class="mrv-vbtn" data-vt="condition" onclick="mrvSetVisitType('condition')">🔍 Condition</button>
+            <button class="mrv-vbtn" data-vt="mortality" onclick="mrvSetVisitType('mortality')">💀 Mortality</button>
+            <button class="mrv-vbtn" data-vt="annual"    onclick="mrvSetVisitType('annual')">📅 Annual</button>
+          </div>
+          <div id="mrv-mortality-warn" style="display:none;font-size:10px;color:#fbbf24;margin-top:4px">⚠️ Mortality assessments are normally Sep–Nov. Tap again to override.</div>
+        </div>
+
+        <div class="sec" id="mrv-sec-meta" style="display:none">
+          <div class="pm-row">
+            <span class="pm-label">LPC</span>
+            <input id="mrv-lpc" type="text" maxlength="20" placeholder="e.g. 4060006" style="flex:1;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px 7px"/>
+          </div>
+          <div class="pm-row" style="margin-top:4px">
+            <span class="pm-label">Date</span>
+            <input id="mrv-date" type="date" style="flex:1;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px 7px"/>
+          </div>
+        </div>
+
+        <div class="sec" id="mrv-sec-plotmetrics" style="display:none">
+          <div class="sec-t">📊 Plot Metrics <span style="font-size:9px;color:#6b7280;font-weight:400">(each 7% weight)</span></div>
+          <div id="mrv-pm-rows" style="margin-top:6px"></div>
+        </div>
+
+        <div class="sec" id="mrv-sec-progress" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:10px;color:#9ca3af">Sample points</span>
+            <span id="mrv-progress-lbl" style="font-size:11px;font-weight:700;color:#6ee7b7">0 / 0</span>
+          </div>
+          <div style="background:#374151;border-radius:4px;height:6px;margin-top:4px">
+            <div id="mrv-progress-bar" style="background:#6ee7b7;height:6px;border-radius:4px;width:0%;transition:width .3s"></div>
+          </div>
+        </div>
+
+        <div class="sec" id="mrv-sec-ctrl" style="display:none">
+          <div class="icon-row">
+            <button class="icon-btn b-teal-btn" id="mrv-btn-start"       onclick="mrvStartVisit()"    style="font-size:13px;width:auto;padding:0 12px">▶ Start</button>
+            <button class="icon-btn b-green-btn b-off" id="mrv-btn-next"  onclick="mrvNextPoint()"    style="font-size:13px;width:auto;padding:0 10px">Next ▶</button>
+            <button class="icon-btn b-amber-btn b-off" id="mrv-btn-photo" onclick="mrvTakePhoto()"    style="font-size:18px">📷</button>
+            <button class="icon-btn b-gray-btn  b-off" id="mrv-btn-finish" onclick="mrvFinishVisit()" style="font-size:13px;width:auto;padding:0 10px">✅ Done</button>
+            <button class="icon-btn b-red-btn   b-off" id="mrv-btn-cancel" onclick="mrvCancelVisit()" style="font-size:13px;width:auto;padding:0 10px">✕ Cancel</button>
+            <button class="icon-btn b-gray-btn  b-off" id="mrv-btn-walkalong" onclick="mrvWalkAlongTap()" style="font-size:13px;width:auto;padding:0 10px">👁 Obs</button>
+          </div>
+        </div>
+
+        <div class="sec" id="mrv-sec-grade" style="display:none">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px">
+            Point <span id="mrv-pt-idx" style="color:#f3f4f6;font-weight:700">1</span>
+            of <span id="mrv-pt-total" style="color:#f3f4f6">0</span>
+            — <span id="mrv-pt-species" style="color:#a78bfa"></span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:8px" id="mrv-grade-grid">
+            <button class="mrv-grade-btn" data-g="A+" onclick="mrvSetGrade('A+')">A+</button>
+            <button class="mrv-grade-btn" data-g="A"  onclick="mrvSetGrade('A')">A</button>
+            <button class="mrv-grade-btn" data-g="B+" onclick="mrvSetGrade('B+')">B+</button>
+            <button class="mrv-grade-btn" data-g="B"  onclick="mrvSetGrade('B')">B</button>
+            <button class="mrv-grade-btn" data-g="C+" onclick="mrvSetGrade('C+')">C+</button>
+            <button class="mrv-grade-btn" data-g="C"  onclick="mrvSetGrade('C')">C</button>
+            <button class="mrv-grade-btn" data-g="D+" onclick="mrvSetGrade('D+')">D+</button>
+            <button class="mrv-grade-btn" data-g="D"  onclick="mrvSetGrade('D')">D</button>
+          </div>
+          <div class="pm-row">
+            <span class="pm-label">Height (cm)</span>
+            <button class="pm-btn" onclick="mrvAdjHeight(-5)">−</button>
+            <span id="mrv-height-val" style="font-size:12px;font-weight:700;color:#f3f4f6;min-width:44px;text-align:center">—</span>
+            <button class="pm-btn" onclick="mrvAdjHeight(+5)">+</button>
+          </div>
+          <div class="pm-row" style="margin-top:2px">
+            <span class="pm-label" style="color:#6b7280">DBH (cm) <span style="font-weight:400;font-size:9px">if &gt;5cm</span></span>
+            <button class="pm-btn" onclick="mrvAdjDBH(-0.5)" style="opacity:.6">−</button>
+            <span id="mrv-dbh-val" style="font-size:12px;color:#6b7280;min-width:44px;text-align:center">—</span>
+            <button class="pm-btn" onclick="mrvAdjDBH(+0.5)" style="opacity:.6">+</button>
+          </div>
+          <input id="mrv-pt-notes" type="text" maxlength="80" placeholder="notes (optional)…" style="width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:11px;padding:5px 7px;margin-top:6px"/>
+        </div>
+
+        <div class="sec" id="mrv-sec-summary" style="display:none">
+          <div class="sec-t">📊 Visit summary</div>
+          <div id="mrv-summary-body" style="font-size:10px;color:#d1d5db;margin-top:4px;line-height:1.8"></div>
+          <div class="icon-row" style="margin-top:8px" id="mrv-summary-btns">
+            <button class="icon-btn b-green-btn" onclick="mrvExportVisit()" style="font-size:13px;width:auto;padding:0 12px">📦 Save &amp; Upload</button>
+            <button class="icon-btn b-gray-btn"  onclick="mrvReset()"       style="font-size:13px;width:auto;padding:0 10px">↩ New visit</button>
+          </div>
+        </div>
+
+        <div id="mrv-status-msg" style="display:none;font-size:11px;color:#6ee7b7;margin-top:8px;padding:6px;background:rgba(110,231,183,.1);border-radius:5px"></div>
+
+      </div>
+    </div>
+    <div id="mrv-map-wrap">
+      <div id="mrv-map"></div>
+    </div>
+  </div>
+</div>
+
+<div id="mrv-walkalong-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1f2937;border-top:2px solid #374151;z-index:4000;padding:12px 14px 20px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <span style="font-size:12px;font-weight:700;color:#f3f4f6">👁 Walk-along observation</span>
+    <button onclick="mrvWalkAlongClose()" style="background:none;border:none;color:#9ca3af;font-size:18px;cursor:pointer">✕</button>
+  </div>
+  <div style="font-size:10px;color:#9ca3af;margin-bottom:6px">Species</div>
+  <select id="mrv-wa-species" style="width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:12px;padding:5px;margin-bottom:8px"></select>
+  <div style="font-size:10px;color:#9ca3af;margin-bottom:6px">Grade</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px" id="mrv-wa-grade-grid">
+    <button class="mrv-grade-btn" data-wg="A+" onclick="mrvWaSetGrade('A+')">A+</button>
+    <button class="mrv-grade-btn" data-wg="A"  onclick="mrvWaSetGrade('A')">A</button>
+    <button class="mrv-grade-btn" data-wg="B+" onclick="mrvWaSetGrade('B+')">B+</button>
+    <button class="mrv-grade-btn" data-wg="B"  onclick="mrvWaSetGrade('B')">B</button>
+    <button class="mrv-grade-btn" data-wg="C+" onclick="mrvWaSetGrade('C+')">C+</button>
+    <button class="mrv-grade-btn" data-wg="C"  onclick="mrvWaSetGrade('C')">C</button>
+    <button class="mrv-grade-btn" data-wg="D+" onclick="mrvWaSetGrade('D+')">D+</button>
+    <button class="mrv-grade-btn" data-wg="D"  onclick="mrvWaSetGrade('D')">D</button>
+  </div>
+  <input id="mrv-wa-notes" type="text" maxlength="80" placeholder="notes (optional)…" style="width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;font-size:11px;padding:5px 7px;margin-bottom:10px"/>
+  <button onclick="mrvWalkAlongSave()" style="width:100%;background:#0d7377;border:none;border-radius:6px;color:#fff;font-size:13px;padding:8px;cursor:pointer">Save observation</button>
+</div>
+
+<input type="file" id="mrv-photo-input" accept="image/*" capture="environment" style="display:none" onchange="mrvHandlePhoto(this)"/>
+<div id="dash-strip" onclick="mrvBackToDashboard()">📊 ← Back to Dashboard</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
@@ -536,8 +581,12 @@ let charts   = {};
 // ── IDB helpers ───────────────────────────────────────────────────
 function openDB() {
   return new Promise((res, rej) => {
-    const req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE);
+    const req = indexedDB.open(IDB_NAME, 2);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      if (!db.objectStoreNames.contains('mrvSamples')) db.createObjectStore('mrvSamples');
+    };
     req.onsuccess = e => res(e.target.result);
     req.onerror   = e => rej(e);
   });
@@ -1061,14 +1110,76 @@ function guardedToggleMRV() {
     MRV_SESSION.userFolder = auth.email.split('@')[0].replace(/[^a-zA-Z0-9._-]/g, '_');
     MRV_SESSION.setupDone  = true;
   }
-  toggleMRVPanel();
+  openMRVView();
 }
 
+function openMRVView() {
+  // Collapse dashboard
+  document.getElementById('mrv-view').classList.add('open');
+  document.getElementById('dash-strip').classList.add('visible');
+  // Update topbar user label
+  const auth = arrAuthGet();
+  const userEl = document.getElementById('mrv-tb-user');
+  if (userEl && auth) userEl.textContent = '👤 ' + (auth.name || auth.email);
+  // Init map on first open
+  mrvInitMap();
+  setTimeout(() => mrvMap && mrvMap.invalidateSize(), 100);
+  // Load plots into dropdown + draw all polygons on map
+  mrvLoadPlots();
+}
+
+function mrvBackToDashboard() {
+  if (mrvVisitActive) {
+    if (!confirm('A visit is in progress. Leave and discard observations?')) return;
+    mrvReset(false);
+  }
+  document.getElementById('mrv-view').classList.remove('open');
+  document.getElementById('dash-strip').classList.remove('visible');
+  const btn = document.getElementById('mrv-toggle-btn');
+  if (btn) btn.style.background = '';
+}
+
+
+
+
 // ══════════════════════════════════════════════════════════════════
-// Adapted for appMonitoringDashboard context
+// MRV FIELD VISIT TOOL
 // Writes GeoJSON to Drive (via FieldTool AS) AND summary row to
 // Asha1_MonitoringRegister (via Monitoring AS)
 // ══════════════════════════════════════════════════════════════════
+
+// ── MRV grading constants (from ARRmapper v67) ─────────────────────
+const MRV_GRADES           = ['A+','A','B+','B','C+','C','D+','D'];
+const MRV_GRADE_SCORE      = {'A+':8,'A':7,'B+':6,'B':5,'C+':4,'C':3,'D+':2,'D':1};
+const MRV_INTERIOR_PER_BLOCK = 3;
+const MRV_MAX_SAMPLE       = 120;
+const MRV_ANNUAL_MONTHS    = [9,10,11];
+const MRV_MORTALITY_MONTHS = [9,10,11];
+const MRV_DENSITY_SAMPLE   = [{maxDens:550,perHa:15},{maxDens:999,perHa:25},{maxDens:Infinity,perHa:35}];
+
+// ── Leaflet map (initialised on first MRV open) ────────────────────
+let mrvMap = null;
+let mrvLayer = null;
+let mrvAllPlotsLayer = null; // all LPC polygons overlay
+
+// ── IDB helpers for sample cache ──────────────────────────────────
+async function idbMrvSampleGet(key) {
+  const db = await openDB();
+  return new Promise((res,rej) => {
+    const req = db.transaction('mrvSamples','readonly').objectStore('mrvSamples').get(key);
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function idbMrvSampleSet(key, v) {
+  const db = await openDB();
+  return new Promise((res,rej) => {
+    const tx = db.transaction('mrvSamples','readwrite');
+    tx.objectStore('mrvSamples').put(v, key);
+    tx.oncomplete = () => res();
+    tx.onerror    = e => rej(e.target.error);
+  });
+}
 
 // ── MRV config ────────────────────────────────────────────────────
 const MRV_TOOL_FOLDER  = 'MRVTool';
@@ -1091,19 +1202,8 @@ const Lang = { th_soiltype: 'Soil type' };
 // ── MRV status message ─────────────────────────────────────────────
 function mrvSetStatusMsg(msg) {
   const el = document.getElementById('mrv-status-msg');
-  if (el) { el.textContent = msg; el.style.display = 'block'; }
+  if (el) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
   console.log('[MRV]', msg);
-}
-
-// ── Panel toggle ───────────────────────────────────────────────────
-function toggleMRVPanel() {
-  const card = document.getElementById('mrv-panel-card');
-  const btn  = document.getElementById('mrv-toggle-btn');
-  if (!card) return;
-  const visible = card.style.display !== 'none';
-  card.style.display = visible ? 'none' : 'block';
-  btn.style.background = visible ? 'rgba(255,255,255,.12)' : 'rgba(13,115,119,.8)';
-  if (!visible) mrvLoadPlots();
 }
 
 // ── OPFS helpers (minimal — same logic as ARRmapper) ──────────────
@@ -1199,22 +1299,26 @@ function outboxUpdateBadge() {}
 let mrvPlots=[], mrvActivePlot=null, mrvVisitType=null, mrvMortalityWarnShown=false;
 let mrvSamplePts=[], mrvCurrentIdx=0, mrvObservations=[], mrvPhotoBlobs=[];
 let mrvCurrentHeight=null, mrvCurrentDBH=null, mrvCurrentGrade=null;
-let mrvVisitActive=false, mrvLayer=null, mrvLayerOnMap=false;
+let mrvVisitActive=false;
 let mrvPlotMetricVals = {}; // {id: score 1–8}
 
-function mrvEnterMode() { /* dashboard: no-op map init */
-  mrvLoadPlots(); return;
-  if (!mrvLayer) { mrvLayer = L.layerGroup(); }
-  if (!mrvLayerOnMap) { mrvLayer.addTo(map); mrvLayerOnMap = true; }
-  mrvLoadPlots();
+function mrvInitMap() {
+  if (mrvMap) return; // already initialised
+  mrvMap = L.map('mrv-map', { zoomControl: true }).setView([26.72, 88.43], 12);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '© Esri', maxZoom: 21, maxNativeZoom: 17
+  }).addTo(mrvMap);
+  mrvLayer         = L.layerGroup().addTo(mrvMap);
+  mrvAllPlotsLayer = L.layerGroup().addTo(mrvMap);
 }
 
 async function mrvLoadPlots() {
   const sel = document.getElementById('mrv-plot-sel');
   sel.innerHTML = '<option value="">— select plot —</option>';
   mrvPlots = [];
+  if (mrvAllPlotsLayer) mrvAllPlotsLayer.clearLayers();
 
-  // ── 1. sapling_points GeoJSONs from PlantationMapper (current-year field work) ──
+  // ── 1. sapling_points GeoJSONs from PlantationMapper ──────────────
   try {
     const dir = await opfsDir(['geojson','PlantationMapper'], false);
     const files = await opfsList(dir);
@@ -1231,22 +1335,29 @@ async function mrvLoadPlots() {
         const density=areaHa>0?gj.features.length/areaHa:1000;
         const ym=fname.match(/_(\d{4})\d{4}_/);
         const plantYear=ym?ym[1]:'????';
-        mrvPlots.push({plotKey:fname,filename:fname,features:gj.features,areaHa,density,plantYear,source:'current'});
+        const lpc = fname.replace('_sapling_points','').replace(/\.geojson$/,'');
+        const plot = {plotKey:fname,filename:fname,features:gj.features,areaHa,density,plantYear,lpc,source:'current'};
+        mrvPlots.push(plot);
         const opt=document.createElement('option');
-        opt.value=fname;
-        opt.textContent=fname.replace('_sapling_points','').replace(/\.geojson$/,'');
+        opt.value=fname; opt.textContent=lpc;
         sel.appendChild(opt);
+        // Draw convex hull on all-plots layer (clickable)
+        if (mrvAllPlotsLayer && gj.features.length > 1) {
+          const llCoords = gj.features.map(f=>[f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+          const poly = L.polygon(llCoords, {color:'#6ee7b7',weight:1.5,fillColor:'#6ee7b7',fillOpacity:0.06,interactive:true});
+          poly.bindTooltip(lpc + ' · ' + plantYear, {sticky:true});
+          poly.on('click', () => { sel.value = fname; mrvOnPlotSelect(fname); });
+          poly.addTo(mrvAllPlotsLayer);
+        }
       } catch(e){}
     }
   } catch(e){}
 
-  // ── 2. Legacy LP polygons from _legacy/ (2024–2026 fencing boundaries) ──
+  // ── 2. Legacy LP polygons from _legacy/ ───────────────────────────
   try {
     const legacyDir = await opfsDir(LEGACY_OPFS_PATH, false);
     const legacyFiles = await opfsList(legacyDir);
-    // Group alphabetically so years appear in order
     legacyFiles.sort();
-    // Add optgroup header if there are any legacy plots
     if (legacyFiles.length) {
       const grp = document.createElement('optgroup');
       grp.label = '── Legacy plots (2024–2026) ──';
@@ -1258,8 +1369,6 @@ async function mrvLoadPlots() {
         const gj = JSON.parse(await blob.text());
         if (!gj.features || !gj.features.length) continue;
         const feat = gj.features[0];
-        // LP polygon — derive a pseudo point-grid from boundary centroid for MRV
-        // (boundary is used for map display; MRV sampling generates points at runtime)
         const coords = feat.geometry.type === 'Polygon'
           ? feat.geometry.coordinates[0]
           : feat.geometry.coordinates[0][0];
@@ -1269,32 +1378,47 @@ async function mrvLoadPlots() {
         const dLon = Math.max(...lons)-Math.min(...lons);
         const dLat = Math.max(...lats)-Math.min(...lats);
         const areaHa = (dLon*111320*Math.cos(cLat*Math.PI/180)*dLat*110540)/10000;
-        // Extract year from filename e.g. legacy2024
         const ym = fname.match(/legacy(\d{4})/);
         const plantYear = ym ? ym[1] : '????';
         const lpc = feat.properties.name || fname.replace(/_LP_poly_gps_legacy\d+\.geojson$/,'');
-        // Represent as single centroid point with LP type so MRV can work boundary-mode
         const pseudoFeatures = [{
           type:'Feature',
           properties:{ species:'Legacy plot', color:'#facc15', lpc },
           geometry:{ type:'Point', coordinates:[cLon, cLat] }
         }];
-        mrvPlots.push({
-          plotKey: fname, filename: fname,
-          features: pseudoFeatures,
-          boundary: feat.geometry,   // full polygon for map display
-          areaHa, density: 0,
-          plantYear, lpc, source:'legacy'
-        });
+        const plot = {plotKey:fname,filename:fname,features:pseudoFeatures,boundary:feat.geometry,areaHa,density:0,plantYear,lpc,source:'legacy'};
+        mrvPlots.push(plot);
         const opt = document.createElement('option');
-        opt.value = fname;
-        opt.textContent = lpc + ' (' + plantYear + ')';
+        opt.value = fname; opt.textContent = lpc + ' (' + plantYear + ')';
         sel.appendChild(opt);
+        // Draw polygon on all-plots layer (clickable)
+        if (mrvAllPlotsLayer) {
+          const llCoords = coords.map(([lon,lat])=>[lat,lon]);
+          // Check if current plot has sapling data in OPFS
+          const hasPoints = mrvPlots.some(p=>p.source==='current' && p.lpc===lpc);
+          const poly = L.polygon(llCoords, {color:'#facc15',weight:1.5,fillColor:'#facc15',fillOpacity:0.06,interactive:true});
+          poly.bindTooltip(lpc + ' · ' + plantYear + (!hasPoints?' · ⚠️ no sapling data':''), {sticky:true});
+          poly.on('click', () => {
+            if (!hasPoints) {
+              const el = document.getElementById('mrv-plot-info');
+              if (el) el.textContent = '⚠️ No sapling_points data in OPFS for this LPC — visit will use boundary centroid only.';
+            }
+            sel.value = fname; mrvOnPlotSelect(fname);
+          });
+          poly.addTo(mrvAllPlotsLayer);
+        }
       } catch(e){}
     }
   } catch(e){}
 
-  if (!mrvPlots.length) document.getElementById('mrv-plot-info').textContent = 'No plots in OPFS yet. Use Files tab → Sync Legacy Plots.';
+  // Fit map to all plots if any loaded
+  if (mrvAllPlotsLayer && mrvMap) {
+    try { mrvMap.fitBounds(mrvAllPlotsLayer.getBounds(), {padding:[20,20]}); } catch(e){}
+  }
+
+  if (!mrvPlots.length) {
+    document.getElementById('mrv-plot-info').textContent = 'No plots in OPFS yet. Sync legacy plots via ARRmapper Files tab.';
+  }
 }
 
 function mrvOnPlotSelect(plotKey) {
@@ -1302,45 +1426,48 @@ function mrvOnPlotSelect(plotKey) {
   if (!plotKey) return;
   mrvActivePlot = mrvPlots.find(p=>p.plotKey===plotKey)||null;
   if (!mrvActivePlot) return;
-  const p=mrvActivePlot;
+  const p = mrvActivePlot;
   ['mrv-sec-visit','mrv-sec-meta','mrv-sec-plotmetrics','mrv-sec-ctrl'].forEach(id=>document.getElementById(id).style.display='');
-  document.getElementById('mrv-date').value=new Date().toISOString().slice(0,10);
-  // Pre-fill LPC from legacy plot name
+  document.getElementById('mrv-date').value = new Date().toISOString().slice(0,10);
   if (p.source==='legacy' && p.lpc) {
-    const lpcEl=document.getElementById('mrv-lpc');
-    if (!lpcEl.value) lpcEl.value=p.lpc;
+    const lpcEl = document.getElementById('mrv-lpc');
+    if (!lpcEl.value) lpcEl.value = p.lpc;
   }
   mrvInitPlotMetrics();
-  mrvLayer.clearLayers();
+  if (mrvLayer) mrvLayer.clearLayers();
 
   if (p.source==='legacy' && p.boundary) {
-    // Draw fencing polygon boundary
     const llCoords = (p.boundary.type==='Polygon'
       ? p.boundary.coordinates[0]
       : p.boundary.coordinates[0][0]
     ).map(([lon,lat])=>[lat,lon]);
-    const poly = L.polygon(llCoords,{color:'#facc15',weight:2,fillColor:'#facc15',fillOpacity:0.08,interactive:false});
+    const poly = L.polygon(llCoords,{color:'#facc15',weight:2,fillColor:'#facc15',fillOpacity:0.1,interactive:false});
     poly.addTo(mrvLayer);
-    map.fitBounds(poly.getBounds(),{padding:[20,20]});
-    document.getElementById('mrv-plot-info').textContent=`Legacy plot ${p.lpc} · ${p.areaHa.toFixed(2)} ha · ${p.plantYear} · boundary only`;
+    mrvMap.fitBounds(poly.getBounds(),{padding:[30,30]});
+    document.getElementById('mrv-plot-info').textContent = `Legacy · ${p.lpc} · ${p.areaHa.toFixed(2)} ha · ${p.plantYear} · boundary only`;
   } else {
-    const spCount=new Set(p.features.map(f=>f.properties.species||'unknown')).size;
-    const estMonthly=spCount*(1+MRV_INTERIOR_PER_BLOCK);
-    document.getElementById('mrv-plot-info').textContent=`${p.features.length} saplings · ${p.areaHa.toFixed(2)} ha · ${spCount} spp · monthly ~${estMonthly} pts`;
+    const spCount = new Set(p.features.map(f=>f.properties.species||'unknown')).size;
+    const estMonthly = spCount*(1+MRV_INTERIOR_PER_BLOCK);
+    document.getElementById('mrv-plot-info').textContent = `${p.features.length} saplings · ${p.areaHa.toFixed(2)} ha · ${spCount} spp · monthly ~${estMonthly} pts`;
     p.features.forEach(f=>{
       const [lon,lat]=f.geometry.coordinates;
       L.circleMarker([lat,lon],{radius:2,color:'transparent',fillColor:f.properties.color||'#6ee7b7',fillOpacity:0.4,interactive:false}).addTo(mrvLayer);
     });
-    const previewPts=mrvDrawSample(p.features).filter(s=>s.walkType==='centroid');
+    const previewPts = mrvDrawSample(p.features).filter(s=>s.walkType==='centroid');
     if (previewPts.length>1) {
       L.polyline(previewPts.map(s=>[s.lat,s.lon]),{color:'#facc15',weight:1.5,opacity:0.4,dashArray:'4,4',interactive:false}).addTo(mrvLayer);
     }
-    if (p.features.length) { const [lon0,lat0]=p.features[0].geometry.coordinates; map.setView([lat0,lon0],17); }
+    if (p.features.length) {
+      const [lon0,lat0]=p.features[0].geometry.coordinates;
+      mrvMap.setView([lat0,lon0],17);
+    }
   }
+  // Show topbar cancel if visit is active
+  const cancelBtn = document.getElementById('mrv-tb-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = 'none';
 }
 
 // ── Annual exhaustive sample (Sep-Nov) — density-tiered stratified random ──
-const MRV_DENSITY_SAMPLE = [{maxDens:550,perHa:15},{maxDens:999,perHa:25},{maxDens:Infinity,perHa:35}];
 function mrvDrawSampleAnnual(features) {
   const lons=features.map(f=>f.geometry.coordinates[0]), lats=features.map(f=>f.geometry.coordinates[1]);
   const dLon=Math.max(...lons)-Math.min(...lons), dLat=Math.max(...lats)-Math.min(...lats);
@@ -1483,6 +1610,8 @@ async function mrvStartVisit() {
   mrvSamplePts=sample;mrvCurrentIdx=0;mrvObservations=[];mrvPhotoBlobs=[];mrvVisitActive=true;
   document.getElementById('mrv-btn-start').classList.add('b-off');
   ['mrv-btn-next','mrv-btn-photo','mrv-btn-finish','mrv-btn-cancel','mrv-btn-walkalong'].forEach(id=>document.getElementById(id).classList.remove('b-off'));
+  const cancelBtn = document.getElementById('mrv-tb-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = 'inline';
   document.getElementById('mrv-sec-grade').style.display='';
   document.getElementById('mrv-sec-progress').style.display='';
   document.getElementById('mrv-sec-summary').style.display='none';
@@ -1501,7 +1630,7 @@ function mrvShowPoint(idx) {
   document.getElementById('mrv-pt-notes').value='';
   document.querySelectorAll('.mrv-grade-btn').forEach(b=>b.classList.remove('sel'));
   mrvUpdateProgress();
-  map.panTo([pt.lat,pt.lon]);
+  mrvMap.panTo([pt.lat,pt.lon]);
   mrvLayer.clearLayers();
   // Background sapling dots
   mrvActivePlot.features.forEach(f=>{const [lon,lat]=f.geometry.coordinates;L.circleMarker([lat,lon],{radius:2,color:'transparent',fillColor:f.properties.color||'#6ee7b7',fillOpacity:0.3,interactive:false}).addTo(mrvLayer);});
@@ -1855,10 +1984,10 @@ function mrvWalkAlongSave() {
 }
 
 function mrvCancelVisit() {
-  if (!mrvVisitActive) return;
+  if (!mrvVisitActive) { mrvBackToDashboard(); return; }
   if (!confirm('Cancel this visit and discard all recorded observations?')) return;
   mrvReset(true);
-  setStatus('Visit cancelled.','');
+  mrvSetStatusMsg('Visit cancelled.');
 }
 
 function mrvReset(keepPlot) {
@@ -1870,7 +1999,15 @@ function mrvReset(keepPlot) {
   document.getElementById('mrv-sec-progress').style.display='none';
   document.getElementById('mrv-btn-start').classList.remove('b-off');
   ['mrv-btn-next','mrv-btn-photo','mrv-btn-finish','mrv-btn-cancel','mrv-btn-walkalong'].forEach(id=>document.getElementById(id).classList.add('b-off'));
-  if(!keepPlot){mrvActivePlot=null;document.getElementById('mrv-plot-sel').value='';document.getElementById('mrv-plot-info').textContent='';['mrv-sec-visit','mrv-sec-meta','mrv-sec-plotmetrics','mrv-sec-ctrl'].forEach(id=>document.getElementById(id).style.display='none');if(mrvLayer)mrvLayer.clearLayers();}
+  const cancelBtn = document.getElementById('mrv-tb-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = 'none';
+  if (!keepPlot) {
+    mrvActivePlot=null;
+    document.getElementById('mrv-plot-sel').value='';
+    document.getElementById('mrv-plot-info').textContent='';
+    ['mrv-sec-visit','mrv-sec-meta','mrv-sec-plotmetrics','mrv-sec-ctrl'].forEach(id=>document.getElementById(id).style.display='none');
+    if (mrvLayer) mrvLayer.clearLayers();
+  }
 }
 
 
