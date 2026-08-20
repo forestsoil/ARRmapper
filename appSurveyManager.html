@@ -289,7 +289,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
     <button class="lang-btn" id="lang-btn" onclick="cycleLang()">EN</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
-    <span class="ver">v1 DEV33</span>
+    <span class="ver">v1 DEV34</span>
     <a href="./index.html" style="text-decoration:none;font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.85);white-space:nowrap;flex-shrink:0">🏠 Suite</a>
     <div id="user-chip">Loading…</div>
   </div>
@@ -6528,6 +6528,13 @@ async function init() {
   await updateQueueBadge();
   initAuth();
   renderProjects();
+  // Deep-link: ?form=mortality / ?form=leakage etc — open form directly
+  const urlForm = new URLSearchParams(window.location.search).get('form');
+  if (urlForm && SCHEMA.forms[urlForm]) {
+    // Need project set first — default to Asha1 if not already set
+    if (!S.project) S.project = Object.keys(APP_CONFIG.scriptUrl)[0] || 'asha1';
+    openForm(urlForm);
+  }
 }
 init();
 

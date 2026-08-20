@@ -250,8 +250,8 @@ function toggleTheme() {
     <span id="data-badge" style="font-size:10px;color:rgba(255,255,255,.6);background:rgba(255,255,255,.1);padding:4px 10px;border-radius:20px">Loading…</span>
     <span id="live-badge" style="display:none;font-size:10px;color:#6ee7b7;background:rgba(110,231,183,.15);padding:4px 10px;border-radius:20px;border:1px solid rgba(110,231,183,.3)">Live</span>
     <span id="loader" style="display:none;font-size:10px;color:rgba(255,255,255,.5)">⟳</span>
-    <a href="./appSurveyManager.html#mortality" class="arr-chip" style="text-decoration:none">📋 Health-Monitoring Form</a>
-    <a href="./appSurveyManager.html#leakage" class="arr-chip" style="text-decoration:none">🐄 Leakage Form</a>
+    <a href="./appSurveyManager.html?form=mortality" class="arr-chip" style="text-decoration:none">📋 Health-Monitoring Form</a>
+    <a href="./appSurveyManager.html?form=leakage" class="arr-chip" style="text-decoration:none">🐄 Leakage Form</a>
     <button onclick="guardedToggleMRV()" class="arr-chip" id="mrv-toggle-btn">📍 MRV Field Visit</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
     <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
@@ -509,7 +509,6 @@ function toggleTheme() {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // ── Config ────────────────────────────────────────────────────────
 const AS_URL     = 'https://script.google.com/macros/s/AKfycbw4IadhskvZka5TlsmJOlavnMy7cybgZhI23--nBlzV5NuQAhPyi3l-YZXF-QFS14TH/exec'; // ← paste /exec URL after deploy
@@ -555,9 +554,9 @@ async function cacheSet(key, value) {
 async function loadData() {
   setStatus('loading');
 
-  // 1. Try IDB cache first (serves offline)
+  // 1. Try IDB cache first (serves offline) — skip if empty
   const cached = await cacheGet(CACHE_KEY);
-  if (cached && (Date.now() - cached.ts < CACHE_TTL)) {
+  if (cached && cached.data && cached.data.length > 0 && (Date.now() - cached.ts < CACHE_TTL)) {
     ALL_DATA = cached.data;
     setStatus('cached', cached.ts);
     boot();
@@ -968,9 +967,7 @@ function guardedToggleMRV() {
   toggleMRVPanel();
 }
 
-</script>
-<script>
-// MRV FIELD VISIT TOOL — lifted from appARRmapper v67
+// ══════════════════════════════════════════════════════════════════
 // Adapted for appMonitoringDashboard context
 // Writes GeoJSON to Drive (via FieldTool AS) AND summary row to
 // Asha1_MonitoringRegister (via Monitoring AS)
