@@ -6,14 +6,17 @@
 <meta name="google-site-verification" content="Apib7-x98H0j5cPqHWwSMm6dNU4GmODRoqxLiDzdx9I" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="logo.png">
-<meta name="theme-color" content="#1a3d2b">
+<link rel="icon" href="pwa_icon_light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" href="pwa_icon_dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="pwa_icon_dark.png">
+<meta name="theme-color" content="#f0fdf4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a3d2b" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="arr-shared.css">
 <script>
 // ── Theme: run before paint to prevent flash ──────────────────────────
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v29</title>
+<title>ARR Project Suite v30</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 /* ── Launcher-local tokens ── */
