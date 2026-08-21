@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plantation Dashboard v10 · Asha 1</title>
+<title>Plantation Dashboard v11 · Asha 1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -58,40 +58,35 @@ function arrAuthRenderChip(containerId, onSignOut) {
 }
 
 // ── Theme ─────────────────────────────────────────────────────────────
-let _lightTheme = false;
+// IIFE runs before paint to prevent flash
+(function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 function toggleTheme() {
-  _lightTheme = !_lightTheme;
-  document.documentElement.classList.toggle('light', _lightTheme);
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  if (next === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('arr_theme', next);
   const btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = _lightTheme ? '🌙' : '☀️';
-  localStorage.setItem('dashTheme', _lightTheme ? 'light' : 'dark');
+  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
 }
-(function(){
-  const saved = localStorage.getItem('dashTheme');
-  if (saved === 'light') {
-    _lightTheme = true;
-    document.documentElement.classList.add('light');
-    document.addEventListener('DOMContentLoaded', () => {
-      const b = document.getElementById('theme-toggle');
-      if (b) b.textContent = '🌙';
-    });
-  }
-})();
+function initThemeBtn() {
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = (localStorage.getItem('arr_theme')||'light') === 'dark' ? '☀️' : '🌙';
+}
 </script>
+<link rel="stylesheet" href="arr-shared.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+/* ── Applet-local tokens (light default) ── */
 :root{
-  --bg:#0f1c14;--surface:#162010;--card:#1c2a17;--border:#2a3d20;
-  --leaf:#6ee7b7;--canopy:#2d6a4f;--mist:#d8f3dc;--ink:#e8f4e8;
-  --mid:#a0ccaa;--dim:#5a8060;--red:#e05252;--amber:#e8a838;--blue:#5a9ec9;
-  --font:'Segoe UI',system-ui,sans-serif;
+  --surface:#f0faf4;--card:#e4f5eb;--border:#b8ddc8;
+  --dim:#4a7a5a;--red:#cc2222;--amber:#996600;--blue:#1a4a88;
 }
-html.light{
-  --bg:#e8ffe8;--surface:#d0ffd0;--card:#b8f0b8;--border:#88cc88;
-  --leaf:#1a7a3a;--canopy:#2d6a4f;--mist:#0a3a1a;--ink:#0a2010;
-  --mid:#2a5a2a;--dim:#4a7a4a;--red:#cc2222;--amber:#996600;--blue:#1a4a88;
+[data-theme="dark"]{
+  --surface:#162010;--card:#1c2a17;--border:#2a3d20;
+  --dim:#5a8060;--red:#e05252;--amber:#e8a838;--blue:#5a9ec9;
 }
-html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--ink)}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);transition:background .2s,color .2s}
 
 /* ── Layout ── */
 #app{display:flex;flex-direction:column;height:100vh}
@@ -202,7 +197,7 @@ select:focus,input:focus{outline:none;border-color:var(--leaf)}
 #results-table th{background:var(--card);color:var(--mid);font-weight:700;letter-spacing:.05em;
   text-transform:uppercase;padding:6px 10px;position:sticky;top:0;text-align:left;
   border-bottom:1px solid var(--border);font-size:9px}
-#results-table td{padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.04)}
+#results-table td{padding:5px 10px;border-bottom:1px solid var(--border)}
 #results-table tr:hover td{background:var(--card)}
 #results-table .lpc-cell{color:var(--leaf);font-weight:700;cursor:pointer}
 #results-table .lpc-cell:hover{text-decoration:underline}
@@ -218,40 +213,33 @@ select:focus,input:focus{outline:none;border-color:var(--leaf)}
 .lpc-section-title{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
   color:var(--dim);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
 .info-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;
-  border-bottom:1px solid rgba(255,255,255,.04)}
+  border-bottom:1px solid var(--border)}
 .info-row:last-child{border-bottom:none}
 .info-key{color:var(--dim)}
 .info-val{color:var(--ink);text-align:right}
-.sp-chip{background:var(--border);border-radius:10px;padding:2px 7px;font-size:9px;color:var(--mist)}
-.dbc-item{background:rgba(0,0,0,.3);border-radius:5px;padding:5px 8px;margin-top:4px;font-size:10px}
-.dbc-name{color:var(--mist);font-weight:700}
+.sp-chip{background:var(--border);border-radius:10px;padding:2px 7px;font-size:9px;color:var(--ink)}
+.dbc-item{background:var(--card);border-radius:5px;padding:5px 8px;margin-top:4px;font-size:10px}
+.dbc-name{color:var(--ink);font-weight:700}
 .dbc-meta{color:var(--dim);margin-top:1px}
-.sscat-tag{display:inline-block;background:var(--border);border-radius:10px;padding:1px 7px;font-size:9px;color:var(--mist);margin:1px}
+.sscat-tag{display:inline-block;background:var(--border);border-radius:10px;padding:1px 7px;font-size:9px;color:var(--ink);margin:1px}
 .sscat-tribal{background:#2d3b1a;color:#a8d080}
 .sscat-sc{background:#1a2a3b;color:#80b0d0}
 .sscat-obc{background:#3b2a1a;color:#d0a880}
 .sscat-general{background:#2a2a2a;color:#a0a0a0}
 .lpc-div-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px}
-.lpc-div-cell{background:rgba(0,0,0,.3);border-radius:5px;padding:5px 8px;text-align:center}
+.lpc-div-cell{background:var(--card);border-radius:5px;padding:5px 8px;text-align:center}
 .lpc-div-val{display:block;font-size:13px;font-weight:700;color:#a78bfa;line-height:1}
 .lpc-div-lbl{display:block;font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-top:1px}
 
-/* ── Light theme overrides ── */
-html.light #map .leaflet-popup-content-wrapper{background:#d0ffd0;border-color:#88cc88;color:#0a2010}
-html.light #map .leaflet-popup-tip{background:#d0ffd0}
-html.light #results-panel{background:#d0ffd0;border-color:#88cc88}
-html.light #results-table th{background:#b8f0b8;color:#2a5a2a;border-color:#88cc88}
-html.light #results-table tr:hover td{background:#c8f8c8}
-html.light #lpc-panel{background:#d0ffd0;border-color:#88cc88}
-html.light .lpc-div-cell{background:rgba(0,0,0,.08)}
-html.light .dbc-item{background:rgba(0,0,0,.07)}
-html.light #search-dropdown{background:#d0ffd0;border-color:#88cc88}
-html.light #search-dropdown .sd-item:hover{background:#c0f0c0}
-html.light .tab{background:#d0ffd0;border-color:#88cc88;color:#4a7a4a}
-html.light .tab.active{background:#2d6a4f;border-color:#1a5a3a;color:#fff}
-html.light .sb-kpi{background:#b8f0b8}
-html.light .div-cell{background:#b8f0b8}
-html.light select,html.light input[type=text]{background:#e8ffe8;border-color:#88cc88;color:#0a2010}
+/* ── Dark mode component overrides ── */
+[data-theme="dark"] #map .leaflet-popup-content-wrapper{background:var(--card);border-color:var(--border);color:var(--ink)}
+[data-theme="dark"] #map .leaflet-popup-tip{background:var(--card)}
+[data-theme="dark"] #results-panel{background:var(--surface);border-color:var(--border)}
+[data-theme="dark"] #results-table th{background:var(--card);color:var(--mid);border-color:var(--border)}
+[data-theme="dark"] #results-table tr:hover td{background:var(--card)}
+[data-theme="dark"] #lpc-panel{background:var(--surface);border-color:var(--border)}
+[data-theme="dark"] #search-dropdown{background:var(--card);border-color:var(--border)}
+[data-theme="dark"] #search-dropdown .sd-item:hover{background:var(--surface)}
 </style>
 </head>
 <body>
@@ -264,7 +252,7 @@ html.light select,html.light input[type=text]{background:#e8ffe8;border-color:#8
     <span class="spacer"></span>
     <span id="result-count" style="font-size:10px;color:rgba(255,255,255,.5);white-space:nowrap"></span>
     <button class="tb-btn" id="filter-toggle-btn" onclick="toggleFilterBar()">⚙️ Filters</button>
-    <button class="tb-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+    <button class="tb-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
     <a href="./index.html" class="tb-btn" style="text-decoration:none">🏠 Suite</a>
     <span id="arr-user-chip" class="tb-btn"></span>
   </div>
@@ -464,6 +452,7 @@ let filteredFeatures = [];
 let map, layerGroup;
 
 window.addEventListener('load', async () => {
+  initThemeBtn();
   initMap();
   await loadData();
   populateDistrict();
@@ -721,7 +710,7 @@ function openLPCPanel(p) {
   document.getElementById('lpc-content').innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between">
       <div>
-        <div style="font-size:18px;font-weight:700;color:var(--mist)">${p.LPC}</div>
+        <div style="font-size:18px;font-weight:700;color:var(--ink)">${p.LPC}</div>
         <div style="font-size:11px;color:var(--dim)">${p.YEAR} · ${p.DISTRICT||''}</div>
       </div>
       <span style="background:${YEAR_COLORS[p.YEAR]||'#aaa'};color:#0f1c14;

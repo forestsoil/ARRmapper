@@ -3,41 +3,40 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>appInventory v7 – Project Asha</title>
+<title>appInventory v8 – Project Asha</title>
 <!-- proj4js for CRS reprojection -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 <!-- shpjs for shapefile zip parsing -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/shpjs/3.6.3/shp.js"></script>
+<link rel="stylesheet" href="arr-shared.css">
 <style>
+  /* ── Theme: run before paint ── */
   :root {
-    --bg:#f2f5f1; --surface:#ffffff; --surface2:#e8f3e9;
+    /* applet-local tokens — shared palette from arr-shared.css */
+    --surface:#ffffff; --surface2:#e8f3e9;
     --border:#c8ddd2; --text:#0f1c0e; --text2:#4a6741;
     --accent:#2d6940; --accent2:#4a9e5c;
-    --forest:#1b3d24; --leaf:#4a9e5c; --pale:#e8f3e9;
     --warn:#c0392b; --warn-bg:#fde8e8;
     --badge-receive:#1b3d24; --badge-dispatch:#e65100;
     --badge-bg-r:#e8f3e9; --badge-bg-d:#fff3e0;
-    --shadow:0 2px 8px rgba(0,0,0,0.08); --radius:8px;
-    --font:'Segoe UI',system-ui,sans-serif;
+    --radius:8px;
     --mono:'Cascadia Code','Fira Mono',monospace;
     --outbox-bg:#fff8e1; --outbox-border:#f9a825; --outbox-text:#5d4037;
     --synced-bg:#e8f3e9; --synced-text:#1b3d24;
     --warn-amber:#f57f17;
   }
   [data-theme="dark"] {
-    --bg:#0f1c14; --surface:#1c2a17; --surface2:#243320;
+    --surface:#1c2a17; --surface2:#243320;
     --border:#2a3d20; --text:#d1fae5; --text2:#a0ccaa;
     --accent:#4ade80; --accent2:#6ee7b7;
-    --forest:#0d2414; --leaf:#6ee7b7; --pale:#1a3020;
     --warn:#fca5a5; --warn-bg:#3b0d0d;
     --badge-receive:#4ade80; --badge-dispatch:#ffcc80;
     --badge-bg-r:#1a3020; --badge-bg-d:#2e1e08;
-    --shadow:0 2px 8px rgba(0,0,0,0.4);
     --outbox-bg:#2a2000; --outbox-border:#f9a825; --outbox-text:#ffe082;
     --synced-bg:#1a3020; --synced-text:#4ade80;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh;transition:background .2s,color .2s;}
 
   /* ── Header ── */
   header{
@@ -50,8 +49,9 @@
   header h1 span{font-weight:300;opacity:.8;font-size:13px;margin-left:6px;}
   .header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   #userLabel{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.9);white-space:nowrap}
-  .arr-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.85);cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;text-decoration:none}
-  .arr-chip:hover{background:rgba(255,255,255,.22)}
+  /* header is always dark — chips need white text regardless of theme */
+  header .arr-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.85);cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;text-decoration:none}
+  header .arr-chip:hover{background:rgba(255,255,255,.22)}
   .hbtn{
     background:rgba(255,255,255,.15);border:none;color:#fff;
     padding:4px 10px;border-radius:20px;cursor:pointer;font-size:13px;
@@ -282,7 +282,10 @@
     .rate-grid{grid-template-columns:1fr;}
     .stat-row{flex-direction:column;}
   }
-</style>
+<script>
+// ── Theme: run before paint to prevent flash ──────────────────────────
+(function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
+</script>
 </head>
 <body>
 
@@ -318,7 +321,7 @@
   <div class="header-right">
     <span id="netStatus"><span id="netDot"></span><span id="netText">Online</span></span>
     <span id="outboxPill" onclick="showTab('records',true)" title="Queued records">📤 <span id="outboxCount">0</span> queued</span>
-    <button class="hbtn" id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
+    <button class="hbtn" id="themeBtn" onclick="toggleTheme()">🌙</button>
     <a class="hbtn arr-chip" href="./index.html" style="text-decoration:none">🏠 Suite</a>
     <span id="userLabel" class="arr-chip"></span>
   </div>
@@ -699,7 +702,6 @@ let currentUser    = "";
 let currentProject = "";
 let records  = JSON.parse(localStorage.getItem("inv_records") || "[]");
 let outbox   = JSON.parse(localStorage.getItem("inv_outbox")  || "[]");
-let dark     = localStorage.getItem("inv_theme") !== "light";
 let draining = false;
 let spatialAreaHa   = null;
 let spatialPerimM   = null;
@@ -717,8 +719,6 @@ const AUTH_TTL_MS    = 12 * 60 * 60 * 1000; // 12 hours
 // INIT
 // ════════════════════════════════════════════════════
 window.onload = async () => {
-  if (dark) document.documentElement.setAttribute("data-theme","dark");
-  updateThemeBtn();
   updateThemeBtn();
   setInterval(updateTimestamps,1000);
   updateTimestamps();
@@ -840,13 +840,16 @@ function showLoginError(msg) {
 // THEME
 // ════════════════════════════════════════════════════
 function toggleTheme() {
-  dark=!dark;
-  document.documentElement.setAttribute("data-theme",dark?"dark":"");
-  localStorage.setItem("inv_theme",dark?"dark":"light");
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const next = isDark ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next === "dark" ? "dark" : "");
+  localStorage.setItem("arr_theme", next);
   updateThemeBtn();
 }
 function updateThemeBtn() {
-  document.getElementById("themeBtn").textContent = dark ? "☀️ Light" : "🌙 Dark";
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const btn = document.getElementById("themeBtn");
+  if (btn) btn.textContent = isDark ? "☀️" : "🌙";
 }
 
 // ════════════════════════════════════════════════════

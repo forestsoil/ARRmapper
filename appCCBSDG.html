@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CCB &amp; SDG Dashboard v27 · Asha 1</title>
+<title>CCB &amp; SDG Dashboard v28 · Asha 1</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.cjs"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
@@ -564,21 +564,21 @@ async function submitSighting() {
 }
 
 </script>
+<link rel="stylesheet" href="arr-shared.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+/* ── CCB-specific tokens (light default) ─────────────────────────── */
 :root{
-  --bg:#0f1c14;--surface:#162010;--card:#1c2a17;--border:#2a3d20;
-  --leaf:#6ee7b7;--canopy:#2d6a4f;--mist:#d8f3dc;
+  --surface:#f0faf4;--card:#e4f5eb;--border:#b8ddc8;
+  --teal:#0e7c6a;--green:#166534;--amber:#92400e;--rose:#9f1239;--violet:#5b21b6;
+  --dim:#4a7a5a;
+}
+[data-theme="dark"]{
+  --surface:#162010;--card:#1c2a17;--border:#2a3d20;
   --teal:#6ee7b7;--green:#4ade80;--amber:#fbbf24;--rose:#f43f5e;--violet:#a78bfa;
-  --ink:#e8f4e8;--mid:#a0ccaa;--dim:#5a8060;--font:'Segoe UI',system-ui,sans-serif;
+  --dim:#5a8060;
 }
-html.light{
-  --bg:#e8ffe8;--surface:#d0f0d8;--card:#b8e8c8;--border:#88c8a0;
-  --leaf:#1a7a3a;--canopy:#2d6a4f;--mist:#0a3a1a;
-  --teal:#1a7a3a;--green:#166534;--amber:#92400e;--rose:#9f1239;--violet:#5b21b6;
-  --ink:#0a2010;--mid:#2a5a3a;--dim:#4a7a5a;
-}
-html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--ink)}
+html,body{height:100%;background:var(--bg);color:var(--ink);transition:background .2s,color .2s}
 #app{display:grid;grid-template-columns:280px 1fr;height:100vh}
 
 /* ── Sidebar ── */
@@ -599,8 +599,10 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 
 /* ── Main ── */
 #main{display:flex;flex-direction:column;overflow:hidden}
-.arr-chip{font-size:11px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;color:var(--ink);cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
-.arr-chip:hover{background:rgba(255,255,255,.22)}
+/* topbar uses var(--surface) which is dark in dark mode — chips use surface-relative alpha */
+#topbar .arr-chip{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:var(--ink)}
+#topbar .arr-chip:hover{background:rgba(255,255,255,.22)}
+[data-theme="dark"] #topbar .arr-chip{color:var(--ink)}
 #topbar{background:var(--surface);border-bottom:1px solid var(--border);
   padding:0 16px;height:40px;display:flex;align-items:center;gap:12px;flex-shrink:0}
 #topbar .title{font-size:12px;font-weight:700;color:var(--ink)}
@@ -610,8 +612,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 .tb-theme-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
   border-radius:20px;padding:4px 9px;font-size:12px;cursor:pointer;color:var(--ink);
   flex-shrink:0;line-height:1;font-family:inherit;transition:background .15s}
-.tb-theme-btn:hover{background:rgba(255,255,255,.22)}
-#content{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+.tb-theme-btn:hover{background:rgba(255,255,255,.22)}#content{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
 
 /* ── Panels ── */
 .panel{display:none}
@@ -642,8 +643,8 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 .data-table th{background:var(--surface);color:var(--mid);font-weight:700;font-size:9px;
   letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;
   border-bottom:1px solid var(--border);text-align:left;position:sticky;top:0}
-.data-table td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--ink)}
-.data-table tr:hover td{background:rgba(255,255,255,.03)}
+.data-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--ink)}
+.data-table tr:hover td{background:rgba(0,0,0,.03)}
 .tag-pill{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:600}
 
 /* ── Section card ── */
@@ -652,7 +653,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
   color:var(--mid);margin-bottom:10px}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stat-row{display:flex;justify-content:space-between;align-items:baseline;
-  font-size:11px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  font-size:11px;padding:4px 0;border-bottom:1px solid var(--border)}
 .stat-row:last-child{border-bottom:none}
 .stat-key{color:var(--mid)}
 .stat-val{font-weight:700;color:var(--ink)}
@@ -680,7 +681,7 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 
 /* ── Ref list ── */
 .ref-item{font-size:10px;color:var(--mid);padding:5px 0;
-  border-bottom:1px solid rgba(255,255,255,.04);line-height:1.5}
+  border-bottom:1px solid var(--border);line-height:1.5}
 .ref-item:last-child{border-bottom:none}
 .ref-item strong{color:var(--ink)}
 .ref-item a{color:var(--teal);text-decoration:none}
@@ -797,6 +798,9 @@ html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--i
 .inv-nav-btn:disabled{opacity:.3;cursor:default}
 </style>
 <script>
+// ── Theme: run before paint ───────────────────────────────────────────
+(function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
+
 // ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
 // Shared across all applets via localStorage keys:
 //   arr_user_email  — Google email or @device fallback
@@ -926,7 +930,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <div id="topbar">
       <span class="title" id="panel-title">Biodiversity Overview</span>
       <span class="spacer"></span>
-      <button class="tb-theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+      <button class="tb-theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
       <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
       <span id="arr-user-chip" class="arr-chip"></span>
     </div>
@@ -1732,22 +1736,19 @@ function closeSightingDetail() {
 
 // ── Init ──────────────────────────────────────────────────────────────
 // ── Theme ─────────────────────────────────────────────────────────────
-let _ccbLightTheme = false;
 function toggleTheme() {
-  _ccbLightTheme = !_ccbLightTheme;
-  document.documentElement.classList.toggle('light', _ccbLightTheme);
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  if (next === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('arr_theme', next);
   const btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = _ccbLightTheme ? '🌙' : '☀️';
-  localStorage.setItem('ccbTheme', _ccbLightTheme ? 'light' : 'dark');
+  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
 }
-(function() {
-  if (localStorage.getItem('ccbTheme') === 'light') {
-    _ccbLightTheme = true;
-    document.documentElement.classList.add('light');
-    const b = document.getElementById('theme-toggle');
-    if (b) b.textContent = '🌙';
-  }
-})();
+function initThemeBtn() {
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = (localStorage.getItem('arr_theme')||'light') === 'dark' ? '☀️' : '🌙';
+}
 
 // ── Auth guards ───────────────────────────────────────────────────────
 function showAuthGate() {
@@ -1763,19 +1764,13 @@ function guardedUpload() {
 }
 
 window.addEventListener('load', () => {
+  initThemeBtn();
   renderSDGChips();
   loadPlantationData();
   renderRefs();
   loadBibFromDrive();
   loadSightingsFromSheet();
   arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
-  // Restore theme
-  if (localStorage.getItem('ccbTheme') === 'light') {
-    _ccbLightTheme = true;
-    document.documentElement.classList.add('light');
-    const b = document.getElementById('theme-toggle');
-    if (b) b.textContent = '🌙';
-  }
 });
 
 

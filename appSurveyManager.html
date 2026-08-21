@@ -8,6 +8,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="arr-shared.css">
+<script>
+// ── Theme: run before paint to prevent flash ──────────────────────────
+(function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
+</script>
 <script>
 // ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
 // Shared across all applets via localStorage keys:
@@ -75,29 +80,48 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
 </script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<title>Survey Manager — ARR</title>
+<title>Survey Manager v36 — ARR</title>
 <style>
 :root {
-  --c-bg:#f0f5f2;--c-surface:#ffffff;--c-card:#ffffff;--c-border:#c8ddd2;
-  --c-accent:#1a5c38;--c-accent2:#2d9e60;--c-warn:#d97706;--c-danger:#dc2626;
-  --c-text:#0f2419;--c-muted:#5a7a68;--c-input-bg:#f5fbf7;
-  --radius:10px;--font:'Segoe UI',system-ui,sans-serif;
-  --c-asha1:#1a5c38;--c-asha2:#2d9e60;--c-arun:#d97706;--c-banani:#7c3aed;
-  --c-section-hdr:#e6f2ec;
+  /* ── Aliases mapping --c-* to shared tokens from arr-shared.css ── */
+  --c-bg:        var(--bg);
+  --c-surface:   var(--card);
+  --c-card:      var(--card);
+  --c-border:    var(--border);
+  --c-text:      var(--ink);
+  --c-muted:     var(--mid);
+  --c-danger:    var(--red);
+  --c-warn:      var(--amber);
+  /* ── Applet-specific tokens ── */
+  --c-accent:    #1a5c38;
+  --c-accent2:   #2d9e60;
+  --c-input-bg:  #f5fbf7;
+  --c-asha1:     var(--asha1);
+  --c-asha2:     var(--asha2);
+  --c-arun:      var(--arun);
+  --c-banani:    var(--banani);
+  --c-section-hdr: #e6f2ec;
+  --radius: 10px;
 }
 [data-theme="dark"] {
-  --c-bg:#0a1a10;--c-surface:#0f2419;--c-card:#162e1e;--c-border:#1e4029;
-  --c-accent:#34c97a;--c-accent2:#4ade80;--c-warn:#f5a623;--c-danger:#e05555;
-  --c-text:#d4f0e0;--c-muted:#6aad86;--c-input-bg:#0c1e13;
-  --c-asha1:#34c97a;--c-asha2:#4ade80;--c-arun:#f5a623;--c-banani:#c97bf5;
-  --c-section-hdr:#0f2419;
+  --c-accent:    #34c97a;
+  --c-accent2:   #4ade80;
+  --c-input-bg:  #0c1e13;
+  --c-asha1:     #34c97a;
+  --c-asha2:     #4ade80;
+  --c-arun:      #f5a623;
+  --c-banani:    #c97bf5;
+  --c-section-hdr: #0f2419;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var(--font);font-size:15px}
+html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-size:15px;transition:background .2s,color .2s}
 #app{display:flex;flex-direction:column;height:100%}
 #topbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1a5c38;border-bottom:1px solid #0f3d24;flex-shrink:0}
 #topbar h1{font-size:15px;font-weight:600;flex:1;color:#d4f0e0}
 #topbar .ver{font-size:11px;color:rgba(212,240,224,.55)}
+/* topbar is always dark — chips need white text regardless of theme */
+#topbar .arr-chip{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.85)}
+#topbar .arr-chip:hover{background:rgba(255,255,255,.22)}
 #user-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.85);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;flex-shrink:0}
 #main{flex:1;overflow-y:auto;padding:14px}
 .screen{display:none}.screen.active{display:block}
@@ -290,7 +314,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-family:var
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
     <span class="ver">v1 DEV35</span>
-    <a href="./index.html" style="text-decoration:none;font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;color:rgba(255,255,255,.85);white-space:nowrap;flex-shrink:0">🏠 Suite</a>
+    <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
     <div id="user-chip">Loading…</div>
   </div>
   <div id="main">
@@ -5447,16 +5471,19 @@ window.addEventListener('offline', updateOnline);
 // THEME
 // ═══════════════════════════════════════════════════════
 function toggleTheme() {
-  const dark = document.documentElement.dataset.theme === 'dark';
-  document.documentElement.dataset.theme = dark ? '' : 'dark';
-  document.getElementById('theme-btn').textContent = dark ? '🌙' : '☀️';
-  localStorage.setItem('arr_theme', dark ? 'light' : 'dark');
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  if (next === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('arr_theme', next);
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
 }
 
 function initTheme() {
   const saved = localStorage.getItem('arr_theme') || 'light';
-  document.documentElement.dataset.theme = saved === 'dark' ? 'dark' : '';
-  document.getElementById('theme-btn').textContent = saved === 'dark' ? '☀️' : '🌙';
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
 }
 
 // ═══════════════════════════════════════════════════════
