@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>ARR Mapper v80 · Asha 1</title>
+<title>ARR Mapper v82 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -2525,8 +2525,35 @@ async function vecExportKML(geomType, coords, stage, revision_reason) {
   if (!stage) stage = 'eligibility';
   const _vd=new Date(),_vp=n=>String(n).padStart(2,'0');
   const ts = _vd.getFullYear()+_vp(_vd.getMonth()+1)+_vp(_vd.getDate())+'_'+_vp(_vd.getHours())+_vp(_vd.getMinutes())+_vp(_vd.getSeconds());
-  const _modeTag = vecTool && vecTool.endsWith('-g') ? '_gps' : '_manual';
+  const capturedIso = _vd.toISOString();
+  const isGps = vecTool && vecTool.endsWith('-g');
+  const _modeTag = isGps ? '_gps' : '_manual';
+  const geomMethod = isGps ? 'gps_walk' : 'manual_tap';
   const fname = name + '_' + type + '_' + (VEC_KML_SUFFIX[vecTool]||'feat') + _modeTag + '_' + ts + '.kml';
+
+  // ── Operator identity from suite auth ──
+  const _auth = arrAuthGet();
+  const opEmail = _auth ? _auth.email : 'unknown';
+  const opName  = _auth ? (_auth.name || _auth.email) : 'unknown';
+  const project = SESSION.projectKey || 'unknown';
+
+  // ── GPS accuracy: median of recorded points (gps walk) or last-fix accuracy (gps POI) ──
+  let gpsAccuracyM = null;
+  if (isGps) {
+    if (vecGpsPoints && vecGpsPoints.length) {
+      const accs = vecGpsPoints.filter(p => p.accuracy != null).map(p => p.accuracy);
+      if (accs.length) {
+        accs.sort((a,b)=>a-b);
+        gpsAccuracyM = Math.round(accs[Math.floor(accs.length/2)]);
+      }
+    } else if (vecLastPos && vecLastPos.accuracy != null) {
+      gpsAccuracyM = Math.round(vecLastPos.accuracy);
+    }
+  }
+  const pointCount = isGps
+    ? (vecGpsPoints ? vecGpsPoints.length : coords.length)
+    : (vecVertices ? vecVertices.length : coords.length);
+
   const cStr  = coords.map(([lo,la]) => lo+','+la+',0').join('\n          ');
   let gKml;
   if (geomType==='poi')
@@ -2535,15 +2562,33 @@ async function vecExportKML(geomType, coords, stage, revision_reason) {
     gKml = '<LineString><tessellate>1</tessellate><coordinates>'+cStr+'</coordinates></LineString>';
   else
     gKml = '<Polygon><outerBoundaryIs><LinearRing><coordinates>'+cStr+'</coordinates></LinearRing></outerBoundaryIs></Polygon>';
+
+  // ── Build ExtendedData fields ──
+  const _ed = (k,v) => v != null ? `      <Data name="${k}"><value>${v}</value></Data>` : '';
+  const extData = [
+    '      <ExtendedData>',
+    _ed('feature_name',  raw),
+    _ed('feature_type',  type),
+    _ed('stage',         stage),
+    revision_reason ? _ed('revision_reason', revision_reason) : '',
+    _ed('geometry_method', geomMethod),
+    _ed('point_count',   pointCount),
+    gpsAccuracyM != null ? _ed('gps_accuracy_m', gpsAccuracyM) : '',
+    _ed('captured_ts',   capturedIso),
+    _ed('operator_email',opEmail),
+    _ed('operator_name', opName),
+    _ed('project',       project),
+    '      </ExtendedData>',
+  ].filter(Boolean).join('\n');
+
   const kml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<kml xmlns="http://www.opengis.net/kml/2.2">',
     '  <Document>',
-    '    <name>'+raw+'</name>',
-    '    <description>Type: '+type+' | '+new Date().toISOString()+'</description>',
+    '    <name>'+raw+'_'+type+'_'+geomMethod+'</name>',
     '    <Placemark>',
-    '      <name>'+raw+'</name>',
-    '      <description>'+type+'</description>',
+    '      <name>'+raw+'_'+type+'_'+geomMethod+'</name>',
+    extData,
     '      '+gKml,
     '    </Placemark>',
     '  </Document>',
@@ -2558,8 +2603,19 @@ async function vecExportKML(geomType, coords, stage, revision_reason) {
   if (geomType==='poi') gjGeom={type:'Point',coordinates:coords[0]};
   else if (geomType==='path') gjGeom={type:'LineString',coordinates:coords};
   else gjGeom={type:'Polygon',coordinates:[coords]};
-  const gjProps = {name:raw, type, tool:vecTool, stage};
-  if (revision_reason) gjProps.revision_reason = revision_reason;
+  const gjProps = {
+    feature_name:    raw,
+    feature_type:    type,
+    stage,
+    geometry_method: geomMethod,
+    point_count:     pointCount,
+    captured_ts:     capturedIso,
+    operator_email:  opEmail,
+    operator_name:   opName,
+    project,
+  };
+  if (gpsAccuracyM != null) gjProps.gps_accuracy_m = gpsAccuracyM;
+  if (revision_reason)      gjProps.revision_reason = revision_reason;
   await opfsSaveGeoJSON(vecFolder, gjName, {type:'FeatureCollection',features:[{type:'Feature',properties:gjProps,geometry:gjGeom}]});
   setStatus('Exported: ' + fname, '');
   uploadFile(fname, kmlBlob, vecFolder);
@@ -3155,33 +3211,46 @@ async function retryDeferredJpgs() {
 // ═══════════════════════════════════════════════════════════════════════
 
 // ── GeoJSON builders ─────────────────────────────────────────────────
+function _auditProps() {
+  const auth = arrAuthGet();
+  return {
+    operator_email: auth ? auth.email : 'unknown',
+    operator_name:  auth ? (auth.name || auth.email) : 'unknown',
+    project:        SESSION.projectKey || 'unknown',
+    captured_ts:    new Date().toISOString(),
+  };
+}
 function buildSpeciesPolygonsGeoJSON() {
+  const audit = _auditProps();
   return { type:'FeatureCollection', features: blocks.map(b => ({
     type:'Feature',
-    properties:{ species:b.species, color:b.color, areaSqm:b.areaSqm, saplCount:b.points.length },
+    properties:{ species:b.species, color:b.color, areaSqm:b.areaSqm, saplCount:b.points.length, ...audit },
     geometry: b.geom.geometry || b.geom
   }))};
 }
 function buildSaplingPointsGeoJSON() {
+  const audit = _auditProps();
   return { type:'FeatureCollection', features: blocks.flatMap(b =>
     b.points.map(p => ({
       type:'Feature',
-      properties:{ species:b.species, color:b.color },
+      properties:{ species:b.species, color:b.color, ...audit },
       geometry:{ type:'Point', coordinates:[p.lon, p.lat] }
     }))
   )};
 }
 function buildPlantSoilGeoJSON(soilGroupsData) {
+  const audit = _auditProps();
   return { type:'FeatureCollection', features: soilGroupsData.map(g => ({
     type:'Feature',
-    properties:{ soilClass:g.soilClass, color:g.color, areaSqm:g.areaSqm },
+    properties:{ soilClass:g.soilClass, color:g.color, areaSqm:g.areaSqm, ...audit },
     geometry: g.geom.geometry || g.geom
   }))};
 }
 function buildAssessedSoilGeoJSON() {
+  const audit = _auditProps();
   return { type:'FeatureCollection', features: soilBlocks.map(b => ({
     type:'Feature',
-    properties:{ soilType:b.soilType, color:b.color, areaSqm:b.areaSqm },
+    properties:{ soilType:b.soilType, color:b.color, areaSqm:b.areaSqm, ...audit },
     geometry: b.geom.geometry || b.geom
   }))};
 }
@@ -3599,6 +3668,23 @@ const ABOUT_CONTENT = {
   log: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Changelog — ARR Mapper</h3>
 <div style="color:#9ca3af;font-size:10px;margin-bottom:12px">Cumulative changelog &mdash; latest first</div>
 
+<div class="abt-ver">v82 <span class="abt-date">Aug 2026</span></div>
+<ul>
+  <li>Plantation + Soil GeoJSON: operator_email, operator_name, project, captured_ts added to all four builders (buildSpeciesPolygonsGeoJSON, buildSaplingPointsGeoJSON, buildPlantSoilGeoJSON, buildAssessedSoilGeoJSON) via shared _auditProps() helper</li>
+  <li>Plantation + Soil KML: operator_email, operator_name, project, captured_ts added to ExtendedData in buildPolygonKMLString and buildSoilKMLString</li>
+  <li>buildSaplingsKMLString: no per-point ExtendedData (points are folder-grouped by species; audit fields on the GeoJSON sidecar suffice)</li>
+</ul>
+<div class="abt-ver">v81 <span class="abt-date">Aug 2026</span></div>
+<ul>
+  <li>Vec tool audit: operator_email + operator_name (from suite auth) written to KML ExtendedData and GeoJSON properties</li>
+  <li>Vec tool audit: geometry_method (gps_walk / manual_tap) written to KML ExtendedData and GeoJSON properties</li>
+  <li>Vec tool audit: gps_accuracy_m written to KML ExtendedData and GeoJSON properties (median of walk points for GPS walk; last-fix accuracy for GPS POI; omitted for manual tools)</li>
+  <li>Vec tool audit: point_count (GPS points recorded or vertices tapped) written to KML ExtendedData and GeoJSON properties</li>
+  <li>Vec tool audit: project (SESSION.projectKey) written to KML ExtendedData and GeoJSON properties</li>
+  <li>Vec tool KML: &lt;Document&gt; and &lt;Placemark&gt; name now includes feature_type and geometry_method (e.g. LP_gps_walk) for unambiguous identification in QGIS/GEarth</li>
+  <li>Vec tool KML: &lt;description&gt; text blob replaced with structured &lt;ExtendedData&gt; — all fields importable as attribute columns in QGIS</li>
+  <li>GeoJSON properties: renamed name→feature_name, type→feature_type for consistency with KML ExtendedData keys</li>
+</ul>
 <div class="abt-ver">v78 <span class="abt-date">Aug 2026</span></div>
 <ul class="abt-ul">
   <li>Fix: openSettingsCallout missing closing braces (broke all JS below it — loadSessionFromIDB and everything after was dead code)</li>
@@ -4275,6 +4361,7 @@ function updateSoilSummary() {
 
 
 function buildSoilKMLString() {
+  const _soilAudit = _auditProps();
   const pms = soilBlocks.map((b, i) => {
     const col = hexKml(b.color);
     const geom = b.geom.geometry || b.geom;
@@ -4291,6 +4378,10 @@ function buildSoilKMLString() {
       <Data name="soilType"><value>${b.soilType}</value></Data>
       <Data name="soilColor"><value>${escXml(b.color)}</value></Data>
       <Data name="areaSqm"><value>${b.areaSqm}</value></Data>
+      <Data name="operator_email"><value>${escXml(_soilAudit.operator_email)}</value></Data>
+      <Data name="operator_name"><value>${escXml(_soilAudit.operator_name)}</value></Data>
+      <Data name="project"><value>${escXml(_soilAudit.project)}</value></Data>
+      <Data name="captured_ts"><value>${_soilAudit.captured_ts}</value></Data>
     </ExtendedData>
     ${geoXml}
   </Placemark>`;
@@ -5446,6 +5537,7 @@ async function exportAllTask() {
 }
 
 function buildPolygonKMLString() {
+  const _polyAudit = _auditProps();
   const pms = blocks.map((b, i) => {
     if (!b.geom) return '';
     const col = hexKml(b.color);
@@ -5469,6 +5561,10 @@ function buildPolygonKMLString() {
       <Data name="speciesColor"><value>${escXml(b.color)}</value></Data>
       <Data name="areaSqm"><value>${b.areaSqm}</value></Data>
       <Data name="saplingCount"><value>${b.points.length}</value></Data>
+      <Data name="operator_email"><value>${escXml(_polyAudit.operator_email)}</value></Data>
+      <Data name="operator_name"><value>${escXml(_polyAudit.operator_name)}</value></Data>
+      <Data name="project"><value>${escXml(_polyAudit.project)}</value></Data>
+      <Data name="captured_ts"><value>${_polyAudit.captured_ts}</value></Data>
     </ExtendedData>
     ${geoXml}
   </Placemark>`;
