@@ -1,0 +1,129 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   arr-shared.css  —  ARR Suite shared design tokens & base styles
+   Served from GitHub Pages root. Included by all applets.
+   v1 · 2026-08-21
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Google Fonts ──────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
+
+/* ── Design tokens (light mode default) ───────────────────────────── */
+:root {
+  /* Brand greens */
+  --forest: #1b3d24;
+  --canopy: #2d6940;
+  --leaf:   #4a9e5c;
+  --mist:   #d8f3dc;   /* text/chip on dark green surfaces */
+  --mint:   #e8f3e9;   /* light background tint: headers, card surfaces */
+  --pale:   #f2f5f1;
+
+  /* Semantic surface + text */
+  --bg:     var(--pale);
+  --card:   #ffffff;
+  --ink:    #0f1c0e;
+  --mid:    #4a6741;
+  --dim:    #7a9e7e;
+  --rule:   rgba(74,158,92,.18);
+  --border: #c8ddd2;
+
+  /* Status colours */
+  --amber:       #b45a0c;
+  --amber-pale:  #fef3e2;
+  --red:         #9b1c1c;
+  --red-pale:    #fde8e8;
+  --teal:        #0e5f6e;
+  --teal-pale:   #e0f4f7;
+  --violet:      #5b21b6;
+  --violet-pale: #ede9fe;
+  --blue:        #1e40af;
+  --blue-pale:   #dbeafe;
+
+  /* Project identity */
+  --asha1:  #1a5c38;
+  --asha2:  #2d9e60;
+  --arun:   #d97706;
+  --banani: #7c3aed;
+
+  /* Layout */
+  --radius: 10px;
+  --shadow: 0 2px 10px rgba(0,0,0,.07);
+
+  /* Typography */
+  --font: 'Noto Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Cascadia Code', 'Fira Mono', monospace;
+}
+
+/* ── Dark mode overrides ────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --forest: #0d2414;
+  --canopy: #2d6a4f;
+  --leaf:   #4ade80;
+  --mist:   #d8f3dc;
+  --mint:   #1a3020;   /* dark-mode equivalent of light mint surface */
+  --pale:   #0f1c14;
+
+  --bg:     var(--pale);
+  --card:   #1c2a17;
+  --ink:    #e8f4e8;
+  --mid:    #a0ccaa;
+  --dim:    #5a8060;
+  --rule:   rgba(74,222,128,.15);
+  --border: #2a3d20;
+
+  --amber:       #fbbf24;
+  --amber-pale:  #2a1e08;
+  --red:         #fca5a5;
+  --red-pale:    #3b0d0d;
+  --teal:        #6ee7b7;
+  --teal-pale:   #0e2a30;
+  --violet:      #c4b5fd;
+  --violet-pale: #2e1a4a;
+  --blue:        #93c5fd;
+  --blue-pale:   #1e3060;
+
+  --shadow: 0 2px 10px rgba(0,0,0,.35);
+}
+
+/* ── Base reset ─────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── arr-chip — Suite navigation pill ──────────────────────────────── */
+/* Used for: 🏠 Suite link, user chip, theme toggle, back links        */
+.arr-chip {
+  font-size: 11px;
+  background: rgba(74,158,92,.12);
+  border: 1px solid var(--leaf);
+  border-radius: 20px;
+  padding: 4px 11px;
+  color: var(--forest);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+  font-family: inherit;
+  text-decoration: none;
+  display: inline-block;
+  line-height: 1.6;
+}
+.arr-chip:hover {
+  background: rgba(74,158,92,.25);
+}
+[data-theme="dark"] .arr-chip {
+  color: var(--mist);
+  background: rgba(74,222,128,.10);
+  border-color: var(--leaf);
+}
+[data-theme="dark"] .arr-chip:hover {
+  background: rgba(74,222,128,.22);
+}

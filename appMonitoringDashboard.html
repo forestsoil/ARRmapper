@@ -3,32 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monitoring Dashboard v27 · Asha 1</title>
+<title>Monitoring Dashboard v29 · Asha 1</title>
+<link rel="stylesheet" href="arr-shared.css">
 <style>
-/* ── Design tokens ─────────────────────────────────────────────── */
+/* ── Applet-local tokens ───────────────────────────────────────── */
 :root {
-  --ink:#0f1c0e; --bg:#f2f5f1; --card:#fff;
-  --forest:#1b3d24; --canopy:#2d6940; --leaf:#4a9e5c; --pale:#e8f3e9;
-  --amber:#b45a0c; --amber-pale:#fef3e2;
-  --red:#9b1c1c; --red-pale:#fde8e8;
-  --teal:#0e5f6e; --teal-pale:#e0f4f7;
-  --rule:rgba(74,158,92,.18);
-  --radius:10px; --shadow:0 2px 10px rgba(0,0,0,.07);
-  --font:'Segoe UI',system-ui,sans-serif;
-  --muted:#6b7280;
+  --muted: #6b7280;
 }
-html.dark {
-  --ink:#d1fae5; --bg:#0f1c14; --card:#1c2a17;
-  --forest:#0d2414; --canopy:#4ade80; --leaf:#6ee7b7; --pale:#1a3020;
-  --amber:#fcd34d; --amber-pale:#2d1f00;
-  --red:#fca5a5; --red-pale:#3b0d0d;
-  --teal:#5eead4; --teal-pale:#0a2a22;
-  --rule:rgba(110,231,183,.15);
-  --shadow:0 2px 10px rgba(0,0,0,.3);
-  --muted:#94a3b8;
+[data-theme="dark"] {
+  --muted: #94a3b8;
+  --amber: #fcd34d; --amber-pale: #2d1f00;
+  --teal:  #5eead4; --teal-pale:  #0a2a22;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;transition:background .2s,color .2s}
+
+body{min-height:100vh;font-size:14px;transition:background .2s,color .2s}
 
 /* ── Header ───────────────────────────────────────────────────── */
 header{background:var(--forest);padding:16px 24px;display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--leaf)}
@@ -38,8 +26,9 @@ header{background:var(--forest);padding:16px 24px;display:flex;align-items:cente
 .hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
 #data-badge{font-size:10px;color:rgba(255,255,255,.6);background:rgba(255,255,255,.1);padding:4px 10px;border-radius:20px}
 #live-badge{display:none;font-size:10px;color:#6ee7b7;background:rgba(110,231,183,.15);padding:4px 10px;border-radius:20px;border:1px solid rgba(110,231,183,.3)}
-.arr-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 11px;color:#fff;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none;display:inline-block}
-.arr-chip:hover{background:rgba(255,255,255,.22)}
+/* header is always dark — chips need white text regardless of theme */
+header .arr-chip{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff}
+header .arr-chip:hover{background:rgba(255,255,255,.22)}
 #arr-user-chip{display:none}
 .theme-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 9px;font-size:12px;cursor:pointer;color:#fff;font-family:inherit;transition:background .15s}
 .theme-btn:hover{background:rgba(255,255,255,.22)}
@@ -53,7 +42,7 @@ header{background:var(--forest);padding:16px 24px;display:flex;align-items:cente
 #auth-gate-box p{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.6}
 .ag-btn{display:inline-block;padding:9px 22px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:var(--font);margin:4px;text-decoration:none}
 .ag-btn-primary{background:var(--canopy);color:#fff}.ag-btn-primary:hover{background:var(--forest)}
-.ag-btn-secondary{background:var(--pale);color:var(--canopy);border:1.5px solid var(--leaf)}.ag-btn-secondary:hover{background:var(--leaf);color:#fff}
+.ag-btn-secondary{background:var(--mint);color:var(--canopy);border:1.5px solid var(--leaf)}.ag-btn-secondary:hover{background:var(--leaf);color:#fff}
 
 /* ── Filter bar ───────────────────────────────────────────────── */
 .filterbar{background:var(--card);border-bottom:1px solid var(--rule);padding:10px 24px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.05)}
@@ -61,7 +50,7 @@ header{background:var(--forest);padding:16px 24px;display:flex;align-items:cente
 select,input[type=number]{font-family:var(--font);font-size:12px;padding:5px 8px;border:1.5px solid var(--rule);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer;min-width:120px}
 select:focus,input:focus{outline:none;border-color:var(--leaf)}
 .filter-group{display:flex;align-items:center;gap:5px}
-.btn-reset{font-size:11px;padding:5px 12px;background:var(--pale);border:1.5px solid var(--leaf);border-radius:6px;color:var(--canopy);font-weight:600;cursor:pointer}
+.btn-reset{font-size:11px;padding:5px 12px;background:var(--mint);border:1.5px solid var(--leaf);border-radius:6px;color:var(--canopy);font-weight:600;cursor:pointer}
 .btn-reset:hover{background:var(--leaf);color:#fff}
 #result-count{font-size:11px;color:var(--muted);margin-left:auto}
 
@@ -99,7 +88,7 @@ select:focus,input:focus{outline:none;border-color:var(--leaf)}
 table{width:100%;border-collapse:collapse;font-size:11px}
 thead th{position:sticky;top:0;background:var(--forest);color:#fff;padding:7px 10px;text-align:left;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
 tbody tr{border-bottom:1px solid var(--rule)}
-tbody tr:hover{background:var(--pale)}
+tbody tr:hover{background:var(--mint)}
 tbody td{padding:6px 10px;vertical-align:top}
 .badge{display:inline-block;padding:1px 7px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase}
 .b-green{background:#d1fae5;color:#065f46}
@@ -116,17 +105,17 @@ tbody td{padding:6px 10px;vertical-align:top}
 .c-good{background:#e0f4f7;color:#0e5f6e}
 .c-fair{background:var(--amber-pale);color:var(--amber)}
 .c-poor{background:var(--red-pale);color:var(--red)}
-html.dark .c-excellent{background:#064e3b;color:#6ee7b7}
-html.dark .c-good{background:#0a2a22;color:#5eead4}
-html.dark .b-green{background:#064e3b;color:#6ee7b7}
-html.dark .b-amber{background:#2d1f00;color:#fcd34d}
-html.dark .b-red{background:#3b0d0d;color:#fca5a5}
-html.dark .b-teal{background:#0a2a22;color:#5eead4}
+[data-theme="dark"] .c-excellent{background:#064e3b;color:#6ee7b7}
+[data-theme="dark"] .c-good{background:#0a2a22;color:#5eead4}
+[data-theme="dark"] .b-green{background:#064e3b;color:#6ee7b7}
+[data-theme="dark"] .b-amber{background:var(--amber-pale);color:var(--amber)}
+[data-theme="dark"] .b-red{background:var(--red-pale);color:var(--red)}
+[data-theme="dark"] .b-teal{background:var(--teal-pale);color:var(--teal)}
 
 /* ── Source toggle ────────────────────────────────────────────── */
 .source-toggle{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
 .src-btn{font-size:10px;padding:3px 10px;border-radius:20px;border:1.5px solid var(--rule);background:var(--card);color:var(--muted);cursor:pointer;font-weight:600}
-.src-btn.active{border-color:var(--leaf);background:var(--pale);color:var(--canopy)}
+.src-btn.active{border-color:var(--leaf);background:var(--mint);color:var(--canopy)}
 
 /* ── Flag panel ───────────────────────────────────────────────── */
 .flag-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--rule)}
@@ -145,7 +134,7 @@ html.dark .b-teal{background:#0a2a22;color:#5eead4}
 .dpill .ds{font-size:11px;font-weight:600;margin-top:3px}
 
 /* ── Remarks chip ─────────────────────────────────────────────── */
-.remark-chip{font-size:10px;color:var(--muted);background:var(--pale);border-radius:4px;padding:2px 6px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;cursor:help}
+.remark-chip{font-size:10px;color:var(--muted);background:var(--mint);border-radius:4px;padding:2px 6px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;cursor:help}
 
 /* ── MRV Field Visit Tool ─────────────────────────────────────── */
 .mrv-pm-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid #1f2937;gap:4px}
@@ -237,26 +226,21 @@ function arrAuthRenderChip(containerId, onSignOut) {
   };
 }
 
-// ── Theme toggle ──────────────────────────────────────────────────
-let _darkMode = false;
+// ── Theme ─────────────────────────────────────────────────────────
+(function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 function toggleTheme() {
-  _darkMode = !_darkMode;
-  document.documentElement.classList.toggle('dark', _darkMode);
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('arr_theme', next);
   const btn = document.getElementById('theme-btn');
-  if (btn) btn.textContent = _darkMode ? '☀️' : '🌙';
-  localStorage.setItem('mdTheme', _darkMode ? 'dark' : 'light');
+  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
   if (ALL_DATA.length) { renderDistPills(); renderDistChart(); renderCondChart(); renderSpeciesChart(); renderYearChart(); }
 }
-(function(){
-  if (localStorage.getItem('mdTheme') === 'dark') {
-    _darkMode = true;
-    document.documentElement.classList.add('dark');
-    document.addEventListener('DOMContentLoaded', () => {
-      const b = document.getElementById('theme-btn');
-      if (b) b.textContent = '☀️';
-    });
-  }
-})();
+function initThemeBtn() {
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = (localStorage.getItem('arr_theme')||'light') === 'dark' ? '☀️' : '🌙';
+}
 </script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -812,7 +796,7 @@ function plotSurvival(plot) {
   return p > 0 ? a/p : null;
 }
 function survColor(pct) {
-  const dark = document.documentElement.classList.contains('dark');
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
   if (pct === null) return dark ? '#64748b' : '#9ca3af';
   if (pct >= 0.8)   return dark ? '#34d399' : '#059669';
   if (pct >= 0.6)   return dark ? '#fcd34d' : '#d97706';
@@ -900,7 +884,7 @@ function renderDistPills() {
   });
   document.getElementById('dist-pills').innerHTML = Object.entries(byDist).map(([d,v])=>{
     const s = v.planted>0 ? Math.round(100*v.alive/v.planted) : 0;
-    const dark = document.documentElement.classList.contains('dark');
+    const dark = document.documentElement.getAttribute('data-theme')==='dark';
     const col  = dark
       ? (s>=80?'#064e3b':s>=60?'#2d1f00':'#3b0d0d')
       : (s>=80?'#d1fae5':s>=60?'#fef3e2':'#fde8e8');
@@ -934,7 +918,7 @@ function renderCondGrid() {
 function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 
 function _chartColors(pct) {
-  const dk = document.documentElement.classList.contains('dark');
+  const dk = document.documentElement.getAttribute('data-theme')==='dark';
   if (pct >= 80) return dk ? 'rgba(52,211,153,.8)'  : 'rgba(5,150,105,.7)';
   if (pct >= 60) return dk ? 'rgba(252,211,77,.8)'  : 'rgba(217,119,6,.7)';
   return                     dk ? 'rgba(252,165,165,.8)' : 'rgba(220,38,38,.7)';
@@ -961,7 +945,7 @@ function renderCondChart() {
   const b=[0,0,0,0];
   FILTERED.forEach(r=>{const c=r.plot_condition;if(c===null||c===undefined)return;
     if(c>=0.9)b[0]++;else if(c>=0.7)b[1]++;else if(c>=0.5)b[2]++;else b[3]++;});
-  const dk = document.documentElement.classList.contains('dark');
+  const dk = document.documentElement.getAttribute('data-theme')==='dark';
   const condColors = dk
     ? ['#34d399','#5eead4','#fcd34d','#fca5a5']
     : ['#059669','#0e9f6e','#d97706','#dc2626'];
@@ -1046,7 +1030,7 @@ function renderPlotTable() {
       <td>${(p.area_ha||0).toFixed(2)}</td>
       <td>${fmt(pl)}</td><td>${fmt(al)}</td>
       <td>${pctBadge(s)}</td>
-      <td><span style="color:${(()=>{const dk=document.documentElement.classList.contains('dark');return p.plot_condition>=0.7?(dk?'#34d399':'#059669'):p.plot_condition>=0.5?(dk?'#fcd34d':'#d97706'):(dk?'#fca5a5':'#dc2626')})()};font-weight:600">${condLabel(p.plot_condition)}</span></td>
+      <td><span style="color:${(()=>{const dk=document.documentElement.getAttribute('data-theme')==='dark';return p.plot_condition>=0.7?(dk?'#34d399':'#059669'):p.plot_condition>=0.5?(dk?'#fcd34d':'#d97706'):(dk?'#fca5a5':'#dc2626')})()};font-weight:600">${condLabel(p.plot_condition)}</span></td>
       <td>${src}</td>
       <td>${p.remarks?`<span class="remark-chip" title="${p.remarks}">${p.remarks.slice(0,45)}…</span>`:''}</td>
     </tr>`;
@@ -1075,8 +1059,8 @@ function renderSpeciesTable() {
     const s=v.planted>0?v.alive/v.planted:null;
     const bw=s!==null?Math.round(s*100):0;
     const bc=survColor(s);
-    const deadCol = document.documentElement.classList.contains('dark') ? '#fca5a5' : '#dc2626';
-    const barBg   = document.documentElement.classList.contains('dark') ? 'rgba(110,231,183,.12)' : '#e5e7eb';
+    const deadCol = document.documentElement.getAttribute('data-theme')==='dark' ? '#fca5a5' : '#dc2626';
+    const barBg   = document.documentElement.getAttribute('data-theme')==='dark' ? 'rgba(110,231,183,.12)' : '#e5e7eb';
     return `<tr>
       <td style="font-weight:600">${name}</td>
       <td>${v.plots.size}</td><td>${fmt(v.planted)}</td>
@@ -1110,6 +1094,7 @@ function boot() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  initThemeBtn();
   if (!AS_URL && !AS_URL_FALLBACK) {
     const hint = document.getElementById('setup-hint');
     if (hint) hint.style.display = 'inline';

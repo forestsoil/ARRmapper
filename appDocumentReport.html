@@ -3,40 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Documentation v8 · ARR Projects</title>
+<title>Documentation v9 · ARR Projects</title>
+<link rel="stylesheet" href="arr-shared.css">
 <style>
 .proj-tabs{display:none}
 .proj-tab:not(:first-child){display:none}
 
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --forest:#1b3d24;--canopy:#2d6940;--leaf:#4a9e5c;--pale:#f2f5f1;
-  --ink:#0f1c0e;--mid:#4a6741;--mist:#e8f3e9;--rule:rgba(74,158,92,.2);
-  --card:#fff;--border:#c8ddd2;--radius:10px;--shadow:0 2px 10px rgba(0,0,0,.07);
-  --font:'Segoe UI',system-ui,sans-serif;
-}
-[data-theme="dark"]{
-  --forest:#0d2414;--canopy:#4ade80;--leaf:#6ee7b7;--pale:#0f1c14;
-  --ink:#d1fae5;--mid:#86b896;--mist:#1a3020;--rule:rgba(110,231,183,.15);
-  --card:#1c2a17;--border:#2a3d20;--shadow:0 2px 10px rgba(0,0,0,.3);
-}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--pale);color:var(--ink);min-height:100vh;transition:background .2s,color .2s}
+/* applet-local tokens */
+:root{--radius:10px;--shadow:0 2px 10px rgba(0,0,0,.07)}
+
+body{min-height:100vh;transition:background .2s,color .2s}
 
 /* HEADER */
-.arr-chip{font-size:11px;background:rgba(82,183,136,.15);border:1px solid #52b788;border-radius:20px;padding:4px 11px;color:#1a3d2b;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
-.arr-chip:hover{background:rgba(82,183,136,.3)}
-[data-theme="dark"] .arr-chip{color:#d8f3dc}
-header{background:#d8f3dc;padding:22px 32px 20px;display:flex;align-items:center;
+header{background:var(--mint);padding:22px 32px 20px;display:flex;align-items:center;
   gap:16px;border-bottom:3px solid var(--leaf);transition:background .2s}
-[data-theme="dark"] header{background:#1a3d2b}
-header a.back{color:#1a3d2b;text-decoration:none;font-size:13px;opacity:.8;
+[data-theme="dark"] header{background:var(--forest)}
+header a.back{color:var(--forest);text-decoration:none;font-size:13px;opacity:.8;
   display:flex;align-items:center;gap:5px;flex-shrink:0;transition:color .2s}
-[data-theme="dark"] header a.back{color:#d8f3dc}
+[data-theme="dark"] header a.back{color:var(--mist)}
 header a.back:hover{opacity:1}
-.hdr-text h1{font-size:20px;font-weight:700;color:#1a3d2b;line-height:1.2;transition:color .2s}
-[data-theme="dark"] .hdr-text h1{color:#d8f3dc}
-.hdr-text p{font-size:12px;color:#1a3d2b;opacity:.7;margin-top:3px;transition:color .2s}
-[data-theme="dark"] .hdr-text p{color:#d8f3dc}
+.hdr-text h1{font-size:20px;font-weight:700;color:var(--forest);line-height:1.2;transition:color .2s}
+[data-theme="dark"] .hdr-text h1{color:var(--mist)}
+.hdr-text p{font-size:12px;color:var(--forest);opacity:.7;margin-top:3px;transition:color .2s}
+[data-theme="dark"] .hdr-text p{color:var(--mist)}
 
 /* PROJECT TABS */
 .proj-tabs{background:var(--forest);padding:0 32px;display:flex;gap:4px;
@@ -118,16 +107,16 @@ footer a:hover{color:var(--canopy)}
 [data-theme="dark"] .meta-chip strong,
 [data-theme="dark"] .card-header-title,
 [data-theme="dark"] .faq-q,
-[data-theme="dark"] .doc-title{color:var(--leaf)}
+[data-theme="dark"] .doc-title { color: var(--leaf) }
 [data-theme="dark"] .faq-a,
 [data-theme="dark"] .card-header-sub,
 [data-theme="dark"] .doc-date,
 [data-theme="dark"] .no-docs,
 [data-theme="dark"] footer,
 [data-theme="dark"] footer a,
-[data-theme="dark"] .proj-meta-row{color:var(--mid)}
-[data-theme="dark"] .meta-chip{background:var(--mist);border-color:var(--rule)}
-[data-theme="dark"] .section-card{border-color:var(--rule)}
+[data-theme="dark"] .proj-meta-row { color: var(--mid) }
+[data-theme="dark"] .meta-chip { background: var(--card); border-color: var(--rule) }
+[data-theme="dark"] .section-card { border-color: var(--rule) }
 
 @media(max-width:680px){
   header{padding:14px 16px;gap:10px}
@@ -146,6 +135,9 @@ footer a:hover{color:var(--canopy)}
 //   arr_auth_ts     — timestamp of last auth (ms)
 // Auth expires after 12 hours; re-login required.
 // On expiry or missing auth, applets redirect to index.html?redirect={href}
+
+// ── Theme: run before paint to prevent flash ──────────────────────────
+(function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 
 const ARR_AUTH_EMAIL_KEY = 'arr_user_email';
 const ARR_AUTH_NAME_KEY  = 'arr_user_name';
@@ -213,7 +205,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <h1>Project Documentation</h1>
     <p>FAQs, verification reports, SOPs and baseline documents by project</p>
   </div>
-  <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme" style="background:rgba(82,183,136,.15);border:1px solid #52b788;border-radius:20px;padding:4px 11px;color:#1a3d2b;font-size:12px;cursor:pointer;font-family:inherit;margin-left:auto" class="arr-chip">☀️</button>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme" class="arr-chip" style="margin-left:auto">☀️</button>
   <a href="./index.html" class="arr-chip" style="margin-left:0">🏠 Suite</a>
   <span id="arr-user-chip" class="arr-chip"></span>
 </header>
@@ -663,7 +655,7 @@ function toggleFaq(el) {
 }
 
 // Auth gate for restricted documents section
-// ── Theme (shared arr_theme key, data-theme attribute) ────────────────
+// ── Theme ─────────────────────────────────────────────────────────────
 function toggleTheme() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const next = isDark ? 'light' : 'dark';
@@ -672,14 +664,13 @@ function toggleTheme() {
   const btn = document.getElementById('theme-toggle');
   if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
 }
-(function initTheme() {
-  const stored = localStorage.getItem('arr_theme') || 'light';
-  if (stored === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+function initThemeBtn() {
   const btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = stored === 'dark' ? '☀️' : '🌙';
-})();
+  if (btn) btn.textContent = (localStorage.getItem('arr_theme')||'light') === 'dark' ? '☀️' : '🌙';
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+  initThemeBtn();
   arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
   const auth = arrAuthGet();
   const gate = document.getElementById('docs-auth-gate');

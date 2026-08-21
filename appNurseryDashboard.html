@@ -3,23 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard v13 · Asha 1</title>
+<title>Nursery Dashboard v14 · Asha 1</title>
+<link rel="stylesheet" href="arr-shared.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --forest:#1a3d2b;--canopy:#2d6a4f;--leaf:#52b788;--mist:#d8f3dc;
-  --ink:#1c2b20;--mid:#4a6741;--pale:#f4faf6;--rule:rgba(82,183,136,.25);
-  --card:#fff;--danger:#dc2626;--warn:#f97316;--info:#0369a1;
-  --radius:10px;--font:'Segoe UI',system-ui,sans-serif;
+  /* local overrides — shared tokens from arr-shared.css */
+  --ink:#1c2b20;           /* slightly darker than shared default */
+  --mid:#4a6741;
+  --danger:#dc2626;--warn:#f97316;--info:#0369a1;
+  --radius:10px;
 }
-body{font-family:var(--font);background:var(--pale);color:var(--ink);min-height:100vh}
+[data-theme="dark"]{
+  --ink:#d1fae5;
+  --mid:#a0ccaa;
+  --danger:#fca5a5;--warn:#fdba74;--info:#7dd3fc;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;transition:background .2s,color .2s}
 
-/* ── HEADER ── */
-.arr-chip{font-size:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 11px;color:#fff;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0;font-family:inherit;text-decoration:none}
-.arr-chip:hover{background:rgba(255,255,255,.22)}
+/* header is always dark — chips need white text regardless of theme */
+header .arr-chip{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff}
+header .arr-chip:hover{background:rgba(255,255,255,.22)}
 header{background:var(--forest);padding:16px 24px;display:flex;align-items:center;
   gap:14px;border-bottom:3px solid var(--leaf)}
 header a.back{color:var(--mist);text-decoration:none;font-size:13px;opacity:.8;
@@ -66,7 +73,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 .tile-action-btn{flex:1;border:none;background:transparent;cursor:pointer;font-size:10px;font-weight:700;
   color:var(--mid);display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:2px;transition:background .15s,color .15s;text-transform:uppercase;letter-spacing:.04em}
-.tile-action-btn:hover{background:var(--pale);color:var(--canopy)}
+.tile-action-btn:hover{background:var(--mint);color:var(--canopy)}
 .tile-action-btn .ta-icon{font-size:14px;line-height:1}
 .tile-action-btn.loading{opacity:.5;pointer-events:none}
 .tile-action-sep{width:1px;background:var(--rule);flex-shrink:0;margin:8px 0}
@@ -94,7 +101,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
   color:var(--ink);outline:none;transition:border-color .15s}
 .field-input:focus,.field-select:focus,.field-textarea:focus{border-color:var(--leaf)}
 .field-textarea{min-height:70px;resize:vertical}
-.field-input[readonly]{background:var(--pale);color:var(--mid)}
+.field-input[readonly]{background:var(--mint);color:var(--mid)}
 
 /* ── SECTION HEADER ── */
 .section-hdr{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
@@ -116,7 +123,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 .spp-grid.dispatch-grid .spp-row{grid-template-columns:1fr 60px 70px 75px 80px}
 .spp-hdr{display:grid;grid-template-columns:1fr 90px 80px;gap:6px;
   padding:6px 10px;font-size:10px;font-weight:700;color:var(--mid);
-  text-transform:uppercase;background:var(--pale);border:1px solid var(--rule);
+  text-transform:uppercase;background:var(--mint);border:1px solid var(--rule);
   border-bottom:none;border-radius:var(--radius) var(--radius) 0 0}
 .spp-row{display:grid;grid-template-columns:1fr 90px 80px;gap:6px;align-items:center;
   padding:6px 10px;border:1px solid var(--rule);border-top:none;background:var(--card)}
@@ -140,7 +147,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
   cursor:pointer;font-family:var(--font);transition:all .15s}
 .btn-primary{background:var(--leaf);color:#fff}
 .btn-primary:hover{background:var(--canopy)}
-.btn-secondary{background:var(--pale);color:var(--mid);border:1px solid var(--rule)}
+.btn-secondary{background:var(--mint);color:var(--mid);border:1px solid var(--rule)}
 .btn-danger{background:var(--danger);color:#fff}
 .btn-full{width:100%}
 .btn-icon{font-size:16px;margin-right:6px}
@@ -163,7 +170,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 
 /* ── TABLE ── */
 .data-table{width:100%;border-collapse:collapse;font-size:12px}
-.data-table th{padding:7px 10px;background:var(--pale);font-weight:700;color:var(--mid);
+.data-table th{padding:7px 10px;background:var(--mint);font-weight:700;color:var(--mid);
   text-align:left;border-bottom:2px solid var(--rule);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
 .data-table td{padding:7px 10px;border-bottom:1px solid var(--rule);color:var(--ink)}
 .data-table tr:last-child td{border-bottom:none}
@@ -201,7 +208,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 .sync-dot.pending{background:var(--info)}
 
 /* ── PHOTO PREVIEW ── */
-.photo-preview{width:100%;height:160px;background:var(--pale);border:2px dashed var(--rule);
+.photo-preview{width:100%;height:160px;background:var(--mint);border:2px dashed var(--rule);
   border-radius:8px;display:flex;align-items:center;justify-content:center;
   cursor:pointer;overflow:hidden;position:relative}
 .photo-preview img{width:100%;height:100%;object-fit:cover}
@@ -227,7 +234,10 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 </style>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <script>
-// ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
+// ── Theme: run before paint ───────────────────────────────────────────
+(function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
+
+// ── ARR Suite Shared Auth ────────────────────────────────────────────
 // Shared across all applets via localStorage keys:
 //   arr_user_email  — Google email or @device fallback
 //   arr_user_name   — display name
@@ -307,6 +317,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <button class="lang-btn" onclick="setLang('hi')">HI</button>
     <button class="lang-btn" onclick="setLang('bn')">BN</button>
   </div>
+  <button id="theme-btn" onclick="toggleTheme()" title="Toggle theme" class="arr-chip">🌙</button>
   <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
   <span id="arr-user-chip" class="arr-chip"></span>
 </header>
@@ -484,7 +495,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <div id="rec-panel" style="display:none;margin:12px 0">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
     <span id="rec-panel-title" style="font-weight:700;font-size:13px;flex:1"></span>
-    <button onclick="closeRecPanel()" style="font-size:11px;padding:4px 10px;background:var(--pale);border:1px solid var(--rule);border-radius:6px;color:var(--mid);cursor:pointer">✕ Close</button>
+    <button onclick="closeRecPanel()" style="font-size:11px;padding:4px 10px;background:var(--mint);border:1px solid var(--rule);border-radius:6px;color:var(--mid);cursor:pointer">✕ Close</button>
     <button id="rec-panel-get" onclick="getXLSXFromViewer()" style="font-size:11px;padding:4px 10px;background:var(--canopy);border:none;border-radius:6px;color:#fff;font-weight:700;cursor:pointer">⬇ XLSX</button>
   </div>
   <div class="nd-rec-filter" id="nd-rec-filter" style="display:none">
@@ -496,7 +507,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
     </select>
     <input type="text" class="nd-rec-search" id="nd-f-search"
       placeholder="Search…" oninput="applyNDRecFilter()">
-    <button onclick="clearNDRecFilter()" style="font-size:11px;padding:3px 8px;border:1px solid var(--rule);border-radius:5px;background:var(--pale);cursor:pointer">✕</button>
+    <button onclick="clearNDRecFilter()" style="font-size:11px;padding:3px 8px;border:1px solid var(--rule);border-radius:5px;background:var(--mint);cursor:pointer">✕</button>
   </div>
   <div id="rec-panel-status" style="font-size:11px;color:var(--mid);margin-bottom:6px"></div>
   <div style="overflow-x:auto;border:1px solid var(--rule);border-radius:8px;max-height:400px;overflow-y:auto">
@@ -924,6 +935,20 @@ function setLang(lang) {
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent===lang.toUpperCase()));
   applyI18N();
   buildSpeciesGrids();
+}
+
+// ── Theme ─────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('arr_theme', next);
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
+}
+function initThemeBtn() {
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = (localStorage.getItem('arr_theme')||'light') === 'dark' ? '☀️' : '🌙';
 }
 
 function applyI18N() {
@@ -1656,7 +1681,7 @@ async function renderProvenance() {
     byTree[d.seed_tree_id].push(d);
   });
   pc.innerHTML = Object.entries(byTree).map(([stId, recs]) => `
-    <div style="margin-bottom:14px;padding:12px;background:var(--pale);border-radius:8px;border:1px solid var(--rule)">
+    <div style="margin-bottom:14px;padding:12px;background:var(--mint);border-radius:8px;border:1px solid var(--rule)">
       <div style="font-size:13px;font-weight:700;color:var(--forest);margin-bottom:6px">🌳 ${stId}</div>
       ${recs.map(r=>`<div style="font-size:12px;color:var(--mid);margin-left:16px">→ ${r.date} · ${r.district} · LPC ${r.lpc} · ${fmtNum(r.total)} saplings</div>`).join('')}
     </div>`).join('');
@@ -1808,6 +1833,7 @@ window.addEventListener('offline', updateConnectivity);
 // INIT
 // ═══════════════════════════════════════════════════════
 async function init() {
+  initThemeBtn();
   await openDB();
   buildSpeciesGrids();
   applyI18N();
@@ -1939,12 +1965,12 @@ function renderNDRecPanel(rows) {
     '<tr>' + cols.map(c =>
       `<th style="padding:6px 8px;text-align:left;white-space:nowrap;font-size:10px;font-weight:700;
         border-bottom:2px solid var(--rule);text-transform:uppercase;letter-spacing:.04em;
-        background:var(--pale)">${c}</th>`
+        background:var(--mint)">${c}</th>`
     ).join('') + '</tr>';
 
   document.getElementById('rec-panel-tbody').innerHTML =
     rows.map((row, ri) => {
-      const bg = ri % 2 === 0 ? '' : 'background:var(--pale)';
+      const bg = ri % 2 === 0 ? '' : 'background:var(--mint)';
       return '<tr style="' + bg + '">' + cols.map(c => {
         let val = row[c] ?? '';
         if (typeof val === 'string' && val.startsWith('https://lh3.googleusercontent.com')) {
