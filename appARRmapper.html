@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>ARR Mapper v86 · Asha 1</title>
+<title>ARR Mapper v87 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -148,10 +148,10 @@ select option{background:var(--m-surface)}
 
 /* Layout: topbar floats fixed-width over the sidebar column; map gets the
    rest, including the space under a collapsed sidebar. */
-#main{position:relative}
+#main{position:relative;padding-top:76px}
 #topbar{position:absolute;top:0;left:0;width:214px;height:76px;z-index:600}
-#sidebar{padding-top:76px}
-#sidebar.collapsed{padding-top:76px}
+#sidebar{padding-top:0}
+#sidebar.collapsed{padding-top:0}
 
 /* Icon buttons: 48px/24px -> 38px/19px (-20%) */
 .icon-btn{width:38px;height:38px;font-size:19px;border-radius:7px}
@@ -2371,8 +2371,12 @@ function vecStartRecording() {
   if (!vecTool) return;
   const nameVal = document.getElementById('vec-feat-name')?.value.trim();
   if (!nameVal || !vecSelectedType) { setStatus('Enter name and select type first.', 'err'); return; }
-  vecCancelAll();  // clean slate
-  vecTool = vecTool;  // preserve
+  // Preserve tool and geom across cancel
+  const _tool = vecTool;
+  const _geom = _vecGeom;
+  vecCancelAll();
+  vecTool  = _tool;
+  _vecGeom = _geom;
   vecLayer.clearLayers();
 
   // GPS POI — capture immediately, no walk
@@ -3775,6 +3779,10 @@ const ABOUT_CONTENT = {
   log: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Changelog — ARR Mapper</h3>
 <div style="color:#9ca3af;font-size:10px;margin-bottom:12px">Cumulative changelog &mdash; latest first</div>
 
+<div class="abt-ver">v87 <span class="abt-date">Aug 2026</span></div>
+<ul>
+  <li>Fix: map dead space on desktop — moved padding-top:76px from #sidebar to #main so both sidebar and map clear the absolute-positioned topbar; map now fills full available height</li>
+</ul>
 <div class="abt-ver">v86 <span class="abt-date">Aug 2026</span></div>
 <ul>
   <li>Fix: #vec-rec-panel moved from inside #sidebar to #app level — sidebar CSS transition was creating a stacking context that trapped position:fixed children, making the recording panel and buttons invisible during active recording</li>
