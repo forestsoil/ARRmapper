@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>ARR Mapper v87 · Asha 1</title>
+<title>ARR Mapper v89 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -148,10 +148,10 @@ select option{background:var(--m-surface)}
 
 /* Layout: topbar floats fixed-width over the sidebar column; map gets the
    rest, including the space under a collapsed sidebar. */
-#main{position:relative;padding-top:76px}
+#main{position:relative}
 #topbar{position:absolute;top:0;left:0;width:214px;height:76px;z-index:600}
-#sidebar{padding-top:0}
-#sidebar.collapsed{padding-top:0}
+#sidebar{padding-top:76px}
+#sidebar.collapsed{padding-top:76px}
 
 /* Icon buttons: 48px/24px -> 38px/19px (-20%) */
 .icon-btn{width:38px;height:38px;font-size:19px;border-radius:7px}
@@ -2232,7 +2232,7 @@ function vecRecPanelShow(mode) {
   // mode: 'gps-poly' | 'gps-path' | 'gps-poi' | 'man-poly' | 'man-path' | 'man-poi' | 'edit'
   const panel = document.getElementById('vec-rec-panel');
   if (!panel) return;
-  panel.style.display = '';
+  panel.style.display = 'block';
   vecRecUpdateMetric();
   // Build button row
   const btns = document.getElementById('vec-rec-btns');
@@ -2386,7 +2386,7 @@ function vecStartRecording() {
     L.circleMarker([lat, lon], { radius:7, color:'#10b981', fillColor:'#10b981', fillOpacity:.9, weight:2 }).addTo(vecLayer);
     vecSidebarCollapse();
     const panel = document.getElementById('vec-rec-panel');
-    if (panel) { panel.style.display = ''; }
+    if (panel) { panel.style.display = 'block'; }
     const metric = document.getElementById('vec-rec-metric');
     if (metric) metric.textContent = '\ud83d\udccd ' + lat.toFixed(6) + ', ' + lon.toFixed(6);
     const st = document.getElementById('vec-rec-status');
@@ -2403,7 +2403,7 @@ function vecStartRecording() {
   if (vecTool === 'poi-m') {
     vecSidebarCollapse();
     const panel = document.getElementById('vec-rec-panel');
-    if (panel) { panel.style.display = ''; }
+    if (panel) { panel.style.display = 'block'; }
     const metric = document.getElementById('vec-rec-metric'); if (metric) metric.textContent = '\ud83d\udccd Tap map to place';
     const st = document.getElementById('vec-rec-status'); if (st) st.textContent = 'Single tap to drop a marker';
     const btns = document.getElementById('vec-rec-btns'); btns.innerHTML = '';
@@ -3779,6 +3779,14 @@ const ABOUT_CONTENT = {
   log: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Changelog — ARR Mapper</h3>
 <div style="color:#9ca3af;font-size:10px;margin-bottom:12px">Cumulative changelog &mdash; latest first</div>
 
+<div class="abt-ver">v89 <span class="abt-date">Aug 2026</span></div>
+<ul>
+  <li>Fix: reverted v86/v87 layout change — padding-top:76px restored to #sidebar (as in v85), removing dead space above map on desktop</li>
+</ul>
+<div class="abt-ver">v88 <span class="abt-date">Aug 2026</span></div>
+<ul>
+  <li>Fix: rec panel not showing during recording — panel.style.display was set to '' (empty) which falls back to CSS display:none; changed to 'block' explicitly</li>
+</ul>
 <div class="abt-ver">v87 <span class="abt-date">Aug 2026</span></div>
 <ul>
   <li>Fix: map dead space on desktop — moved padding-top:76px from #sidebar to #main so both sidebar and map clear the absolute-positioned topbar; map now fills full available height</li>
