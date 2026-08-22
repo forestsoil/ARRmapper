@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>ARR Mapper v83 · Asha 1</title>
+<title>ARR Mapper v84 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -2818,6 +2818,7 @@ function openSettingsCallout(anchor) {
     chProj.textContent = '\ud83d\udd04 Change Project';
     chProj.onclick = () => {
       closeCallout();
+      if (APP_MODE === 'vec') vecModeLeave();
       SESSION.setupDone = false;
       SESSION.projectKey = null;
       _setupProjectKey = null;
@@ -3774,6 +3775,10 @@ const ABOUT_CONTENT = {
   log: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Changelog — ARR Mapper</h3>
 <div style="color:#9ca3af;font-size:10px;margin-bottom:12px">Cumulative changelog &mdash; latest first</div>
 
+<div class="abt-ver">v84 <span class="abt-date">Aug 2026</span></div>
+<ul>
+  <li>Fix: "Change Project" now calls vecModeLeave() when vec mode is active — stops GPS background watch, hides rec panel, clears recording state before overlay re-appears</li>
+</ul>
 <div class="abt-ver">v83 <span class="abt-date">Aug 2026</span></div>
 <ul>
   <li>Vec tool: 3-step sidebar flow — Step 1: Polygon/Path/POI; Step 2: Manual/GPS inline expand; Step 3: Name (required) + Type chips (must tap) + ▶ Start (disabled until both filled)</li>
