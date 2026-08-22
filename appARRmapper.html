@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>ARR Mapper v85 · Asha 1</title>
+<title>ARR Mapper v86 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -717,11 +717,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
 </div>
 
-<!-- ── Recording panel (fixed, below topbar) ── -->
-<div id="vec-rec-panel">
-  <div id="vec-rec-metric">—</div>
-  <div id="vec-rec-status"></div>
-  <div id="vec-rec-btns"></div>
 </div>
 
   <div id="mode-files-body" class="hidden">
@@ -753,6 +748,13 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <div id="map"></div>
 </div>
 <div id="sbar">Load a KML boundary → Generate Grid → draw species blocks.</div>
+
+<!-- ── Recording panel: fixed below topbar, outside sidebar so position:fixed works correctly ── -->
+<div id="vec-rec-panel">
+  <div id="vec-rec-metric">—</div>
+  <div id="vec-rec-status"></div>
+  <div id="vec-rec-btns"></div>
+</div>
 </div>
 
 <script>
@@ -3773,6 +3775,10 @@ const ABOUT_CONTENT = {
   log: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Changelog — ARR Mapper</h3>
 <div style="color:#9ca3af;font-size:10px;margin-bottom:12px">Cumulative changelog &mdash; latest first</div>
 
+<div class="abt-ver">v86 <span class="abt-date">Aug 2026</span></div>
+<ul>
+  <li>Fix: #vec-rec-panel moved from inside #sidebar to #app level — sidebar CSS transition was creating a stacking context that trapped position:fixed children, making the recording panel and buttons invisible during active recording</li>
+</ul>
 <div class="abt-ver">v85 <span class="abt-date">Aug 2026</span></div>
 <ul>
   <li>Fix: duplicate let _vecPendingCoords declaration (lines 2121 + 2452) — SyntaxError was crashing all JS on load, causing blank project grid</li>
