@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>ARR Mapper v89 · Asha 1</title>
+<title>ARR Mapper v90 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -313,52 +313,69 @@ body.lang-bn .pm-label, body.lang-hi .pm-label { font-size: 14px; }
 
 /* ── Portrait tap-outside overlay ─────────────────────────────── */
 #sb-tap-close{display:none;position:fixed;top:0;right:0;width:30vw;height:100%;z-index:499;background:rgba(0,0,0,.25)}
+
+/* ── FAM-style Vector Tool sidebar (v90) ─────────────────────── */
+.vec-step{padding:8px 10px;border-bottom:1px solid var(--m-raised)}
+.vec-step-label{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--m-blue);font-weight:700;margin-bottom:6px}
+.vec-shape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.vec-shape-btn{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:var(--m-raised);border:2px solid transparent;border-radius:7px;
+  padding:7px 3px;cursor:pointer;transition:border-color .12s,background .12s;
+}
+.vec-shape-btn.sel{border-color:#3b82f6;background:#1e3a5f}
+.vec-shape-btn .icon{font-size:20px;line-height:1}
+.vec-shape-btn .lbl{font-size:8px;color:var(--m-muted);text-align:center;line-height:1.2}
+.vec-shape-btn.sel .lbl{color:#93c5fd}
+.vec-method-row{display:flex;gap:6px}
+.vec-method-btn{
+  flex:1;padding:7px 4px;border-radius:6px;border:2px solid transparent;
+  background:var(--m-raised);font-size:11px;font-weight:600;color:var(--m-sub);
+  cursor:pointer;text-align:center;transition:border-color .12s,background .12s;
+}
+.vec-method-btn.sel{border-color:#3b82f6;background:#1e3a5f;color:#93c5fd}
+.vec-method-btn:disabled{opacity:.35;pointer-events:none}
+.vec-name-input{
+  width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--m-raised);
+  background:var(--m-bg);color:var(--m-ink);font-size:12px;margin-bottom:6px;outline:none;
+}
+.vec-name-input:focus{border-color:#3b82f6}
+.vec-type-chips{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px}
+.vec-type-chip{
+  padding:3px 7px;border-radius:4px;border:1px solid var(--m-raised);
+  background:var(--m-bg);font-size:10px;color:var(--m-muted);cursor:pointer;white-space:nowrap;
+}
+.vec-type-chip.sel{border-color:#3b82f6;color:#93c5fd;background:#1e2a3f}
+.vec-start-btn{
+  display:block;width:100%;min-height:38px;border-radius:7px;border:none;
+  background:#0d7377;color:#fff;font-size:14px;font-weight:700;cursor:pointer;
+  margin-top:2px;transition:opacity .1s;
+}
+.vec-start-btn:active{opacity:.7}
+.vec-start-btn:disabled{opacity:.35;pointer-events:none}
+
+/* Floating recording panel */
+#vec-rec-panel{
+  display:none;           /* shown via panel.style.display='block' */
+  position:fixed;
+  bottom:16px;left:50%;transform:translateX(-50%);
+  z-index:700;
+  background:rgba(10,22,40,.92);border:1px solid #374151;
+  border-radius:12px;padding:10px 14px 8px;
+  min-width:220px;max-width:90vw;
+  box-shadow:0 6px 24px rgba(0,0,0,.6);
+  backdrop-filter:blur(4px);
+}
+#vec-rec-panel .rec-stat{font-size:11px;color:#9ca3af;text-align:center;margin-bottom:6px;min-height:16px}
+#vec-rec-panel .rec-btns{display:flex;gap:6px;justify-content:center}
+#vec-rec-panel .rec-btns button{
+  flex:1;min-height:36px;border-radius:7px;border:none;
+  font-size:12px;font-weight:700;color:#fff;cursor:pointer;
+}
+#vec-rec-panel .rec-btns button:active{opacity:.7}
 @media (max-width:600px) and (orientation:portrait){
   #sidebar:not(.collapsed) ~ #sb-tap-close{display:block}
 }
-/* ── Vec tool v83 ─────────────────────────────────────────────────── */
-:root { --topbar-h: 76px; }
-@media (max-width:600px) and (orientation:portrait) { :root { --topbar-h: 80px; } }
-.vec-geom-btn {
-  display:block; width:100%; text-align:left;
-  background:#1f2937; border:1.5px solid #374151; border-radius:9px;
-  color:#d1d5db; font-size:14px; padding:11px 14px;
-  margin-bottom:7px; cursor:pointer; transition:background .1s,border-color .1s;
-}
-.vec-geom-btn:active,.vec-geom-btn.sel{background:#0d4f6e;border-color:#38bdf8;color:#fff}
-.vec-method-row{display:flex;gap:7px;margin-bottom:10px}
-.vec-method-btn{
-  flex:1;padding:10px 6px;border-radius:8px;border:1.5px solid #374151;
-  background:#1f2937;color:#d1d5db;font-size:13px;cursor:pointer;
-  transition:background .1s,border-color .1s;
-}
-.vec-method-btn:active,.vec-method-btn.sel{background:#0d4f6e;border-color:#38bdf8;color:#fff}
-.vec-method-btn:disabled{opacity:.35;pointer-events:none}
-.vec-type-chip{
-  background:#1f2937;border:1.5px solid #374151;border-radius:16px;
-  color:#9ca3af;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;
-  transition:background .1s,border-color .1s,color .1s;
-}
-.vec-type-chip.sel{background:#0d4f6e;border-color:#38bdf8;color:#e0f2fe;font-weight:700}
-#vec-start-btn{
-  display:block;width:100%;padding:11px;border-radius:8px;border:none;
-  background:#15803d;color:#fff;font-size:14px;font-weight:700;
-  cursor:pointer;margin-top:8px;transition:opacity .15s;
-}
-#vec-start-btn:disabled{opacity:.35;pointer-events:none}
-#vec-rec-panel{
-  display:none;position:fixed;top:var(--topbar-h);left:0;right:0;
-  z-index:650;background:rgba(10,18,32,.82);backdrop-filter:blur(4px);
-  padding:8px 14px 10px;border-bottom:1px solid rgba(255,255,255,.08);
-}
-#vec-rec-metric{font-size:17px;font-weight:700;color:#6ee7b7;min-height:22px;margin-bottom:3px}
-#vec-rec-status{font-size:11px;color:#94a3b8;margin-bottom:7px;min-height:14px}
-#vec-rec-btns{display:flex;gap:8px;align-items:center}
-.vec-rb{padding:8px 16px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
-.vec-rb-pause{background:#d97706;color:#fff}
-.vec-rb-finish{background:#15803d;color:#fff}
-.vec-rb-undo{background:#374151;color:#e5e7eb}
-.vec-rb-cancel{background:#7f1d1d;color:#fca5a5}
 </style>
 
 <script>
@@ -456,6 +473,16 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <div id="float-draw-btns">
   <button id="float-finish-btn" onclick="finishDrawBlock()" ontouchstart="event.stopPropagation()" title="Finish">✅</button>
   <button id="float-undo-btn"   onclick="undoLastBlock()" title="Undo">↩️</button>
+</div>
+
+<!-- ── Floating GPS recording panel (Vector Tool) ── -->
+<div id="vec-rec-panel">
+  <div class="rec-stat" id="vec-rec-stat">Recording…</div>
+  <div class="rec-btns">
+    <button id="vec-rec-finish" style="background:#15803d" onclick="vecGpsFinish()">✅ Finish</button>
+    <button id="vec-rec-undo"   style="background:#374151" onclick="vecRecUndo()">↩️ Undo</button>
+    <button id="vec-rec-cancel" style="background:#991b1b" onclick="vecRecCancel()">✕ Cancel</button>
+  </div>
 </div>
 
 <!-- ── First-run setup overlay ── -->
@@ -615,67 +642,64 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
   <div id="mode-vec-body">
 
-  <!-- ── Step 1: Geometry type ── -->
-  <div class="sec" id="vec-step1">
-    <div id="vec-gps-status" style="font-size:11px;color:#f59e0b;text-align:center;padding:2px 0 8px">Acquiring GPS…</div>
-    <button class="vec-geom-btn" id="vgb-poly" onclick="vecSelectGeom('poly')">⬡ &nbsp;Polygon / Field</button>
-    <button class="vec-geom-btn" id="vgb-path" onclick="vecSelectGeom('path')">〰️ &nbsp;Path / Distance</button>
-    <button class="vec-geom-btn" id="vgb-poi"  onclick="vecSelectGeom('poi')" >📍 &nbsp;Marker / POI</button>
+  <!-- GPS status bar -->
+  <div class="vec-step" style="border-bottom:1px solid var(--m-raised)">
+    <div id="vec-gps-status" style="font-size:11px;color:#f59e0b;text-align:center;padding:2px 0">Acquiring GPS…</div>
   </div>
 
-  <!-- ── Step 2: Method (inline expand) ── -->
-  <div class="sec" id="vec-step2" style="display:none">
-    <div id="vec-step2-label" style="font-size:10px;color:#94a3b8;margin-bottom:8px"></div>
+  <!-- Step 1: Shape -->
+  <div class="vec-step" id="vec-step1">
+    <div class="vec-step-label">① Shape</div>
+    <div class="vec-shape-grid">
+      <button class="vec-shape-btn vec-tool-btn" id="vt-poly" onclick="vecFamSelectShape('poly')" style="opacity:.3;pointer-events:none">
+        <span class="icon">⬡</span><span class="lbl">Polygon</span>
+      </button>
+      <button class="vec-shape-btn vec-tool-btn" id="vt-path" onclick="vecFamSelectShape('path')" style="opacity:.3;pointer-events:none">
+        <span class="icon">〰️</span><span class="lbl">Path</span>
+      </button>
+      <button class="vec-shape-btn vec-tool-btn" id="vt-poi" onclick="vecFamSelectShape('poi')" style="opacity:.3;pointer-events:none">
+        <span class="icon">📌</span><span class="lbl">POI</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Method (hidden until shape chosen) -->
+  <div class="vec-step" id="vec-step2" style="display:none">
+    <div class="vec-step-label">② Method</div>
     <div class="vec-method-row">
-      <button class="vec-method-btn" id="vmb-manual" onclick="vecSelectMethod('manual')">👆 Manual</button>
-      <button class="vec-method-btn" id="vmb-gps"    onclick="vecSelectMethod('gps')"   id="vmb-gps">🛰️ GPS</button>
+      <button class="vec-method-btn" id="vec-meth-manual" onclick="vecFamSelectMethod('manual')">✋ Manual</button>
+      <button class="vec-method-btn" id="vec-meth-gps"    onclick="vecFamSelectMethod('gps')">📍 GPS</button>
     </div>
-    <button onclick="vecResetToStep1()" style="background:none;border:none;color:#6b7280;font-size:11px;cursor:pointer;padding:0">← Back</button>
   </div>
 
-  <!-- ── Step 3: Name + Type + Start ── -->
-  <div class="sec" id="vec-step3" style="display:none">
-    <div style="font-size:10px;color:#94a3b8;margin-bottom:8px" id="vec-step3-label"></div>
-    <div class="sec-t">Name <span style="color:#f87171">*</span></div>
-    <input id="vec-feat-name" type="text" placeholder="feature name…" maxlength="60" oninput="vecCheckStartReady()"
-      style="background:#111827;border:1px solid #374151;border-radius:6px;color:#f3f4f6;font-size:13px;padding:7px 9px;width:100%;box-sizing:border-box;margin-bottom:10px"/>
-    <div class="sec-t">Type <span style="color:#f87171">*</span></div>
-    <div id="vec-type-row" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px"></div>
-    <button id="vec-start-btn" onclick="vecStartRecording()" disabled>▶ Start</button>
-    <button onclick="vecResetToStep1()" style="background:none;border:none;color:#6b7280;font-size:11px;cursor:pointer;padding:4px 0 0">← Back</button>
+  <!-- Step 3: Name + Type + Start (hidden until method chosen) -->
+  <div class="vec-step" id="vec-step3" style="display:none">
+    <div class="vec-step-label">③ Details &amp; Start</div>
+    <input id="vec-feat-name" class="vec-name-input" type="text" placeholder="Feature name…" maxlength="60"/>
+    <div id="vec-type-chips" class="vec-type-chips"></div>
+    <div id="vec-gps-info" style="font-size:10px;color:#9ca3af;min-height:14px;margin-bottom:4px"></div>
+    <button class="vec-start-btn" id="vec-btn-start-fam" onclick="vecFamStart()">▶ Start</button>
   </div>
 
-  <!-- ── Post-finish: Stage + Export (GPS/POI) ── -->
-  <div class="sec" id="vec-sec-export" style="display:none">
-    <div class="sec-t" style="margin-bottom:6px">Stage</div>
-    <select id="vec-stage-sel" style="font-size:12px;width:100%;background:#111827;border:1px solid #374151;border-radius:6px;color:#f3f4f6;padding:6px 8px;margin-bottom:8px">
-      <option value="eligibility">Eligibility check</option>
-      <option value="negotiated">Negotiated boundary</option>
-      <option value="surveyed">Surveyor (amin) boundary</option>
-      <option value="cleared">Post-clearing boundary</option>
-      <option value="final">Final (post-fencing)</option>
-      <option value="revised">Revised</option>
-    </select>
-    <div id="vec-revision-row" style="display:none;margin-bottom:8px">
-      <div class="sec-t" style="margin-bottom:4px">Revision reason</div>
-      <select id="vec-revision-sel" style="font-size:12px;width:100%;background:#111827;border:1px solid #374151;border-radius:6px;color:#f3f4f6;padding:6px 8px">
-        <option value="flood_hazard">Flood hazard</option>
-        <option value="fire_hazard">Fire hazard</option>
-        <option value="bank_erosion">Bank erosion</option>
-        <option value="beneficiary_dropout">Beneficiary dropout</option>
-        <option value="encroachment">Encroachment</option>
-        <option value="other">Other</option>
-      </select>
+  <!-- Manual tool controls (shown after start for manual tools) -->
+  <div class="vec-step" id="vec-sec-ctrl" style="display:none">
+    <div class="icon-row" id="vec-ctrl-row"></div>
+  </div>
+
+  <!-- Live stats -->
+  <div class="vec-step" id="vec-sec-stats" style="display:none">
+    <div style="font-size:10px;color:#9ca3af;line-height:1.7">
+      <div id="vec-stat-area" style="display:none">📐 Area: <strong id="vec-stat-area-val" style="color:#f3f4f6">—</strong></div>
+      <div id="vec-stat-perim" style="display:none">🔲 Perim: <strong id="vec-stat-perim-val" style="color:#f3f4f6">—</strong></div>
+      <div id="vec-stat-len-row">📏 Length: <strong id="vec-stat-len-val" style="color:#f3f4f6">—</strong></div>
     </div>
-    <button onclick="vecDoExport()" style="display:block;width:100%;padding:11px;border-radius:8px;border:none;background:#1d4ed8;color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:6px">💾 Export KML</button>
-    <button onclick="vecCancelAll();vecResetToStep1();" style="display:block;width:100%;padding:8px;border-radius:8px;border:none;background:#374151;color:#d1d5db;font-size:12px;cursor:pointer">✕ Discard</button>
   </div>
 
-  <!-- Overlays (always available) -->
-  <div class="sec" id="vec-sec-layers" style="margin-top:4px">
+  <!-- Overlays -->
+  <div class="vec-step" id="vec-sec-layers" style="display:none">
     <div class="sec-t" style="display:flex;align-items:center;justify-content:space-between">
       <span>🗂️ Overlays</span>
-      <button onclick="switchTab('files')" style="background:#374151;border:none;border-radius:5px;color:#f3f4f6;font-size:10px;padding:2px 8px;cursor:pointer">+ Add</button>
+      <button onclick="switchTab('files')" style="background:#374151;border:none;border-radius:5px;color:#f3f4f6;font-size:10px;padding:2px 8px;cursor:pointer">+ Add via Files</button>
     </div>
     <div id="overlay-layer-list" style="display:none;margin-top:6px"></div>
     <div id="layer-picker-panel" style="display:none;margin-top:8px;border:1px solid #374151;border-radius:6px;padding:6px;max-height:180px;overflow-y:auto">
@@ -683,28 +707,24 @@ function arrAuthRenderChip(containerId, onSignOut) {
     </div>
   </div>
 
-  <!-- Hidden compat elements (used by vecExportKML internals) -->
-  <div id="vec-gps-info" style="display:none"></div>
-  <div id="vec-sec-stats" style="display:none">
-    <div id="vec-stat-area" style="display:none"><strong id="vec-stat-area-val"></strong></div>
-    <div id="vec-stat-perim" style="display:none"><strong id="vec-stat-perim-val"></strong></div>
-    <div id="vec-stat-len-row" style="display:none"><strong id="vec-stat-len-val"></strong></div>
-  </div>
-  <div id="vec-sec-ctrl" style="display:none"><div id="vec-ctrl-row"></div></div>
-  <div id="vec-sec-name" style="display:none"></div>
-  <div id="vec-sec-type" style="display:none"></div>
-  <!-- vec-sec-edit kept for vecSaveEdit/vecDiscardEdit compat -->
-  <div id="vec-sec-edit" style="display:none">
-    <select id="vec-stage-sel-edit" style="display:none">
-      <option value="eligibility">Eligibility check</option>
-      <option value="negotiated">Negotiated boundary</option>
-      <option value="surveyed">Surveyor (amin) boundary</option>
-      <option value="cleared">Post-clearing boundary</option>
-      <option value="final">Final (post-fencing)</option>
-      <option value="revised">Revised</option>
-    </select>
-    <div id="vec-revision-row-edit" style="display:none">
-      <select id="vec-revision-sel-edit">
+  <!-- Vec edit section (post-finish, manual only) -->
+  <div class="sec" id="vec-sec-edit" style="display:none">
+    <div class="sec-t" style="color:#f59e0b">✏️ Editing vertices</div>
+    <div style="font-size:10px;color:#9ca3af;margin:4px 0 8px">Drag vertices to adjust. GPS features cannot be edited.</div>
+    <div style="margin-bottom:6px">
+      <div class="sec-t" style="font-size:10px;margin-bottom:3px" id="vec-stage-label">Stage</div>
+      <select id="vec-stage-sel" style="font-size:11px;width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;padding:4px 6px">
+        <option value="eligibility">Eligibility check</option>
+        <option value="negotiated">Negotiated boundary</option>
+        <option value="surveyed">Surveyor (amin) boundary</option>
+        <option value="cleared">Post-clearing boundary</option>
+        <option value="final">Final (post-fencing)</option>
+        <option value="revised">Revised</option>
+      </select>
+    </div>
+    <div id="vec-revision-row" style="display:none;margin-bottom:6px">
+      <div class="sec-t" style="font-size:10px;margin-bottom:3px" id="vec-revision-label">Revision reason</div>
+      <select id="vec-revision-sel" style="font-size:11px;width:100%;background:#111827;border:1px solid #374151;border-radius:5px;color:#f3f4f6;padding:4px 6px">
         <option value="flood_hazard">Flood hazard</option>
         <option value="fire_hazard">Fire hazard</option>
         <option value="bank_erosion">Bank erosion</option>
@@ -713,9 +733,11 @@ function arrAuthRenderChip(containerId, onSignOut) {
         <option value="other">Other</option>
       </select>
     </div>
+    <div class="icon-row">
+      <button class="icon-btn b-teal" id="btn-vec-save-edit" onclick="vecSaveEdit()" style="font-size:11px">💾 Save</button>
+      <button class="icon-btn b-gray" id="btn-vec-discard-edit" onclick="vecDiscardEdit()" style="font-size:11px">✕ Discard</button>
+    </div>
   </div>
-
-</div>
 
 </div>
 
@@ -748,13 +770,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <div id="map"></div>
 </div>
 <div id="sbar">Load a KML boundary → Generate Grid → draw species blocks.</div>
-
-<!-- ── Recording panel: fixed below topbar, outside sidebar so position:fixed works correctly ── -->
-<div id="vec-rec-panel">
-  <div id="vec-rec-metric">—</div>
-  <div id="vec-rec-status"></div>
-  <div id="vec-rec-btns"></div>
-</div>
 </div>
 
 <script>
@@ -2119,8 +2134,7 @@ let vecSelectedType  = null;
 let vecLayerOnMap    = false;
 let _vecEditLayer    = null;   // Leaflet layer currently in edit mode
 let _vecEditCoords   = null;   // original coords for discard
-let _vecEditMeta     = null;   // {geomType, stage, revision_reason}
-let _vecPendingCoords = null;  // coords awaiting stage+export
+let _vecEditMeta     = null;   // {fname, geomType, name, type} for save
 let vecLastPos       = null;   // most recent position from background watch
 let vecGpsReady      = false;  // true once first fix received
 
@@ -2140,24 +2154,21 @@ function vecModeEnter() {
   vecEnsureLayer();
   vecGpsReady = false;
   vecLastPos  = null;
-  vecResetToStep1();
+  vecSetToolsEnabled(false);
   setStatus('Acquiring GPS\u2026', '');
   if (!navigator.geolocation) {
-    const gs = document.getElementById('vec-gps-status');
-    if (gs) { gs.textContent = 'GPS unavailable'; gs.style.color = '#f87171'; }
-    // Still allow manual tools without GPS
-    vecUnlockGpsMethod(false);
+    document.getElementById('vec-gps-status').textContent = 'GPS unavailable';
+    document.getElementById('vec-gps-status').style.color = '#f87171';
     return;
   }
   vecBgWatchId = navigator.geolocation.watchPosition(
     vecOnBgPos, vecOnBgErr,
-    { enableHighAccuracy:true, maximumAge:0, timeout:20000 }
+    { enableHighAccuracy:true, maximumAge:3000, timeout:20000 }
   );
 }
 
 function vecModeLeave() {
-  vecRecPanelHide();
-  vecSidebarRestore();
+  const ls = document.getElementById('vec-sec-layers'); if (ls) ls.style.display = 'none';
   if (vecBgWatchId !== null) {
     navigator.geolocation.clearWatch(vecBgWatchId);
     vecBgWatchId = null;
@@ -2174,311 +2185,330 @@ function vecOnBgPos(pos) {
   const { latitude:lat, longitude:lon, accuracy } = pos.coords;
   vecLastPos = { lat, lon, accuracy };
 
+  // First fix — unlock tools
   if (!vecGpsReady) {
     vecGpsReady = true;
-    vecUnlockGpsMethod(true);
-    setStatus('GPS ready \u2014 choose what to map', '');
+    vecSetToolsEnabled(true);
+    setStatus('GPS ready. Select a tool.', '');
   }
 
-  updateGpsBtn(); updateSbar();
+  // Update GPS button + sbar
+  updateGpsBtn();
+  updateSbar();
   const accRound = Math.round(accuracy);
-  const accColor = accuracy < 10 ? '#4ade80' : accuracy < 30 ? '#facc15' : '#f87171';
   const statusEl = document.getElementById('vec-gps-status');
-  if (statusEl) { statusEl.textContent = 'GPS \u00b1 ' + accRound + ' m'; statusEl.style.color = accColor; }
+  if (statusEl) {
+    statusEl.textContent = 'GPS \u00b1 ' + accRound + ' m';
+    statusEl.style.color = accuracy < 10 ? '#4ade80' : accuracy < 30 ? '#facc15' : '#f87171';
+  }
 
-  // Live location dot + accuracy ring
+  // Draw live location dot + accuracy ring on map
   vecLocLayer.clearLayers();
-  L.circle([lat, lon], { radius:accuracy, color:'#3b82f6', weight:1, fillColor:'#3b82f6', fillOpacity:0.08 }).addTo(vecLocLayer);
-  L.circleMarker([lat, lon], { radius:7, color:'#fff', weight:2, fillColor:'#3b82f6', fillOpacity:1 }).addTo(vecLocLayer);
+  L.circle([lat, lon], {
+    radius: accuracy, color:'#3b82f6', weight:1,
+    fillColor:'#3b82f6', fillOpacity:0.08
+  }).addTo(vecLocLayer);
+  L.circleMarker([lat, lon], {
+    radius:7, color:'#fff', weight:2,
+    fillColor:'#3b82f6', fillOpacity:1
+  }).addTo(vecLocLayer);
 
-  // Always pan to follow during active GPS recording
-  if (vecGpsWatchId !== null && !vecGpsPaused && APP_MODE === 'vec') map.panTo([lat, lon]);
+  // Keep dot on screen during GPS walk (don't re-centre aggressively)
+  if (APP_MODE === 'vec' && vecTool && (vecTool === 'path-g' || vecTool === 'poly-g')) {
+    if (!map.getBounds().contains([lat, lon])) map.panTo([lat, lon]);
+  }
 
-  // Feed into recording walk
+  // Feed live location into recording walk if active
   if (vecGpsWatchId !== null && !vecGpsPaused) vecRecordPoint(lat, lon);
 }
 
 function vecOnBgErr(err) {
   const statusEl = document.getElementById('vec-gps-status');
-  if (statusEl) { statusEl.textContent = err.code === 1 ? 'GPS denied' : 'GPS error'; statusEl.style.color = '#f87171'; }
+  if (statusEl) {
+    statusEl.textContent = err.code === 1 ? 'GPS denied' : 'GPS error';
+    statusEl.style.color = '#f87171';
+  }
   updateGpsBtn(); updateSbar();
 }
 
-// ── GPS method lock/unlock ────────────────────────────────────────────
-function vecUnlockGpsMethod(ready) {
-  const btn = document.getElementById('vmb-gps');
-  if (!btn) return;
-  btn.disabled = !ready;
-  btn.title = ready ? '' : 'Waiting for GPS fix\u2026';
-}
-
-// ── Compat stubs ──────────────────────────────────────────────────────
-function vecSetToolsEnabled() {}  // no-op: replaced by vecUnlockGpsMethod
-function vecHighlight() {}        // no-op: no tool grid to highlight
-function vecZoomToLocation() { if (vecLastPos) map.setView([vecLastPos.lat, vecLastPos.lon], 16); }
-
-// ── Sidebar show/hide helpers ─────────────────────────────────────────
-function vecSidebarCollapse() {
-  const sb = document.getElementById('sidebar');
-  if (sb) { sb.classList.add('collapsed'); setTimeout(() => map && map.invalidateSize(), 230); }
-}
-function vecSidebarRestore() {
-  const sb = document.getElementById('sidebar');
-  if (sb) { sb.classList.remove('collapsed'); setTimeout(() => map && map.invalidateSize(), 230); }
-}
-
-// ── Recording panel helpers ───────────────────────────────────────────
-function vecRecPanelShow(mode) {
-  // mode: 'gps-poly' | 'gps-path' | 'gps-poi' | 'man-poly' | 'man-path' | 'man-poi' | 'edit'
-  const panel = document.getElementById('vec-rec-panel');
-  if (!panel) return;
-  panel.style.display = 'block';
-  vecRecUpdateMetric();
-  // Build button row
-  const btns = document.getElementById('vec-rec-btns');
-  btns.innerHTML = '';
-  const mk = (label, cls, fn) => {
-    const b = document.createElement('button');
-    b.className = 'vec-rb ' + cls; b.textContent = label; b.onclick = fn; return b;
-  };
-  if (mode === 'edit') {
-    btns.appendChild(mk('\u2705 Done',    'vec-rb-finish', vecSaveEdit));
-    btns.appendChild(mk('\u2716 Discard', 'vec-rb-cancel', vecDiscardEdit));
-  } else if (mode.startsWith('gps')) {
-    const pb = mk('\u23f8\ufe0f Pause', 'vec-rb-pause', vecGpsTogglePause);
-    pb.id = 'vrb-pause';
-    btns.appendChild(pb);
-    btns.appendChild(mk('\u2705 Finish', 'vec-rb-finish', vecGpsFinish));
-    btns.appendChild(mk('\u2716 Cancel', 'vec-rb-cancel', () => { vecCancelAll(); vecRecPanelHide(); vecSidebarRestore(); vecResetToStep1(); }));
-  } else {
-    // manual poly/path
-    btns.appendChild(mk('\u21a9 Undo',   'vec-rb-undo',   vecUndoVertex));
-    btns.appendChild(mk('\u2705 Finish', 'vec-rb-finish', vecFinishManual));
-    btns.appendChild(mk('\u2716 Cancel', 'vec-rb-cancel', () => { vecCancelAll(); vecRecPanelHide(); vecSidebarRestore(); vecResetToStep1(); }));
-  }
-  // Status
-  const st = document.getElementById('vec-rec-status');
-  if (st) st.textContent = mode.startsWith('gps') ? '\u25cf Recording\u2026' : 'Tap map to place vertices';
-}
-function vecRecPanelHide() {
-  const panel = document.getElementById('vec-rec-panel');
-  if (panel) panel.style.display = 'none';
-}
-function vecRecUpdateMetric() {
-  const el = document.getElementById('vec-rec-metric');
-  if (!el || !vecTool) return;
-  const isPoly = vecTool === 'poly-m' || vecTool === 'poly-g';
-  const isPath = vecTool === 'path-m' || vecTool === 'path-g';
-  let pts = [];
-  if (vecVertices && vecVertices.length) pts = vecVertices.map(v => [v.lon, v.lat]);
-  if (!pts.length && vecGpsPoints && vecGpsPoints.length) pts = vecGpsPoints.map(p => [p.lon, p.lat]);
-  if (!pts.length) { el.textContent = '\u2014'; return; }
-  try {
-    if (isPoly && pts.length >= 3) {
-      const areaSqm = turf.area(turf.polygon([[...pts, pts[0]]]));
-      const perimM  = turf.length(turf.polygonToLine(turf.polygon([[...pts, pts[0]]])), {units:'meters'});
-      el.textContent = '\ud83d\udcd0 '
-        + (areaSqm >= 10000 ? (areaSqm/10000).toFixed(3)+' ha' : areaSqm.toFixed(1)+' m\u00b2')
-        + '  \ud83d\udd32 ' + perimM.toFixed(1)+' m';
-    } else if (isPath && pts.length >= 2) {
-      const distM = turf.length(turf.lineString(pts), {units:'meters'});
-      el.textContent = '\ud83d\udccf ' + (distM >= 1000 ? (distM/1000).toFixed(3)+' km' : distM.toFixed(1)+' m');
-    } else {
-      el.textContent = pts.length + ' pts';
-    }
-  } catch(e) { el.textContent = pts.length + ' pts'; }
-}
-function vecRecSetStatus(txt) {
-  const el = document.getElementById('vec-rec-status');
-  if (el) el.textContent = txt;
-}
-
-// ── Step navigation ───────────────────────────────────────────────────
-let _vecGeom = null;  // 'poly' | 'path' | 'poi'
-
-function vecResetToStep1() {
-  _vecGeom = null; vecTool = null; vecSelectedType = null;
-  ['vec-step1','vec-sec-layers'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display=''; });
-  ['vec-step2','vec-step3','vec-sec-export'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
-  vecRecPanelHide();
-  // Reset geom button highlight
-  ['poly','path','poi'].forEach(g => { const b=document.getElementById('vgb-'+g); if(b) b.classList.remove('sel'); });
-  const fn = document.getElementById('vec-feat-name'); if(fn) fn.value = '';
-  setStatus('Choose geometry type', '');
-}
-
-function vecSelectGeom(geom) {
-  _vecGeom = geom;
-  ['poly','path','poi'].forEach(g => { const b=document.getElementById('vgb-'+g); if(b) b.classList.toggle('sel', g===geom); });
-  const labels = { poly:'Polygon / Field', path:'Path / Distance', poi:'Marker / POI' };
-  const lbl = document.getElementById('vec-step2-label');
-  if (lbl) lbl.textContent = labels[geom] || geom;
-  // GPS button state
-  const gmb = document.getElementById('vmb-gps');
-  if (gmb) { gmb.disabled = !vecGpsReady; gmb.title = vecGpsReady ? '' : 'Waiting for GPS\u2026'; }
-  // Deselect methods
-  ['vmb-manual','vmb-gps'].forEach(id => { const b=document.getElementById(id); if(b) b.classList.remove('sel'); });
-  document.getElementById('vec-step1').style.display = 'none';
-  document.getElementById('vec-step2').style.display = '';
-  document.getElementById('vec-step3').style.display = 'none';
-}
-
-function vecSelectMethod(method) {
-  // Highlight selected method
-  ['vmb-manual','vmb-gps'].forEach(id => { const b=document.getElementById(id); if(b) b.classList.toggle('sel', id==='vmb-'+method); });
-  vecTool = _vecGeom + '-' + method[0];  // e.g. 'poly-m', 'poi-g'
-
-  // Populate type chips
-  const typeRow = document.getElementById('vec-type-row');
-  typeRow.innerHTML = '';
-  vecSelectedType = null;  // must be explicitly tapped
-  const types = VEC_TYPES[vecTool] || ['other'];
-  types.forEach(t => {
-    const chip = document.createElement('button');
-    chip.className = 'vec-type-chip';
-    chip.textContent = t;
-    chip.onclick = () => {
-      typeRow.querySelectorAll('.vec-type-chip').forEach(c => c.classList.remove('sel'));
-      chip.classList.add('sel');
-      vecSelectedType = t;
-      vecCheckStartReady();
-    };
-    typeRow.appendChild(chip);
+// ── Enable / disable tool buttons ─────────────────────────────────────
+function vecSetToolsEnabled(on) {
+  // Enable/disable FAM shape buttons (Step 1) and method buttons (Step 2)
+  document.querySelectorAll('.vec-tool-btn, .vec-method-btn').forEach(b => {
+    b.style.opacity      = on ? '1'    : '0.3';
+    b.style.pointerEvents= on ? 'auto' : 'none';
   });
-
-  // Step 3 label
-  const modeLabels = { 'm':'Manual', 'g':'GPS' };
-  const geomLabels = { poly:'Polygon', path:'Path', poi:'POI' };
-  const lbl3 = document.getElementById('vec-step3-label');
-  if (lbl3) lbl3.textContent = (geomLabels[_vecGeom]||_vecGeom) + ' \u00b7 ' + (modeLabels[method[0]]||method);
-
-  document.getElementById('vec-step2').style.display = 'none';
-  document.getElementById('vec-step3').style.display = '';
-  const fn = document.getElementById('vec-feat-name');
-  if (fn) { fn.value = ''; fn.focus(); }
-  vecCheckStartReady();
-}
-
-function vecCheckStartReady() {
-  const nameOk = (document.getElementById('vec-feat-name')?.value.trim().length > 0);
-  const typeOk = (vecSelectedType !== null);
-  const btn = document.getElementById('vec-start-btn');
-  if (btn) btn.disabled = !(nameOk && typeOk);
-}
-
-// ── Start recording ───────────────────────────────────────────────────
-function vecStartRecording() {
-  if (!vecTool) return;
-  const nameVal = document.getElementById('vec-feat-name')?.value.trim();
-  if (!nameVal || !vecSelectedType) { setStatus('Enter name and select type first.', 'err'); return; }
-  // Preserve tool and geom across cancel
-  const _tool = vecTool;
-  const _geom = _vecGeom;
-  vecCancelAll();
-  vecTool  = _tool;
-  _vecGeom = _geom;
-  vecLayer.clearLayers();
-
-  // GPS POI — capture immediately, no walk
-  if (vecTool === 'poi-g') {
-    if (!vecLastPos) { setStatus('No GPS fix yet.', 'err'); return; }
-    const { lat, lon, accuracy } = vecLastPos;
-    L.circleMarker([lat, lon], { radius:7, color:'#10b981', fillColor:'#10b981', fillOpacity:.9, weight:2 }).addTo(vecLayer);
-    vecSidebarCollapse();
-    const panel = document.getElementById('vec-rec-panel');
-    if (panel) { panel.style.display = 'block'; }
-    const metric = document.getElementById('vec-rec-metric');
-    if (metric) metric.textContent = '\ud83d\udccd ' + lat.toFixed(6) + ', ' + lon.toFixed(6);
-    const st = document.getElementById('vec-rec-status');
-    if (st) st.textContent = 'GPS POI \u00b1 ' + Math.round(accuracy) + ' m \u2014 tap Export to save';
-    const btns = document.getElementById('vec-rec-btns');
-    btns.innerHTML = '';
-    const mk = (label, cls, fn) => { const b=document.createElement('button'); b.className='vec-rb '+cls; b.textContent=label; b.onclick=fn; return b; };
-    btns.appendChild(mk('\ud83d\udcbe Export', 'vec-rb-finish', () => vecShowExport([[lon, lat]])));
-    btns.appendChild(mk('\u2716 Cancel', 'vec-rb-cancel', () => { vecCancelAll(); vecRecPanelHide(); vecSidebarRestore(); vecResetToStep1(); }));
-    return;
+  const zb = null /* vec-btn-zoom removed v73 */;
+  if (zb) {
+    zb.style.opacity      = on ? '1'    : '0.3';
+    zb.style.pointerEvents= on ? 'auto' : 'none';
   }
-
-  // Manual POI
-  if (vecTool === 'poi-m') {
-    vecSidebarCollapse();
-    const panel = document.getElementById('vec-rec-panel');
-    if (panel) { panel.style.display = 'block'; }
-    const metric = document.getElementById('vec-rec-metric'); if (metric) metric.textContent = '\ud83d\udccd Tap map to place';
-    const st = document.getElementById('vec-rec-status'); if (st) st.textContent = 'Single tap to drop a marker';
-    const btns = document.getElementById('vec-rec-btns'); btns.innerHTML = '';
-    const mk = (label, cls, fn) => { const b=document.createElement('button'); b.className='vec-rb '+cls; b.textContent=label; b.onclick=fn; return b; };
-    btns.appendChild(mk('\u2716 Cancel', 'vec-rb-cancel', () => { map.off('click', _vecPoiHandler); vecCancelAll(); vecRecPanelHide(); vecSidebarRestore(); vecResetToStep1(); }));
-    map.once('click', _vecPoiHandler);
-    return;
-  }
-
-  // GPS walk (poly-g / path-g)
-  if (vecTool.endsWith('-g')) {
-    vecGpsPoints = []; vecGpsPaused = false;
-    vecGpsWatchId = 1;  // sentinel
-    vecSidebarCollapse();
-    vecRecPanelShow('gps-' + _vecGeom);
-    vecRecSetStatus('\u25cf Recording\u2026');
-    return;
-  }
-
-  // Manual poly/path
-  vecVertices = [];
-  vecSidebarCollapse();
-  vecRecPanelShow('man-' + _vecGeom);
-  map.on('click', vecOnMapClickVertex);
 }
 
-// ── Manual POI handler ────────────────────────────────────────────────
-function _vecPoiHandler(e) {
-  const { lat, lng } = e.latlng;
-  L.circleMarker([lat, lng], { radius:7, color:'#f97316', fillColor:'#f97316', fillOpacity:.9, weight:2 }).addTo(vecLayer);
-  vecShowExport([[lng, lat]]);
+// ── Zoom to current location ──────────────────────────────────────────
+function vecZoomToLocation() {
+  if (!vecLastPos) return;
+  map.setView([vecLastPos.lat, vecLastPos.lon], 16);
 }
 
-// ── Show export sidebar (GPS finish, POI capture, manual after edit) ──
-function vecShowExport(coords) {
-  _vecPendingCoords = coords;
-  vecRecPanelHide();
-  vecSidebarRestore();
-  // Show export section, hide steps
-  ['vec-step1','vec-step2','vec-step3'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
-  const exp = document.getElementById('vec-sec-export'); if (exp) exp.style.display = '';
-  // Wire revision row
-  const stageSel = document.getElementById('vec-stage-sel');
-  const revRow   = document.getElementById('vec-revision-row');
-  if (stageSel && revRow) {
-    stageSel.value = 'eligibility'; revRow.style.display = 'none';
-    stageSel.onchange = () => { revRow.style.display = stageSel.value === 'revised' ? '' : 'none'; };
-  }
-  setStatus('Review and export \u2014 or discard', '');
-}
-
-async function vecDoExport() {
-  if (!_vecPendingCoords) return;
-  const stage     = document.getElementById('vec-stage-sel')?.value || 'eligibility';
-  const revReason = stage === 'revised' ? (document.getElementById('vec-revision-sel')?.value || null) : null;
-  const geomType  = _vecGeom || (vecTool ? VEC_KML_SUFFIX[vecTool] : 'poi');
-  await vecExportKML(geomType, _vecPendingCoords, stage, revReason);
-  _vecPendingCoords = null;
-}
+// ── Tool highlight (no-op stub — FAM uses its own sel class) ─────────
+function vecHighlight(tool) { /* handled by FAM selectors */ }
 
 // ── Select tool ───────────────────────────────────────────────────────
 const VEC_MODE_TAG = {'poi-m':'manual','poi-g':'gps','path-m':'manual','path-g':'gps','poly-m':'manual','poly-g':'gps'};
 
-// updateVecStats — updates rec panel metric (sidebar stats are hidden during recording)
-function updateVecStats() { vecRecUpdateMetric(); }
+// ── FAM sidebar state ──────────────────────────────────────────────────
+let _famShape  = null;   // 'poly' | 'path' | 'poi'
+let _famMethod = null;   // 'manual' | 'gps'
 
-// vecSelectTool — compat stub (new flow uses vecSelectGeom/Method/Start)
-function vecSelectTool(tool) {
-  // Derive geom + method from tool string for compat
-  const geomMap = { 'poi-m':'poi','poi-g':'poi','path-m':'path','path-g':'path','poly-m':'poly','poly-g':'poly' };
-  _vecGeom = geomMap[tool] || 'poi';
-  vecTool  = tool;
+function vecFamReset() {
+  _famShape = null; _famMethod = null;
+  ['poly','path','poi'].forEach(s => {
+    const b = document.getElementById('vt-' + s);
+    if (b) b.classList.remove('sel');
+  });
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m);
+    if (b) b.classList.remove('sel');
+  });
+  document.getElementById('vec-step2').style.display = 'none';
+  document.getElementById('vec-step3').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  document.getElementById('vec-sec-stats').style.display = 'none';
+  document.getElementById('vec-feat-name').value = '';
+  document.getElementById('vec-type-chips').innerHTML = '';
+  document.getElementById('vec-gps-info').textContent = '';
+  vecRecPanelHide();
 }
 
-// vecMakeBtn — kept for any remaining callers
+function vecFamSelectShape(shape) {
+  if (!vecGpsReady) return;
+  _famShape = shape; _famMethod = null;
+  ['poly','path','poi'].forEach(s => {
+    const b = document.getElementById('vt-' + s);
+    if (b) b.classList.toggle('sel', s === shape);
+  });
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m);
+    if (b) b.classList.remove('sel');
+  });
+  document.getElementById('vec-step2').style.display = '';
+  document.getElementById('vec-step3').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  // GPS method not meaningful for POI (immediate capture) — disable it
+  const gpsBtn = document.getElementById('vec-meth-gps');
+  // POI GPS still valid (captures current pos), so keep both enabled
+  if (gpsBtn) gpsBtn.disabled = false;
+}
+
+function vecFamSelectMethod(method) {
+  if (!_famShape) return;
+  _famMethod = method;
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m);
+    if (b) b.classList.toggle('sel', m === method);
+  });
+  // Derive the v82 tool key
+  const tool = _famShape + '-' + (method === 'gps' ? 'g' : 'm');
+  vecTool = tool;
+
+  // Populate type chips
+  vecSelectedType = VEC_TYPES[tool][0];
+  const chips = document.getElementById('vec-type-chips');
+  chips.innerHTML = '';
+  VEC_TYPES[tool].forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'vec-type-chip' + (t === vecSelectedType ? ' sel' : '');
+    b.textContent = t;
+    b.onclick = () => {
+      vecSelectedType = t;
+      chips.querySelectorAll('.vec-type-chip').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+    chips.appendChild(b);
+  });
+
+  document.getElementById('vec-feat-name').value = '';
+  document.getElementById('vec-gps-info').textContent = '';
+  document.getElementById('vec-step3').style.display = '';
+
+  // Label the start button appropriately
+  const sb = document.getElementById('vec-btn-start-fam');
+  if (sb) {
+    if (_famShape === 'poi') {
+      sb.textContent = method === 'gps' ? '📍 Capture GPS POI' : '📌 Tap map for POI';
+    } else if (method === 'manual') {
+      sb.textContent = '✏️ Start drawing';
+    } else {
+      sb.textContent = '▶ Start recording';
+    }
+  }
+}
+
+function vecFamStart() {
+  if (!vecTool) return;
+  const tool = vecTool;
+  vecCancelAll();
+  vecTool = tool;  // restore after cancel clears it
+
+  if (tool === 'poi-g') {
+    vecDoGPSPOI();
+    document.getElementById('vec-step3').style.display = '';
+    document.getElementById('vec-sec-ctrl').style.display = '';
+  } else if (tool === 'poi-m') {
+    setStatus('Tap the map to drop a POI.', '');
+    map.once('click', vecOnMapClickPOI);
+    document.getElementById('vec-sec-ctrl').style.display = '';
+  } else if (tool === 'path-m' || tool === 'poly-m') {
+    setStatus('Tap map to add vertices. ↩ undo · ✅ finish.', '');
+    map.on('click', vecOnMapClickVertex);
+    // Build manual ctrl row
+    const row = document.getElementById('vec-ctrl-row');
+    row.innerHTML = '';
+    row.appendChild(vecMakeBtn('↩️','b-gray','Undo last vertex', vecUndoVertex));
+    row.appendChild(vecMakeBtn('✅','b-green','Finish', vecFinishManual));
+    row.appendChild(vecMakeBtn('🗑','b-red','Cancel', vecCancelAll));
+    document.getElementById('vec-sec-ctrl').style.display = '';
+    // Collapse sidebar
+    const sb = document.getElementById('sidebar');
+    if (sb && !sb.classList.contains('collapsed')) {
+      sb.classList.add('collapsed');
+      const btn = document.getElementById('btn-sb');
+      if (btn) btn.textContent = '☰';
+      setTimeout(() => map.invalidateSize(), 220);
+    }
+  } else {
+    // GPS walk: path-g / poly-g
+    vecRecPanelShow();
+    // Collapse sidebar
+    const sb = document.getElementById('sidebar');
+    if (sb && !sb.classList.contains('collapsed')) {
+      sb.classList.add('collapsed');
+      const btn = document.getElementById('btn-sb');
+      if (btn) btn.textContent = '☰';
+      setTimeout(() => map.invalidateSize(), 220);
+    }
+    vecStartRecording();
+  }
+}
+
+// ── Floating rec panel show/hide ──────────────────────────────────────
+function vecRecPanelShow() {
+  const panel = document.getElementById('vec-rec-panel');
+  if (panel) panel.style.display = 'block';
+}
+
+function vecRecPanelHide() {
+  const panel = document.getElementById('vec-rec-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+function vecStartRecording() {
+  vecGpsPoints = []; vecGpsPaused = false; vecLayer.clearLayers();
+  vecGpsWatchId = 1;  // sentinel: non-null means "recording active"
+  const panel = document.getElementById('vec-rec-panel');
+  if (panel) panel.style.display = 'block';
+  const stat = document.getElementById('vec-rec-stat');
+  if (stat) stat.textContent = 'Recording… 0 pts';
+  setStatus('Recording… tap ✅ Finish or ✕ Cancel.', '');
+}
+
+function vecRecUndo() {
+  if (vecGpsPoints.length) {
+    vecGpsPoints.pop();
+    // Redraw with remaining points
+    const lls = vecGpsPoints.map(p => [p.lat, p.lon]);
+    vecLayer.clearLayers();
+    if (lls.length >= 2) {
+      const color = vecTool === 'poly-g' ? '#f97316' : '#3b82f6';
+      L.polyline(lls, { color, weight:2.5, opacity:.85 }).addTo(vecLayer);
+      L.circleMarker(lls[lls.length-1], {
+        radius:5, color:'#fff', fillColor:color, fillOpacity:1, weight:1.5
+      }).addTo(vecLayer);
+    }
+    const stat = document.getElementById('vec-rec-stat');
+    if (stat) stat.textContent = vecGpsPoints.length + ' pts';
+  }
+}
+
+function vecRecCancel() {
+  vecGpsWatchId = null;
+  vecGpsPaused = false; vecGpsPoints = []; vecVertices = [];
+  vecLayer.clearLayers();
+  vecRecPanelHide();
+  vecFamReset();
+  setStatus('Recording cancelled.', '');
+}
+
+function updateVecStats() {
+  if (!vecTool) return;
+  const statsEl = document.getElementById('vec-sec-stats');
+  const areaEl  = document.getElementById('vec-stat-area');
+  const areaVal = document.getElementById('vec-stat-area-val');
+  const lenVal  = document.getElementById('vec-stat-len-val');
+  if (!statsEl) return;
+  let pts = [];
+  // Manual tools: vertices stored in vecVertices[]
+  if (vecVertices && vecVertices.length)
+    pts = vecVertices.map(v => [v.lon, v.lat]);
+  // GPS tools: points stored in vecGpsPoints[]
+  if (!pts.length && vecGpsPoints && vecGpsPoints.length)
+    pts = vecGpsPoints.map(p => [p.lon, p.lat]);
+  if (pts.length < 2) { statsEl.style.display='none'; return; }
+  statsEl.style.display='';
+  const isPoly = vecTool==='poly-m'||vecTool==='poly-g';
+  const perimEl = document.getElementById('vec-stat-perim');
+  const perimVal= document.getElementById('vec-stat-perim-val');
+  const lenRow  = document.getElementById('vec-stat-len-row');
+  if (isPoly && pts.length >= 3) {
+    try {
+      const poly = turf.polygon([[...pts, pts[0]]]);
+      const areaSqm = turf.area(poly);
+      const perimM  = turf.length(turf.polygonToLine(poly),{units:'meters'});
+      if (areaEl)  { areaEl.style.display=''; }
+      if (areaVal) areaVal.textContent = areaSqm>=10000?(areaSqm/10000).toFixed(3)+' ha':areaSqm.toFixed(1)+' m\u00b2';
+      if (perimEl) { perimEl.style.display=''; }
+      if (perimVal) perimVal.textContent = perimM.toFixed(1)+' m';
+      if (lenRow)  lenRow.style.display='none';
+    } catch(e) {}
+  } else {
+    if (areaEl)  areaEl.style.display='none';
+    if (perimEl) perimEl.style.display='none';
+    if (lenRow)  lenRow.style.display='';
+    try {
+      const distM = turf.length(turf.lineString(pts),{units:'meters'});
+      if (lenVal) lenVal.textContent = distM>=1000?(distM/1000).toFixed(3)+' km':distM.toFixed(1)+' m';
+    } catch(e) {}
+  }
+}
+
+// vecSelectTool — kept as internal helper; FAM UI calls vecFamStart() instead.
+// Called directly only by vecDoGPSPOI (post-capture ctrl rebuild).
+function vecSelectTool(tool) {
+  // no-op in FAM UI — selection handled by vecFamSelectShape/Method/Start
+}
+
+// ── GPS POI: immediate capture from background watch ──────────────────
+function vecDoGPSPOI() {
+  // vecLastPos guaranteed non-null because tools only enabled after first fix
+  const { lat, lon, accuracy } = vecLastPos;
+  L.circleMarker([lat, lon], {
+    radius:7, color:'#10b981', fillColor:'#10b981', fillOpacity:.9, weight:2
+  }).addTo(vecLayer);
+  document.getElementById('vec-gps-info').textContent =
+    'POI fixed \u00b1 ' + Math.round(accuracy) + ' m';
+  setStatus('GPS POI placed (\u00b1' + Math.round(accuracy) + ' m). Enter name + type, then \u{1F4E6}.', '');
+  // Build ctrl row with export + cancel
+  const row = document.getElementById('vec-ctrl-row');
+  row.innerHTML = '';
+  row.appendChild(vecMakeBtn('\u{1F4E6}','b-green','Export KML',
+    () => vecExportKML('poi', [[lon, lat]])));
+  row.appendChild(vecMakeBtn('\u{1F5D1}','b-red','Cancel', vecCancelAll));
+  document.getElementById('vec-sec-ctrl').style.display = '';
+  document.getElementById('vec-feat-name').focus();
+}
+
+// ── Control row builder ───────────────────────────────────────────────
 function vecMakeBtn(icon, cls, tip, fn) {
   const b = document.createElement('button');
   b.className = 'icon-btn ' + cls;
@@ -2486,22 +2516,40 @@ function vecMakeBtn(icon, cls, tip, fn) {
   return b;
 }
 
-// ── Manual path / polygon vertex handler ──────────────────────────────
+function vecBuildCtrl(tool) {
+  // FAM UI: ctrl row built directly in vecFamStart(); this is a no-op stub.
+}
+
+// ── Manual POI ────────────────────────────────────────────────────────
+function vecOnMapClickPOI(e) {
+  if (APP_MODE !== 'vec' || vecTool !== 'poi-m') return;
+  const { lat, lng } = e.latlng;
+  L.circleMarker([lat, lng], {
+    radius:7, color:'#f97316', fillColor:'#f97316', fillOpacity:.9, weight:2
+  }).addTo(vecLayer);
+  setStatus('POI placed. Enter name + type, then \u{1F4E6}.', '');
+  const row = document.getElementById('vec-ctrl-row');
+  row.innerHTML = '';
+  row.appendChild(vecMakeBtn('\u{1F4E6}','b-green','Export KML',
+    () => vecExportKML('poi', [[lng, lat]])));
+  row.appendChild(vecMakeBtn('\u{1F5D1}','b-red','Cancel', vecCancelAll));
+  document.getElementById('vec-sec-ctrl').style.display = '';
+}
+
+// ── Manual path / polygon ─────────────────────────────────────────────
 function vecOnMapClickVertex(e) {
   if (APP_MODE !== 'vec') return;
   vecVertices.push({ lat: e.latlng.lat, lon: e.latlng.lng });
   vecRedrawManual();
-  vecRecUpdateMetric();
-  const n = vecVertices.length;
-  vecRecSetStatus(n + ' ' + (n === 1 ? 'vertex' : 'vertices')
-    + (vecTool === 'poly-m' && n < 3 ? ' \u2014 need \u22653' : ''));
+  updateVecStats();
+  setStatus(vecVertices.length + ' vertices.'
+    + (vecTool === 'poly-m' ? ' Need \u22653 to finish.' : ''), '');
 }
 
 function vecUndoVertex() {
   if (!vecVertices.length) return;
-  vecVertices.pop(); vecRedrawManual(); vecRecUpdateMetric();
-  const n = vecVertices.length;
-  vecRecSetStatus(n ? n + ' vertices' : 'All vertices cleared');
+  vecVertices.pop(); vecRedrawManual();
+  setStatus(vecVertices.length ? vecVertices.length + ' vertices.' : 'All vertices cleared.', '');
 }
 
 function vecRedrawManual() {
@@ -2537,41 +2585,47 @@ function vecRedrawManual() {
 
 function vecFinishManual() {
   const isPoly = vecTool === 'poly-m';
-  if (isPoly && vecVertices.length < 3) { vecRecSetStatus('Need \u22653 vertices'); return; }
-  if (!isPoly && vecVertices.length < 2) { vecRecSetStatus('Need \u22652 vertices'); return; }
+  if (isPoly && vecVertices.length < 3) {
+    setStatus('Need \u22653 vertices for a polygon.', 'err'); return;
+  }
+  if (!isPoly && vecVertices.length < 2) {
+    setStatus('Need \u22652 vertices for a path.', 'err'); return;
+  }
   map.off('click', vecOnMapClickVertex);
   const coords = vecVertices.map(v => [v.lon, v.lat]);
-  // Enter edit step — full map, rec panel shows Done/Discard
-  const lls = coords.map(([lon, lat]) => [lat, lon]);
-  const editLayer = isPoly
-    ? L.polygon(lls, { color:'#f59e0b', weight:2.5, fillOpacity:.12 })
-    : L.polyline(lls, { color:'#f59e0b', weight:3 });
-  const ring = isPoly ? [...coords, coords[0]] : coords;
-  _vecEditMeta   = { geomType: isPoly?'poly':'path', stage:'eligibility', revision_reason:null };
-  _vecEditCoords = ring;
-  _vecEditLayer  = editLayer;
-  vecLayer.clearLayers();
-  editLayer.addTo(vecLayer);
-  if (editLayer.editing) editLayer.editing.enable();
-  vecRecPanelShow('edit');
-  vecRecSetStatus('\u270f\ufe0f Drag vertices to adjust');
+  updateVecStats();
+  if (isPoly) {
+    const ring = [...coords];
+    if (ring[0][0] !== ring[ring.length-1][0]) ring.push(ring[0]);
+    vecExportKMLWithEdit('poly', ring);
+  } else { vecExportKMLWithEdit('path', coords); }
 }
 
-// ── GPS walk helpers ──────────────────────────────────────────────────
+// ── GPS walk — redirected to vecStartRecording() in FAM UI ───────────
+function vecGpsWalkStart() {
+  vecStartRecording();
+}
+
 function vecGpsTogglePause() {
+  const pb = document.getElementById('vec-btn-pause');
   vecGpsPaused = !vecGpsPaused;
-  const pb = document.getElementById('vrb-pause');
-  if (pb) pb.textContent = vecGpsPaused ? '\u25b6\ufe0f Resume' : '\u23f8\ufe0f Pause';
-  vecRecSetStatus(vecGpsPaused ? '\u23f8 Paused \u2014 tap Resume' : '\u25cf Recording\u2026');
+  if (pb) pb.textContent = vecGpsPaused ? '\u25b6\ufe0f' : '\u23f8\ufe0f';
+  setStatus(vecGpsPaused
+    ? 'Paused. Tap \u25b6\ufe0f to resume or \u2705 to finish.'
+    : 'Recording\u2026', '');
 }
 
 function vecGpsFinish() {
-  vecGpsWatchId = null;
-  vecGpsPaused  = false;
-  const isPoly  = vecTool === 'poly-g';
-  const minPts  = isPoly ? 3 : 2;
+  vecGpsWatchId = null;   // stop recording (background watch continues)
+  vecGpsPaused = false;
+  vecRecPanelHide();
+  const gi = document.getElementById('vec-gps-info');
+  if (gi) gi.textContent = '';
+
+  const isPoly = vecTool === 'poly-g';
+  const minPts = isPoly ? 3 : 2;
   if (vecGpsPoints.length < minPts) {
-    vecRecSetStatus('Need \u22652 GPS points'); return;
+    setStatus('Need at least ' + minPts + ' GPS points.', 'err'); return;
   }
   let coords = vecGpsPoints.map(p => [p.lon, p.lat]);
   if (isPoly) {
@@ -2581,54 +2635,60 @@ function vecGpsFinish() {
       let poly = turf.polygon([ring]);
       const unkinked = turf.unkinkPolygon(poly);
       if (unkinked.features.length) {
-        const largest = unkinked.features.reduce((a,b) => turf.area(a)>turf.area(b)?a:b);
-        poly = turf.simplify(largest, {tolerance:0.00001, highQuality:false});
+        const largest = unkinked.features.reduce((a,b) =>
+          turf.area(a) > turf.area(b) ? a : b);
+        poly = turf.simplify(largest, { tolerance:0.00001, highQuality:false });
         coords = poly.geometry.coordinates[0];
       } else { coords = ring; }
     } catch(e) { coords = ring; }
-  }
-  // GPS: no edit step — go straight to export sidebar
-  _vecGeom = isPoly ? 'poly' : 'path';
-  vecShowExport(coords);
+    vecExportKML('poly', coords);
+  } else { vecExportKML('path', coords); }
+  setTimeout(updateVecStats, 300);
 }
 
-// ── Record GPS point ──────────────────────────────────────────────────
+// Called from background watch during an active recording session
 function vecRecordPoint(lat, lon) {
-  // Min distance filter: 0.5 m
   if (vecGpsPoints.length) {
     const last = vecGpsPoints[vecGpsPoints.length - 1];
-    if (turf.distance(turf.point([last.lon, last.lat]), turf.point([lon, lat]), {units:'meters'}) < 0.5) return;
+    if (turf.distance(
+      turf.point([last.lon, last.lat]),
+      turf.point([lon, lat]),
+      { units:'meters' }) < 1) return;
   }
   vecGpsPoints.push({ lat, lon });
+  // Redraw recorded track
   const lls = vecGpsPoints.map(p => [p.lat, p.lon]);
-  const color = vecTool === 'poly-g' ? '#f97316' : '#3b82f6';
   vecLayer.clearLayers();
-  // Walk trail
-  L.polyline(lls, { color, weight:3, opacity:.9 }).addTo(vecLayer);
-  // Fill preview + closing line for polygon
-  if (vecTool === 'poly-g' && lls.length >= 3) {
-    L.polygon(lls, { color, weight:0, fillOpacity:.12 }).addTo(vecLayer);
-    L.polyline([lls[lls.length-1], lls[0]], { color, weight:2, opacity:.5, dashArray:'5 6' }).addTo(vecLayer);
-  }
-  // Current position dot
-  L.circleMarker(lls[lls.length-1], { radius:5, color:'#fff', fillColor:color, fillOpacity:1, weight:1.5 }).addTo(vecLayer);
-  // Update rec panel
-  vecRecUpdateMetric();
-  vecRecSetStatus('\u25cf ' + vecGpsPoints.length + ' pts');
+  const color = vecTool === 'poly-g' ? '#f97316' : '#3b82f6';
+  L.polyline(lls, { color, weight:2.5, opacity:.85 }).addTo(vecLayer);
+  L.circleMarker(lls[lls.length-1], {
+    radius:5, color:'#fff', fillColor:color, fillOpacity:1, weight:1.5
+  }).addTo(vecLayer);
+  const stat = document.getElementById('vec-rec-stat');
+  if (stat) stat.textContent = vecGpsPoints.length + ' pts recorded \u00b7 \u00b1' + Math.round(vecLastPos?.accuracy||0) + ' m';
 }
 
 // ── Cancel all ────────────────────────────────────────────────────────
 function vecCancelAll() {
-  vecGpsWatchId  = null;
-  vecGpsPaused   = false;
-  vecGpsPoints   = [];
-  vecVertices    = [];
-  _vecPendingCoords = null;
+  vecGpsWatchId = null;   // stop recording sentinel
+  vecGpsPaused = false; vecGpsPoints = []; vecVertices = [];
   map.off('click', vecOnMapClickVertex);
-  map.off('click', _vecPoiHandler);
-  if (_vecEditLayer && _vecEditLayer.editing) _vecEditLayer.editing.disable();
-  _vecEditLayer = null; _vecEditCoords = null; _vecEditMeta = null;
+  map.off('click', vecOnMapClickPOI);
   if (vecLayerOnMap) vecLayer.clearLayers();
+  const gi = document.getElementById('vec-gps-info');
+  if (gi) gi.textContent = '';
+  vecRecPanelHide();
+  _famShape = null; _famMethod = null; vecTool = null;
+  ['poly','path','poi'].forEach(s => {
+    const b = document.getElementById('vt-' + s); if (b) b.classList.remove('sel');
+  });
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m); if (b) b.classList.remove('sel');
+  });
+  document.getElementById('vec-step2').style.display = 'none';
+  document.getElementById('vec-step3').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  document.getElementById('vec-sec-stats').style.display = 'none';
 }
 
 // ── KML export ────────────────────────────────────────────────────────
@@ -2735,7 +2795,7 @@ async function vecExportKML(geomType, coords, stage, revision_reason) {
   uploadFile(fname, kmlBlob, vecFolder);
   setTimeout(() => {
     vecCancelAll(); vecTool = null;
-    if (APP_MODE === 'vec') { vecSidebarRestore(); vecResetToStep1(); }
+    if (APP_MODE === 'vec') setStatus('GPS ready. Select a tool.', '');
   }, 1500);
 }
 
@@ -2822,7 +2882,6 @@ function openSettingsCallout(anchor) {
     chProj.textContent = '\ud83d\udd04 Change Project';
     chProj.onclick = () => {
       closeCallout();
-      if (APP_MODE === 'vec') vecModeLeave();
       SESSION.setupDone = false;
       SESSION.projectKey = null;
       _setupProjectKey = null;
@@ -3779,43 +3838,6 @@ const ABOUT_CONTENT = {
   log: `<h3 style="color:#60a5fa;margin:0 0 10px;font-size:13px">Changelog — ARR Mapper</h3>
 <div style="color:#9ca3af;font-size:10px;margin-bottom:12px">Cumulative changelog &mdash; latest first</div>
 
-<div class="abt-ver">v89 <span class="abt-date">Aug 2026</span></div>
-<ul>
-  <li>Fix: reverted v86/v87 layout change — padding-top:76px restored to #sidebar (as in v85), removing dead space above map on desktop</li>
-</ul>
-<div class="abt-ver">v88 <span class="abt-date">Aug 2026</span></div>
-<ul>
-  <li>Fix: rec panel not showing during recording — panel.style.display was set to '' (empty) which falls back to CSS display:none; changed to 'block' explicitly</li>
-</ul>
-<div class="abt-ver">v87 <span class="abt-date">Aug 2026</span></div>
-<ul>
-  <li>Fix: map dead space on desktop — moved padding-top:76px from #sidebar to #main so both sidebar and map clear the absolute-positioned topbar; map now fills full available height</li>
-</ul>
-<div class="abt-ver">v86 <span class="abt-date">Aug 2026</span></div>
-<ul>
-  <li>Fix: #vec-rec-panel moved from inside #sidebar to #app level — sidebar CSS transition was creating a stacking context that trapped position:fixed children, making the recording panel and buttons invisible during active recording</li>
-</ul>
-<div class="abt-ver">v85 <span class="abt-date">Aug 2026</span></div>
-<ul>
-  <li>Fix: duplicate let _vecPendingCoords declaration (lines 2121 + 2452) — SyntaxError was crashing all JS on load, causing blank project grid</li>
-</ul>
-<div class="abt-ver">v84 <span class="abt-date">Aug 2026</span></div>
-<ul>
-  <li>Fix: "Change Project" now calls vecModeLeave() when vec mode is active — stops GPS background watch, hides rec panel, clears recording state before overlay re-appears</li>
-</ul>
-<div class="abt-ver">v83 <span class="abt-date">Aug 2026</span></div>
-<ul>
-  <li>Vec tool: 3-step sidebar flow — Step 1: Polygon/Path/POI; Step 2: Manual/GPS inline expand; Step 3: Name (required) + Type chips (must tap) + ▶ Start (disabled until both filled)</li>
-  <li>Vec tool: GPS method button disabled until first fix; GPS ± accuracy shown in step 1 header</li>
-  <li>Vec tool: ▶ Start collapses sidebar, shows semi-transparent recording panel fixed below topbar</li>
-  <li>Vec tool: recording panel shows live area+perimeter (polygon) or distance (path) updating every point/vertex; status line; context buttons</li>
-  <li>Vec tool: manual poly/path — after Finish enters vertex-edit step on full map (rec panel shows Done/Discard); no sidebar until Done</li>
-  <li>Vec tool: GPS poly/path — no vertex edit; after Finish goes straight to export sidebar (stage + Export KML)</li>
-  <li>Vec tool: POI (both) — after capture goes straight to export sidebar</li>
-  <li>Vec tool: GPS walk — fill preview + closing dashed line for poly-g; always pan-to-follow during recording</li>
-  <li>Vec tool: GPS min distance filter reduced 1m → 0.5m; maximumAge 3000 → 0 for fresher fixes</li>
-  <li>Vec tool: sidebar restores on export complete, cancel, or discard</li>
-</ul>
 <div class="abt-ver">v82 <span class="abt-date">Aug 2026</span></div>
 <ul>
   <li>Plantation + Soil GeoJSON: operator_email, operator_name, project, captured_ts added to all four builders (buildSpeciesPolygonsGeoJSON, buildSaplingPointsGeoJSON, buildPlantSoilGeoJSON, buildAssessedSoilGeoJSON) via shared _auditProps() helper</li>
@@ -4168,15 +4190,102 @@ function toggleSummary(bodyId, headerEl) {
 
 // Wraps vecExportKML — for manual features, shows edit panel instead of
 // immediately exporting. GPS features export directly as before.
-// vecExportKMLWithEdit — compat: now routes through new flow
 async function vecExportKMLWithEdit(geomType, coords) {
-  // Both GPS and manual now go through vecShowExport / vecDoExport
-  _vecGeom = geomType;
-  vecShowExport(coords);
+  const isGPS = vecTool && vecTool.endsWith('-g');
+  if (isGPS) {
+    // GPS features: show a lightweight stage prompt before exporting
+    const stageOpts = [
+      ['eligibility','Eligibility check'],['negotiated','Negotiated boundary'],
+      ['surveyed','Surveyor (amin) boundary'],['cleared','Post-clearing boundary'],
+      ['final','Final (post-fencing)'],['revised','Revised']
+    ];
+    const chosen = await new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+      const box = document.createElement('div');
+      box.style.cssText = 'background:#1f2937;border:1px solid #374151;border-radius:10px;padding:16px;min-width:220px;max-width:290px';
+      box.innerHTML = '<div style="font-size:12px;color:#f3f4f6;font-weight:600;margin-bottom:10px">Polygon stage</div>';
+      stageOpts.forEach(([val, label]) => {
+        const b = document.createElement('button');
+        b.style.cssText = 'display:block;width:100%;text-align:left;background:#374151;border:none;border-radius:6px;color:#f3f4f6;font-size:11px;padding:7px 10px;margin-bottom:5px;cursor:pointer';
+        b.textContent = label;
+        b.onclick = () => { document.body.removeChild(overlay); resolve(val); };
+        box.appendChild(b);
+      });
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+    });
+    let revReason = null;
+    if (chosen === 'revised') {
+      const revOpts = [['flood_hazard','Flood hazard'],['fire_hazard','Fire hazard'],['bank_erosion','Bank erosion'],['beneficiary_dropout','Beneficiary dropout'],['encroachment','Encroachment'],['other','Other']];
+      revReason = await new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+        const box = document.createElement('div');
+        box.style.cssText = 'background:#1f2937;border:1px solid #374151;border-radius:10px;padding:16px;min-width:220px;max-width:290px';
+        box.innerHTML = '<div style="font-size:12px;color:#f3f4f6;font-weight:600;margin-bottom:10px">Revision reason</div>';
+        revOpts.forEach(([val, label]) => {
+          const b = document.createElement('button');
+          b.style.cssText = 'display:block;width:100%;text-align:left;background:#374151;border:none;border-radius:6px;color:#f3f4f6;font-size:11px;padding:7px 10px;margin-bottom:5px;cursor:pointer';
+          b.textContent = label;
+          b.onclick = () => { document.body.removeChild(overlay); resolve(val); };
+          box.appendChild(b);
+        });
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+      });
+    }
+    await vecExportKML(geomType, coords, chosen, revReason);
+    return;
+  }
+
+  // Build a Leaflet layer for editing
+  const lls = coords.map(([lon, lat]) => [lat, lon]);
+  let editLayer;
+  if (geomType === 'poly') {
+    editLayer = L.polygon(lls, { color:'#f59e0b', weight:2.5, fillOpacity:.1 });
+  } else if (geomType === 'path') {
+    editLayer = L.polyline(lls, { color:'#f59e0b', weight:3 });
+  } else {
+    // POI — no vertex edit, export directly
+    await vecExportKML(geomType, coords); return;
+  }
+
+  // Save metadata for later export
+  const raw  = (document.getElementById('vec-feat-name').value.trim() || 'feature');
+  const _stageSel = document.getElementById('vec-stage-sel');
+  const _revSel   = document.getElementById('vec-revision-sel');
+  const _stage    = _stageSel ? _stageSel.value : 'eligibility';
+  const _revReason = (_stage === 'revised' && _revSel) ? _revSel.value : null;
+  _vecEditMeta   = { geomType, name: raw, type: vecSelectedType || 'other', stage: _stage, revision_reason: _revReason };
+  _vecEditCoords = coords;
+  _vecEditLayer  = editLayer;
+
+  // Add to map and enable vertex editing
+  vecLayer.clearLayers();
+  editLayer.addTo(vecLayer);
+  if (editLayer.editing) editLayer.editing.enable();
+
+  // Show edit panel, hide controls
+  document.getElementById('vec-sec-edit').style.display = '';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  // Reset stage selector and revision row
+  const stageSel = document.getElementById('vec-stage-sel');
+  if (stageSel) { stageSel.value = 'eligibility'; }
+  const revRow = document.getElementById('vec-revision-row');
+  if (revRow) revRow.style.display = 'none';
+  if (stageSel && revRow) {
+    stageSel.onchange = () => {
+      revRow.style.display = stageSel.value === 'revised' ? '' : 'none';
+    };
+  }
+  setStatus('✏️ Drag vertices to adjust — then Save or Discard', '');
 }
 
 async function vecSaveEdit() {
   if (!_vecEditLayer || !_vecEditMeta) return;
+
+  // Extract updated coords from the edited layer
   let coords;
   if (_vecEditMeta.geomType === 'poly') {
     const lls = _vecEditLayer.getLatLngs()[0];
@@ -4185,21 +4294,21 @@ async function vecSaveEdit() {
   } else {
     coords = _vecEditLayer.getLatLngs().map(ll => [ll.lng, ll.lat]);
   }
+
   if (_vecEditLayer.editing) _vecEditLayer.editing.disable();
-  _vecEditLayer = null;
-  // Show export sidebar with the edited coords
-  _vecGeom = _vecEditMeta.geomType;
-  vecShowExport(coords);
-  _vecEditCoords = null; _vecEditMeta = null;
+  document.getElementById('vec-sec-edit').style.display = 'none';
+
+  // Export with updated coords, carrying stage metadata
+  await vecExportKML(_vecEditMeta.geomType, coords, _vecEditMeta.stage, _vecEditMeta.revision_reason);
+  _vecEditLayer = null; _vecEditCoords = null; _vecEditMeta = null;
 }
 
 function vecDiscardEdit() {
   if (_vecEditLayer && _vecEditLayer.editing) _vecEditLayer.editing.disable();
   vecLayer.clearLayers();
   _vecEditLayer = null; _vecEditCoords = null; _vecEditMeta = null;
-  vecRecPanelHide();
-  vecSidebarRestore();
-  vecResetToStep1();
+  document.getElementById('vec-sec-edit').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = '';
   setStatus('Edit discarded.', '');
 }
 
