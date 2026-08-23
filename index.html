@@ -16,7 +16,7 @@
 // ── Theme: run before paint to prevent flash ──────────────────────────
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v30</title>
+<title>ARR Project Suite v31</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 /* ── Launcher-local tokens ── */
@@ -96,6 +96,9 @@ footer a:hover{color:var(--canopy)}
 #feat-content h3{font-size:12px;font-weight:700;color:var(--canopy);margin:0 0 8px}
 #feat-content ul{padding-left:16px;margin:0 0 8px}
 #feat-content li{margin-bottom:3px}
+.cl-ver{font-weight:700;color:var(--ink);font-size:11px;margin:10px 0 3px}
+.cl-date{font-weight:400;color:var(--dim);font-size:10px;margin-left:6px}
+#feat-content ul{padding-left:16px;margin:0 0 4px;color:var(--mid);font-size:11px;line-height:1.7}
 #feat-content .f-sub{font-size:10px;color:var(--mid);margin-bottom:10px}
 /* ── Legal links bar ── */
 .legal-bar{text-align:center;font-size:10px;color:var(--mid);padding:8px;border-top:1px solid var(--rule);display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
@@ -424,27 +427,103 @@ document.addEventListener('DOMContentLoaded', launcherInit);
 const FEAT_APPLETS = [
   { key:'mapper',  label:'🗺️ ARR Mapper',          access:'Full block — sign-in required',
     features:[
-      'Vector Tool: GPS & manual capture of POIs, paths, and polygons',
-      'Polygon stage tagging: 7-step lifecycle (eligibility → negotiated → surveyed → cleared → final → revised)',
+      'Vector Tool: GPS walk & manual tap capture of POIs, paths, and polygons',
+      'Polygon lifecycle tagging: eligibility → negotiated → surveyed → cleared → final → revised',
       'Revision reason field (flood/fire/erosion/dropout/encroachment/other)',
-      'Plantation Mapper: species-based sapling grid placement with 20-species Asha list',
+      'Plantation Mapper: species-based sapling grid placement (20-species Asha/Banani list)',
       'Soil Mapper: hand-drawn soil type polygons (5 texture classes + Lowland/Organic)',
-      'MRV Tool: stratified random sampling, A+→D grading, height/DBH, quarterly photos',
       'GPS walk polygons with modal stage picker before export',
       'OPFS file queue with Drive sync; offline-first with IDB session persistence',
-      'KML/KMZ load, KML + SHP + JPG export with legend and north arrow',
+      'KML/KMZ load; KML + SHP + JPG export with legend and north arrow',
       'Files tab: on-device OPFS browser, GeoJSON → KML conversion',
       'Legacy Plot Sync: pulls 2024–2026 fencing polygons from Drive _legacy/',
+      'Audit fields on all exports: operator_email, operator_name, project, captured_ts, geometry_method, gps_accuracy_m',
+      'FAM-style Vector Tool sidebar: Shape → Method → Details & Start (3-step flow)',
+      'Floating live stats panel: area, perimeter, length updated per vertex during drawing',
       'Trilingual UI: English / Hindi / Bengali',
+      'Suite-integrated auth (launcher sign-in propagated via localStorage)',
+      'Light/dark theme inherited from launcher; toggle in topbar',
+    ],
+    changelog:[
+      { v:'v83–v97', date:'Aug 2026', notes:[
+        'FAM-style 3-step Vector Tool sidebar: Shape → Method → Details & Start',
+        'Sidebar collapses on Start; floating live stats panel (area/perim/length) during drawing and GPS recording',
+        'Floating GPS recording panel with Finish / Undo / Cancel; Start button gated until feature name filled',
+        'Full arr-shared.css theming: light=mint, dark=forest; theme toggle in topbar; ℹ️ changelog moved to launcher',
+        'Dead code audit: 22 dead functions removed (13.5 KB), redundant CSS cascade consolidated',
+        'All palette tokens replaced with arr-shared tokens (--bg, --card, --ink, --border, --forest, --canopy, --leaf, --mist, --mint etc.)',
+      ]},
+      { v:'v82', date:'Aug 2026', notes:[
+        'Plantation + Soil GeoJSON: operator_email, operator_name, project, captured_ts added to all four builders via shared _auditProps() helper',
+        'Plantation + Soil KML: audit fields added to ExtendedData in buildPolygonKMLString and buildSoilKMLString',
+      ]},
+      { v:'v81', date:'Aug 2026', notes:[
+        'Vec tool audit: operator_email, operator_name, geometry_method, gps_accuracy_m, point_count, project written to KML ExtendedData and GeoJSON properties',
+        'Vec tool KML: Document/Placemark name includes feature_type and geometry_method for unambiguous QGIS import',
+        'Vec tool KML: description blob replaced with structured ExtendedData (all fields importable as attribute columns)',
+        'GeoJSON properties renamed: name→feature_name, type→feature_type for KML/GeoJSON consistency',
+      ]},
+      { v:'v78', date:'Aug 2026', notes:[
+        'Fix: openSettingsCallout missing closing braces (broke all JS below it)',
+        'Fix: loadSessionFromIDB redundant auth re-check removed; session restores correctly on launch',
+        'Fix: arrAuthCheck redirect normalised to ./index.html',
+        'Suite-integrated auth: setup overlay project-selection only; userFolder derived from launcher auth email',
+        'Settings callout: shows signed-in email; Sign out → 🏠 Suite redirect',
+        'Removed: GSI script tag, oauthClientId, all Google Sign-In HTML/CSS/JS',
+      ]},
+      { v:'v68 DEV3', date:'Jul 2026', notes:[
+        'Vector Tool: polygon stage tagging (eligibility/negotiated/surveyed/cleared/final/revised)',
+        'Revision reason field shown when stage = revised',
+        'MRV Tool removed from ARRmapper and moved to appMonitoringDashboard',
+        'GPS walk polygons: modal stage picker before export',
+        'Manual polygons: stage/revision dropdowns in vertex edit panel',
+      ]},
+      { v:'v66 DEV8', date:'Jul 2026', notes:[
+        'Legacy Plot Sync: Sync button in Files tab pulls 2024–2026 fencing polygons from Drive _legacy/ into OPFS',
+      ]},
+      { v:'v65 DEV1–2', date:'Jul 2026', notes:[
+        'Clear All: layer-aware dialog with checkboxes',
+        'Files view button: toggle on/off; active file highlighted',
+        'Overlay layer picker removed; overlays added via Files browser',
+      ]},
+      { v:'v59 DEV1–6', date:'Jul 2026', notes:[
+        'Dropped species (Shal, Mahuwa, Aam, Kadam, Supari) commented out for Asha1',
+        'New Apps Script exec URLs deployed across all 4 project accounts',
+        'Code refactor: idbTx helper, dead code removal',
+      ]},
+      { v:'v41–v58', date:'Jun–Jul 2026', notes:[
+        'Files mode: on-device OPFS archive browser, GeoJSON → KML conversion, unsaved work warning',
+        'OPFS /sent/ and /geojson/ audit trail at every export',
+        'transect + intercept added as path types in Vector Tool',
+        'Licence header + About panel',
+      ]},
+      { v:'v38–v40', date:'Jun 2026', notes:[
+        'PWA: manifest.json + service worker (offline app shell)',
+        'OPFS outbox: local storage with Drive sync queue; network-aware upload',
+        'Portrait landscape lock removed; touch fixes',
+      ]},
+      { v:'v31–v37', date:'Jun 2026', notes:[
+        'Google Static Maps API for satellite JPG exports',
+        'Sequential Drive uploads; OAuth moved to tfcarbondata@gmail.com',
+        'Google Sign-In, IndexedDB session persistence, Apps Script Drive upload',
+        'GitHub Pages deployment + PWA landing page',
+      ]},
+      { v:'v20–v30', date:'May–Jun 2026', notes:[
+        'Vector Tool: GPS + manual POI, path, polygon; live blue GPS dot; trilingual UI',
+      ]},
+      { v:'v1–v19', date:'Apr–May 2026', notes:[
+        'Plantation Mapper, Soil Mapper, SHP/JPG/KML export, Leaflet map with Esri basemap',
+        '20-species list, 5 soil texture classes, LPC input',
+      ]},
     ]
   },
   { key:'survey',  label:'📋 Survey Manager',        access:'Full block — sign-in required',
     features:[
-      'Seven form types: Beneficiary Baseline, Plantation Details, Fencing, Event Record, Biomass (Tree & Pole), Nursery Mapping, Grievance',
+      'Seven form types: Beneficiary Baseline, Plantation Details, Fencing, Event Record, Biomass (Tree & Plot), Nursery Mapping, Grievance',
+      'Mortality / Plot Evaluation and Leakage Assessment forms (deep-linkable via ?form=mortality, ?form=leakage)',
       'Offline-first with OPFS file queue and row-first offline submission queue',
       'Photo capture: 3MP/80% JPEG compression, EXIF preserved',
       'Login-based surveyor_name auto-fill across all forms',
-      '👁 View / ⬇ Get functionality for submitted records',
       'Patch-back mechanism for offline edits',
       'Trilingual UI: English / Hindi / Bengali',
     ]
@@ -474,11 +553,18 @@ const FEAT_APPLETS = [
   },
   { key:'monitoring',label:'🌿 Monitoring Dashboard', access:'Partial — view open; MRV form requires sign-in',
     features:[
+      'Full-screen Leaflet map with District/Block/LPC filter cascades on 511-polygon Asha 1 dataset',
+      'MRV Tool: stratified random sampling with centroid walk (monthly) and exhaustive density-tiered (annual Sep–Nov)',
+      'MRV composite score: 6 plot metrics (42%) + tree condition observations capped at 56 sapling points (58%) = 0–100, A+→D grading',
+      'Height/DBH entry, quarterly photos, Drive upload per visit',
+      'Walk-along quick observations (👁 Obs) during active visit',
+      'Annual/mortality visit type with separate IDB sample key per visit mode',
+      'Cancel visit + discard collection; Plot metrics trilingual labels',
       'Plantation survival and species health charts',
       'Plot condition and leakage tracking (2024–2025 legacy + ongoing MRV)',
-      'MRV Field Visit Tool: stratified sampling, grading, height/DBH entry',
       'Leakage form and Health-Monitoring form quick-links to Survey Manager',
       'IDB caching for offline dashboard view',
+      'GAS backend shared with ARRmapper CCB sightings endpoint',
     ]
   },
   { key:'ccb',      label:'🦋 CCB & SDG Dashboard',   access:'Partial — view open; Upload Records requires sign-in',
@@ -540,9 +626,16 @@ function closeFeatList() {
 function featTab(i) {
   document.querySelectorAll('.feat-tab').forEach((b,j) => b.classList.toggle('sel', j===i));
   const a = FEAT_APPLETS[i];
-  document.getElementById('feat-content').innerHTML =
-    `<div class="f-sub">Access: ${a.access}</div>` +
-    `<h3>Features</h3><ul>${a.features.map(f=>`<li>${f}</li>`).join('')}</ul>`;
+  let html = `<div class="f-sub">Access: ${a.access}</div>`;
+  html += `<h3>Features</h3><ul>${a.features.map(f=>`<li>${f}</li>`).join('')}</ul>`;
+  if (a.changelog && a.changelog.length) {
+    html += `<h3 style="margin-top:14px">Version history</h3>`;
+    a.changelog.forEach(c => {
+      html += `<div class="cl-ver">${c.v} <span class="cl-date">${c.date}</span></div>`;
+      html += `<ul>${c.notes.map(n=>`<li>${n}</li>`).join('')}</ul>`;
+    });
+  }
+  document.getElementById('feat-content').innerHTML = html;
 }
 </script>
 

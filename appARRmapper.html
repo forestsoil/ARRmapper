@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>ARR Mapper v90 · Asha 1</title>
+<title>ARR Mapper v97 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -256,8 +256,6 @@ select option{background:var(--card)}
 .proj-btn.sel{border-color:var(--leaf);color:var(--forest);background:var(--mint)}
 
 /* ── About overlay ───────────────────────────────────────────────── */
-.abt-tab{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);font-size:10px;padding:8px 4px;cursor:pointer;white-space:nowrap}
-.abt-tab-sel{color:var(--leaf);border-bottom-color:var(--leaf)}
 
 /* ── Float draw buttons (portrait, plantation/soil draw) ─────────── */
 #float-draw-btns{
@@ -444,26 +442,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <body>
 
 
-<!-- ── About overlay ── -->
-<div id="about-overlay" style="position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.85);display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px">
-  <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;width:100%;max-width:400px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden">
-    <!-- Header -->
-    <div style="padding:16px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-      <span style="font-size:22px">🌳</span>
-      <div style="flex:1">
-        <div style="font-size:15px;font-weight:700;color:var(--ink)">ARRMapper Field Tool</div>
-        <div style="font-size:10px;color:var(--dim)">v90 &nbsp;·&nbsp; &copy; 2025&ndash;2026 Nirmalya Chatterjee</div>
-      </div>
-      <button onclick="closeAbout()" style="background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;padding:4px">&times;</button>
-    </div>
-    <!-- Tabs -->
-    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0">
-      <button class="abt-tab abt-tab-sel" id="abt-tab-log" onclick="abtTab('log')">📋 Changelog</button>
-    </div>
-    <!-- Content -->
-    <div id="abt-content" style="overflow-y:auto;padding:14px;font-size:11px;color:var(--mid);line-height:1.7;flex:1"></div>
-  </div>
-</div>
 
 <!-- ── Float draw buttons (portrait, during drawing) ── -->
 <div id="float-draw-btns">
@@ -502,7 +480,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
 <div id="topbar" style="flex-wrap:wrap;height:auto;padding:0">
   <div style="display:flex;align-items:center;width:100%;padding:3px 4px 2px;gap:2px">
     <button class="tb-uni-btn" id="btn-sb" onclick="toggleSB()" title="Menu / Close" style="background:#8b0000">☰</button>
-    <button class="tb-uni-btn" id="tb-about-btn" onclick="openAbout()" title="Changelog">ℹ️</button>
     <button class="tb-uni-btn" id="btn-kml-ind-tb" onclick="document.getElementById('kml-input').click()" title="Load KML/KMZ" style="margin-left:6px">📂</button>
     <button class="tb-uni-btn" id="tb-basemap-badge" onclick="cycleBasemap(this)" title="Basemap">🌐</button>
     <button class="tb-uni-btn" id="tb-lang-badge" onclick="cycleLang(this)" title="Language" style="font-size:13px;font-weight:700">E</button>
@@ -2085,7 +2062,7 @@ function switchTab(mode) {
   document.getElementById('mode-soil-body').classList.toggle('hidden', mode !== 'soil');
   document.getElementById('mode-vec-body').classList.toggle('hidden', mode !== 'vec');
   document.getElementById('mode-files-body').classList.toggle('hidden', mode !== 'files');
-  // mode-mrv-body removed in v68
+  // MRV Tool moved to appMonitoringDashboard in v68
   const ind = document.getElementById('btn-mode-ind');
   if (ind) ind.textContent = mode === 'soil' ? '\u{1F9EA}' : mode === 'vec' ? '\u{1F4D0}' : '\u{1F331}';
   updateTopbarIndicators();
@@ -3913,206 +3890,6 @@ async function filesDelete(fname, toolName, dirHandle, rowEl) {
 
 
 // ═══════════════════════════════════════════════════════════════════════
-// ABOUT PANEL  —  changelog
-// ═══════════════════════════════════════════════════════════════════════
-
-const ABOUT_CONTENT = {
-  log: `<h3 style="color:var(--leaf);margin:0 0 10px;font-size:13px">Changelog — ARR Mapper</h3>
-<div style="color:var(--dim);font-size:10px;margin-bottom:12px">Cumulative changelog &mdash; latest first</div>
-
-<div class="abt-ver">v82 <span class="abt-date">Aug 2026</span></div>
-<ul>
-  <li>Plantation + Soil GeoJSON: operator_email, operator_name, project, captured_ts added to all four builders (buildSpeciesPolygonsGeoJSON, buildSaplingPointsGeoJSON, buildPlantSoilGeoJSON, buildAssessedSoilGeoJSON) via shared _auditProps() helper</li>
-  <li>Plantation + Soil KML: operator_email, operator_name, project, captured_ts added to ExtendedData in buildPolygonKMLString and buildSoilKMLString</li>
-  <li>buildSaplingsKMLString: no per-point ExtendedData (points are folder-grouped by species; audit fields on the GeoJSON sidecar suffice)</li>
-</ul>
-<div class="abt-ver">v81 <span class="abt-date">Aug 2026</span></div>
-<ul>
-  <li>Vec tool audit: operator_email + operator_name (from suite auth) written to KML ExtendedData and GeoJSON properties</li>
-  <li>Vec tool audit: geometry_method (gps_walk / manual_tap) written to KML ExtendedData and GeoJSON properties</li>
-  <li>Vec tool audit: gps_accuracy_m written to KML ExtendedData and GeoJSON properties (median of walk points for GPS walk; last-fix accuracy for GPS POI; omitted for manual tools)</li>
-  <li>Vec tool audit: point_count (GPS points recorded or vertices tapped) written to KML ExtendedData and GeoJSON properties</li>
-  <li>Vec tool audit: project (SESSION.projectKey) written to KML ExtendedData and GeoJSON properties</li>
-  <li>Vec tool KML: &lt;Document&gt; and &lt;Placemark&gt; name now includes feature_type and geometry_method (e.g. LP_gps_walk) for unambiguous identification in QGIS/GEarth</li>
-  <li>Vec tool KML: &lt;description&gt; text blob replaced with structured &lt;ExtendedData&gt; — all fields importable as attribute columns in QGIS</li>
-  <li>GeoJSON properties: renamed name→feature_name, type→feature_type for consistency with KML ExtendedData keys</li>
-</ul>
-<div class="abt-ver">v78 <span class="abt-date">Aug 2026</span></div>
-<ul class="abt-ul">
-  <li>Fix: openSettingsCallout missing closing braces (broke all JS below it — loadSessionFromIDB and everything after was dead code)</li>
-  <li>Fix: loadSessionFromIDB redundant auth re-check removed (init() already guards); session now restores correctly on launch</li>
-  <li>Fix: switchTab garbled comment and broken ternary from v68 MRV removal</li>
-  <li>Fix: arrAuthCheck redirect used absolute /ARRmapper/index.html — normalised to ./index.html</li>
-  <li>Cleanup: removed dead tab_mrv:'' key from all three lang objects (EN/HI/BN)</li>
-  <li>Cleanup: removed dead tab_mrv:'' key from all three lang objects (EN/HI/BN)</li>l if no valid session</li>
-  <li>Setup overlay: project selection only; userFolder derived from launcher auth email (no GSI JWT step)</li>
-  <li>Settings callout: shows signed-in email; Sign out replaced with 🏠 Suite / Sign out (redirects to launcher)</li>
-  <li>Removed: GSI script tag, oauthClientId, setupRenderGoogleButton, setupHandleCredential, google-signin-btn HTML/CSS</li>
-  <li>IDB session restore re-checks launcher auth validity on startup</li>
-</ul>
-<div class="abt-ver">v68 DEV3 <span class="abt-date">Jul 2026</span></div>
-<ul class="abt-ul">
-  <li>Vector Tool: polygon stage tagging — eligibility / negotiated / surveyed / cleared / final / revised</li>
-  <li>Revision reason field (flood hazard, fire hazard, bank erosion, beneficiary dropout, encroachment, other) shown when stage = revised</li>
-  <li>Stage written to GeoJSON properties for all polygon exports (manual and GPS walk)</li>
-  <li>GPS walk polygons: modal stage picker shown before export (no vertex edit panel)</li>
-  <li>Manual polygons: stage/revision dropdowns in vertex edit panel</li>
-</ul>
-
-<div class="abt-ver">v66 DEV8 <span class="abt-date">Jul 2026</span></div>
-<ul class="abt-ul">
-  <li>Legacy Plot Sync: 🗺️ Sync button in Files tab pulls 2024–2026 fencing polygons from Drive _legacy/ into OPFS</li>
-  <li>MRV plot list now includes legacy LP polygons (shown with year, boundary on map)</li>
-  <li>LPC auto-filled when legacy plot selected in MRV</li>
-  <li>Apps Script v5: listLegacy + getLegacyFile GET routes (additive, v4 POST unchanged)</li>
-  <li>Fixed Asha1 scriptUrl typo (execf → exec)</li>
-  <li>Plot metrics +/− roller fix (mrvGetPlotMetrics() reference)</li>
-  <li>MRV plot metrics: 6 metrics, composite score, trilingual labels</li>
-</ul>
-
-<div class="abt-ver">v66 DEV5 <span class="abt-date">Jul 2026</span></div>
-<ul class="abt-ul">
-  <li>Combined sampling: monthly centroid walk (capped ~56 pts) + annual exhaustive density-tiered (Sep-Nov)</li>
-  <li>Annual/mortality visit type added; separate IDB sample key per visit mode</li>
-  <li>Walk-along quick observations during active visit (👁 Obs button)</li>
-</ul>
-
-<div class="abt-ver">v65 DEV2 <span class="abt-date">Jul 2026</span></div>
-<ul class="abt-ul">
-  <li>Clear All: layer-aware dialog with checkboxes (placements, soil, boundary, overlays, file view)</li>
-  <li>Files view button: toggle on/off; active file highlighted</li>
-  <li>Overlay layer picker removed; overlays added via Files browser</li>
-  <li>Topbar row 1: ☰, ℹ️, ⚙️, 📤. Row 2: 📂, mode, lang, basemap badges</li>
-  <li>MRV: Cancel visit + discard collection button added</li>
-</ul>
-
-<div class="abt-ver">v65 DEV1 <span class="abt-date">Jul 2026</span></div>
-<ul class="abt-ul">
-  <li>MRV Tool (📋): stratified random sampling, A+→D grading, height/DBH, quarterly photos, Drive upload</li>
-  <li>IDB v4: mrvVisits + mrvSamples stores</li>
-  <li>Apps Script v4: tool-first folder structure ARRmapper/{tool}/{user}/</li>
-  <li>Google Sign-In: reverted to pre-v60 stable auth pattern</li>
-</ul>
-
-<div class="abt-ver">v59 DEV1–6 <span class="abt-date">Jul 2026</span></div>
-<ul class="abt-ul">
-  <li>Dropped species (Shal, Mahuwa, Aam, Kadam, Supari) commented out for Asha1</li>
-  <li>New Apps Script exec URLs deployed across all 4 project accounts</li>
-  <li>Code refactor: idbTx helper, dead code removal (buildWheelPicker, pushToDrive, dl, runExportZip)</li>
-  <li>readableTextColor fixed; overlay layer picker deduplicated; uploadFile consolidated</li>
-</ul>
-
-<div class="abt-ver">v45–v58 <span class="abt-date">Jun–Jul 2026</span></div>
-<ul class="abt-ul">
-  <li>Licence header + About panel (this screen)</li>
-  <li>Emoji rendering fix in Files mode buttons</li>
-  <li>Files tab now opens correctly via mode switcher</li>
-  <li>Filename truncation with ellipsis in file browser</li>
-</ul>
-
-<div class="abt-ver">v41&ndash;v44 <span class="abt-date">Jun 2026</span></div>
-<ul class="abt-ul">
-  <li>Files mode (&#x1F4C1;): on-device OPFS archive browser</li>
-  <li>OPFS /sent/ and /geojson/ audit trail written at every export</li>
-  <li>GeoJSON sidecars for all SHP layers (permanent, no delete)</li>
-  <li>GeoJSON &rarr; KML conversion in Files mode</li>
-  <li>Unsaved work warning before loading another map</li>
-  <li>Hi/Bn translations for all Files mode strings</li>
-  <li>Removed browser download dialog for plantation/soil exports</li>
-  <li>transect + intercept added as path types in Vector Tool</li>
-</ul>
-
-<div class="abt-ver">v38&ndash;v40 <span class="abt-date">Jun 2026</span></div>
-<ul class="abt-ul">
-  <li>PWA: manifest.json + service worker (offline app shell)</li>
-  <li>OPFS outbox: structured local storage with Drive sync queue</li>
-  <li>Network-aware upload: queues when offline, retries on reconnect</li>
-  <li>Deferred JPG export: queues satellite basemap capture when offline</li>
-  <li>Timestamp format changed to YYYYMMDD_HHMMSS (underscore)</li>
-  <li>Portrait mode landscape lock removed</li>
-  <li>Touch fixes: finish button stopPropagation, touchcancel cleanup</li>
-  <li>Draw cancelled suppressed on intentional finish</li>
-</ul>
-
-<div class="abt-ver">v34&ndash;v37 <span class="abt-date">Jun 2026</span></div>
-<ul class="abt-ul">
-  <li>Google Static Maps API for satellite basemap in JPG exports</li>
-  <li>Web Mercator projector for exact vector-to-basemap alignment</li>
-  <li>Sequential Drive uploads (prevents duplicate folder race condition)</li>
-  <li>no-cors fetch for Apps Script uploads</li>
-  <li>OAuth moved to tfcarbondata@gmail.com (arr-mapper project)</li>
-</ul>
-
-<div class="abt-ver">v31&ndash;v33 <span class="abt-date">Jun 2026</span></div>
-<ul class="abt-ul">
-  <li>Google Sign-In (GIS renderButton) with project selector</li>
-  <li>IndexedDB session persistence across page loads</li>
-  <li>Apps Script Drive upload (4 project accounts)</li>
-  <li>Staff blocklist via staff_status.json in Drive root</li>
-  <li>Settings callout: Change Project, Sign out</li>
-  <li>GitHub Pages deployment + PWA landing page</li>
-  <li>Privacy Policy and Terms of Service pages</li>
-</ul>
-
-<div class="abt-ver">v20&ndash;v30 <span class="abt-date">May&ndash;Jun 2026</span></div>
-<ul class="abt-ul">
-  <li>Vector Tool: GPS + manual POI, path, polygon capture</li>
-  <li>GPS watchPosition with live blue dot</li>
-  <li>GPS boundary walk for plot polygon</li>
-  <li>KML export for vector features</li>
-  <li>Basemap toggle: AER / OSM / None</li>
-  <li>Direction indicator (N/S/E/W relative to plot)</li>
-  <li>Trilingual UI: English / Hindi / Bengali</li>
-</ul>
-
-<div class="abt-ver">v1&ndash;v19 <span class="abt-date">Apr&ndash;May 2026</span></div>
-<ul class="abt-ul">
-  <li>Plantation Mapper: species-based sapling grid placement</li>
-  <li>Soil Mapper: hand-drawn soil type polygons</li>
-  <li>SHP export (species polygons, sapling points, soil polygons)</li>
-  <li>JPG map export with legend and north arrow</li>
-  <li>LPC (plot ID) input and management</li>
-  <li>20-species Asha + Banani species list</li>
-  <li>5 soil texture classes (C, CL, L, SL, S) + Lowland/Organic</li>
-  <li>Leaflet map with Esri satellite basemap</li>
-</ul>`,
-
-};
-
-// Inline styles for changelog (injected via style tag on first open)
-function aboutInjectStyles() {
-  if (document.getElementById('abt-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'abt-styles';
-  s.textContent = `.abt-ver{font-weight:700;color:var(--ink);font-size:11px;margin:12px 0 4px}
-.abt-date{font-weight:400;color:var(--dim);font-size:10px;margin-left:6px}
-.abt-ul{padding-left:14px;margin:0 0 4px;color:var(--dim);font-size:10px;line-height:1.7}
-.abt-ul li{margin-bottom:2px}`;
-  document.head.appendChild(s);
-}
-
-function openAbout() {
-  aboutInjectStyles();
-  document.getElementById('about-overlay').style.display = 'flex';
-  abtTab('log');
-}
-
-function closeAbout() {
-  document.getElementById('about-overlay').style.display = 'none';
-}
-
-function abtTab(tab) {
-  const btn = document.getElementById('abt-tab-log');
-  if (btn) btn.classList.add('abt-tab-sel');
-  const content = document.getElementById('abt-content');
-  if (content) content.innerHTML = ABOUT_CONTENT[tab] || '';
-}
-
-// Close on backdrop click
-document.addEventListener('click', e => {
-  const overlay = document.getElementById('about-overlay');
-  if (overlay && overlay.style.display !== 'none' && e.target === overlay) closeAbout();
-});
 
 
 
