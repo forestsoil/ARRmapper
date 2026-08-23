@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>ARR Mapper v90 · Asha 1</title>
+<title>ARR Mapper v91 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -314,23 +314,27 @@ body.lang-bn .pm-label, body.lang-hi .pm-label { font-size: 14px; }
 /* ── Portrait tap-outside overlay ─────────────────────────────── */
 #sb-tap-close{display:none;position:fixed;top:0;right:0;width:30vw;height:100%;z-index:499;background:rgba(0,0,0,.25)}
 
-/* ── FAM-style Vector Tool sidebar (v90) ─────────────────────── */
+/* ── FAM-style Vector Tool sidebar (v91) ─────────────────────── */
 .vec-step{padding:8px 10px;border-bottom:1px solid var(--m-raised)}
 .vec-step-label{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--m-blue);font-weight:700;margin-bottom:6px}
-.vec-shape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+
+/* Shape buttons: full-width oblong, one per row */
+.vec-shape-grid{display:flex;flex-direction:column;gap:5px}
 .vec-shape-btn{
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-  background:var(--m-raised);border:2px solid transparent;border-radius:7px;
-  padding:7px 3px;cursor:pointer;transition:border-color .12s,background .12s;
+  display:flex;flex-direction:row;align-items:center;gap:10px;
+  width:100%;background:var(--m-raised);border:2px solid transparent;
+  border-radius:8px;padding:9px 14px;cursor:pointer;
+  transition:border-color .12s,background .12s;text-align:left;
 }
 .vec-shape-btn.sel{border-color:#3b82f6;background:#1e3a5f}
-.vec-shape-btn .icon{font-size:20px;line-height:1}
-.vec-shape-btn .lbl{font-size:8px;color:var(--m-muted);text-align:center;line-height:1.2}
+.vec-shape-btn .icon{font-size:22px;line-height:1;flex-shrink:0}
+.vec-shape-btn .lbl{font-size:13px;font-weight:600;color:var(--m-sub);line-height:1}
 .vec-shape-btn.sel .lbl{color:#93c5fd}
+
 .vec-method-row{display:flex;gap:6px}
 .vec-method-btn{
-  flex:1;padding:7px 4px;border-radius:6px;border:2px solid transparent;
-  background:var(--m-raised);font-size:11px;font-weight:600;color:var(--m-sub);
+  flex:1;padding:8px 4px;border-radius:6px;border:2px solid transparent;
+  background:var(--m-raised);font-size:12px;font-weight:600;color:var(--m-sub);
   cursor:pointer;text-align:center;transition:border-color .12s,background .12s;
 }
 .vec-method-btn.sel{border-color:#3b82f6;background:#1e3a5f;color:#93c5fd}
@@ -347,26 +351,40 @@ body.lang-bn .pm-label, body.lang-hi .pm-label { font-size: 14px; }
 }
 .vec-type-chip.sel{border-color:#3b82f6;color:#93c5fd;background:#1e2a3f}
 .vec-start-btn{
-  display:block;width:100%;min-height:38px;border-radius:7px;border:none;
+  display:block;width:100%;min-height:40px;border-radius:7px;border:none;
   background:#0d7377;color:#fff;font-size:14px;font-weight:700;cursor:pointer;
   margin-top:2px;transition:opacity .1s;
 }
 .vec-start-btn:active{opacity:.7}
-.vec-start-btn:disabled{opacity:.35;pointer-events:none}
+.vec-start-btn:disabled{opacity:.35;pointer-events:none;cursor:not-allowed}
 
-/* Floating recording panel */
+/* Floating live-stats panel (shown on map during drawing/recording) */
+#vec-stats-float{
+  display:none;
+  position:fixed;bottom:76px;left:50%;transform:translateX(-50%);
+  z-index:690;
+  background:rgba(10,22,40,.88);border:1px solid #374151;
+  border-radius:10px;padding:7px 16px;
+  min-width:180px;max-width:88vw;
+  box-shadow:0 4px 18px rgba(0,0,0,.55);
+  backdrop-filter:blur(4px);
+  pointer-events:none;text-align:center;
+}
+#vec-stats-float .sf-row{font-size:11px;color:#9ca3af;line-height:1.8}
+#vec-stats-float .sf-val{color:#f3f4f6;font-weight:700}
+#vec-stats-float .sf-pts{display:block;font-size:10px;color:#6ee7b7;margin-bottom:2px}
+
+/* Floating GPS recording controls panel */
 #vec-rec-panel{
-  display:none;           /* shown via panel.style.display='block' */
-  position:fixed;
-  bottom:16px;left:50%;transform:translateX(-50%);
+  display:none;
+  position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
   z-index:700;
   background:rgba(10,22,40,.92);border:1px solid #374151;
-  border-radius:12px;padding:10px 14px 8px;
+  border-radius:12px;padding:8px 14px;
   min-width:220px;max-width:90vw;
   box-shadow:0 6px 24px rgba(0,0,0,.6);
   backdrop-filter:blur(4px);
 }
-#vec-rec-panel .rec-stat{font-size:11px;color:#9ca3af;text-align:center;margin-bottom:6px;min-height:16px}
 #vec-rec-panel .rec-btns{display:flex;gap:6px;justify-content:center}
 #vec-rec-panel .rec-btns button{
   flex:1;min-height:36px;border-radius:7px;border:none;
@@ -475,9 +493,16 @@ function arrAuthRenderChip(containerId, onSignOut) {
   <button id="float-undo-btn"   onclick="undoLastBlock()" title="Undo">↩️</button>
 </div>
 
+<!-- ── Floating live stats panel (Vector Tool — shown during manual draw & GPS walk) ── -->
+<div id="vec-stats-float">
+  <span class="sf-pts" id="sf-pts"></span>
+  <div class="sf-row" id="sf-area" style="display:none">📐 Area: <span class="sf-val" id="sf-area-val">—</span></div>
+  <div class="sf-row" id="sf-perim" style="display:none">🔲 Perim: <span class="sf-val" id="sf-perim-val">—</span></div>
+  <div class="sf-row" id="sf-len" style="display:none">📏 Length: <span class="sf-val" id="sf-len-val">—</span></div>
+</div>
+
 <!-- ── Floating GPS recording panel (Vector Tool) ── -->
 <div id="vec-rec-panel">
-  <div class="rec-stat" id="vec-rec-stat">Recording…</div>
   <div class="rec-btns">
     <button id="vec-rec-finish" style="background:#15803d" onclick="vecGpsFinish()">✅ Finish</button>
     <button id="vec-rec-undo"   style="background:#374151" onclick="vecRecUndo()">↩️ Undo</button>
@@ -658,7 +683,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
         <span class="icon">〰️</span><span class="lbl">Path</span>
       </button>
       <button class="vec-shape-btn vec-tool-btn" id="vt-poi" onclick="vecFamSelectShape('poi')" style="opacity:.3;pointer-events:none">
-        <span class="icon">📌</span><span class="lbl">POI</span>
+        <span class="icon">📌</span><span class="lbl">Point (POI)</span>
       </button>
     </div>
   </div>
@@ -675,10 +700,10 @@ function arrAuthRenderChip(containerId, onSignOut) {
   <!-- Step 3: Name + Type + Start (hidden until method chosen) -->
   <div class="vec-step" id="vec-step3" style="display:none">
     <div class="vec-step-label">③ Details &amp; Start</div>
-    <input id="vec-feat-name" class="vec-name-input" type="text" placeholder="Feature name…" maxlength="60"/>
+    <input id="vec-feat-name" class="vec-name-input" type="text" placeholder="Feature name… (required)" maxlength="60" oninput="vecFamCheckReady()"/>
     <div id="vec-type-chips" class="vec-type-chips"></div>
     <div id="vec-gps-info" style="font-size:10px;color:#9ca3af;min-height:14px;margin-bottom:4px"></div>
-    <button class="vec-start-btn" id="vec-btn-start-fam" onclick="vecFamStart()">▶ Start</button>
+    <button class="vec-start-btn" id="vec-btn-start-fam" onclick="vecFamStart()" disabled>▶ Start</button>
   </div>
 
   <!-- Manual tool controls (shown after start for manual tools) -->
@@ -2261,6 +2286,14 @@ const VEC_MODE_TAG = {'poi-m':'manual','poi-g':'gps','path-m':'manual','path-g':
 let _famShape  = null;   // 'poly' | 'path' | 'poi'
 let _famMethod = null;   // 'manual' | 'gps'
 
+// ── Start button gate: enabled only when name is non-empty ────────────
+function vecFamCheckReady() {
+  const sb  = document.getElementById('vec-btn-start-fam');
+  const nm  = document.getElementById('vec-feat-name');
+  if (!sb || !nm) return;
+  sb.disabled = nm.value.trim().length === 0;
+}
+
 function vecFamReset() {
   _famShape = null; _famMethod = null;
   ['poly','path','poi'].forEach(s => {
@@ -2278,7 +2311,10 @@ function vecFamReset() {
   document.getElementById('vec-feat-name').value = '';
   document.getElementById('vec-type-chips').innerHTML = '';
   document.getElementById('vec-gps-info').textContent = '';
+  const sb = document.getElementById('vec-btn-start-fam');
+  if (sb) sb.disabled = true;
   vecRecPanelHide();
+  vecStatsFloatHide();
 }
 
 function vecFamSelectShape(shape) {
@@ -2332,7 +2368,7 @@ function vecFamSelectMethod(method) {
   document.getElementById('vec-gps-info').textContent = '';
   document.getElementById('vec-step3').style.display = '';
 
-  // Label the start button appropriately
+  // Label + gate the start button
   const sb = document.getElementById('vec-btn-start-fam');
   if (sb) {
     if (_famShape === 'poi') {
@@ -2342,6 +2378,7 @@ function vecFamSelectMethod(method) {
     } else {
       sb.textContent = '▶ Start recording';
     }
+    sb.disabled = true;  // re-gated: need name filled
   }
 }
 
@@ -2369,6 +2406,7 @@ function vecFamStart() {
     row.appendChild(vecMakeBtn('✅','b-green','Finish', vecFinishManual));
     row.appendChild(vecMakeBtn('🗑','b-red','Cancel', vecCancelAll));
     document.getElementById('vec-sec-ctrl').style.display = '';
+    vecStatsFloatShow();
     // Collapse sidebar
     const sb = document.getElementById('sidebar');
     if (sb && !sb.classList.contains('collapsed')) {
@@ -2408,8 +2446,10 @@ function vecStartRecording() {
   vecGpsWatchId = 1;  // sentinel: non-null means "recording active"
   const panel = document.getElementById('vec-rec-panel');
   if (panel) panel.style.display = 'block';
-  const stat = document.getElementById('vec-rec-stat');
-  if (stat) stat.textContent = 'Recording… 0 pts';
+  // Float stats shows above the rec panel; initialise with 0 pts label
+  const ptsEl = document.getElementById('sf-pts');
+  if (ptsEl) ptsEl.textContent = '0 pts';
+  vecStatsFloatShow();
   setStatus('Recording… tap ✅ Finish or ✕ Cancel.', '');
 }
 
@@ -2426,8 +2466,9 @@ function vecRecUndo() {
         radius:5, color:'#fff', fillColor:color, fillOpacity:1, weight:1.5
       }).addTo(vecLayer);
     }
-    const stat = document.getElementById('vec-rec-stat');
-    if (stat) stat.textContent = vecGpsPoints.length + ' pts';
+    // Refresh float stats
+    const pts2 = vecGpsPoints.map(p => [p.lon, p.lat]);
+    vecStatsFloatUpdate(pts2, vecTool === 'poly-g', vecGpsPoints.length);
   }
 }
 
@@ -2436,8 +2477,54 @@ function vecRecCancel() {
   vecGpsPaused = false; vecGpsPoints = []; vecVertices = [];
   vecLayer.clearLayers();
   vecRecPanelHide();
+  vecStatsFloatHide();
   vecFamReset();
   setStatus('Recording cancelled.', '');
+}
+
+// ── Floating stats panel helpers ───────────────────────────────────────
+function vecStatsFloatShow() {
+  const el = document.getElementById('vec-stats-float');
+  if (el) el.style.display = 'block';
+}
+function vecStatsFloatHide() {
+  const el = document.getElementById('vec-stats-float');
+  if (el) el.style.display = 'none';
+}
+function vecStatsFloatUpdate(pts, isPoly, ptCount) {
+  vecStatsFloatShow();
+  const ptsEl  = document.getElementById('sf-pts');
+  const aEl    = document.getElementById('sf-area');
+  const aVal   = document.getElementById('sf-area-val');
+  const pEl    = document.getElementById('sf-perim');
+  const pVal   = document.getElementById('sf-perim-val');
+  const lEl    = document.getElementById('sf-len');
+  const lVal   = document.getElementById('sf-len-val');
+  if (ptsEl) ptsEl.textContent = (ptCount || pts.length) + ' pts';
+  if (isPoly && pts.length >= 3) {
+    try {
+      const poly = turf.polygon([[...pts, pts[0]]]);
+      const areaSqm = turf.area(poly);
+      const perimM  = turf.length(turf.polygonToLine(poly), { units:'meters' });
+      if (aEl)  aEl.style.display = '';
+      if (aVal) aVal.textContent = areaSqm >= 10000 ? (areaSqm/10000).toFixed(3)+' ha' : areaSqm.toFixed(1)+' m²';
+      if (pEl)  pEl.style.display = '';
+      if (pVal) pVal.textContent = perimM.toFixed(1)+' m';
+      if (lEl)  lEl.style.display = 'none';
+    } catch(e) {}
+  } else {
+    if (aEl) aEl.style.display = 'none';
+    if (pEl) pEl.style.display = 'none';
+    if (pts.length >= 2) {
+      try {
+        const distM = turf.length(turf.lineString(pts), { units:'meters' });
+        if (lEl)  lEl.style.display = '';
+        if (lVal) lVal.textContent = distM >= 1000 ? (distM/1000).toFixed(3)+' km' : distM.toFixed(1)+' m';
+      } catch(e) {}
+    } else {
+      if (lEl) lEl.style.display = 'none';
+    }
+  }
 }
 
 function updateVecStats() {
@@ -2454,9 +2541,11 @@ function updateVecStats() {
   // GPS tools: points stored in vecGpsPoints[]
   if (!pts.length && vecGpsPoints && vecGpsPoints.length)
     pts = vecGpsPoints.map(p => [p.lon, p.lat]);
-  if (pts.length < 2) { statsEl.style.display='none'; return; }
+  if (pts.length < 2) { statsEl.style.display='none'; vecStatsFloatHide(); return; }
   statsEl.style.display='';
   const isPoly = vecTool==='poly-m'||vecTool==='poly-g';
+  // Also update floating panel
+  vecStatsFloatUpdate(pts, isPoly);
   const perimEl = document.getElementById('vec-stat-perim');
   const perimVal= document.getElementById('vec-stat-perim-val');
   const lenRow  = document.getElementById('vec-stat-len-row');
@@ -2542,6 +2631,9 @@ function vecOnMapClickVertex(e) {
   vecVertices.push({ lat: e.latlng.lat, lon: e.latlng.lng });
   vecRedrawManual();
   updateVecStats();
+  // Update floating stats
+  const pts = vecVertices.map(v => [v.lon, v.lat]);
+  vecStatsFloatUpdate(pts, vecTool === 'poly-m', vecVertices.length);
   setStatus(vecVertices.length + ' vertices.'
     + (vecTool === 'poly-m' ? ' Need \u22653 to finish.' : ''), '');
 }
@@ -2549,6 +2641,12 @@ function vecOnMapClickVertex(e) {
 function vecUndoVertex() {
   if (!vecVertices.length) return;
   vecVertices.pop(); vecRedrawManual();
+  if (vecVertices.length >= 2) {
+    const pts = vecVertices.map(v => [v.lon, v.lat]);
+    vecStatsFloatUpdate(pts, vecTool === 'poly-m', vecVertices.length);
+  } else {
+    vecStatsFloatHide();
+  }
   setStatus(vecVertices.length ? vecVertices.length + ' vertices.' : 'All vertices cleared.', '');
 }
 
@@ -2592,6 +2690,7 @@ function vecFinishManual() {
     setStatus('Need \u22652 vertices for a path.', 'err'); return;
   }
   map.off('click', vecOnMapClickVertex);
+  vecStatsFloatHide();
   const coords = vecVertices.map(v => [v.lon, v.lat]);
   updateVecStats();
   if (isPoly) {
@@ -2619,6 +2718,7 @@ function vecGpsFinish() {
   vecGpsWatchId = null;   // stop recording (background watch continues)
   vecGpsPaused = false;
   vecRecPanelHide();
+  vecStatsFloatHide();
   const gi = document.getElementById('vec-gps-info');
   if (gi) gi.textContent = '';
 
@@ -2655,7 +2755,7 @@ function vecRecordPoint(lat, lon) {
       turf.point([lon, lat]),
       { units:'meters' }) < 1) return;
   }
-  vecGpsPoints.push({ lat, lon });
+  vecGpsPoints.push({ lat, lon, accuracy: vecLastPos?.accuracy });
   // Redraw recorded track
   const lls = vecGpsPoints.map(p => [p.lat, p.lon]);
   vecLayer.clearLayers();
@@ -2664,8 +2764,10 @@ function vecRecordPoint(lat, lon) {
   L.circleMarker(lls[lls.length-1], {
     radius:5, color:'#fff', fillColor:color, fillOpacity:1, weight:1.5
   }).addTo(vecLayer);
-  const stat = document.getElementById('vec-rec-stat');
-  if (stat) stat.textContent = vecGpsPoints.length + ' pts recorded \u00b7 \u00b1' + Math.round(vecLastPos?.accuracy||0) + ' m';
+  // Update floating stats
+  const pts = lls.map(ll => [ll[1], ll[0]]);  // [lon, lat] for turf
+  const isPoly = vecTool === 'poly-g';
+  vecStatsFloatUpdate(pts, isPoly, vecGpsPoints.length);
 }
 
 // ── Cancel all ────────────────────────────────────────────────────────
@@ -2678,6 +2780,7 @@ function vecCancelAll() {
   const gi = document.getElementById('vec-gps-info');
   if (gi) gi.textContent = '';
   vecRecPanelHide();
+  vecStatsFloatHide();
   _famShape = null; _famMethod = null; vecTool = null;
   ['poly','path','poi'].forEach(s => {
     const b = document.getElementById('vt-' + s); if (b) b.classList.remove('sel');
