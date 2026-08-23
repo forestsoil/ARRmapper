@@ -1,70 +1,94 @@
-# ARRMapper Field Tool
-A mobile-first offline-capable progressive web app (PWA) for field data collection on Afforestation, Reforestation and Revegetation (ARR) carbon projects in India.
+# ARR Project Suite
 
-Deployed at: **https://forestsoil.github.io/ARRmapper/app.html**
+A collection of offline-capable progressive web apps (PWAs) for field data collection, monitoring, and management on Afforestation, Reforestation and Revegetation (ARR) carbon projects in India, verified under Verra VCS VM0047.
+
+**Suite launcher:** https://forestsoil.github.io/ARRmapper/
 
 ---
 
-## Tools
+## Applets
 
-### 🌱 Plantation Mapper
-Draw species blocks over a loaded KML boundary, auto-generate a sapling grid at configurable spacing, and export as KML + Shapefile ZIP. Supports 14+ native species with Hindi and Bengali display names.
+### 🗺️ ARR Mapper
+Field mapping tool with five integrated tabs: Plantation Mapper (species block drawing, sapling grid generation), Soil Mapper (soil classification blocks), Vector Tool (GPS walk polygons, manual polygons, POI markers, track lines with stage/revision tracking), MRV Tool (stratified random sampling, per-point grading, composite score 0–100, quarterly photo capture), and Files (OPFS cache management, legacy plot sync). Single-file offline-first PWA.
 
-### 🧪 Soil Mapper
-Assign soil type classifications (Sandy through Lowland/Organic) to spatial blocks within a plot boundary. Export as KML + Shapefile.
+### 📋 Survey Manager
+Structured offline field data collection. Forms: Beneficiary Baseline Survey, Plantation Details, Fencing Details, Event/Meeting Record, Biomass Plot Details, Biomass Tree Assessment, Nursery Mapping, Plantation Plot Evaluation (mortality), Leakage Assessment, Grievance Registration/Resolution. OPFS for blobs, IndexedDB for queue. Drive folder: `appSurveyManager/{username}/`.
 
-### 📐 Vector Tool
-Capture GPS walk polygons, manual polygons, point-of-interest markers, and track lines. All polygon exports include a **stage** property (eligibility / negotiated / surveyed / cleared / final / revised) and an optional **revision_reason** (flood hazard, fire hazard, bank erosion, beneficiary dropout, encroachment, other) to track iterative boundary refinement through the full plot lifecycle. Exports as KML + GeoJSON sidecar.
+### 🔥 Hotspot Viewer
+COG-based land suitability viewer. 3-band RGB composite: drought stress, soil suitability, flood frequency. Village boundary GeoJSONs with District/Block cascade dropdowns. Read-only; no auth required.
 
-### 📋 MRV Tool
-Monitoring, Reporting and Verification field visits aligned to VM0047. Loads sapling points from device storage (Plantation Mapper exports or synced legacy plots) and draws a stratified random sample (density-tiered: 15/25/35 pts/ha, min 10). Records per-point grade (A+→D), height, DBH, and notes. Six plot-level metrics (survival, fencing condition, threat/encroachment, watering/irrigation, owner engagement, wildlife damage) contribute a weighted composite score (0–100) mapped to A+→D. Quarterly photo capture per species block. Uploads visit records as GeoJSON to Google Drive.
+### 📊 Plantation Dashboard
+Interactive overview of plantation plots from `asha_plantation.geojson` (511 features, 2024–2026). District/Block/LPC filter cascades on a full-screen Leaflet map with 30% sidebar. Fully open — no login required.
 
-### 📁 Files
-Manage the local OPFS file cache — view, download, or delete stored KML, GeoJSON, and photo files. Includes **Sync Legacy Plots** to pull 2024–2026 fencing polygons from the Drive `_legacy/` folder into OPFS for use in the MRV Tool.
+### 📈 Monitoring Dashboard
+MRV composite scoring dashboard linked to field visit records. Six plot-level metrics (42%) plus tree condition observations (58%) = 0–100 score mapped to A+/D letter grades. Driven by the shared GAS backend.
+
+### 🦋 CCB & SDG Dashboard
+Biodiversity sightings map, Cloud Vision API species identification, EXIF GPS extraction, BibTeX bibliography with Drive sync, Know Your Invasives modal. Photo URLs via Google Drive (`lh3.googleusercontent.com/d/`).
+
+### 📦 Inventory
+Materials management for fencing, plantation, and nursery stock across all four projects and districts. SHA-256 email-hash manifest auth (hash-only manifest in repo). GAS backend for stock ledger sync.
+
+### 🌿 Nursery Dashboard
+Sapling dispatch tracking, seed tree provenance, and nursery inspections across four districts (APDE, APDW, JPG, CBH) and six nursery sources. 560+ legacy dispatch rows with deterministic SHA-256 UUIDs. IndexedDB local cache with JSONP Pull from Sheet sync.
+
+### 📄 Document & Report
+Documentation and report generation for project records.
 
 ---
 
 ## Architecture
-- Single-file HTML/JS PWA — no build step, no framework
-- **Offline-first**: all data written to OPFS and IndexedDB; Drive upload queued when offline
-- **Google Sign-In (GIS)** for user identity; uploads routed to project-specific Google Drive accounts via Apps Script endpoints
-- **Leaflet** for mapping; **Google Static Maps** for thumbnail previews
-- Trilingual UI: English / বাংলা (Bengali) / हिंदी (Hindi)
-- Minified production build (`app.html`) generated locally via Terser
 
-## Drive Folder Structure
-```
-ARRmapper/
-  PlantationMapper/{username}/
-  SoilMapper/{username}/
-  VectorTool/{username}/
-  MRVTool/{username}/
-  VectorTool/_legacy/          ← legacy fencing polygons (2024–2026, read-only)
-```
+- **Single-file HTML/JS** — no build step, no framework; each applet is self-contained
+- **Offline-first**: OPFS (file blobs), IndexedDB (queues, local cache), localStorage (auth tokens, theme)
+- **Suite launcher** (`index.html`) with Google One Tap / Google Sign-In; auth state shared across all applets via localStorage keys (`arr_user_email`, `arr_user_name`, `arr_auth_ts`; 12-hour TTL)
+- **Auth postures**: full-block (ARRmapper, SurveyManager, Hotspot, Inventory), write-gated (CCBSDGDashboard, MonitoringDashboard, NurseryDashboard, Documentation), open (Plantation Dashboard)
+- **Backend**: Google Apps Script (JSONP for GETs, no-cors POST for uploads), Google Sheets, Google Drive
+- **Maps**: Leaflet; **Charts**: Chart.js; **EXIF**: exifr / piexifjs; **Shapefiles**: shpjs + proj4js; **COGs**: GeoTIFF.js
+- **Theme**: dark (forest `#1a3d2b` / mint text `#d8f3dc`) and light (mint bg `#e8f3e9` / forest text); shared `arr-shared.css`, `arr_theme` localStorage key
+- **SW cache** auto-bumped on every push via GitHub Actions (`bump-sw-cache.yml`)
+- Trilingual UI: English / বাংলা / हिंदी; Android-optimised for 2G field conditions
+
+---
 
 ## Projects
-| Key | Label | Districts | Drive Account |
-|-----|-------|-----------|---------------|
-| Asha1 | Asha 1 (2023) | Jalpaiguri, Alipurduar, Coochbehar, West Bengal | asha1.data@tomorrowsfoundation.in |
-| Asha2 | Asha 2 Tea (2027) | Darjeeling, Kalimpong, West Bengal | asha2.data@tomorrowsfoundation.in |
-| Arun | Arun (2025) | Namsai, Changlang, Lohit, Lower Dibang Valley, East Siang, Arunachal Pradesh | arun.data@tomorrowsfoundation.in |
-| Banani | Banani (2025) | Birbhum, Bankura, Purulia, Jhargram, Paschim Bardhaman, West Bengal | banani.data@tomorrowsfoundation.in |
+
+| Key | Label | Districts | Start |
+|-----|-------|-----------|-------|
+| Asha 1 | Asha 1 (VCS 4866) | Jalpaiguri, Alipurduar, Coochbehar — West Bengal | 2023 |
+| Asha 2 | Asha 2 | Jalpaiguri, Alipurduar, Coochbehar — West Bengal | 2027 |
+| Arun | Arun | Namsai, Changlang, Lohit, Lower Dibang Valley, East Siang — Arunachal Pradesh | 2027 |
+| Banani | Banani | Birbhum, Bankura, Purulia, Jhargram, Paschim Bardhaman — West Bengal + Jharkhand/Bihar border | 2027 |
+
+Carbon developer partner: EcoAct / Schneider Electric France.
+
+---
+
+## GAS Endpoints
+
+| Purpose | Deployment ID |
+|---------|--------------|
+| ARRmapper / CCBSDGDashboard | `AKfycbwLfbyg-C2CgYi7cfxjBZrGaYrKkuD2I1SQXIBecqyfWVdtJkWQVG9Sb1F7s45i1u5R` |
+| Inventory | `AKfycbyv1LAvEJ4Kho32m6ToPAAjUSeeEvdYJQTUVQW182fHzO3Peok-rxVXxT8Vi2Ltw5Rs0w` |
+
+All endpoints: `https://script.google.com/macros/s/<ID>/exec`
 
 ---
 
 ## Development
-- `app.html` — minified production file (deploy this)
-- `plantationMapper_field_vXX_mobileLS_DEVX.html` — unminified source of truth
-- Minify: `terser --compress --mangle --mangle-props 'regex=/^_/'` on the script block only
-- Always patch via targeted `must_replace()` with assertion guards; avoid structural refactors
 
-## Apps Script
-Two versions in use:
-- `FieldTool_AppsScript_v4.js` — base64 POST upload handler; deploy once per project Drive account (Execute as: Me, Access: Anyone)
-- `FieldTool_AppsScript_v5.js` — v4 + additive GET routes: `?action=listLegacy` and `?action=getLegacyFile&name=xxx` for legacy plot sync
+- Versioned filenames (e.g. `appARRmapper_v82.html`); archive only meaningful milestones
+- Patch surgically by tab/section; avoid broad structural refactors
+- Major UI experiments in separate dev files, not on production
+- JSONP (not fetch) for all GAS GET requests
+- `yyyy-mm-dd` canonical date format throughout
+- SHA-256 deterministic UUIDs for offline-generated record IDs
+- GEE used for pre-processing / offline export only — no runtime GEE API calls in any frontend
+- Browser OAuth Client ID is for Drive / Picker only
 
 ---
 
 ## License
+
 Internal use — Tomorrow's Foundation / EcoAct ARR carbon projects, India.  
 © 2025–2026 Nirmalya Chatterjee. All rights reserved.
