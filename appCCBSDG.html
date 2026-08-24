@@ -222,60 +222,6 @@ async function loadSightingsFromSheet() {
 }
 
 
-// ── Know Your Invasives ───────────────────────────────────────────────
-const INVASIVES = [
-  // Page 1
-  {name:'Mile-a-minute',sci:'Mikania micrantha',threat:'high',
-   img:'invasiveImages/mikania_micrantha.jpg',
-   tip:'Fast-growing vine, smothers sapling canopy. Arrow-shaped leaves, white flower clusters.',
-   tag:'invasive'},
-  {name:'Siam weed',sci:'Chromolaena odorata',threat:'high',
-   img:'invasiveImages/chromolaena_odorata.jpg',
-   tip:'Shrubby herb, dense monocultures. Triangular toothed leaves, purple-white flowers.',
-   tag:'invasive'},
-  {name:'Lantana',sci:'Lantana camara',threat:'high',
-   img:'invasiveImages/lantana_camara.jpg',
-   tip:'Woody shrub, toxic to livestock. Multi-coloured flower clusters, rough toothed leaves.',
-   tag:'invasive'},
-  {name:'Congress grass',sci:'Parthenium hysterophorus',threat:'high',
-   img:'invasiveImages/parthenium_hysterophorus.jpg',
-   tip:'Erect herb, white tiny flowers. Highly allergenic — avoid skin contact.',
-   tag:'invasive'},
-  {name:'Billy goat weed',sci:'Ageratum conyzoides',threat:'med',
-   img:'invasiveImages/ageratum_conyzoides.jpg',
-   tip:'Low herb, blue-purple flowers. Common in disturbed ground around plantations.',
-   tag:'invasive'},
-  {name:'Crofton weed',sci:'Ageratina adenophora',threat:'high',
-   img:'invasiveImages/ageratina_adenophora.jpg',
-   tip:'Shrub 1–2m tall, white flowers. Toxic to horses. Dense stands at forest edges.',
-   tag:'invasive'},
-  // Page 2
-  {name:'Water hyacinth',sci:'Pontederia crassipes',threat:'high',
-   img:'invasiveImages/pontederia_crassipes.jpg',
-   tip:'Free-floating rosette, purple flowers. Chokes wetlands near flood-prone plots.',
-   tag:'invasive'},
-  {name:'Giant salvinia',sci:'Salvinia molesta',threat:'high',
-   img:'invasiveImages/salvinia_molesta.jpg',
-   tip:'Floating fern, velvety leaves. Covers water surface completely.',
-   tag:'invasive'},
-  {name:'Giant sensitive plant',sci:'Mimosa invisa',threat:'med',
-   img:'invasiveImages/mimosa_invisa.jpg',
-   tip:'Prickly sprawling shrub, pink pompom flowers. Forms impenetrable thickets.',
-   tag:'invasive'},
-  {name:'Pink morning glory',sci:'Ipomoea carnea',threat:'med',
-   img:'invasiveImages/ipomoea_carnea.jpg',
-   tip:'Woody shrub on riverbanks, large pink trumpet flowers. Toxic to livestock.',
-   tag:'invasive'},
-  {name:'Senna / Whitebark',sci:'Senna spectabilis',threat:'high',
-   img:'invasiveImages/senna_spectabilis.jpg',
-   tip:'Fast-growing tree 5–10m, yellow flowers. Naturalising in disturbed forest edges.',
-   tag:'invasive'},
-  {name:'Mexican sunflower',sci:'Tithonia diversifolia',threat:'med',
-   img:'invasiveImages/tithonia_diversifolia.jpg',
-   tip:'Tall herb 2–3m, bright orange daisy flowers. Spreading along road margins.',
-   tag:'invasive'},
-];
-
 const INV_PER_PAGE = 4;  // 4 per page, 3 pages
 let _invPageIdx = 0;
 const _invTotalPages = 3; // 12 species, 3 pages of 4
