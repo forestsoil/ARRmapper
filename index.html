@@ -101,6 +101,14 @@ footer a:hover{color:var(--canopy)}
 #feat-content ul{padding-left:16px;margin:0 0 4px;color:var(--mid);font-size:11px;line-height:1.7}
 #feat-content .f-sub{font-size:10px;color:var(--mid);margin-bottom:10px}
 /* ── Legal links bar ── */
+/* ── Project switcher ── */
+.proj-bar{background:var(--canopy);display:flex;align-items:center;justify-content:center;
+  padding:6px 20px;gap:8px;border-bottom:1px solid var(--rule)}
+.proj-bar-label{font-size:11px;color:var(--mist);opacity:.7}
+.proj-pill{background:rgba(82,183,136,.12);border:1px solid var(--leaf);border-radius:20px;
+  padding:4px 14px;cursor:pointer;font-size:11px;color:var(--mist);transition:background .15s,border-color .15s}
+.proj-pill:hover{background:rgba(82,183,136,.25)}
+.proj-pill.active{background:var(--leaf);color:var(--forest);font-weight:700;border-color:var(--leaf)}
 .legal-bar{text-align:center;font-size:10px;color:var(--mid);padding:8px;border-top:1px solid var(--rule);display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 .legal-bar a{color:var(--mid);text-decoration:none}.legal-bar a:hover{color:var(--canopy)}
 .auth-bar{background:var(--forest);display:flex;align-items:center;
@@ -142,6 +150,14 @@ footer a:hover{color:var(--canopy)}
       <button class="theme-toggle" onclick="openFeatList()" title="About">ℹ️ About Suite</button>
     </div>
   </div>
+</div>
+
+<div class="proj-bar" id="proj-bar">
+  <span class="proj-bar-label">Project:</span>
+  <button class="proj-pill" id="pp-asha1"  onclick="setProject('Asha1')">Asha 1</button>
+  <button class="proj-pill" id="pp-arun"   onclick="setProject('Arun')">Arun</button>
+  <button class="proj-pill" id="pp-asha2"  onclick="setProject('Asha2')" style="opacity:.45;cursor:default" disabled title="Coming 2027">Asha 2</button>
+  <button class="proj-pill" id="pp-banani" onclick="setProject('Banani')" style="opacity:.45;cursor:default" disabled title="Coming 2027">Banani</button>
 </div>
 
 <main>
@@ -219,7 +235,7 @@ footer a:hover{color:var(--canopy)}
     </a>
 
     <!-- Row 3: Operations -->
-    <a class="app-card" href="appInventory.html" style="--accent:#b45309">
+    <a class="app-card" id="tile-inventory" href="appInventory.html" style="--accent:#b45309">
       <div class="card-icon">📦</div>
       <div class="card-name">Inventory &amp; Resources</div>
       <div class="card-sub">Stock tracking, material dispatch and receipt — fencing, pits, fertiliser, tools per district and plot</div>
@@ -230,10 +246,10 @@ footer a:hover{color:var(--canopy)}
       <div class="card-arrow">→</div>
     </a>
 
-    <a class="app-card" href="appNurseryDashboard.html" style="--accent:#16a34a">
+    <a class="app-card" id="tile-nursery" href="appNurseryDashboard.html" style="--accent:#16a34a">
       <div class="card-icon">🌱</div>
       <div class="card-name">Nursery Dashboard</div>
-      <div class="card-sub">Sapling dispatch, stock tracking, seed tree mapping and plan vs actual — Asha 1 nursery network</div>
+      <div class="card-sub">Sapling dispatch, stock tracking, seed tree mapping and plan vs actual</div>
       <div class="card-tags">
         <span class="tag operations">Operations</span>
         <span class="tag analysis">Analysis</span>
@@ -261,6 +277,50 @@ footer a:hover{color:var(--canopy)}
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/ARRmapper/sw.js');
 }
+
+// ── Project switcher ──────────────────────────────────────────────
+const ARR_PROJECT_KEY = 'arr_project';
+
+const PROJECT_TILES = {
+  inventory: {
+    Asha1:  'appInventory.html',
+    Arun:   'appInventory_Arun.html',
+    Asha2:  'appInventory.html',   // placeholder — update when live
+    Banani: 'appInventory.html',   // placeholder — update when live
+  },
+  nursery: {
+    Asha1:  'appNurseryDashboard.html',
+    Arun:   'appNurseryDashboard_Arun.html',
+    Asha2:  'appNurseryDashboard.html',   // placeholder
+    Banani: 'appNurseryDashboard.html',   // placeholder
+  }
+};
+
+function setProject(proj) {
+  localStorage.setItem(ARR_PROJECT_KEY, proj);
+  applyProject(proj);
+}
+
+function applyProject(proj) {
+  // Update pill highlights
+  ['asha1','arun','asha2','banani'].forEach(k => {
+    document.getElementById('pp-' + k)?.classList.remove('active');
+  });
+  const pilId = { Asha1:'pp-asha1', Arun:'pp-arun', Asha2:'pp-asha2', Banani:'pp-banani' }[proj];
+  if (pilId) document.getElementById(pilId)?.classList.add('active');
+
+  // Update tile hrefs
+  const inv     = document.getElementById('tile-inventory');
+  const nursery = document.getElementById('tile-nursery');
+  if (inv)     inv.href     = PROJECT_TILES.inventory[proj] || 'appInventory.html';
+  if (nursery) nursery.href = PROJECT_TILES.nursery[proj]   || 'appNurseryDashboard.html';
+}
+
+// Init on load
+(function() {
+  const saved = localStorage.getItem(ARR_PROJECT_KEY) || 'Asha1';
+  applyProject(saved);
+})();
 
 // ── Shared auth module ────────────────────────────────────────────
 // ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
