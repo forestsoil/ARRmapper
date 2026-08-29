@@ -15,8 +15,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 /* ── Topbar ── */
 .topbar{background:var(--forest);color:var(--mist);display:flex;align-items:center;
   padding:8px 14px;gap:8px;position:sticky;top:0;z-index:100;border-bottom:2px solid var(--leaf)}
-.tb-home{font-size:18px;text-decoration:none;line-height:1;flex-shrink:0}
-.tb-title{font-size:13px;font-weight:700;flex-shrink:0}
+.tb-home{font-size:16px}
+.tb-title{font-size:13px;font-weight:700;flex-shrink:0;color:var(--mist)}
 .tb-tabs{display:flex;gap:2px;background:rgba(0,0,0,.25);border-radius:20px;padding:2px;
   flex:1;max-width:220px;margin:0 auto}
 .tb-tab{background:none;border:none;border-radius:18px;padding:4px 0;font-size:11px;
@@ -24,9 +24,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   transition:all .15s;flex:1;text-align:center}
 .tb-tab.active{background:var(--leaf);color:var(--forest);opacity:1}
 .tb-right{display:flex;align-items:center;gap:5px;margin-left:auto}
-.tb-btn{background:rgba(82,183,136,.15);border:1px solid var(--leaf);border-radius:20px;
-  padding:4px 10px;font-size:11px;color:var(--mist);cursor:pointer;font-family:inherit}
-.tb-btn:hover{background:rgba(82,183,136,.3)}
+/* arr-chip on dark topbar */
+.topbar .arr-chip{color:var(--mist);background:rgba(74,222,128,.10);border-color:rgba(74,222,128,.4)}
+.topbar .arr-chip:hover{background:rgba(74,222,128,.22)}
 .tb-lang{display:flex;gap:3px}
 .lang-btn{background:none;border:1px solid var(--leaf);border-radius:12px;padding:3px 7px;
   font-size:10px;color:var(--mist);cursor:pointer;font-family:inherit;opacity:.6}
@@ -37,6 +37,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 /* ── Main form ── */
 #main-screen{display:none;max-width:640px;margin:0 auto;padding:16px 14px}
+/* display is set to block/none by JS — CSS default kept as none for pre-auth state */
 
 .sec{background:var(--card);border:1.5px solid var(--rule);border-radius:12px;
   padding:14px;margin-bottom:14px}
@@ -114,12 +115,6 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 /* Validation highlight */
 .field-input.err{border-color:var(--red)}
 
-/* ── App tabs ── */
-.tb-tabs{display:flex;gap:2px;background:rgba(0,0,0,.2);border-radius:20px;padding:2px}
-.tb-tab{background:none;border:none;border-radius:18px;padding:4px 14px;font-size:11px;
-  font-weight:600;color:var(--mist);cursor:pointer;font-family:inherit;opacity:.6;transition:all .15s}
-.tb-tab.active{background:var(--leaf);color:var(--forest);opacity:1}
-
 /* ── Dashboard ── */
 #dash-screen{display:none;max-width:900px;margin:0 auto;padding:16px 14px}
 #dash-locked{display:none;flex-direction:column;align-items:center;justify-content:center;
@@ -168,7 +163,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 <body>
 
 <div class="topbar">
-  <a class="tb-home" href="index.html">🌳</a>
+  <a class="arr-chip tb-home" href="index.html" title="Back to Suite">🏠</a>
   <span class="tb-title">Daily Report</span>
   <div class="tb-tabs" id="tb-tabs" style="display:none">
     <button class="tb-tab active" id="tbt-report"   onclick="switchAppTab('report')">Report</button>
@@ -180,9 +175,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
       <button class="lang-btn" id="lbtn-bn" onclick="setLang('bn')">বাং</button>
       <button class="lang-btn" id="lbtn-hi" onclick="setLang('hi')">हि</button>
     </div>
-    <button class="tb-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
-    <button class="tb-btn" id="outbox-btn" onclick="retryOutbox()" style="display:none">📤<span id="outbox-badge"></span></button>
-    <span class="tb-btn" id="user-chip" title="Signed in" style="display:none;cursor:pointer" onclick="arrSignOut()">👤 <span id="user-chip-name"></span></span>
+    <button class="arr-chip" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+    <button class="arr-chip" id="outbox-btn" onclick="retryOutbox()" style="display:none" title="Retry outbox">📤<span id="outbox-badge"></span></button>
+    <span class="arr-chip" id="user-chip" title="Click to sign out" style="display:none;cursor:pointer" onclick="arrSignOut()">👤 <span id="user-chip-name"></span></span>
   </div>
 </div>
 
@@ -339,7 +334,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v7';
+const APP_VERSION    = 'DRT-v8';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -518,15 +513,15 @@ function applyStoredTheme() {
 function showApp(auth) {
   userEmail = auth.email;
   userName  = auth.name || auth.email.split('@')[0];
-  document.getElementById('main-screen').style.display = '';
+  document.getElementById('main-screen').style.display = 'block';
   document.getElementById('af-user').textContent = userName;
   document.getElementById('af-date').textContent = new Date().toISOString().slice(0,10);
   // Show user chip
   const chip = document.getElementById('user-chip');
-  if (chip) { document.getElementById('user-chip-name').textContent = userName; chip.style.display = ''; }
+  if (chip) { document.getElementById('user-chip-name').textContent = userName; chip.style.display = 'inline-flex'; }
   startGPS();
   updateOutboxBadge();
-  document.getElementById('tb-tabs').style.display = '';
+  document.getElementById('tb-tabs').style.display = 'flex';
 }
 
 // ── GPS ───────────────────────────────────────────────────────────────────────
@@ -928,8 +923,8 @@ async function sha256(str) {
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchAppTab(tab) {
-  document.getElementById('main-screen').style.display = tab === 'report' ? '' : 'none';
-  document.getElementById('dash-screen').style.display = tab === 'dashboard' ? '' : 'none';
+  document.getElementById('main-screen').style.display = tab === 'report' ? 'block' : 'none';
+  document.getElementById('dash-screen').style.display = tab === 'dashboard' ? 'block' : 'none';
   document.getElementById('tbt-report').classList.toggle('active', tab === 'report');
   document.getElementById('tbt-dashboard').classList.toggle('active', tab === 'dashboard');
   if (tab === 'dashboard') openDashboard();
@@ -942,7 +937,7 @@ async function openDashboard() {
   if (ok) {
     dashUnlocked = true;
     document.getElementById('dash-locked').style.display = 'none';
-    document.getElementById('dash-content').style.display = '';
+    document.getElementById('dash-content').style.display = 'block';
     initDashMap();
     loadDashboard();
   } else {
