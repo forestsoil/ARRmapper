@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel="stylesheet" href="arr-shared.css">
+<script>
+(function(){const t=localStorage.getItem('arr_theme')||'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
+</script>
+<title>Daily Report</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;padding-bottom:60px}
+
+/* ── Topbar ── */
+.topbar{background:var(--forest);color:var(--mist);display:flex;align-items:center;
+  padding:10px 14px;gap:10px;position:sticky;top:0;z-index:100;border-bottom:2px solid var(--leaf)}
+.tb-title{flex:1;font-size:14px;font-weight:700;letter-spacing:.01em}
+.tb-btn{background:rgba(82,183,136,.15);border:1px solid var(--leaf);border-radius:20px;
+  padding:5px 12px;font-size:11px;color:var(--mist);cursor:pointer;font-family:inherit}
+.tb-btn:hover{background:rgba(82,183,136,.3)}
+.tb-lang{display:flex;gap:4px}
+.lang-btn{background:none;border:1px solid var(--leaf);border-radius:12px;padding:3px 8px;
+  font-size:10px;color:var(--mist);cursor:pointer;font-family:inherit;opacity:.6}
+.lang-btn.active{opacity:1;background:var(--leaf);color:var(--forest);font-weight:700}
+
+/* ── Auth screen ── */
+#auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:60vh;gap:16px;padding:32px 20px;text-align:center}
+#auth-screen h2{font-size:18px;color:var(--forest)}
+[data-theme="dark"] #auth-screen h2{color:var(--mist)}
+#auth-screen p{font-size:12px;color:var(--mid)}
+#gsi-wrap{min-height:44px}
+
+/* ── Main form ── */
+#main-screen{display:none;max-width:640px;margin:0 auto;padding:16px 14px}
+
+.sec{background:var(--card);border:1.5px solid var(--rule);border-radius:12px;
+  padding:14px;margin-bottom:14px}
+.sec-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--mid);margin-bottom:10px}
+
+/* Auto-fields */
+.auto-row{display:flex;flex-direction:column;gap:6px}
+.auto-field{background:var(--bg);border:1px solid var(--rule);border-radius:8px;
+  padding:8px 10px;font-size:11px;color:var(--mid);display:flex;align-items:center;gap:8px}
+.auto-field .af-label{font-weight:600;color:var(--ink);min-width:80px;font-size:11px}
+.auto-field .af-val{color:var(--mid);font-size:11px;flex:1}
+.gps-status{font-size:10px;color:var(--amber)}
+
+/* Optional fields */
+.opt-row{display:flex;flex-direction:column;gap:8px;margin-top:2px}
+.field-group{display:flex;flex-direction:column;gap:4px}
+.field-label{font-size:11px;font-weight:600;color:var(--ink)}
+.field-input{background:var(--bg);border:1px solid var(--rule);border-radius:8px;
+  padding:9px 10px;font-size:12px;color:var(--ink);font-family:inherit;width:100%;outline:none;
+  transition:border-color .15s}
+.field-input:focus{border-color:var(--leaf)}
+.field-req{color:var(--amber);font-size:10px;margin-top:2px}
+
+/* Visit type pills */
+.vt-grid{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.vt-pill{background:var(--bg);border:1.5px solid var(--rule);border-radius:20px;
+  padding:7px 12px;font-size:11px;font-weight:600;color:var(--mid);cursor:pointer;
+  font-family:inherit;transition:all .15s;text-align:left}
+.vt-pill:hover{border-color:var(--leaf);color:var(--canopy)}
+.vt-pill.sel{background:var(--leaf);border-color:var(--leaf);color:var(--forest)}
+#other-text-wrap{margin-top:8px;display:none}
+
+/* Notes */
+.notes-ta{background:var(--bg);border:1px solid var(--rule);border-radius:8px;
+  padding:9px 10px;font-size:12px;color:var(--ink);font-family:inherit;width:100%;
+  min-height:80px;resize:vertical;outline:none;transition:border-color .15s}
+.notes-ta:focus{border-color:var(--leaf)}
+
+/* Photos */
+.photo-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.photo-thumb{position:relative;width:80px;height:80px;border-radius:8px;
+  overflow:hidden;border:1px solid var(--rule)}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);border:none;
+  border-radius:50%;width:18px;height:18px;color:#fff;font-size:11px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;line-height:1}
+.photo-add{width:80px;height:80px;border-radius:8px;border:2px dashed var(--rule);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  flex-direction:column;gap:4px;font-size:10px;color:var(--mid);background:var(--bg)}
+.photo-add:hover{border-color:var(--leaf);color:var(--canopy)}
+.photo-add-icon{font-size:22px}
+.photo-count{font-size:10px;color:var(--mid);margin-top:6px}
+
+/* Processing overlay on photo */
+.photo-processing{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;
+  align-items:center;justify-content:center;font-size:10px;color:#fff}
+
+/* Submit */
+.submit-btn{width:100%;padding:14px;background:var(--leaf);border:none;border-radius:10px;
+  font-size:14px;font-weight:700;color:var(--forest);cursor:pointer;font-family:inherit;
+  transition:opacity .15s;margin-top:4px}
+.submit-btn:disabled{opacity:.4;cursor:default}
+.submit-btn:not(:disabled):hover{opacity:.85}
+
+/* Status */
+#submit-status{text-align:center;font-size:12px;margin-top:10px;min-height:18px;color:var(--mid)}
+.status-ok{color:var(--leaf)!important}
+.status-err{color:var(--red)!important}
+
+/* Outbox badge */
+#outbox-badge{display:none;background:var(--amber);color:#000;border-radius:50%;
+  font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px}
+
+/* Validation highlight */
+.field-input.err{border-color:var(--red)}
+
+@media(max-width:480px){
+  #main-screen{padding:12px 10px}
+  .vt-pill{font-size:10px;padding:6px 10px}
+}
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="tb-title" id="tb-title">📋 Daily Report</span>
+  <div class="tb-lang">
+    <button class="lang-btn active" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" onclick="setLang('bn')">বাং</button>
+    <button class="lang-btn" onclick="setLang('hi')">हि</button>
+  </div>
+  <button class="tb-btn" id="outbox-btn" onclick="retryOutbox()" style="display:none">
+    📤<span id="outbox-badge"></span>
+  </button>
+  <button class="tb-btn" onclick="signOut()" id="signout-btn" style="display:none" data-i18n="sign_out">Sign out</button>
+</div>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <h2 data-i18n="signin_title">Sign in to submit daily reports</h2>
+  <p data-i18n="signin_sub">Use your project Google account</p>
+  <div id="gsi-wrap"></div>
+  <p id="auth-msg" style="color:var(--red);font-size:11px"></p>
+</div>
+
+<!-- MAIN FORM -->
+<div id="main-screen">
+
+  <!-- Auto fields -->
+  <div class="sec">
+    <div class="sec-title" data-i18n="sec_auto">Session Info</div>
+    <div class="auto-row">
+      <div class="auto-field">
+        <span class="af-label" data-i18n="lbl_user">Reporter</span>
+        <span class="af-val" id="af-user">—</span>
+      </div>
+      <div class="auto-field">
+        <span class="af-label" data-i18n="lbl_date">Date</span>
+        <span class="af-val" id="af-date">—</span>
+      </div>
+      <div class="auto-field">
+        <span class="af-label" data-i18n="lbl_gps">GPS</span>
+        <span class="af-val" id="af-gps" class="gps-status" data-i18n="gps_acquiring">Acquiring…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Optional identifier fields -->
+  <div class="sec">
+    <div class="sec-title" data-i18n="sec_location">Plot Identifier <span style="font-weight:400;text-transform:none;font-size:9px">(at least one required)</span></div>
+    <div class="opt-row">
+      <div class="field-group">
+        <label class="field-label" for="f-lpc" data-i18n="lbl_lpc">LPC</label>
+        <input class="field-input" id="f-lpc" type="text" inputmode="text" autocomplete="off" placeholder="e.g. JAL-BNR-001">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="f-dbc" data-i18n="lbl_dbc">DBC Code</label>
+        <input class="field-input" id="f-dbc" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 1050027">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="f-ben" data-i18n="lbl_ben">Beneficiary Name</label>
+        <input class="field-input" id="f-ben" type="text" autocomplete="off" placeholder="e.g. Ram Bahadur Tamang">
+      </div>
+      <div id="ident-req" class="field-req" style="display:none" data-i18n="err_ident">At least one of LPC / DBC / Beneficiary Name is required</div>
+    </div>
+  </div>
+
+  <!-- Visit types -->
+  <div class="sec">
+    <div class="sec-title" data-i18n="sec_visit">Visit Type <span style="font-weight:400;text-transform:none;font-size:9px">(select all that apply)</span></div>
+    <div class="vt-grid" id="vt-grid">
+      <button class="vt-pill" data-en="Post-Damage" data-bn="পোস্ট-ড্যামেজ" data-hi="पोस्ट-डैमेज" data-other="false" onclick="toggleVisitType(this)">Post-Damage</button>
+      <button class="vt-pill" data-en="Post-Fire" data-bn="পোস্ট-ফায়ার" data-hi="पोस्ट-आग" data-other="false" onclick="toggleVisitType(this)">Post-Fire</button>
+      <button class="vt-pill" data-en="Post-Flood" data-bn="পোস্ট-বন্যা" data-hi="पोस्ट-बाढ़" data-other="false" onclick="toggleVisitType(this)">Post-Flood</button>
+      <button class="vt-pill" data-en="Replantation" data-bn="পুনরায় রোপণ" data-hi="पुनर्रोपण" data-other="false" onclick="toggleVisitType(this)">Replantation</button>
+      <button class="vt-pill" data-en="Fencing Repair" data-bn="বেড়া মেরামত" data-hi="बाड़ मरम्मत" data-other="false" onclick="toggleVisitType(this)">Fencing Repair</button>
+      <button class="vt-pill" data-en="Weeding & Veg. Mgmt" data-bn="আগাছা পরিষ্কার" data-hi="निराई-गुड़ाई" data-other="false" onclick="toggleVisitType(this)">Weeding & Veg. Mgmt</button>
+      <button class="vt-pill" data-en="Pit Digging" data-bn="গর্ত খনন" data-hi="गड्ढा खुदाई" data-other="false" onclick="toggleVisitType(this)">Pit Digging</button>
+      <button class="vt-pill" data-en="Fertiliser Applic." data-bn="সার প্রয়োগ" data-hi="उर्वरक प्रयोग" data-other="false" onclick="toggleVisitType(this)">Fertiliser Applic.</button>
+      <button class="vt-pill" data-en="Pesticide Applic." data-bn="কীটনাশক প্রয়োগ" data-hi="कीटनाशक प्रयोग" data-other="false" onclick="toggleVisitType(this)">Pesticide Applic.</button>
+      <button class="vt-pill" data-en="Plantation Check" data-bn="প্লান্টেশন চেক" data-hi="वृक्षारोपण जांच" data-other="false" onclick="toggleVisitType(this)">Plantation Check</button>
+      <button class="vt-pill" data-en="Sapling Health Check" data-bn="চারা স্বাস্থ্য পরীক্ষা" data-hi="पौध स्वास्थ्य जांच" data-other="false" onclick="toggleVisitType(this)">Sapling Health Check</button>
+      <button class="vt-pill" data-en="Mortality Check" data-bn="মৃত্যু পরীক্ষা" data-hi="मृत्युदर जांच" data-other="false" onclick="toggleVisitType(this)">Mortality Check</button>
+      <button class="vt-pill" data-en="Watering" data-bn="জল দেওয়া" data-hi="सिंचाई" data-other="false" onclick="toggleVisitType(this)">Watering</button>
+      <button class="vt-pill" data-en="Drainage Mgmt" data-bn="ড্রেনেজ ব্যবস্থাপনা" data-hi="जल निकासी" data-other="false" onclick="toggleVisitType(this)">Drainage Mgmt</button>
+      <button class="vt-pill" data-en="Other" data-bn="অন্যান্য" data-hi="अन्य" data-other="true" onclick="toggleVisitType(this)">Other</button>
+    </div>
+    <div id="other-text-wrap">
+      <input class="field-input" id="f-other-text" type="text" placeholder="Describe activity…" style="margin-top:0">
+    </div>
+    <div id="vt-req" class="field-req" style="display:none" data-i18n="err_vt">Select at least one visit type</div>
+  </div>
+
+  <!-- Notes -->
+  <div class="sec">
+    <div class="sec-title" data-i18n="sec_notes">Notes</div>
+    <textarea class="notes-ta" id="f-notes" rows="3" placeholder="Observations, conditions, issues…"></textarea>
+  </div>
+
+  <!-- Photos -->
+  <div class="sec">
+    <div class="sec-title" data-i18n="sec_photos">Photos <span style="font-weight:400;text-transform:none;font-size:9px">(1–10 required)</span></div>
+    <div class="photo-grid" id="photo-grid">
+      <div class="photo-add" onclick="triggerCamera()" id="photo-add-btn">
+        <span class="photo-add-icon">📷</span>
+        <span data-i18n="btn_camera">Camera</span>
+      </div>
+    </div>
+    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoCapture(this)">
+    <div class="photo-count" id="photo-count">0 / 10</div>
+    <div id="photo-req" class="field-req" style="display:none" data-i18n="err_photo">At least 1 photo required</div>
+  </div>
+
+  <!-- Submit -->
+  <button class="submit-btn" id="submit-btn" onclick="submitReport()" data-i18n="btn_submit">Submit Report</button>
+  <div id="submit-status"></div>
+
+</div><!-- /main-screen -->
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const APP_VERSION    = 'DRT-v1';
+const OAUTH_CLIENT   = '348880490660-o21fd3cm0as45qns22lkot6n162tdo7c.apps.googleusercontent.com';
+const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
+
+const MAX_PHOTOS     = 10;
+const TARGET_W       = 1920;
+const TARGET_H       = 1080;
+const JPEG_QUALITY   = 0.80;
+
+// ── Auth keys (shared with launcher) ─────────────────────────────────────────
+const ARR_EMAIL_KEY = 'arr_user_email';
+const ARR_NAME_KEY  = 'arr_user_name';
+const ARR_TS_KEY    = 'arr_auth_ts';
+const ARR_TTL       = 12 * 60 * 60 * 1000;
+const ARR_THEME_KEY = 'arr_theme';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let userEmail = null, userName = null;
+let gpsLat = null, gpsLng = null, gpsAcc = null;
+let photos = [];   // {blob, dataUrl, filename}
+let outbox = JSON.parse(localStorage.getItem('drt_outbox') || '[]');
+let LANG = 'en';
+
+// ── Lang strings ──────────────────────────────────────────────────────────────
+const STRINGS = {
+  en: {
+    signin_title: 'Sign in to submit daily reports',
+    signin_sub:   'Use your project Google account',
+    sign_out:     'Sign out',
+    sec_auto:     'Session Info',
+    sec_location: 'Plot Identifier',
+    sec_visit:    'Visit Type',
+    sec_notes:    'Notes',
+    sec_photos:   'Photos',
+    lbl_user:     'Reporter',
+    lbl_date:     'Date',
+    lbl_gps:      'GPS',
+    lbl_lpc:      'LPC',
+    lbl_dbc:      'DBC Code',
+    lbl_ben:      'Beneficiary Name',
+    btn_camera:   'Camera',
+    btn_submit:   'Submit Report',
+    gps_acquiring:'Acquiring…',
+    gps_ok:       (lat, lng, acc) => `${lat.toFixed(5)}°N  ${lng.toFixed(5)}°E  ±${acc.toFixed(0)}m`,
+    gps_fail:     'GPS unavailable',
+    err_ident:    'At least one of LPC / DBC / Beneficiary Name is required',
+    err_vt:       'Select at least one visit type',
+    err_photo:    'At least 1 photo required',
+    err_gps:      'GPS fix needed before submitting',
+    submitting:   'Uploading photos…',
+    submit_ok:    'Report submitted ✓',
+    submit_err:   'Submission failed — saved to outbox',
+    outbox_retrying: 'Retrying outbox…',
+  },
+  bn: {
+    signin_title: 'দৈনিক রিপোর্ট জমা দিতে সাইন ইন করুন',
+    signin_sub:   'আপনার প্রজেক্ট Google অ্যাকাউন্ট ব্যবহার করুন',
+    sign_out:     'সাইন আউট',
+    sec_auto:     'সেশন তথ্য',
+    sec_location: 'প্লট পরিচয়',
+    sec_visit:    'ভিজিট ধরন',
+    sec_notes:    'নোট',
+    sec_photos:   'ছবি',
+    lbl_user:     'রিপোর্টার',
+    lbl_date:     'তারিখ',
+    lbl_gps:      'জিপিএস',
+    lbl_lpc:      'LPC',
+    lbl_dbc:      'DBC কোড',
+    lbl_ben:      'সুবিধাভোগীর নাম',
+    btn_camera:   'ক্যামেরা',
+    btn_submit:   'রিপোর্ট জমা দিন',
+    gps_acquiring:'অবস্থান নিচ্ছে…',
+    gps_ok:       (lat, lng, acc) => `${lat.toFixed(5)}°N  ${lng.toFixed(5)}°E  ±${acc.toFixed(0)}m`,
+    gps_fail:     'GPS পাওয়া যাচ্ছে না',
+    err_ident:    'LPC / DBC / সুবিধাভোগীর নামের মধ্যে অন্তত একটি দরকার',
+    err_vt:       'অন্তত একটি ভিজিট ধরন বেছে নিন',
+    err_photo:    'অন্তত ১টি ছবি প্রয়োজন',
+    err_gps:      'জমা দেওয়ার আগে GPS দরকার',
+    submitting:   'ছবি আপলোড হচ্ছে…',
+    submit_ok:    'রিপোর্ট জমা হয়েছে ✓',
+    submit_err:   'জমা ব্যর্থ — আউটবক্সে সংরক্ষিত',
+    outbox_retrying: 'আউটবক্স পুনরায় চেষ্টা করা হচ্ছে…',
+  },
+  hi: {
+    signin_title: 'दैनिक रिपोर्ट जमा करने के लिए साइन इन करें',
+    signin_sub:   'अपना प्रोजेक्ट Google खाता उपयोग करें',
+    sign_out:     'साइन आउट',
+    sec_auto:     'सत्र जानकारी',
+    sec_location: 'प्लॉट पहचान',
+    sec_visit:    'विज़िट प्रकार',
+    sec_notes:    'नोट्स',
+    sec_photos:   'फोटो',
+    lbl_user:     'रिपोर्टर',
+    lbl_date:     'तारीख',
+    lbl_gps:      'GPS',
+    lbl_lpc:      'LPC',
+    lbl_dbc:      'DBC कोड',
+    lbl_ben:      'लाभार्थी का नाम',
+    btn_camera:   'कैमरा',
+    btn_submit:   'रिपोर्ट जमा करें',
+    gps_acquiring:'स्थान प्राप्त हो रहा है…',
+    gps_ok:       (lat, lng, acc) => `${lat.toFixed(5)}°N  ${lng.toFixed(5)}°E  ±${acc.toFixed(0)}m`,
+    gps_fail:     'GPS उपलब्ध नहीं',
+    err_ident:    'LPC / DBC / लाभार्थी नाम में से कम से कम एक आवश्यक है',
+    err_vt:       'कम से कम एक विज़िट प्रकार चुनें',
+    err_photo:    'कम से कम 1 फोटो आवश्यक है',
+    err_gps:      'सबमिट करने से पहले GPS आवश्यक है',
+    submitting:   'फोटो अपलोड हो रहे हैं…',
+    submit_ok:    'रिपोर्ट जमा हुई ✓',
+    submit_err:   'जमा विफल — आउटबॉक्स में सहेजा',
+    outbox_retrying: 'आउटबॉक्स पुनः प्रयास…',
+  },
+};
+
+const VT_LABELS = {
+  en: {"Post-Damage":"Post-Damage","Post-Fire":"Post-Fire","Post-Flood":"Post-Flood","Replantation":"Replantation","Fencing Repair":"Fencing Repair","Weeding & Veg. Mgmt":"Weeding & Veg. Mgmt","Pit Digging":"Pit Digging","Fertiliser Applic.":"Fertiliser Applic.","Pesticide Applic.":"Pesticide Applic.","Plantation Check":"Plantation Check","Sapling Health Check":"Sapling Health Check","Mortality Check":"Mortality Check","Watering":"Watering","Drainage Mgmt":"Drainage Mgmt","Other":"Other"},
+  bn: {"Post-Damage":"পোস্ট-ড্যামেজ","Post-Fire":"পোস্ট-ফায়ার","Post-Flood":"পোস্ট-বন্যা","Replantation":"পুনরায় রোপণ","Fencing Repair":"বেড়া মেরামত","Weeding & Veg. Mgmt":"আগাছা পরিষ্কার","Pit Digging":"গর্ত খনন","Fertiliser Applic.":"সার প্রয়োগ","Pesticide Applic.":"কীটনাশক প্রয়োগ","Plantation Check":"প্লান্টেশন চেক","Sapling Health Check":"চারা স্বাস্থ্য পরীক্ষা","Mortality Check":"মৃত্যু পরীক্ষা","Watering":"জল দেওয়া","Drainage Mgmt":"ড্রেনেজ ব্যবস্থাপনা","Other":"অন্যান্য"},
+  hi: {"Post-Damage":"पोस्ट-डैमेज","Post-Fire":"पोस्ट-आग","Post-Flood":"पोस्ट-बाढ़","Replantation":"पुनर्रोपण","Fencing Repair":"बाड़ मरम्मत","Weeding & Veg. Mgmt":"निराई-गुड़ाई","Pit Digging":"गड्ढा खुदाई","Fertiliser Applic.":"उर्वरक प्रयोग","Pesticide Applic.":"कीटनाशक प्रयोग","Plantation Check":"वृक्षारोपण जांच","Sapling Health Check":"पौध स्वास्थ्य जांच","Mortality Check":"मृत्युदर जांच","Watering":"सिंचाई","Drainage Mgmt":"जल निकासी","Other":"अन्य"},
+};
+
+function S(key, ...args) {
+  const s = STRINGS[LANG][key];
+  return typeof s === 'function' ? s(...args) : (s || STRINGS.en[key] || key);
+}
+
+// ── Language ──────────────────────────────────────────────────────────────────
+function setLang(lang) {
+  LANG = lang;
+  localStorage.setItem('arr_lang', lang);
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === ({en:'EN',bn:'বাং',hi:'हि'})[lang]));
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    const s = STRINGS[lang][k];
+    if (s && typeof s === 'string') el.textContent = s;
+  });
+  // Update pill labels
+  document.querySelectorAll('.vt-pill').forEach(p => {
+    const en = p.dataset.en;
+    p.textContent = VT_LABELS[lang][en] || en;
+  });
+  // Re-render GPS if available
+  if (gpsLat !== null) document.getElementById('af-gps').textContent = S('gps_ok', gpsLat, gpsLng, gpsAcc);
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+function authGet() {
+  const email = localStorage.getItem(ARR_EMAIL_KEY);
+  const name  = localStorage.getItem(ARR_NAME_KEY) || '';
+  const ts    = parseInt(localStorage.getItem(ARR_TS_KEY) || '0');
+  if (!email || Date.now() - ts > ARR_TTL) return null;
+  return { email, name };
+}
+function authSet(email, name) {
+  localStorage.setItem(ARR_EMAIL_KEY, email);
+  localStorage.setItem(ARR_NAME_KEY,  name || '');
+  localStorage.setItem(ARR_TS_KEY,    String(Date.now()));
+}
+function authClear() {
+  [ARR_EMAIL_KEY, ARR_NAME_KEY, ARR_TS_KEY].forEach(k => localStorage.removeItem(k));
+}
+
+function signOut() {
+  if (!confirm('Sign out?')) return;
+  authClear();
+  if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
+  location.reload();
+}
+
+function showApp(auth) {
+  userEmail = auth.email;
+  userName  = auth.name || auth.email.split('@')[0];
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('main-screen').style.display = '';
+  document.getElementById('signout-btn').style.display = '';
+  document.getElementById('af-user').textContent = userName;
+  document.getElementById('af-date').textContent = new Date().toISOString().slice(0,10);
+  startGPS();
+  updateOutboxBadge();
+}
+
+function initAuth() {
+  const auth = authGet();
+  if (auth) { showApp(auth); return; }
+  if (window.google?.accounts?.id) initGSI();
+  else document.querySelector('script[src*="gsi"]').addEventListener('load', initGSI);
+}
+
+function initGSI() {
+  google.accounts.id.initialize({
+    client_id: OAUTH_CLIENT,
+    callback: handleCredential,
+    auto_select: false,
+    cancel_on_tap_outside: false,
+  });
+  google.accounts.id.renderButton(document.getElementById('gsi-wrap'), {
+    theme:'filled_blue', size:'large', text:'signin_with', width:240
+  });
+  google.accounts.id.prompt(() => {});
+}
+
+function handleCredential(response) {
+  try {
+    const p = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    authSet(p.email, p.name || '');
+    showApp({ email: p.email, name: p.name || '' });
+  } catch(e) {
+    document.getElementById('auth-msg').textContent = 'Sign-in error — try again';
+  }
+}
+
+// ── GPS ───────────────────────────────────────────────────────────────────────
+function startGPS() {
+  if (!navigator.geolocation) {
+    document.getElementById('af-gps').textContent = S('gps_fail');
+    return;
+  }
+  navigator.geolocation.watchPosition(
+    pos => {
+      gpsLat = pos.coords.latitude;
+      gpsLng = pos.coords.longitude;
+      gpsAcc = pos.coords.accuracy;
+      document.getElementById('af-gps').textContent = S('gps_ok', gpsLat, gpsLng, gpsAcc);
+    },
+    () => { document.getElementById('af-gps').textContent = S('gps_fail'); },
+    { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+  );
+}
+
+// ── Visit type pills ──────────────────────────────────────────────────────────
+function toggleVisitType(btn) {
+  btn.classList.toggle('sel');
+  const isOther = btn.dataset.other === 'true';
+  const anyOtherSel = document.querySelector('.vt-pill[data-other="true"].sel');
+  document.getElementById('other-text-wrap').style.display = anyOtherSel ? '' : 'none';
+  document.getElementById('vt-req').style.display = 'none';
+}
+
+function selectedVisitTypes() {
+  const pills = [...document.querySelectorAll('.vt-pill.sel')];
+  return pills.map(p => p.dataset.en);
+}
+
+// ── Camera & photo processing ─────────────────────────────────────────────────
+function triggerCamera() {
+  if (photos.length >= MAX_PHOTOS) return;
+  document.getElementById('camera-input').value = '';
+  document.getElementById('camera-input').click();
+}
+
+async function handlePhotoCapture(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const addBtn = document.getElementById('photo-add-btn');
+
+  // Show processing spinner
+  addBtn.innerHTML = '<span style="font-size:18px">⏳</span><span>Processing…</span>';
+
+  try {
+    const processed = await processPhoto(file);
+    photos.push(processed);
+    renderPhotos();
+  } catch(e) {
+    console.error('Photo processing failed:', e);
+  }
+  addBtn.innerHTML = '<span class="photo-add-icon">📷</span><span data-i18n="btn_camera">Camera</span>';
+  setLang(LANG); // re-apply i18n on regenerated el
+}
+
+async function processPhoto(file) {
+  // 1. Read as DataURL to get EXIF GPS before canvas (canvas strips EXIF)
+  const rawDataUrl = await fileToDataUrl(file);
+  
+  // 2. Extract GPS from raw EXIF (using piexifjs if available, else fallback)
+  let exifLat = gpsLat, exifLng = gpsLng;
+  try {
+    if (window.piexif) {
+      const exifObj = piexif.load(rawDataUrl);
+      const gpsIfd  = exifObj['GPS'];
+      if (gpsIfd && gpsIfd[piexif.GPSIFD.GPSLatitude]) {
+        exifLat = piexif.GPSHelper.dmsRationalToDeg(gpsIfd[piexif.GPSIFD.GPSLatitude]);
+        exifLng = piexif.GPSHelper.dmsRationalToDeg(gpsIfd[piexif.GPSIFD.GPSLongitude]);
+      }
+    }
+  } catch(e) {}
+  
+  // Use best available coords
+  const lat = exifLat || gpsLat;
+  const lng = exifLng || gpsLng;
+  
+  // 3. Draw onto canvas at target resolution with timestamp burn
+  const blob = await resizeAndBurn(file, lat, lng);
+  const dataUrl = await blobToDataUrl(blob);
+  const ts  = new Date().toISOString().slice(0,19).replace('T',' ');
+  const filename = `DR_${userEmail.split('@')[0]}_${ts.replace(/[: ]/g,'-')}_${Date.now()}.jpg`;
+  
+  return { blob, dataUrl, filename, lat, lng, ts };
+}
+
+function fileToDataUrl(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function resizeAndBurn(file, lat, lng) {
+  const img = await loadImage(file);
+  
+  // Scale to target (landscape: 1920×1080, portrait: 1080×1920)
+  const isPortrait = img.naturalHeight > img.naturalWidth;
+  const tW = isPortrait ? TARGET_H : TARGET_W;
+  const tH = isPortrait ? TARGET_W : TARGET_H;
+  
+  const scale = Math.min(tW / img.naturalWidth, tH / img.naturalHeight, 1);
+  const cW = Math.round(img.naturalWidth  * scale);
+  const cH = Math.round(img.naturalHeight * scale);
+  
+  const canvas = document.createElement('canvas');
+  canvas.width  = cW;
+  canvas.height = cH;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, cW, cH);
+  
+  // ── Timestamp burn — bottom-right, 20% width max ──────────────────────────
+  // Lines: lat/lng | username | timestamp
+  const ts  = new Date().toISOString().slice(0,19).replace('T',' ');
+  const latStr = lat  !== null ? `${lat.toFixed(5)}°N  ${lng.toFixed(5)}°E` : 'GPS N/A';
+  const lines = [latStr, userName, ts];
+  
+  const maxW   = cW * 0.20;           // max 20% of image width
+  const fSize  = Math.max(10, Math.min(Math.round(cH * 0.022), 18));
+  ctx.font     = `bold ${fSize}px monospace`;
+  
+  const lineH  = fSize + 3;
+  const padX   = 6, padY = 5;
+  const textW  = Math.min(maxW, Math.max(...lines.map(l => ctx.measureText(l).width)) + padX * 2);
+  const boxH   = lines.length * lineH + padY * 2;
+  const bx     = cW - textW - 6;
+  const by     = cH - boxH - 6;
+  
+  // Semi-transparent dark background
+  ctx.fillStyle = 'rgba(0,0,0,0.62)';
+  ctx.beginPath();
+  ctx.roundRect(bx, by, textW, boxH, 4);
+  ctx.fill();
+  
+  // White text
+  ctx.fillStyle = '#ffffff';
+  ctx.font      = `bold ${fSize}px monospace`;
+  ctx.textAlign = 'left';
+  lines.forEach((line, i) => {
+    ctx.fillText(line, bx + padX, by + padY + fSize + i * lineH, textW - padX * 2);
+  });
+  
+  return new Promise(res => canvas.toBlob(res, 'image/jpeg', JPEG_QUALITY));
+}
+
+function loadImage(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload  = () => { URL.revokeObjectURL(url); res(img); };
+    img.onerror = rej;
+    img.src     = url;
+  });
+}
+
+// ── Photo grid render ─────────────────────────────────────────────────────────
+function renderPhotos() {
+  const grid   = document.getElementById('photo-grid');
+  const addBtn = document.getElementById('photo-add-btn');
+  
+  // Remove all thumbs (keep add btn)
+  grid.querySelectorAll('.photo-thumb').forEach(t => t.remove());
+  
+  photos.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'photo-thumb';
+    div.innerHTML = `<img src="${p.dataUrl}" loading="lazy">
+      <button class="photo-rm" onclick="removePhoto(${i})">×</button>`;
+    grid.insertBefore(div, addBtn);
+  });
+  
+  // Hide add btn if at max
+  addBtn.style.display = photos.length >= MAX_PHOTOS ? 'none' : '';
+  document.getElementById('photo-count').textContent = `${photos.length} / ${MAX_PHOTOS}`;
+  document.getElementById('photo-req').style.display = 'none';
+}
+
+function removePhoto(i) {
+  photos.splice(i, 1);
+  renderPhotos();
+}
+
+// ── Validation ────────────────────────────────────────────────────────────────
+function validate() {
+  let ok = true;
+  
+  // At least one identifier
+  const lpc = document.getElementById('f-lpc').value.trim();
+  const dbc = document.getElementById('f-dbc').value.trim();
+  const ben = document.getElementById('f-ben').value.trim();
+  const identOk = lpc || dbc || ben;
+  document.getElementById('ident-req').style.display = identOk ? 'none' : '';
+  if (!identOk) ok = false;
+  
+  // At least one visit type
+  const vtOk = selectedVisitTypes().length > 0;
+  document.getElementById('vt-req').style.display = vtOk ? 'none' : '';
+  if (!vtOk) ok = false;
+  
+  // At least one photo
+  const photoOk = photos.length > 0;
+  document.getElementById('photo-req').style.display = photoOk ? 'none' : '';
+  if (!photoOk) ok = false;
+  
+  return ok;
+}
+
+// ── Submission ────────────────────────────────────────────────────────────────
+function setStatus(msg, cls='') {
+  const el = document.getElementById('submit-status');
+  el.textContent = msg;
+  el.className   = cls;
+}
+
+function rowId() {
+  return `DR_${userEmail}_${Date.now()}`;
+}
+
+async function submitReport() {
+  if (!validate()) return;
+  
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  setStatus(S('submitting'));
+  
+  const visitTypes = selectedVisitTypes();
+  const otherText  = document.getElementById('f-other-text').value.trim();
+  const notesVal   = document.getElementById('f-notes').value.trim();
+  
+  const row = {
+    row_id:           rowId(),
+    submitted_ts:     '',   // server stamps
+    date:             new Date().toISOString().slice(0,10),
+    operator_email:   userEmail,
+    operator_name:    userName,
+    district:         '',   // derived server-side from LPC if needed
+    gps_lat:          gpsLat !== null ? gpsLat.toFixed(6) : '',
+    gps_lng:          gpsLng !== null ? gpsLng.toFixed(6) : '',
+    gps_accuracy_m:   gpsAcc !== null ? gpsAcc.toFixed(1) : '',
+    lpc:              document.getElementById('f-lpc').value.trim(),
+    dbc:              document.getElementById('f-dbc').value.trim(),
+    beneficiary_name: document.getElementById('f-ben').value.trim(),
+    visit_types:      JSON.stringify(visitTypes) + (otherText ? `  [${otherText}]` : ''),
+    notes:            notesVal,
+    photos_json:      '',   // filled after upload
+    app_version:      APP_VERSION,
+  };
+  
+  try {
+    // Upload photos sequentially
+    const photoResults = [];
+    for (let i = 0; i < photos.length; i++) {
+      setStatus(`${S('submitting')} (${i+1}/${photos.length})`);
+      const p      = photos[i];
+      const base64 = p.dataUrl.split(',')[1];
+      const resp   = await gasPost({ action:'uploadPhoto', base64, mimeType:'image/jpeg', filename:p.filename, operatorEmail:userEmail });
+      if (resp.ok) photoResults.push({ fileId: resp.fileId, url: resp.url, filename: p.filename });
+    }
+    
+    row.photos_json = JSON.stringify(photoResults);
+    
+    // Submit row
+    const rowResp = await gasPost({ action:'submitRow', row });
+    if (!rowResp.ok) throw new Error(rowResp.error || 'submitRow failed');
+    
+    setStatus(S('submit_ok'), 'status-ok');
+    resetForm();
+  } catch(e) {
+    // Save to outbox
+    outbox.push({ row, photos: photos.map(p => ({ dataUrl:p.dataUrl, filename:p.filename })) });
+    localStorage.setItem('drt_outbox', JSON.stringify(outbox));
+    updateOutboxBadge();
+    setStatus(S('submit_err'), 'status-err');
+  }
+  
+  btn.disabled = false;
+}
+
+async function gasPost(payload) {
+  const resp = await fetch(GAS_URL, {
+    method: 'POST',
+    mode:   'no-cors',
+    headers: {'Content-Type':'application/json'},
+    body:    JSON.stringify(payload),
+  });
+  // no-cors returns opaque — treat as success if no throw
+  return { ok: true };
+}
+
+// For GET requests use JSONP
+function gasGet(params) {
+  return new Promise((res, rej) => {
+    const cb   = 'drt_cb_' + Date.now();
+    const qs   = Object.entries({ ...params, callback: cb }).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+    const s    = document.createElement('script');
+    s.src      = GAS_URL + '?' + qs;
+    s.onerror  = () => { rej(new Error('JSONP failed')); try{document.head.removeChild(s)}catch(e){} };
+    window[cb] = data => { res(data); try{document.head.removeChild(s)}catch(e){} delete window[cb]; };
+    document.head.appendChild(s);
+  });
+}
+
+// ── Outbox ────────────────────────────────────────────────────────────────────
+function updateOutboxBadge() {
+  const btn   = document.getElementById('outbox-btn');
+  const badge = document.getElementById('outbox-badge');
+  if (outbox.length > 0) {
+    btn.style.display   = '';
+    badge.style.display = '';
+    badge.textContent   = outbox.length;
+  } else {
+    btn.style.display   = 'none';
+    badge.style.display = 'none';
+  }
+}
+
+async function retryOutbox() {
+  if (!outbox.length) return;
+  setStatus(S('outbox_retrying'));
+  const remaining = [];
+  for (const item of outbox) {
+    try {
+      const photoResults = [];
+      for (const p of item.photos) {
+        const base64 = p.dataUrl.split(',')[1];
+        const resp   = await gasPost({ action:'uploadPhoto', base64, mimeType:'image/jpeg', filename:p.filename, operatorEmail:userEmail });
+        if (resp.ok) photoResults.push({ filename: p.filename });
+      }
+      item.row.photos_json = JSON.stringify(photoResults);
+      const rowResp = await gasPost({ action:'submitRow', row: item.row });
+      if (!rowResp.ok) throw new Error('submitRow failed');
+    } catch(e) {
+      remaining.push(item);
+    }
+  }
+  outbox = remaining;
+  localStorage.setItem('drt_outbox', JSON.stringify(outbox));
+  updateOutboxBadge();
+  setStatus(outbox.length === 0 ? S('submit_ok') : S('submit_err'), outbox.length === 0 ? 'status-ok' : 'status-err');
+}
+
+// ── Reset form ────────────────────────────────────────────────────────────────
+function resetForm() {
+  document.getElementById('f-lpc').value   = '';
+  document.getElementById('f-dbc').value   = '';
+  document.getElementById('f-ben').value   = '';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('f-other-text').value = '';
+  document.querySelectorAll('.vt-pill.sel').forEach(p => p.classList.remove('sel'));
+  document.getElementById('other-text-wrap').style.display = 'none';
+  photos = [];
+  renderPhotos();
+  document.getElementById('af-date').textContent = new Date().toISOString().slice(0,10);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Apply stored theme
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  // Apply stored lang
+  const storedLang = localStorage.getItem('arr_lang') || 'en';
+  setLang(storedLang);
+  initAuth();
+});
+</script>
+
+<!-- piexifjs for EXIF preservation (same CDN as ARRMapper) -->
+<script src="https://cdn.jsdelivr.net/npm/piexifjs@1.0.6/piexif.js"></script>
+</body>
+</html>

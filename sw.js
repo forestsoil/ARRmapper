@@ -1,4 +1,4 @@
-// ARR Project Suite — Service Worker v6
+// ARR Project Suite — Service Worker v7
 // Caching strategy:
 //   index.html              → network-first (always serve fresh launcher)
 //   appDashboard.html       → network-first (data-dependent, stale is misleading)
@@ -7,12 +7,13 @@
 //   CDN assets              → cache-first (immutable versioned URLs)
 //   Google APIs             → network-only (auth, Maps, Apps Script)
 
-const CACHE_NAME = 'arrm-shell-edd388b';
+const CACHE_NAME = 'arrm-shell-v7';
 
 const SHELL_URLS = [
   '/ARRmapper/appVectorTool.html',
   '/ARRmapper/appPlantationMapper.html',
   '/ARRmapper/appSoilMapper.html',
+  '/ARRmapper/appDailyReport.html',
   '/ARRmapper/appSurveyManager.html',
   '/ARRmapper/appNurseryDashboard.html',
   '/ARRmapper/appHotspot.html',
@@ -55,6 +56,7 @@ const STALE_WHILE_REVALIDATE_PATHS = [
   'appVectorTool.html',
   'appPlantationMapper.html',
   'appSoilMapper.html',
+  'appDailyReport.html',
   'appNurseryDashboard.html',
 ];
 
