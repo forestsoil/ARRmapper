@@ -14,13 +14,21 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 /* ── Topbar ── */
 .topbar{background:var(--forest);color:var(--mist);display:flex;align-items:center;
-  padding:10px 14px;gap:10px;position:sticky;top:0;z-index:100;border-bottom:2px solid var(--leaf)}
-.tb-title{flex:1;font-size:14px;font-weight:700;letter-spacing:.01em}
+  padding:8px 14px;gap:8px;position:sticky;top:0;z-index:100;border-bottom:2px solid var(--leaf)}
+.tb-home{font-size:18px;text-decoration:none;line-height:1;flex-shrink:0}
+.tb-title{font-size:13px;font-weight:700;letter-spacing:.01em;flex-shrink:0;margin-right:4px}
+.tb-tabs{display:flex;gap:2px;background:rgba(0,0,0,.25);border-radius:20px;padding:2px;flex:1;
+  max-width:240px;margin:0 auto}
+.tb-tab{background:none;border:none;border-radius:18px;padding:4px 18px;font-size:11px;
+  font-weight:600;color:var(--mist);cursor:pointer;font-family:inherit;opacity:.6;
+  transition:all .15s;flex:1}
+.tb-tab.active{background:var(--leaf);color:var(--forest);opacity:1}
+.tb-right{display:flex;align-items:center;gap:6px;margin-left:auto}
 .tb-btn{background:rgba(82,183,136,.15);border:1px solid var(--leaf);border-radius:20px;
-  padding:5px 12px;font-size:11px;color:var(--mist);cursor:pointer;font-family:inherit}
+  padding:4px 10px;font-size:11px;color:var(--mist);cursor:pointer;font-family:inherit}
 .tb-btn:hover{background:rgba(82,183,136,.3)}
-.tb-lang{display:flex;gap:4px}
-.lang-btn{background:none;border:1px solid var(--leaf);border-radius:12px;padding:3px 8px;
+.tb-lang{display:flex;gap:3px}
+.lang-btn{background:none;border:1px solid var(--leaf);border-radius:12px;padding:3px 7px;
   font-size:10px;color:var(--mist);cursor:pointer;font-family:inherit;opacity:.6}
 .lang-btn.active{opacity:1;background:var(--leaf);color:var(--forest);font-weight:700}
 
@@ -166,21 +174,22 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 <body>
 
 <div class="topbar">
-  <span class="tb-title" id="tb-title">📋 Daily Report</span>
-  <div class="tb-tabs">
-    <button class="tb-tab active" id="tbt-report"   onclick="switchAppTab('report')">Daily Report</button>
-    <button class="tb-tab"        id="tbt-dashboard" onclick="switchAppTab('dashboard')" style="display:none">Dashboard</button>
+  <a class="tb-home" href="index.html" title="ARR Suite">🌳</a>
+  <span class="tb-title" id="tb-title">Daily Report</span>
+  <div class="tb-tabs" id="tb-tabs" style="display:none">
+    <button class="tb-tab active" id="tbt-report"   onclick="switchAppTab('report')">Report</button>
+    <button class="tb-tab"        id="tbt-dashboard" onclick="switchAppTab('dashboard')">Dashboard</button>
   </div>
-  <div class="tb-lang">
-    <button class="lang-btn active" onclick="setLang('en')">EN</button>
-    <button class="lang-btn" onclick="setLang('bn')">বাং</button>
-    <button class="lang-btn" onclick="setLang('hi')">हि</button>
+  <div class="tb-right">
+    <div class="tb-lang">
+      <button class="lang-btn active" id="lbtn-en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="lbtn-bn" onclick="setLang('bn')">বাং</button>
+      <button class="lang-btn" id="lbtn-hi" onclick="setLang('hi')">हि</button>
+    </div>
+    <button class="tb-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+    <button class="tb-btn" id="outbox-btn" onclick="retryOutbox()" style="display:none">📤<span id="outbox-badge"></span></button>
+    <button class="tb-btn" onclick="signOut()" id="signout-btn" style="display:none" data-i18n="sign_out">Sign out</button>
   </div>
-  <button class="tb-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
-  <button class="tb-btn" id="outbox-btn" onclick="retryOutbox()" style="display:none">
-    📤<span id="outbox-badge"></span>
-  </button>
-  <button class="tb-btn" onclick="signOut()" id="signout-btn" style="display:none" data-i18n="sign_out">Sign out</button>
 </div>
 
 <!-- AUTH -->
@@ -474,7 +483,7 @@ function S(key, ...args) {
 function setLang(lang) {
   LANG = lang;
   localStorage.setItem('arr_lang', lang);
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === ({en:'EN',bn:'বাং',hi:'हि'})[lang]));
+  ['en','bn','hi'].forEach(l => { const b=document.getElementById('lbtn-'+l); if(b) b.classList.toggle('active', l===lang); });
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const k = el.dataset.i18n;
     const s = STRINGS[lang][k];
@@ -529,7 +538,6 @@ function signOut() {
 }
 
 function showApp(auth) {
-  try {
   userEmail = auth.email;
   userName  = auth.name || auth.email.split('@')[0];
   document.getElementById('auth-screen').style.display = 'none';
@@ -539,7 +547,7 @@ function showApp(auth) {
   document.getElementById('af-date').textContent = new Date().toISOString().slice(0,10);
   startGPS();
   updateOutboxBadge();
-  document.getElementById('tbt-dashboard').style.display = '';
+  document.getElementById('tb-tabs').style.display = '';
 }
 
 function initAuth() {

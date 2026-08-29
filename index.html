@@ -15,7 +15,7 @@
 <script>
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v34</title>
+<title>ARR Project Suite v37</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{ --card-name: var(--forest); }
@@ -62,11 +62,11 @@ header img{width:110px;height:110px;object-fit:contain;flex-shrink:0}
 main{max-width:960px;margin:0 auto;padding:20px 20px 48px}
 
 
-.grid{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;justify-content:center;align-items:stretch}
+.grid{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;align-items:stretch}
 .app-card{background:var(--card);border:1.5px solid var(--rule);border-radius:12px;
   padding:18px 16px 14px;text-decoration:none;color:inherit;display:flex;
   flex-direction:column;gap:6px;transition:box-shadow .15s,border-color .15s,transform .1s;
-  cursor:pointer;position:relative;overflow:hidden;flex:1;min-width:220px;max-width:300px;text-align:left}
+  cursor:pointer;position:relative;overflow:hidden;width:calc(33.333% - 8px);flex-shrink:0;flex-grow:0;text-align:left}
 .app-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
   background:var(--accent,var(--leaf));opacity:0;transition:opacity .15s}
 .app-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.09);border-color:var(--accent,var(--leaf));transform:translateY(-2px)}
@@ -135,7 +135,7 @@ footer a:hover{color:var(--canopy)}
   .hdr-text h1{font-size:20px}
   .tab-btn{padding:10px 18px;font-size:12px}
   main{padding:16px 12px 40px}
-  .app-card{min-width:100%;max-width:100%}
+  .app-card{width:100%}
   
   #feat-box{width:95vw;height:80vh;min-width:unset}
 }
