@@ -168,7 +168,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 <div class="topbar">
   <span class="tb-title" id="tb-title">📋 Daily Report</span>
   <div class="tb-tabs">
-    <button class="tb-tab active" id="tbt-report"   onclick="switchAppTab('report')">Report</button>
+    <button class="tb-tab active" id="tbt-report"   onclick="switchAppTab('report')">Daily Report</button>
     <button class="tb-tab"        id="tbt-dashboard" onclick="switchAppTab('dashboard')" style="display:none">Dashboard</button>
   </div>
   <div class="tb-lang">
@@ -176,6 +176,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
     <button class="lang-btn" onclick="setLang('bn')">বাং</button>
     <button class="lang-btn" onclick="setLang('hi')">हि</button>
   </div>
+  <button class="tb-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
   <button class="tb-btn" id="outbox-btn" onclick="retryOutbox()" style="display:none">
     📤<span id="outbox-badge"></span>
   </button>
@@ -505,6 +506,21 @@ function authClear() {
   [ARR_EMAIL_KEY, ARR_NAME_KEY, ARR_TS_KEY].forEach(k => localStorage.removeItem(k));
 }
 
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  if (next === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('arr_theme', next);
+  document.getElementById('theme-toggle-btn').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
+function applyStoredTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+}
+
 function signOut() {
   if (!confirm('Sign out?')) return;
   authClear();
@@ -529,8 +545,21 @@ function showApp(auth) {
 function initAuth() {
   const auth = authGet();
   if (auth) { showApp(auth); return; }
-  if (window.google?.accounts?.id) initGSI();
-  else document.querySelector('script[src*="gsi"]').addEventListener('load', initGSI);
+  // Not signed in — show GSI button
+  document.getElementById('auth-screen').style.display = 'flex';
+  if (window.google?.accounts?.id) {
+    initGSI();
+  } else {
+    // GSI script not yet loaded — wait for it
+    const gsiScript = document.querySelector('script[src*="accounts.google.com/gsi"]');
+    if (gsiScript) {
+      gsiScript.addEventListener('load', initGSI);
+    } else {
+      window.addEventListener('load', () => {
+        if (window.google?.accounts?.id) initGSI();
+      });
+    }
+  }
 }
 
 function initGSI() {
@@ -1165,6 +1194,7 @@ function renderChart(type) {
 document.addEventListener('DOMContentLoaded', () => {
   const storedLang = localStorage.getItem('arr_lang') || 'en';
   try { setLang(storedLang); } catch(e) { console.error('setLang error:', e); }
+  try { applyStoredTheme(); } catch(e) {}
   try { initAuth(); } catch(e) { console.error('initAuth error:', e); }
 });
 </script>

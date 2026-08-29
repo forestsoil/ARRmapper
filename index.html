@@ -59,11 +59,10 @@ header img{width:110px;height:110px;object-fit:contain;flex-shrink:0}
   font-family:inherit;transition:color .15s,border-color .15s;letter-spacing:.01em}
 .tab-btn:hover{color:var(--canopy)}
 .tab-btn.active{color:var(--canopy);border-bottom-color:var(--leaf)}
-main{max-width:960px;margin:0 auto;padding:28px 20px 48px}
-.sec-heading{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--mid);padding:0 0 8px;margin-top:24px;margin-bottom:2px;border-bottom:1px solid var(--rule)}
-.sec-heading:first-child{margin-top:0}
-.grid{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;justify-content:center}
+main{max-width:960px;margin:0 auto;padding:20px 20px 48px}
+
+
+.grid{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;justify-content:center;align-items:stretch}
 .app-card{background:var(--card);border:1.5px solid var(--rule);border-radius:12px;
   padding:18px 16px 14px;text-decoration:none;color:inherit;display:flex;
   flex-direction:column;gap:6px;transition:box-shadow .15s,border-color .15s,transform .1s;
@@ -89,21 +88,16 @@ main{max-width:960px;margin:0 auto;padding:28px 20px 48px}
 .card-arrow{position:absolute;bottom:14px;right:14px;font-size:14px;
   color:var(--accent,var(--leaf));opacity:0;transition:opacity .15s,transform .15s}
 .app-card:hover .card-arrow{opacity:1;transform:translateX(3px)}
-.map-group{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;justify-content:center;align-items:stretch}
-.map-card{background:var(--card);border:1.5px solid var(--rule);border-radius:12px;
-  padding:14px 14px 28px;text-decoration:none;color:inherit;display:flex;
-  flex-direction:column;gap:4px;transition:box-shadow .15s,border-color .15s,transform .1s;
-  cursor:pointer;position:relative;overflow:hidden;flex:1;min-width:140px;max-width:280px}
-.map-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  background:var(--accent,var(--leaf));opacity:0;transition:opacity .15s}
-.map-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);border-color:var(--accent,var(--leaf));transform:translateY(-2px)}
-.map-card:hover::before{opacity:1}
-.map-card .card-icon{font-size:20px}
-.map-card .card-name{font-size:12px;font-weight:700;color:var(--card-name);line-height:1.2}
-.map-card .card-sub{font-size:10px;color:var(--mid);line-height:1.4}
-.map-card .card-arrow{position:absolute;bottom:10px;right:12px;font-size:13px;
-  color:var(--accent,var(--leaf));opacity:0;transition:opacity .15s,transform .15s}
-.map-card:hover .card-arrow{opacity:1;transform:translateX(3px)}
+
+
+
+
+
+
+
+
+
+
 #feat-overlay{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.75);display:none;
   align-items:center;justify-content:center;padding:16px}
 #feat-overlay.open{display:flex}
@@ -142,7 +136,7 @@ footer a:hover{color:var(--canopy)}
   .tab-btn{padding:10px 18px;font-size:12px}
   main{padding:16px 12px 40px}
   .app-card{min-width:100%;max-width:100%}
-  .map-card{min-width:calc(50% - 6px);max-width:100%}
+  
   #feat-box{width:95vw;height:80vh;min-width:unset}
 }
 </style>
@@ -189,30 +183,31 @@ footer a:hover{color:var(--canopy)}
 <!-- FIELD TAB -->
 <main id="pane-field">
 
-  <div class="sec-heading">Mapping</div>
-  <div class="map-group">
-    <a class="map-card" href="appVectorTool.html" style="--accent:#2d6a4f">
+  <div class="grid">
+
+    <a class="app-card" href="appVectorTool.html" style="--accent:#2d6a4f">
       <div class="card-icon">∟</div>
       <div class="card-name">Vector Tool</div>
       <div class="card-sub">GPS &amp; manual capture of POIs, paths, polygons</div>
+      <div class="card-tags"></div>
       <div class="card-arrow">→</div>
     </a>
-    <a class="map-card" href="appPlantationMapper.html" style="--accent:#16a34a">
+
+    <a class="app-card" href="appPlantationMapper.html" style="--accent:#16a34a">
       <div class="card-icon">🌳</div>
       <div class="card-name">Plantation Mapper</div>
       <div class="card-sub">Species-based sapling grid placement</div>
+      <div class="card-tags"></div>
       <div class="card-arrow">→</div>
     </a>
-    <a class="map-card" href="appSoilMapper.html" style="--accent:#92400e">
+
+    <a class="app-card" href="appSoilMapper.html" style="--accent:#92400e">
       <div class="card-icon">⛏️</div>
       <div class="card-name">Soil Mapper</div>
       <div class="card-sub">Hand-drawn soil texture classification</div>
+      <div class="card-tags"></div>
       <div class="card-arrow">→</div>
     </a>
-  </div>
-
-  <div class="sec-heading">Dashboard</div>
-  <div class="grid">
 
     <a class="app-card" href="appMonitoringDashboard.html" style="--accent:#7e22ce">
       <div class="card-icon">🌿</div>
@@ -249,10 +244,7 @@ footer a:hover{color:var(--canopy)}
       <div class="card-arrow">→</div>
     </a>
 
-  </div>
 
-  <div class="sec-heading">Data &amp; Reporting</div>
-  <div class="grid">
 
     <a class="app-card" href="appSurveyManager.html" style="--accent:#0369a1">
       <div class="card-icon">📋</div>
@@ -294,30 +286,31 @@ footer a:hover{color:var(--canopy)}
 <!-- OFFICE TAB -->
 <main id="pane-office" style="display:none">
 
-  <div class="sec-heading">Mapping</div>
-  <div class="map-group">
-    <a class="map-card" href="appVectorTool.html" style="--accent:#2d6a4f">
+  <div class="grid">
+
+    <a class="app-card" href="appVectorTool.html" style="--accent:#2d6a4f">
       <div class="card-icon">∟</div>
       <div class="card-name">Vector Tool</div>
       <div class="card-sub">GPS &amp; manual capture of POIs, paths, polygons</div>
+      <div class="card-tags"></div>
       <div class="card-arrow">→</div>
     </a>
-    <a class="map-card" href="appPlantationMapper.html" style="--accent:#16a34a">
+
+    <a class="app-card" href="appPlantationMapper.html" style="--accent:#16a34a">
       <div class="card-icon">🌳</div>
       <div class="card-name">Plantation Mapper</div>
       <div class="card-sub">Species-based sapling grid placement</div>
+      <div class="card-tags"></div>
       <div class="card-arrow">→</div>
     </a>
-    <a class="map-card" href="appSoilMapper.html" style="--accent:#92400e">
+
+    <a class="app-card" href="appSoilMapper.html" style="--accent:#92400e">
       <div class="card-icon">⛏️</div>
       <div class="card-name">Soil Mapper</div>
       <div class="card-sub">Hand-drawn soil texture classification</div>
+      <div class="card-tags"></div>
       <div class="card-arrow">→</div>
     </a>
-  </div>
-
-  <div class="sec-heading">Dashboard &amp; Tools</div>
-  <div class="grid">
 
     <a class="app-card" href="appDashboard.html" style="--accent:#0f766e">
       <div class="card-icon">🌡️</div>

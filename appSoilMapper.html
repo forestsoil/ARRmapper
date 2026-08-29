@@ -1999,6 +1999,19 @@ function openSettingsCallout(anchor) {
 
 // ── Load session from IDB on startup ─────────────────────────────────
 async function loadSessionFromIDB() {
+  // ── Auto-select project from launcher localStorage ────────────────
+  const launcherProject = localStorage.getItem('arr_project');
+  const auth = arrAuthGet();
+  if (launcherProject && auth && APP_CONFIG.projects[launcherProject]) {
+    SESSION.projectKey = launcherProject;
+    SESSION.userFolder = makeUserFolder(auth.email);
+    SESSION.setupDone  = true;
+    await idbSet('session', { projectKey: launcherProject, userFolder: SESSION.userFolder });
+    setupDismiss();
+    outboxUpdateBadge();
+    return true;
+  }
+  // ── Fall back to IDB stored session ──────────────────────────────
   try {
     const stored = await idbGet('session');
     if (stored && stored.projectKey && stored.userFolder) {
