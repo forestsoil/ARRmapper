@@ -16,14 +16,14 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .topbar{background:var(--forest);color:var(--mist);display:flex;align-items:center;
   padding:8px 14px;gap:8px;position:sticky;top:0;z-index:100;border-bottom:2px solid var(--leaf)}
 .tb-home{font-size:18px;text-decoration:none;line-height:1;flex-shrink:0}
-.tb-title{font-size:13px;font-weight:700;letter-spacing:.01em;flex-shrink:0;margin-right:4px}
-.tb-tabs{display:flex;gap:2px;background:rgba(0,0,0,.25);border-radius:20px;padding:2px;flex:1;
-  max-width:240px;margin:0 auto}
-.tb-tab{background:none;border:none;border-radius:18px;padding:4px 18px;font-size:11px;
+.tb-title{font-size:13px;font-weight:700;flex-shrink:0}
+.tb-tabs{display:flex;gap:2px;background:rgba(0,0,0,.25);border-radius:20px;padding:2px;
+  flex:1;max-width:220px;margin:0 auto}
+.tb-tab{background:none;border:none;border-radius:18px;padding:4px 0;font-size:11px;
   font-weight:600;color:var(--mist);cursor:pointer;font-family:inherit;opacity:.6;
-  transition:all .15s;flex:1}
+  transition:all .15s;flex:1;text-align:center}
 .tb-tab.active{background:var(--leaf);color:var(--forest);opacity:1}
-.tb-right{display:flex;align-items:center;gap:6px;margin-left:auto}
+.tb-right{display:flex;align-items:center;gap:5px;margin-left:auto}
 .tb-btn{background:rgba(82,183,136,.15);border:1px solid var(--leaf);border-radius:20px;
   padding:4px 10px;font-size:11px;color:var(--mist);cursor:pointer;font-family:inherit}
 .tb-btn:hover{background:rgba(82,183,136,.3)}
@@ -174,8 +174,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 <body>
 
 <div class="topbar">
-  <a class="tb-home" href="index.html" title="ARR Suite">🌳</a>
-  <span class="tb-title" id="tb-title">Daily Report</span>
+  <a class="tb-home" href="index.html">🌳</a>
+  <span class="tb-title">Daily Report</span>
   <div class="tb-tabs" id="tb-tabs" style="display:none">
     <button class="tb-tab active" id="tbt-report"   onclick="switchAppTab('report')">Report</button>
     <button class="tb-tab"        id="tbt-dashboard" onclick="switchAppTab('dashboard')">Dashboard</button>
@@ -188,7 +188,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
     </div>
     <button class="tb-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
     <button class="tb-btn" id="outbox-btn" onclick="retryOutbox()" style="display:none">📤<span id="outbox-badge"></span></button>
-    <button class="tb-btn" onclick="signOut()" id="signout-btn" style="display:none" data-i18n="sign_out">Sign out</button>
+    <button class="tb-btn" onclick="signOut()" id="signout-btn" style="display:none">Sign out</button>
   </div>
 </div>
 
