@@ -150,6 +150,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .vt-badge{display:inline-block;background:rgba(82,183,136,.12);border-radius:10px;
   padding:1px 6px;font-size:9px;color:var(--canopy);margin:1px}
 .dash-empty{text-align:center;color:var(--mid);font-size:12px;padding:24px}
+.photo-strip{display:flex;flex-wrap:wrap;gap:3px;max-width:260px}
+.photo-strip a{display:block;flex-shrink:0}
+.photo-strip img{width:36px;height:36px;object-fit:cover;border-radius:3px;
+  border:1px solid var(--rule);display:block;transition:opacity .15s}
+.photo-strip img:hover{opacity:.8}
+.photo-strip-none{color:var(--dim);font-size:10px}
 
 @media(max-width:480px){
   #main-screen{padding:12px 10px}
@@ -259,12 +265,17 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   <div class="sec">
     <div class="sec-title" data-i18n="sec_photos">Photos <span style="font-weight:400;text-transform:none;font-size:9px">(1–10 required)</span></div>
     <div class="photo-grid" id="photo-grid">
-      <div class="photo-add" onclick="triggerCamera()" id="photo-add-btn">
+      <div class="photo-add" onclick="triggerCamera()" id="photo-add-cam">
         <span class="photo-add-icon">📷</span>
         <span data-i18n="btn_camera">Camera</span>
       </div>
+      <div class="photo-add" onclick="triggerGallery()" id="photo-add-gal">
+        <span class="photo-add-icon">🖼️</span>
+        <span data-i18n="btn_gallery">Gallery</span>
+      </div>
     </div>
-    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoCapture(this)">
+    <input type="file" id="camera-input"  accept="image/*" capture="environment" style="display:none" onchange="handlePhotoCapture(this)">
+    <input type="file" id="gallery-input" accept="image/*" multiple            style="display:none" onchange="handlePhotoCapture(this)">
     <div class="photo-count" id="photo-count">0 / 10</div>
     <div id="photo-req" class="field-req" style="display:none" data-i18n="err_photo">At least 1 photo required</div>
   </div>
@@ -323,7 +334,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
         <table class="log-table">
           <thead><tr>
             <th>Date</th><th>Reporter</th><th>LPC/DBC</th>
-            <th>Visit Types</th><th>GPS</th><th>Notes</th>
+            <th>Visit Types</th><th>GPS</th><th>Notes</th><th>Photos</th>
           </tr></thead>
           <tbody id="log-body"></tbody>
         </table>
@@ -334,7 +345,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v8';
+const APP_VERSION    = 'DRT-v12';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -367,8 +378,7 @@ const STRINGS = {
     lbl_dbc:      'DBC Code',
     lbl_ben:      'Beneficiary Name',
     btn_camera:   'Camera',
-    btn_submit:   'Submit Report',
-    gps_acquiring:'Acquiring…',
+    btn_gallery:  'Gallery',
     gps_ok:       (lat, lng, acc) => `${lat.toFixed(5)}°N  ${lng.toFixed(5)}°E  ±${acc.toFixed(0)}m`,
     gps_fail:     'GPS unavailable',
     err_ident:    'At least one of LPC / DBC / Beneficiary Name is required',
@@ -396,7 +406,7 @@ const STRINGS = {
     lbl_dbc:      'DBC কোড',
     lbl_ben:      'সুবিধাভোগীর নাম',
     btn_camera:   'ক্যামেরা',
-    btn_submit:   'রিপোর্ট জমা দিন',
+    btn_gallery:  'গ্যালারি',
     gps_acquiring:'অবস্থান নিচ্ছে…',
     gps_ok:       (lat, lng, acc) => `${lat.toFixed(5)}°N  ${lng.toFixed(5)}°E  ±${acc.toFixed(0)}m`,
     gps_fail:     'GPS পাওয়া যাচ্ছে না',
@@ -425,7 +435,7 @@ const STRINGS = {
     lbl_dbc:      'DBC कोड',
     lbl_ben:      'लाभार्थी का नाम',
     btn_camera:   'कैमरा',
-    btn_submit:   'रिपोर्ट जमा करें',
+    btn_gallery:  'गैलरी',
     gps_acquiring:'स्थान प्राप्त हो रहा है…',
     gps_ok:       (lat, lng, acc) => `${lat.toFixed(5)}°N  ${lng.toFixed(5)}°E  ±${acc.toFixed(0)}m`,
     gps_fail:     'GPS उपलब्ध नहीं',
@@ -563,23 +573,39 @@ function triggerCamera() {
   document.getElementById('camera-input').click();
 }
 
+function triggerGallery() {
+  if (photos.length >= MAX_PHOTOS) return;
+  document.getElementById('gallery-input').value = '';
+  document.getElementById('gallery-input').click();
+}
+
 async function handlePhotoCapture(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  const addBtn = document.getElementById('photo-add-btn');
+  if (!input.files || !input.files.length) return;
+  const camBtn = document.getElementById('photo-add-cam');
+  const galBtn = document.getElementById('photo-add-gal');
 
-  // Show processing spinner
-  addBtn.innerHTML = '<span style="font-size:18px">⏳</span><span>Processing…</span>';
+  // How many slots remain
+  const slots = MAX_PHOTOS - photos.length;
+  const files = Array.from(input.files).slice(0, slots);
+  if (!files.length) return;
 
-  try {
-    const processed = await processPhoto(file);
-    photos.push(processed);
-    renderPhotos();
-  } catch(e) {
-    console.error('Photo processing failed:', e);
+  const spinner = '<span style="font-size:18px">⏳</span><span>Processing…</span>';
+  if (camBtn) camBtn.innerHTML = spinner;
+  if (galBtn) galBtn.innerHTML = spinner;
+
+  for (const file of files) {
+    try {
+      const processed = await processPhoto(file);
+      photos.push(processed);
+      renderPhotos();
+    } catch(e) {
+      console.error('Photo processing failed:', e);
+    }
   }
-  addBtn.innerHTML = '<span class="photo-add-icon">📷</span><span data-i18n="btn_camera">Camera</span>';
-  setLang(LANG); // re-apply i18n on regenerated el
+
+  if (camBtn) camBtn.innerHTML = '<span class="photo-add-icon">📷</span><span data-i18n="btn_camera">Camera</span>';
+  if (galBtn) galBtn.innerHTML = '<span class="photo-add-icon">🖼️</span><span data-i18n="btn_gallery">Gallery</span>';
+  setLang(LANG);
 }
 
 async function processPhoto(file) {
@@ -696,21 +722,24 @@ function loadImage(file) {
 // ── Photo grid render ─────────────────────────────────────────────────────────
 function renderPhotos() {
   const grid   = document.getElementById('photo-grid');
-  const addBtn = document.getElementById('photo-add-btn');
-  
-  // Remove all thumbs (keep add btn)
+  const camBtn = document.getElementById('photo-add-cam');
+  const galBtn = document.getElementById('photo-add-gal');
+
+  // Remove all thumbs (keep add btns)
   grid.querySelectorAll('.photo-thumb').forEach(t => t.remove());
-  
+
   photos.forEach((p, i) => {
     const div = document.createElement('div');
     div.className = 'photo-thumb';
     div.innerHTML = `<img src="${p.dataUrl}" loading="lazy">
       <button class="photo-rm" onclick="removePhoto(${i})">×</button>`;
-    grid.insertBefore(div, addBtn);
+    grid.insertBefore(div, camBtn);
   });
-  
-  // Hide add btn if at max
-  addBtn.style.display = photos.length >= MAX_PHOTOS ? 'none' : '';
+
+  // Hide both add btns if at max
+  const atMax = photos.length >= MAX_PHOTOS;
+  if (camBtn) camBtn.style.display = atMax ? 'none' : '';
+  if (galBtn) galBtn.style.display = atMax ? 'none' : '';
   document.getElementById('photo-count').textContent = `${photos.length} / ${MAX_PHOTOS}`;
   document.getElementById('photo-req').style.display = 'none';
 }
@@ -787,22 +816,29 @@ async function submitReport() {
   };
   
   try {
-    // Upload photos sequentially
-    const photoResults = [];
+    // 1. Upload photos via no-cors POST (opaque — track filenames only)
+    const filenames = [];
     for (let i = 0; i < photos.length; i++) {
       setStatus(`${S('submitting')} (${i+1}/${photos.length})`);
       const p      = photos[i];
       const base64 = p.dataUrl.split(',')[1];
-      const resp   = await gasPost({ action:'uploadPhoto', base64, mimeType:'image/jpeg', filename:p.filename, operatorEmail:userEmail });
-      if (resp.ok) photoResults.push({ fileId: resp.fileId, url: resp.url, filename: p.filename });
+      await gasPost({ action:'uploadPhoto', base64, mimeType:'image/jpeg', filename:p.filename, operatorEmail:userEmail });
+      filenames.push(p.filename);
     }
-    
-    row.photos_json = JSON.stringify(photoResults);
-    
-    // Submit row
-    const rowResp = await gasPost({ action:'submitRow', row });
+
+    // 2. Submit row via JSONP GET — returns row_id
+    setStatus(S('submitting'));
+    row.photos_json = '';
+    const rowResp = await gasGet({ action:'submitRow', row: JSON.stringify(row) });
     if (!rowResp.ok) throw new Error(rowResp.error || 'submitRow failed');
-    
+
+    // 3. Patch photos_json via JSONP GET — GAS resolves fileIds from filenames
+    if (filenames.length) {
+      try {
+        await gasGet({ action:'patchPhoto', rowId: row.row_id, filenames: JSON.stringify(filenames) });
+      } catch(pe) { console.warn('patchPhoto failed (non-fatal):', pe); }
+    }
+
     setStatus(S('submit_ok'), 'status-ok');
     resetForm();
   } catch(e) {
@@ -812,7 +848,7 @@ async function submitReport() {
     updateOutboxBadge();
     setStatus(S('submit_err'), 'status-err');
   }
-  
+
   btn.disabled = false;
 }
 
@@ -860,15 +896,19 @@ async function retryOutbox() {
   const remaining = [];
   for (const item of outbox) {
     try {
-      const photoResults = [];
+      const filenames = [];
       for (const p of item.photos) {
         const base64 = p.dataUrl.split(',')[1];
-        const resp   = await gasPost({ action:'uploadPhoto', base64, mimeType:'image/jpeg', filename:p.filename, operatorEmail:userEmail });
-        if (resp.ok) photoResults.push({ filename: p.filename });
+        await gasPost({ action:'uploadPhoto', base64, mimeType:'image/jpeg', filename:p.filename, operatorEmail:userEmail });
+        filenames.push(p.filename);
       }
-      item.row.photos_json = JSON.stringify(photoResults);
-      const rowResp = await gasPost({ action:'submitRow', row: item.row });
+      item.row.photos_json = '';
+      const rowResp = await gasGet({ action:'submitRow', row: JSON.stringify(item.row) });
       if (!rowResp.ok) throw new Error('submitRow failed');
+      if (filenames.length) {
+        try { await gasGet({ action:'patchPhoto', rowId: item.row.row_id, filenames: JSON.stringify(filenames) }); }
+        catch(pe) { console.warn('patchPhoto outbox (non-fatal):', pe); }
+      }
     } catch(e) {
       remaining.push(item);
     }
@@ -906,8 +946,7 @@ async function checkDashAccess(email) {
   try {
     const resp = await fetch(INV_MANIFEST_URL);
     const manifest = await resp.json();
-    const hashes = manifest.hashes || manifest; // support both formats
-    const hashArr = Array.isArray(hashes) ? hashes : Object.values(hashes);
+    const hashArr = Array.isArray(manifest.emails) ? manifest.emails : [];
     const emailHash = await sha256(email.toLowerCase().trim());
     return hashArr.includes(emailHash);
   } catch(e) {
@@ -1004,6 +1043,21 @@ function renderDashboard() {
         const types = safeParseTypes(r.visit_types);
         const ident = [r.lpc, r.dbc, r.beneficiary_name].filter(Boolean).join(' / ');
         const gps   = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(4)}°N ${parseFloat(r.gps_lng).toFixed(4)}°E` : '—';
+        let photoHtml = '<span class="photo-strip-none">—</span>';
+        try {
+          const pArr = JSON.parse(r.photos_json || '[]');
+          if (pArr.length) {
+            const thumbs = pArr.map((p, i) => {
+              const fileId = p.fileId || (p.url || '').match(/\/d\/([\w-]+)/)?.[1] || '';
+              const base   = fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : '';
+              const label  = p.filename || `Photo ${i+1}`;
+              return base
+                ? `<a href="${base}" target="_blank" rel="noopener" title="${label}"><img src="${base}=s72" loading="lazy"></a>`
+                : `<span class="photo-strip-none" title="${label}">📷</span>`;
+            }).join('');
+            photoHtml = `<div class="photo-strip">${thumbs}</div>`;
+          }
+        } catch(e) {}
         return `<tr>
           <td>${r.date}</td>
           <td>${r.operator_name||r.operator_email}</td>
@@ -1011,9 +1065,10 @@ function renderDashboard() {
           <td>${types.map(t=>`<span class="vt-badge">${t}</span>`).join('')}</td>
           <td style="font-size:10px;white-space:nowrap">${gps}</td>
           <td>${(r.notes||'').slice(0,60)}${r.notes&&r.notes.length>60?'…':''}</td>
+          <td>${photoHtml}</td>
         </tr>`;
       }).join('')
-    : '<tr><td colspan="6" class="dash-empty">No submissions yet</td></tr>';
+    : '<tr><td colspan="7" class="dash-empty">No submissions yet</td></tr>';
 
   // Default chart
   showChart('daily', document.querySelector('.chart-sel-btn.active'));
