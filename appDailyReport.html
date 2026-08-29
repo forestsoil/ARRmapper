@@ -32,13 +32,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   font-size:10px;color:var(--mist);cursor:pointer;font-family:inherit;opacity:.6}
 .lang-btn.active{opacity:1;background:var(--leaf);color:var(--forest);font-weight:700}
 
-/* ── Auth screen ── */
-#auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:60vh;gap:16px;padding:32px 20px;text-align:center}
-#auth-screen h2{font-size:18px;color:var(--forest)}
-[data-theme="dark"] #auth-screen h2{color:var(--mist)}
-#auth-screen p{font-size:12px;color:var(--mid)}
-#gsi-wrap{min-height:44px}
+/* ── User chip ── */
+#user-chip{font-size:11px;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── Main form ── */
 #main-screen{display:none;max-width:640px;margin:0 auto;padding:16px 14px}
@@ -166,7 +161,6 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   .vt-pill{font-size:10px;padding:6px 10px}
 }
 </style>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -188,16 +182,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
     </div>
     <button class="tb-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
     <button class="tb-btn" id="outbox-btn" onclick="retryOutbox()" style="display:none">📤<span id="outbox-badge"></span></button>
-    <button class="tb-btn" onclick="signOut()" id="signout-btn" style="display:none">Sign out</button>
+    <span class="tb-btn" id="user-chip" title="Signed in" style="display:none;cursor:pointer" onclick="arrSignOut()">👤 <span id="user-chip-name"></span></span>
   </div>
-</div>
-
-<!-- AUTH -->
-<div id="auth-screen">
-  <h2 data-i18n="signin_title">Sign in to submit daily reports</h2>
-  <p data-i18n="signin_sub">Use your project Google account</p>
-  <div id="gsi-wrap"></div>
-  <p id="auth-msg" style="color:var(--red);font-size:11px"></p>
 </div>
 
 <!-- MAIN FORM -->
@@ -352,23 +338,14 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 </div>
 
 <script>
-// ── Config
- ────────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v1';
-const OAUTH_CLIENT   = '348880490660-o21fd3cm0as45qns22lkot6n162tdo7c.apps.googleusercontent.com';
+// ── Config ───────────────────────────────────────────────────────────────────
+const APP_VERSION    = 'DRT-v7';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
 const TARGET_W       = 1920;
 const TARGET_H       = 1080;
 const JPEG_QUALITY   = 0.80;
-
-// ── Auth keys (shared with launcher) ─────────────────────────────────────────
-const ARR_EMAIL_KEY = 'arr_user_email';
-const ARR_NAME_KEY  = 'arr_user_name';
-const ARR_TS_KEY    = 'arr_auth_ts';
-const ARR_TTL       = 12 * 60 * 60 * 1000;
-const ARR_THEME_KEY = 'arr_theme';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let userEmail = null, userName = null;
@@ -498,21 +475,29 @@ function setLang(lang) {
   if (gpsLat !== null) document.getElementById('af-gps').textContent = S('gps_ok', gpsLat, gpsLng, gpsAcc);
 }
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
-function authGet() {
-  const email = localStorage.getItem(ARR_EMAIL_KEY);
-  const name  = localStorage.getItem(ARR_NAME_KEY) || '';
-  const ts    = parseInt(localStorage.getItem(ARR_TS_KEY) || '0');
-  if (!email || Date.now() - ts > ARR_TTL) return null;
+// ── Auth — shared launcher pattern ───────────────────────────────────────────
+const ARR_AUTH_EMAIL_KEY = 'arr_user_email';
+const ARR_AUTH_NAME_KEY  = 'arr_user_name';
+const ARR_AUTH_TS_KEY    = 'arr_auth_ts';
+const ARR_AUTH_TTL       = 12 * 60 * 60 * 1000; // 12 hours
+
+function arrAuthGet() {
+  const email = localStorage.getItem(ARR_AUTH_EMAIL_KEY);
+  const name  = localStorage.getItem(ARR_AUTH_NAME_KEY) || '';
+  const ts    = parseInt(localStorage.getItem(ARR_AUTH_TS_KEY) || '0');
+  if (!email) return null;
+  if (Date.now() - ts > ARR_AUTH_TTL) { arrAuthClear(); return null; }
   return { email, name };
 }
-function authSet(email, name) {
-  localStorage.setItem(ARR_EMAIL_KEY, email);
-  localStorage.setItem(ARR_NAME_KEY,  name || '');
-  localStorage.setItem(ARR_TS_KEY,    String(Date.now()));
+function arrAuthClear() {
+  localStorage.removeItem(ARR_AUTH_EMAIL_KEY);
+  localStorage.removeItem(ARR_AUTH_NAME_KEY);
+  localStorage.removeItem(ARR_AUTH_TS_KEY);
 }
-function authClear() {
-  [ARR_EMAIL_KEY, ARR_NAME_KEY, ARR_TS_KEY].forEach(k => localStorage.removeItem(k));
+function arrSignOut() {
+  if (!confirm('Sign out of ARR Project Suite?')) return;
+  arrAuthClear();
+  window.location.href = './index.html';
 }
 
 function toggleTheme() {
@@ -530,68 +515,18 @@ function applyStoredTheme() {
   if (btn) btn.textContent = isDark ? '☀️' : '🌙';
 }
 
-function signOut() {
-  if (!confirm('Sign out?')) return;
-  authClear();
-  if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
-  location.reload();
-}
-
 function showApp(auth) {
   userEmail = auth.email;
   userName  = auth.name || auth.email.split('@')[0];
-  document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('main-screen').style.display = '';
-  document.getElementById('signout-btn').style.display = '';
   document.getElementById('af-user').textContent = userName;
   document.getElementById('af-date').textContent = new Date().toISOString().slice(0,10);
+  // Show user chip
+  const chip = document.getElementById('user-chip');
+  if (chip) { document.getElementById('user-chip-name').textContent = userName; chip.style.display = ''; }
   startGPS();
   updateOutboxBadge();
   document.getElementById('tb-tabs').style.display = '';
-}
-
-function initAuth() {
-  const auth = authGet();
-  if (auth) { showApp(auth); return; }
-  // Not signed in — show GSI button
-  document.getElementById('auth-screen').style.display = 'flex';
-  if (window.google?.accounts?.id) {
-    initGSI();
-  } else {
-    // GSI script not yet loaded — wait for it
-    const gsiScript = document.querySelector('script[src*="accounts.google.com/gsi"]');
-    if (gsiScript) {
-      gsiScript.addEventListener('load', initGSI);
-    } else {
-      window.addEventListener('load', () => {
-        if (window.google?.accounts?.id) initGSI();
-      });
-    }
-  }
-}
-
-function initGSI() {
-  google.accounts.id.initialize({
-    client_id: OAUTH_CLIENT,
-    callback: handleCredential,
-    auto_select: false,
-    cancel_on_tap_outside: false,
-  });
-  google.accounts.id.renderButton(document.getElementById('gsi-wrap'), {
-    theme:'filled_blue', size:'large', text:'signin_with', width:240
-  });
-  google.accounts.id.prompt(() => {});
-}
-
-function handleCredential(response) {
-  try {
-    const p = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-    authSet(p.email, p.name || '');
-    showApp({ email: p.email, name: p.name || '' });
-  } catch(e) {
-    document.getElementById('auth-msg').textContent = 'Sign-in error — try again';
-  }
-} catch(e) { console.error('showApp error:', e); }
 }
 
 // ── GPS ───────────────────────────────────────────────────────────────────────
@@ -1203,7 +1138,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const storedLang = localStorage.getItem('arr_lang') || 'en';
   try { setLang(storedLang); } catch(e) { console.error('setLang error:', e); }
   try { applyStoredTheme(); } catch(e) {}
-  try { initAuth(); } catch(e) { console.error('initAuth error:', e); }
+  // Inherit launcher auth — redirect if missing
+  const auth = arrAuthGet();
+  if (!auth) {
+    window.location.href = './index.html?redirect=' + encodeURIComponent(window.location.href);
+    return;
+  }
+  showApp(auth);
 });
 </script>
 
