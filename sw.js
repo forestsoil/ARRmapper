@@ -1,19 +1,22 @@
-// ARR Project Suite — Service Worker v4
+// ARR Project Suite — Service Worker v6
 // Caching strategy:
-//   index.html        → network-first (always serve fresh launcher)
-//   appDashboard.html → network-first (data-dependent, stale is misleading)
-//   appARRmapper.html → stale-while-revalidate (serve cached for speed,
-//                       update in background — preserves offline capability)
-//   CDN assets        → cache-first (immutable versioned URLs)
-//   Google APIs       → network-only (auth, Maps, Apps Script)
+//   index.html              → network-first (always serve fresh launcher)
+//   appDashboard.html       → network-first (data-dependent, stale is misleading)
+//   mapper applets          → stale-while-revalidate (serve cached for speed,
+//                             update in background — preserves offline capability)
+//   CDN assets              → cache-first (immutable versioned URLs)
+//   Google APIs             → network-only (auth, Maps, Apps Script)
 
-const CACHE_NAME = 'arrm-shell-1d822b2';
+const CACHE_NAME = 'arrm-shell-v6';
 
 const SHELL_URLS = [
-  '/ARRmapper/appARRmapper.html',
+  '/ARRmapper/appVectorTool.html',
+  '/ARRmapper/appPlantationMapper.html',
+  '/ARRmapper/appSoilMapper.html',
   '/ARRmapper/appSurveyManager.html',
   '/ARRmapper/appNurseryDashboard.html',
   '/ARRmapper/appHotspot.html',
+  '/ARRmapper/arr-shared.css',
   '/ARRmapper/manifest.json',
   '/ARRmapper/logo.png',
   '/ARRmapper/logo2.png',
@@ -47,6 +50,14 @@ const NETWORK_FIRST_PATHS = [
   '/ARRmapper/appSurveyManager.html',
 ];
 
+// Stale-while-revalidate: offline-capable field tools
+const STALE_WHILE_REVALIDATE_PATHS = [
+  'appVectorTool.html',
+  'appPlantationMapper.html',
+  'appSoilMapper.html',
+  'appNurseryDashboard.html',
+];
+
 // ── Install: pre-cache app shell ─────────────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -78,7 +89,7 @@ self.addEventListener('fetch', event => {
   // Network-only for Google APIs
   if (NETWORK_ONLY_HOSTS.some(h => url.hostname.includes(h))) return;
 
-  // Network-first for index + dashboard
+  // Network-first for index + dashboards
   if (NETWORK_FIRST_PATHS.some(p => url.pathname === p || url.pathname.endsWith(p))) {
     event.respondWith(
       fetch(event.request)
@@ -96,9 +107,8 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Stale-while-revalidate for appARRmapper + appNurseryDashboard (offline-capable)
-  if (url.pathname.includes('appARRmapper.html') ||
-      url.pathname.includes('appNurseryDashboard.html')) {
+  // Stale-while-revalidate for offline-capable field applets
+  if (STALE_WHILE_REVALIDATE_PATHS.some(p => url.pathname.includes(p))) {
     event.respondWith(
       caches.open(CACHE_NAME).then(cache =>
         cache.match(event.request).then(cached => {
@@ -129,7 +139,7 @@ self.addEventListener('fetch', event => {
         return response;
       }).catch(() => {
         if (event.request.mode === 'navigate') {
-          return caches.match('/ARRmapper/appARRmapper.html');
+          return caches.match('/ARRmapper/index.html');
         }
       });
     })

@@ -16,7 +16,7 @@
   ],
   "file_handlers": [
     {
-      "action": "/ARRmapper/appARRmapper.html",
+      "action": "/ARRmapper/appVectorTool.html",
       "accept": {
         "application/vnd.google-earth.kml+xml": [".kml"],
         "application/vnd.google-earth.kmz": [".kmz"]

@@ -1,0 +1,3896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
+<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Vector Tool · ARR Suite</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+<link rel="stylesheet" href="arr-shared.css"/>
+<script>
+// ── Theme: set data-theme before paint for suite consistency ──────────
+(function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  if (next === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  else document.documentElement.removeAttribute('data-theme');
+  localStorage.setItem('arr_theme', next);
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
+}
+function initThemeBtn() {
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.textContent = (localStorage.getItem('arr_theme')||'light') === 'dark' ? '☀️' : '🌙';
+}
+</script>
+<style>
+/* ── ARRmapper layout & structural styles ───────────────────────────
+   Palette entirely from arr-shared.css — no local colour tokens.     */
+
+/* ── Layout ─────────────────────────────────────────────────────── */
+html,body{height:100%;overflow:hidden;-webkit-tap-highlight-color:transparent}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+#main{display:flex;flex:1;overflow:hidden;position:relative}
+
+#topbar{
+  background:var(--forest);color:var(--mist);padding:0;
+  height:76px;display:flex;align-items:center;gap:8px;flex-shrink:0;
+  flex-wrap:wrap;position:absolute;top:0;left:0;width:248px;z-index:600;
+}
+#sidebar{
+  width:248px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;
+  transition:width .2s;z-index:500;padding-top:76px;
+}
+#sidebar.collapsed{width:0;overflow:hidden;padding-top:76px}
+#map{flex:1}
+.hidden{display:none}
+
+/* ── Status bar ──────────────────────────────────────────────────── */
+#sbar{
+  background:var(--forest);color:var(--leaf);
+  font-size:11px;padding:3px 10px;min-height:22px;flex-shrink:0;line-height:1.4;
+}
+#sbar.warn{color:var(--amber)}
+#sbar.err{color:var(--red)}
+
+/* ── Portrait lock screen ────────────────────────────────────────── */
+#port{display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px}
+#port p{font-size:15px;color:var(--dim);max-width:250px;line-height:1.5}
+
+/* ── Sidebar sections ────────────────────────────────────────────── */
+.sec{padding:7px 9px;border-bottom:1px solid var(--border)}
+.sec-t{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--leaf);margin-bottom:5px;font-weight:700}
+.lbl{font-size:11px;color:var(--dim);display:block;margin-bottom:2px}
+
+/* ── Form controls ───────────────────────────────────────────────── */
+select,input[type=number]{
+  width:100%;padding:7px 6px;border-radius:5px;
+  border:1px solid var(--border);background:var(--bg);
+  color:var(--ink);font-size:15px;margin-bottom:5px;outline:none;
+}
+select:focus,input:focus{border-color:var(--leaf)}
+select option{background:var(--card)}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.btn{display:block;width:100%;min-height:40px;padding:7px 5px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:4px;line-height:1.2;color:#fff;transition:opacity .1s}
+.btn:active{opacity:.65}
+.b-blue{background:var(--blue)}
+.b-teal{background:var(--teal)}
+.b-amber{background:var(--amber)}
+.b-green{background:var(--canopy)}
+.b-gray{background:var(--mint);color:var(--ink)}
+.b-red{background:var(--red);color:#fff}
+.b-off{display:none}
+
+/* ── Icon buttons ────────────────────────────────────────────────── */
+.icon-btn{
+  width:38px;height:38px;flex-shrink:0;
+  border-radius:7px;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;line-height:1;color:#fff;
+  transition:opacity .1s,transform .1s;position:relative;
+}
+.icon-btn:active{opacity:.65;transform:scale(.93)}
+.icon-btn.b-off{display:none}
+.icon-btn .badge{
+  position:absolute;bottom:2px;right:2px;
+  font-size:8px;font-weight:700;background:rgba(0,0,0,.45);
+  border-radius:3px;padding:0 2px;line-height:1.3;
+}
+.indicator-btn{font-size:17px}
+
+/* ── Icon rows ───────────────────────────────────────────────────── */
+.icon-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.icon-row:last-child{margin-bottom:0}
+.icon-row .grow{flex:1;min-width:64px}
+.icon-row select,.icon-row input[type=number]{margin-bottom:0}
+
+/* ── Callouts ────────────────────────────────────────────────────── */
+.callout-backdrop{position:fixed;inset:0;z-index:1999;background:transparent}
+.callout{
+  position:fixed;z-index:2000;background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:9px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:7px;max-width:280px;
+}
+.callout-title{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--leaf);font-weight:700}
+.callout-row{display:flex;gap:6px;flex-wrap:wrap}
+.callout .icon-btn{background:var(--mint);color:var(--ink);border:2px solid var(--border);width:35px;height:35px;font-size:16px}
+.callout .icon-btn.sel{border-color:var(--leaf);background:var(--canopy);color:var(--mist)}
+.callout .icon-btn.lang-opt{width:auto;min-width:38px;padding:0 6px;font-size:12px;font-weight:700}
+.callout .icon-btn.wide-opt{
+  width:78px;height:34px;flex-direction:column;justify-content:center;
+  gap:1px;font-size:12px;line-height:1.2;padding:3px 4px;white-space:normal;
+  border-radius:7px;border-width:2px;
+}
+.callout .icon-btn.wide-opt span{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.callout.wide-callout{max-width:360px}
+.callout.wide-callout .callout-row{max-width:336px}
+.callout-note{font-size:11px;color:var(--dim);word-break:break-all;max-width:240px}
+
+/* ── Icon tooltip ────────────────────────────────────────────────── */
+.icon-tip{
+  position:fixed;z-index:3000;background:var(--forest);color:var(--mist);
+  border:1px solid var(--border);padding:5px 9px;border-radius:6px;
+  font-size:12px;white-space:nowrap;pointer-events:none;
+  transform:translate(-50%,-100%);box-shadow:var(--shadow);
+}
+
+/* ── Direction compass ───────────────────────────────────────────── */
+.cmp{display:flex;flex-direction:column;align-items:center;gap:2px;margin:3px 0 5px}
+.cmp-r{display:flex;gap:2px}
+.cd{
+  width:34px;height:34px;border-radius:4px;border:2px solid var(--border);
+  background:var(--bg);color:var(--leaf);font-size:10px;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s;
+}
+.cd:active{transform:scale(.88)}
+.cd.sel{background:var(--canopy);border-color:var(--leaf);color:var(--mist)}
+.cd-c{background:none;border-color:var(--border);color:var(--dim);cursor:default;font-size:13px}
+.dir-compass{display:flex;flex-direction:column;align-items:center;gap:3px}
+.dir-compass .cmp-r{display:flex;gap:3px}
+.dir-compass .cd{width:34px;height:34px;font-size:9px}
+
+/* ── Topbar elements ─────────────────────────────────────────────── */
+#tb-mode-badge{margin-left:auto}
+#btn-sb{background:var(--canopy);border:none;color:var(--mist);border-radius:5px;padding:4px 9px;font-size:18px;cursor:pointer;flex-shrink:0}
+.tb-uni-btn{
+  background:var(--canopy);border:1.5px solid rgba(255,255,255,.15);border-radius:5px;
+  color:var(--mist);font-size:15px;padding:0;cursor:pointer;text-align:center;
+  width:32px;height:32px;white-space:nowrap;transition:background .15s;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.tb-uni-btn:active{opacity:.7}
+.tb-uni-btn:hover{background:var(--leaf)}
+.tb-mode-btn.active{background:var(--leaf);border-color:var(--mist)}
+.tb-badge{
+  background:var(--canopy);border-radius:5px;padding:3px 8px;font-size:13px;
+  font-weight:700;color:var(--mist);flex-shrink:0;line-height:1.4;cursor:pointer;
+}
+.tb-badge:active{opacity:.7}
+#btn-kml-ind-tb{
+  width:30px;height:30px;font-size:16px;border-radius:6px;border:none;
+  background:var(--canopy);color:var(--mist);cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+#btn-kml-ind-tb:active{opacity:.7}
+.lb{background:var(--canopy);border:1.5px solid rgba(255,255,255,.2);color:var(--mist);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;line-height:1.7}
+.lb.on{background:#e94560;border-color:#e94560;color:#fff}
+.lb:active{opacity:.7}
+#lang-bar{display:flex;gap:4px;margin-left:8px;flex-shrink:0}
+#tab-bar{display:flex;gap:4px;margin-left:14px}
+.tab-btn{background:var(--canopy);border:1.5px solid rgba(255,255,255,.15);color:var(--mist);border-radius:5px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.tab-btn.on{background:var(--leaf);border-color:var(--mist);color:var(--forest)}
+.tab-btn:active{opacity:.7}
+
+/* ── Theme toggle (same pattern as other applets) ────────────────── */
+#theme-toggle-btn{
+  background:rgba(74,158,92,.18);border:1px solid var(--leaf);
+  border-radius:20px;padding:3px 10px;cursor:pointer;
+  font-size:13px;color:var(--mist);
+  transition:background .15s;flex-shrink:0;
+}
+#theme-toggle-btn:hover{background:rgba(74,158,92,.35)}
+
+/* ── Plantation mapper ───────────────────────────────────────────── */
+#sp-table{width:100%;border-collapse:collapse;font-size:10px}
+#sp-table th,#sp-table td{padding:3px 4px;text-align:left;border-bottom:1px solid var(--border)}
+#sp-table th{color:var(--leaf);font-weight:600}
+.sdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px;vertical-align:middle;border:1px solid var(--dim)}
+#grid-info{font-size:10px;color:var(--leaf);margin-top:3px;min-height:14px}
+#kml-input{display:none}
+.sp-tile{
+  border-radius:6px;padding:5px 3px;font-size:9px;cursor:pointer;
+  border:2px solid transparent;line-height:1.3;
+  text-align:center;min-height:44px;display:flex;align-items:center;justify-content:center;
+  word-break:break-word;font-weight:600;white-space:pre-wrap;
+}
+.sp-tile.sel{outline:2px solid var(--mist);outline-offset:2px}
+.soil-btn{width:38px;height:34px;border-radius:5px;border:2px solid var(--border);color:var(--ink);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.soil-btn:active{transform:scale(.92)}
+.soil-btn.sel{border-color:var(--leaf);box-shadow:0 0 0 2px var(--canopy)}
+.soil-tile{
+  border-radius:6px;padding:6px 4px;font-size:9px;cursor:pointer;
+  border:2px solid transparent;line-height:1.3;
+  text-align:center;min-height:44px;display:flex;align-items:center;justify-content:center;
+  font-weight:600;white-space:pre-wrap;
+}
+.soil-tile.sel{outline:2px solid var(--mist);outline-offset:2px}
+.pm-row{display:flex;align-items:center;gap:6px;padding:2px 0}
+.pm-label{font-size:10px;color:var(--dim);flex:1;min-width:0}
+.pm-val{font-size:12px;font-weight:700;color:var(--ink);min-width:36px;text-align:center}
+.pm-btn{background:var(--mint);border:none;border-radius:5px;color:var(--ink);font-size:16px;width:28px;height:28px;cursor:pointer;flex-shrink:0;line-height:1}
+/* plant/soil mode CSS removed — Vector Tool only */
+
+/* ── Collapsible summary ─────────────────────────────────────────── */
+.sec-t-toggle{cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px}
+.sec-t-toggle::after{content:'▲';font-size:8px;color:var(--dim);transition:transform .15s}
+.sec-t-toggle.collapsed::after{transform:rotate(180deg)}
+
+/* ── First-run setup overlay ─────────────────────────────────────── */
+#setup-overlay{
+  position:fixed;inset:0;z-index:9000;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;padding:24px;
+}
+#setup-overlay.hidden{display:none}
+.setup-title{font-size:18px;font-weight:700;color:var(--ink);text-align:center;line-height:1.3}
+.setup-sub{font-size:12px;color:var(--dim);text-align:center}
+.proj-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:320px}
+.proj-btn{
+  background:var(--card);border:2px solid var(--border);border-radius:10px;
+  padding:12px 8px;font-size:12px;color:var(--mid);cursor:pointer;text-align:center;line-height:1.3;
+}
+.proj-btn.sel{border-color:var(--leaf);color:var(--forest);background:var(--mint)}
+
+/* ── About overlay ───────────────────────────────────────────────── */
+
+/* ── Float draw buttons (portrait, plantation/soil draw) ─────────── */
+#float-draw-btns{
+  display:none;position:fixed;bottom:20px;right:14px;z-index:600;
+  flex-direction:column;gap:8px;
+}
+#float-draw-btns button{
+  width:52px;height:52px;border-radius:26px;border:none;font-size:22px;
+  cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);
+}
+#float-finish-btn{background:var(--amber);color:#fff}
+#float-undo-btn{background:var(--mint);color:var(--ink)}
+
+/* ── Tap-to-close portrait overlay ──────────────────────────────── */
+#sb-tap-close{display:none;position:fixed;top:0;right:0;width:30vw;height:100%;z-index:499;background:rgba(0,0,0,.2)}
+
+/* ── Trilingual font scaling ─────────────────────────────────────── */
+body.lang-bn,body.lang-hi{font-size:140%}
+body.lang-bn .sp-tile,body.lang-hi .sp-tile,
+body.lang-bn .soil-tile,body.lang-hi .soil-tile{font-size:12px}
+body.lang-bn .pm-label,body.lang-hi .pm-label{font-size:14px}
+
+/* ── FAM Vector Tool sidebar ─────────────────────────────────────── */
+.vec-step{padding:8px 10px;border-bottom:1px solid var(--border)}
+.vec-step-label{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--leaf);font-weight:700;margin-bottom:6px}
+.vec-shape-grid{display:flex;flex-direction:column;gap:5px}
+.vec-shape-btn{
+  display:flex;flex-direction:row;align-items:center;gap:10px;
+  width:100%;background:var(--mint);border:2px solid transparent;
+  border-radius:8px;padding:9px 14px;cursor:pointer;
+  transition:border-color .12s,background .12s;text-align:left;
+}
+.vec-shape-btn.sel{border-color:var(--leaf);background:var(--mint)}
+.vec-shape-btn .icon{font-size:22px;line-height:1;flex-shrink:0;color:var(--mist)}  
+.vec-shape-btn .lbl{font-size:13px;font-weight:600;color:var(--mid);line-height:1}
+.vec-shape-btn.sel .lbl{color:var(--forest)}
+.vec-method-row{display:flex;gap:6px}
+.vec-method-btn{
+  flex:1;padding:8px 4px;border-radius:6px;border:2px solid transparent;
+  background:var(--mint);font-size:12px;font-weight:600;color:var(--mid);
+  cursor:pointer;text-align:center;transition:border-color .12s,background .12s;
+}
+.vec-method-btn.sel{border-color:var(--leaf);background:var(--canopy);color:var(--mist)}
+.vec-method-btn:disabled{opacity:.35;pointer-events:none}
+.vec-name-input{
+  width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--border);
+  background:var(--bg);color:var(--ink);font-size:12px;margin-bottom:6px;outline:none;
+}
+.vec-name-input:focus{border-color:var(--leaf)}
+.vec-type-chips{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px}
+.vec-type-chip{
+  padding:3px 7px;border-radius:4px;border:1px solid var(--border);
+  background:var(--bg);font-size:10px;color:var(--mid);cursor:pointer;white-space:nowrap;
+}
+.vec-type-chip.sel{border-color:var(--leaf);color:var(--forest);background:var(--mint)}
+.vec-start-btn{
+  display:block;width:100%;min-height:40px;border-radius:7px;border:none;
+  background:var(--canopy);color:var(--mist);font-size:14px;font-weight:700;cursor:pointer;
+  margin-top:2px;transition:opacity .1s;
+}
+.vec-start-btn:active{opacity:.7}
+.vec-start-btn:disabled{opacity:.35;pointer-events:none;cursor:not-allowed}
+
+/* ── Floating live-stats panel ───────────────────────────────────── */
+#vec-stats-float{
+  display:none;
+  position:fixed;bottom:76px;left:50%;transform:translateX(-50%);
+  z-index:690;
+  background:var(--forest);border:1px solid var(--border);
+  border-radius:10px;padding:7px 16px;
+  min-width:180px;max-width:88vw;
+  box-shadow:var(--shadow);backdrop-filter:blur(4px);
+  pointer-events:none;text-align:center;
+}
+#vec-stats-float .sf-row{font-size:11px;color:var(--mist);line-height:1.8}
+#vec-stats-float .sf-val{color:#fff;font-weight:700}
+#vec-stats-float .sf-pts{display:block;font-size:10px;color:var(--leaf);margin-bottom:2px}
+
+/* ── Floating GPS recording panel ────────────────────────────────── */
+#vec-rec-panel{
+  display:none;
+  position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  z-index:700;
+  background:var(--forest);border:1px solid var(--border);
+  border-radius:12px;padding:8px 14px;
+  min-width:220px;max-width:90vw;
+  box-shadow:var(--shadow);backdrop-filter:blur(4px);
+}
+#vec-rec-panel .rec-btns{display:flex;gap:6px;justify-content:center}
+#vec-rec-panel .rec-btns button{
+  flex:1;min-height:36px;border-radius:7px;border:none;
+  font-size:12px;font-weight:700;color:#fff;cursor:pointer;
+}
+#vec-rec-panel .rec-btns button:active{opacity:.7}
+
+/* ── Responsive sidebar ──────────────────────────────────────────── */
+@media (max-width:600px) and (orientation:portrait){
+  #sidebar{
+    position:fixed!important;top:0!important;left:0!important;
+    width:70vw!important;max-width:280px!important;height:100%!important;
+    transform:translateX(-100%);transition:transform .22s ease;
+    z-index:500!important;overflow-y:auto!important;
+    box-shadow:4px 0 18px rgba(0,0,0,.3)!important;
+  }
+  #sidebar.collapsed{transform:translateX(-100%)!important}
+  #sidebar:not(.collapsed){transform:translateX(0)!important}
+  #map{margin-left:0!important}
+  #sidebar:not(.collapsed) ~ #sb-tap-close{display:block}
+}
+@media (min-width:601px),(orientation:landscape){
+  #sidebar{width:248px!important;transform:none!important}
+  #sidebar.collapsed{width:0!important}
+  #btn-sb{display:inline-block}
+}
+</style>
+
+<script>
+// ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
+// Shared across all applets via localStorage keys:
+//   arr_user_email  — Google email or @device fallback
+//   arr_user_name   — display name
+//   arr_auth_ts     — timestamp of last auth (ms)
+// Auth expires after 12 hours; re-login required.
+// On expiry or missing auth, applets redirect to index.html?redirect={href}
+
+const ARR_AUTH_EMAIL_KEY = 'arr_user_email';
+const ARR_AUTH_NAME_KEY  = 'arr_user_name';
+const ARR_AUTH_TS_KEY    = 'arr_auth_ts';
+const ARR_AUTH_TTL       = 12 * 60 * 60 * 1000; // 12 hours
+
+function arrAuthGet() {
+  const email = localStorage.getItem(ARR_AUTH_EMAIL_KEY);
+  const name  = localStorage.getItem(ARR_AUTH_NAME_KEY) || '';
+  const ts    = parseInt(localStorage.getItem(ARR_AUTH_TS_KEY) || '0');
+  if (!email) return null;
+  if (Date.now() - ts > ARR_AUTH_TTL) { arrAuthClear(); return null; }
+  return { email, name };
+}
+
+function arrAuthSet(email, name) {
+  localStorage.setItem(ARR_AUTH_EMAIL_KEY, email);
+  localStorage.setItem(ARR_AUTH_NAME_KEY,  name || '');
+  localStorage.setItem(ARR_AUTH_TS_KEY,    String(Date.now()));
+}
+
+function arrAuthClear() {
+  localStorage.removeItem(ARR_AUTH_EMAIL_KEY);
+  localStorage.removeItem(ARR_AUTH_NAME_KEY);
+  localStorage.removeItem(ARR_AUTH_TS_KEY);
+}
+
+// Call on applet load — returns auth object or redirects to launcher
+function arrAuthCheck(redirectIfMissing = true) {
+  const auth = arrAuthGet();
+  if (!auth && redirectIfMissing) {
+    const returnUrl = encodeURIComponent(window.location.href);
+    window.location.href = './index.html?redirect=' + returnUrl;
+    return null;
+  }
+  return auth;
+}
+
+// Render a compact user chip element into a container element
+function arrAuthRenderChip(containerId, onSignOut) {
+  const auth = arrAuthGet();
+  const el   = document.getElementById(containerId);
+  if (!el) return;
+  if (!auth) { el.textContent = ''; return; }
+  const display = auth.name && !auth.email.endsWith('@device') ? auth.name : auth.email;
+  el.textContent = display;
+  el.title = auth.email;
+  el.style.cursor = 'pointer';
+  el.onclick = () => {
+    if (confirm('Signed in as ' + auth.email + '\n\nSign out?')) {
+      arrAuthClear();
+      if (typeof onSignOut === 'function') onSignOut();
+      else window.location.href = './index.html';
+    }
+  };
+}
+
+</script>
+</head>
+<body>
+
+
+
+<!-- ── Float draw buttons (portrait, during drawing) ── -->
+<div id="float-draw-btns">
+  <button id="float-finish-btn" onclick="finishDrawBlock()" ontouchstart="event.stopPropagation()" title="Finish">✅</button>
+  <button id="float-undo-btn"   onclick="undoLastBlock()" title="Undo">↩️</button>
+</div>
+
+<!-- ── Floating live stats panel (Vector Tool — shown during manual draw & GPS walk) ── -->
+<div id="vec-stats-float">
+  <span class="sf-pts" id="sf-pts"></span>
+  <div class="sf-row" id="sf-area" style="display:none">📐 Area: <span class="sf-val" id="sf-area-val">—</span></div>
+  <div class="sf-row" id="sf-perim" style="display:none">🔲 Perim: <span class="sf-val" id="sf-perim-val">—</span></div>
+  <div class="sf-row" id="sf-len" style="display:none">📏 Length: <span class="sf-val" id="sf-len-val">—</span></div>
+</div>
+
+<!-- ── Floating GPS recording panel (Vector Tool) ── -->
+<div id="vec-rec-panel">
+  <div class="rec-btns">
+    <button id="vec-rec-finish" style="background:#15803d" onclick="vecGpsFinish()">✅ Finish</button>
+    <button id="vec-rec-undo"   style="background:var(--mint)" onclick="vecRecUndo()">↩️ Undo</button>
+    <button id="vec-rec-cancel" style="background:#991b1b" onclick="vecRecCancel()">✕ Cancel</button>
+  </div>
+</div>
+
+<!-- ── First-run setup overlay ── -->
+<div id="setup-overlay">
+  <div class="setup-title">🌳 Field Mapping Tool</div>
+  <div class="setup-sub">Select your project to continue</div>
+  <div class="proj-grid" id="proj-grid"></div>
+</div>
+
+<div id="app">
+
+
+<div id="sb-tap-close" onclick="toggleSB()"></div>
+<div id="topbar" style="flex-wrap:wrap;height:auto;padding:0">
+  <div style="display:flex;align-items:center;width:100%;padding:3px 4px 2px;gap:2px">
+    <button class="tb-uni-btn" id="btn-sb" onclick="toggleSB()" title="Menu / Close" style="background:#8b0000">☰</button>
+    <button class="tb-uni-btn" id="btn-kml-ind-tb" onclick="document.getElementById('kml-input').click()" title="Load KML/KMZ" style="margin-left:6px">📂</button>
+    <button class="tb-uni-btn" id="tb-basemap-badge" onclick="cycleBasemap(this)" title="Basemap">🌐</button>
+    <button class="tb-uni-btn" id="tb-lang-badge" onclick="cycleLang(this)" title="Language" style="font-size:13px;font-weight:700">E</button>
+    <span style="flex:1"></span>
+    <a href="./index.html" class="tb-uni-btn" title="Back to Suite" style="display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px">🏠</a>
+    <button id="theme-toggle-btn" class="tb-uni-btn" onclick="toggleTheme()" title="Toggle light/dark theme">🌙</button>
+    <button class="tb-uni-btn" id="tb-settings-btn" onclick="openSettingsCallout(this)" style="display:none" title="Session / Settings">👤</button>
+  </div>
+  <div style="display:flex;align-items:center;width:100%;padding:2px 4px 3px;gap:2px">
+    <button class="tb-uni-btn tb-mode-btn" id="tbm-vec"   onclick="switchTab('vec')"   title="Vector Tool">∡</button>
+    <button class="tb-uni-btn tb-mode-btn" id="tbm-files" onclick="switchTab('files')" title="File Browser">📁</button>
+    <span style="flex:1"></span>
+    <button class="tb-uni-btn" id="tbm-clear" onclick="clearAll()" title="Clear All" style="background:#8b0000">🗑</button>
+    <button class="tb-uni-btn" id="tb-outbox-badge" onclick="openOutboxPanel(this)" title="Outbox" style="background:var(--mint);opacity:0.5" disabled>📤</button>
+    <button class="tb-uni-btn" id="tb-gps-btn" onclick="handleGpsBtnTap()" title="GPS / Centre map" style="background:var(--mint);opacity:0.5">🎯</button>
+  </div>
+</div>
+
+<div id="main">
+<div id="sidebar">
+
+  <input type="file" id="kml-input" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,*/*" onchange="loadKMLFile(this)"/>
+
+  <div id="mode-vec-body">
+
+  <!-- GPS status bar -->
+  <div class="vec-step" style="border-bottom:1px solid var(--border)">
+    <div id="vec-gps-status" style="font-size:11px;color:var(--amber);text-align:center;padding:2px 0">Acquiring GPS…</div>
+  </div>
+
+  <!-- Step 1: Shape -->
+  <div class="vec-step" id="vec-step1">
+    <div class="vec-step-label">① Shape</div>
+    <div class="vec-shape-grid">
+      <button class="vec-shape-btn vec-tool-btn" id="vt-poly" onclick="vecFamSelectShape('poly')" style="opacity:.3;pointer-events:none">
+        <span class="icon"> ⬢ </span><span class="lbl">Polygon</span>
+      </button>
+      <button class="vec-shape-btn vec-tool-btn" id="vt-path" onclick="vecFamSelectShape('path')" style="opacity:.3;pointer-events:none">
+        <span class="icon"> ⤳ </span><span class="lbl">Path</span>
+      </button>
+      <button class="vec-shape-btn vec-tool-btn" id="vt-poi" onclick="vecFamSelectShape('poi')" style="opacity:.3;pointer-events:none">
+        <span class="icon"> ⚑ </span><span class="lbl">Point (POI)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Method (hidden until shape chosen) -->
+  <div class="vec-step" id="vec-step2" style="display:none">
+    <div class="vec-step-label">② Method</div>
+    <div class="vec-method-row">
+      <button class="vec-method-btn" id="vec-meth-manual" onclick="vecFamSelectMethod('manual')">✋ Manual</button>
+      <button class="vec-method-btn" id="vec-meth-gps"    onclick="vecFamSelectMethod('gps')">📍 GPS</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Name + Type + Start (hidden until method chosen) -->
+  <div class="vec-step" id="vec-step3" style="display:none">
+    <div class="vec-step-label">③ Details &amp; Start</div>
+    <input id="vec-feat-name" class="vec-name-input" type="text" placeholder="Feature name… (required)" maxlength="60" oninput="vecFamCheckReady()"/>
+    <div id="vec-type-chips" class="vec-type-chips"></div>
+    <div id="vec-gps-info" style="font-size:10px;color:var(--dim);min-height:14px;margin-bottom:4px"></div>
+    <button class="vec-start-btn" id="vec-btn-start-fam" onclick="vecFamStart()" disabled>▶ Start</button>
+  </div>
+
+  <!-- Manual tool controls (shown after start for manual tools) -->
+  <div class="vec-step" id="vec-sec-ctrl" style="display:none">
+    <div class="icon-row" id="vec-ctrl-row"></div>
+  </div>
+
+  <!-- Live stats -->
+  <div class="vec-step" id="vec-sec-stats" style="display:none">
+    <div style="font-size:10px;color:var(--dim);line-height:1.7">
+      <div id="vec-stat-area" style="display:none">📐 Area: <strong id="vec-stat-area-val" style="color:var(--ink)">—</strong></div>
+      <div id="vec-stat-perim" style="display:none">🔲 Perim: <strong id="vec-stat-perim-val" style="color:var(--ink)">—</strong></div>
+      <div id="vec-stat-len-row">📏 Length: <strong id="vec-stat-len-val" style="color:var(--ink)">—</strong></div>
+    </div>
+  </div>
+
+  <!-- Overlays -->
+  <div class="vec-step" id="vec-sec-layers" style="display:none">
+    <div class="sec-t" style="display:flex;align-items:center;justify-content:space-between">
+      <span>🗂️ Overlays</span>
+      <button onclick="switchTab('files')" style="background:var(--mint);border:none;border-radius:5px;color:var(--ink);font-size:10px;padding:2px 8px;cursor:pointer">+ Add via Files</button>
+    </div>
+    <div id="overlay-layer-list" style="display:none;margin-top:6px"></div>
+    <div id="layer-picker-panel" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px;max-height:180px;overflow-y:auto">
+      <div id="layer-picker-list"></div>
+    </div>
+  </div>
+
+  <!-- Vec edit section (post-finish, manual only) -->
+  <div class="sec" id="vec-sec-edit" style="display:none">
+    <div class="sec-t" style="color:var(--amber)">✏️ Editing vertices</div>
+    <div style="font-size:10px;color:var(--dim);margin:4px 0 8px">Drag vertices to adjust. GPS features cannot be edited.</div>
+    <div style="margin-bottom:6px">
+      <div class="sec-t" style="font-size:10px;margin-bottom:3px" id="vec-stage-label">Stage</div>
+      <select id="vec-stage-sel" style="font-size:11px;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--ink);padding:4px 6px">
+        <option value="eligibility">Eligibility check</option>
+        <option value="negotiated">Negotiated boundary</option>
+        <option value="surveyed">Surveyor (amin) boundary</option>
+        <option value="cleared">Post-clearing boundary</option>
+        <option value="final">Final (post-fencing)</option>
+        <option value="revised">Revised</option>
+      </select>
+    </div>
+    <div id="vec-revision-row" style="display:none;margin-bottom:6px">
+      <div class="sec-t" style="font-size:10px;margin-bottom:3px" id="vec-revision-label">Revision reason</div>
+      <select id="vec-revision-sel" style="font-size:11px;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--ink);padding:4px 6px">
+        <option value="flood_hazard">Flood hazard</option>
+        <option value="fire_hazard">Fire hazard</option>
+        <option value="bank_erosion">Bank erosion</option>
+        <option value="beneficiary_dropout">Beneficiary dropout</option>
+        <option value="encroachment">Encroachment</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="icon-row">
+      <button class="icon-btn b-teal" id="btn-vec-save-edit" onclick="vecSaveEdit()" style="font-size:11px">💾 Save</button>
+      <button class="icon-btn b-gray" id="btn-vec-discard-edit" onclick="vecDiscardEdit()" style="font-size:11px">✕ Discard</button>
+    </div>
+  </div>
+
+</div>
+
+  <div id="mode-files-body" class="hidden">
+    <div id="files-unsaved-warn" class="sec" style="display:none">
+      <div class="sec-t" style="color:var(--red)" data-i18n="files_unsaved_title">&#x26A0;&#xFE0F; Unsaved Work</div>
+      <div style="font-size:11px;color:var(--mid);margin:4px 0 8px" id="files-unsaved-msg"></div>
+      <div class="icon-row">
+        <button class="icon-btn b-red" onclick="filesDiscardAndBrowse()" title="Discard" data-i18n="files_discard">&#x1F5D1; Discard</button>
+        <button class="icon-btn b-gray" onclick="filesGoBack()" id="files-goback-btn" data-i18n="files_goback">&#x21A9;&#xFE0F; Go back</button>
+      </div>
+    </div>
+    <div id="files-browser">
+      <div class="sec" style="padding:6px 8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span id="files-outbox-count" style="font-size:10px;color:var(--amber)"></span>
+          <button class="icon-btn b-gray" style="width:32px;height:28px;font-size:13px" onclick="retryOutbox();retryDeferredJpgs()" title="Retry pending uploads">&#x1F504;</button>
+        </div>
+        <button id="btn-sync-legacy" onclick="syncLegacyPlots()" style="margin-top:6px;width:100%;background:var(--canopy);border:1.5px solid var(--border);color:var(--mist);border-radius:6px;font-size:12px;padding:6px 8px;cursor:pointer;text-align:left">
+          🗺️ Sync Legacy Plots (2024–2026)
+        </button>
+        <div id="legacy-sync-status" style="font-size:10px;color:var(--dim);margin-top:4px;min-height:14px"></div>
+      </div>
+      <div id="files-list" style="display:flex;flex-direction:column;gap:4px;padding:0 2px"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="map"></div>
+</div>
+<div id="sbar">Load a KML boundary → Generate Grid → draw species blocks.</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// APP CONFIG  —  edit only this block when onboarding a new client
+// ═══════════════════════════════════════════════════════════════════════
+const APP_CONFIG = {
+  mapsApiKey: 'AIzaSyA0yiR28GzzeNoaWxtLNgrF14Q8L3XzZIk',
+  projects: {
+    'Asha1':  { label: 'Asha 1 (2023)', scriptUrl: 'https://script.google.com/macros/s/AKfycbwLfbyg-C2CgYi7cfxjBZrGaYrKkuD2I1SQXIBecqyfWVdtJkWQVG9Sb1F7s45i1u5R/exec'  },
+    'Asha2':  { label: 'Asha 2 Tea (2027)', scriptUrl: 'https://script.google.com/macros/s/AKfycbxGaHVlEnr4W_ZVgxwUCGozwSTm3Imta897BlW5vtixnfnYd9Zd_jX0mWDikV0GMTx5/exec'  },
+    'Arun':   { label: 'Arun (2025)', scriptUrl: 'https://script.google.com/macros/s/AKfycbw2zYt0A2PbMtIhXJXfg8NZkcjzxe09diRID77PaiTCQZZpAeJH2CBLGJSgvD6KRjSL/exec'   },
+    'Banani': { label: 'Banani (2025)', scriptUrl: 'https://script.google.com/macros/s/AKfycbz5iOPCblI3Bs9NoZ_6N_NgcdC27H2Xfb6LRtUrsWXjIcLF6h1iBxMa4qXajHRAW24fZg/exec' },
+  },
+  domainShort: {
+    'gmail.com':              'gma',
+    'yahoo.com':              'yah',
+    'yahoo.in':               'yah',
+    'hotmail.com':            'hot',
+    'outlook.com':            'out',
+    'rediffmail.com':         'red',
+    'tomorrowsfoundation.in': 'tom',
+    'ashaproject.in':         'ash',
+    'ecoact.fr':              'eco',
+    // add new domains here
+  },
+  toolFolders: {
+    plant: 'PlantationMapper',
+    soil:  'SoilMapper',
+    vec:   'VectorTool',
+  },
+};
+
+// ── User folder name: username_domaintag ─────────────────────────────
+function makeUserFolder(email) {
+  const parts = email.split('@');
+  const user   = (parts[0] || '').replace(/[^a-zA-Z0-9._-]/g, '_');
+  const domain = parts[1] || '';
+  const tag    = APP_CONFIG.domainShort[domain] || domain.split('.')[0].slice(0, 3);
+  return user + '_' + tag;
+}
+
+// ── Session identity (persisted in IndexedDB) ─────────────────────────
+let SESSION = { projectKey: null, userFolder: null, setupDone: false };
+
+const IDB_NAME = 'fieldToolDB', IDB_STORE = 'session', IDB_VER = 4, IDB_OUTBOX = 'outbox';
+function idbOpen() {
+  return new Promise((res,rej) => {
+    const req = indexedDB.open(IDB_NAME, IDB_VER);
+    req.onupgradeneeded = e => {
+    const db = e.target.result;
+    if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    if (!db.objectStoreNames.contains(IDB_OUTBOX)) {
+      const os = db.createObjectStore(IDB_OUTBOX, { keyPath: 'id', autoIncrement: true });
+      os.createIndex('status', 'status', { unique: false });
+    }
+    if (!db.objectStoreNames.contains('deferredJpgs')) {
+      db.createObjectStore('deferredJpgs', { keyPath: 'id', autoIncrement: true });
+    }
+  };
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((res,rej) => {
+    const req = db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).get(key);
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function idbSet(key, val) {
+  const db = await idbOpen();
+  return new Promise((res,rej) => {
+    const req = db.transaction(IDB_STORE,'readwrite').objectStore(IDB_STORE).put(val, key);
+    req.onsuccess = () => res();
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function idbClear() {
+  const db = await idbOpen();
+  return new Promise((res,rej) => {
+    const tx = db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).clear();
+    tx.oncomplete = () => res();
+    tx.onerror    = e => rej(e.target.error);
+  });
+}
+
+// ── Drive upload via Apps Script ──────────────────────────────────────
+async function blobToBase64(blob) {
+  return new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function pushToDrive(filename, blob, toolFolder) {
+  if (!SESSION.setupDone || !SESSION.projectKey) return;
+  const scriptUrl = APP_CONFIG.projects[SESSION.projectKey]?.scriptUrl;
+  if (!scriptUrl || scriptUrl.startsWith('PLACEHOLDER')) {
+    console.warn('Drive push skipped — scriptUrl not configured for', SESSION.projectKey);
+    return;
+  }
+  try {
+    const b64 = await blobToBase64(blob);
+    // no-cors + text/plain avoids the CORS preflight that blocked Apps
+    // Script POSTs. Response is opaque (unreadable) but the script still
+    // receives and processes the upload server-side.
+    await fetch(scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        username: SESSION.userFolder, toolFolder, filename,
+        fileData: b64, mimeType: blob.type || 'application/octet-stream',
+      }),
+    });
+    console.log('Drive push sent:', filename);
+  } catch (e) { console.error('Drive push failed:', filename, e.message); }
+}
+
+// Helper: push multiple {filename, blob} pairs to same toolFolder in parallel
+async function pushAllToDrive(files, toolFolder) {
+  setStatus('\u2601\ufe0f Syncing to Drive\u2026', '');
+  // Sequential (not parallel) — prevents race condition in Apps Script
+  // getOrCreateFolder() where simultaneous calls each see no folder yet
+  // and create duplicates, splitting files across multiple same-named folders.
+  let ok = 0;
+  for (const {filename, blob} of files) {
+    try { await pushToDrive(filename, blob, toolFolder); ok++; } catch(e) {}
+  }
+  setStatus('\u2601\ufe0f Drive sync done \u2014 ' + ok + '/' + files.length + ' files', '');
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// LANGUAGE  —  ENG / HIN / BEN   (Lang = active table, never reuses L)
+// Numbers always stay ASCII. Species shown phonetically in HIN/BEN.
+// ═══════════════════════════════════════════════════════════════════════
+const T={
+en:{sub:'Field v13 \u2014 landscape',basemap:'Basemap',plotgrid:'Plot boundary & grid',bsett:'Block settings',expdir:'Expansion direction',draw:'Draw block',place:'Placements',expkml:'Export KML',spacing:'Grid (m)',species:'Species',target:'Target saplings',loadkml:'Load plot boundary (KML, KMZ)',gengrid:'\u2699 Generate / Refresh Grid',drawpoly:'\u270f\ufe0f Draw Polyline Block',finish:'\u2705 Finish & Place',undo:'\u21a9 Undo last block',rmbnd:'\u2715 Remove boundary',expall:'\ud83d\udce6 Export All (KML+JPG+SHP)',exppoly:'\u2b07 Polygons KML',expsap:'\u2b07 Saplings KML',clearall:'\ud83d\uddd1 Clear all',osm:'OSM',sat:'Satellite',selsp:'\u2014 select species \u2014',countph:'enter count\u2026',rotate:'Rotate to landscape for the field mapper.',total:'Total',
+s_init:'Load a KML boundary \u2192 Generate Grid \u2192 draw blocks.',s_no_bnd:'Load a KML boundary first.',s_no_grid:'Click \u2699 Generate Grid first.',s_no_sp:'Select a species first.',s_no_cnt:'Enter a target sapling count.',s_drawing:'Tap \u22654 vertices on map. Tap Finish & Place when done.',s_cancel:'Draw cancelled.',s_outside:'Block is outside the plot boundary.',s_no_free:'No free grid points in drawn area.',s_need4:'Need \u22654 vertices.',s_gen:'Generating grid\u2026',s_no_undo:'Nothing to undo.',s_bnd_rm:'Boundary removed.',s_confirm:'Clear all placements?',s_poly_exp:'Polygon KML exported.',s_no_export:'Nothing to export.',s_exporting:'Building export package\u2026',s_export_done:()=>'Export package ready.',
+s_gen_done:(n,f)=>`Grid: ${n} points (${f} free).`,s_badge:(n,f,m)=>`${n} pts \u00b7 ${f} free \u00b7 ${m}m spacing`,s_bnd:(nm)=>`Boundary: ${nm}. Click \u2699 Generate Grid.`,s_placed:(n,sp,c,w)=>`Placed ${n} \u00d7 ${sp}.${c}${w}`,s_clip:(p)=>` (\u26a0 clipped ${p}%)`,s_only:(n,t)=>`  \u26a0 only ${n}/${t} free.`,s_undo:(n,sp)=>`Undid: ${n} \u00d7 ${sp}.`,s_sap_exp:(n,k)=>`Sapling KML: ${n} pts in ${k} folders.`,bnd:'Plot boundary',grid:'Grid',soiltype:'Soil type',th_soiltype:'Soil type',th_area:'Area',tbtitle_plant:'🌳 Plantation Mapper',tbtitle_soil:'⛏ Soil Mapper',s_no_soil:'Select a soil type first.',s_soil_overlap:'Area already covered by another soil type.',s_soil_placed:(t,ha)=>`Placed ${t} — ${ha} ha.`,lang:'Language',mode:'Mode',tab_plant:'Plantation Mapper',tab_soil:'Soil Mapper',tab_vec:'Make Vector',tab_files:'Browse Files',s_no_kml_loaded:'No boundary loaded yet',th_species:'Species',th_count:'#',saplings:'saplings',files_unsaved_title:'Unsaved Work',files_discard:'🗑 Discard',files_goback:'↩️ Go back',files_retry_tip:'Retry pending uploads',files_loading:'Loading…',files_saved_hdr:'📂 Saved files',files_geojson_hdr:'📍 GeoJSON audit (read-only)',files_no_saved:'No saved files yet.',files_no_geojson:'No GeoJSON files yet.',files_view:'View on map',files_to_kml:'Convert to KML',files_dl_geojson:'Download GeoJSON',files_delete:'Delete',files_tap_close:'Tap to close',files_pending:(n)=>`${n} pending upload`,files_viewing:(f)=>`👁 Viewing ${f} — tap features for details`,files_kml_done:(f)=>'📄 KML downloaded: '+f,files_deleted:(f)=>'🗑 Deleted: '+f,files_no_sidecar:(f)=>'⚠️ No GeoJSON found for '+f,files_err_view:'Error viewing file: ',files_err_kml:'KML convert failed: ',files_err_dl:'Download failed: ',files_err_del:'Delete failed: ',files_err_load:'Error loading files: ',files_unsaved_msg:(t)=>`You have unsaved work in ${t}. Discard to browse files, or go back and export first.`,files_back_to:(t)=>'↩️ Back to '+t,files_delete_confirm:(f)=>`Delete ${f}?\n\nThis removes the on-device copy. Drive copy is unaffected.`,
+},
+hi:{sub:'\u0915\u094d\u0937\u0947\u0924\u094d\u0930 \u0909\u092a\u0915\u0930\u0923 \u2014 \u092d\u0942\u0926\u0943\u0936\u094d\u092f',basemap:'\u0906\u0927\u093e\u0930 \u092e\u093e\u0928\u091a\u093f\u0924\u094d\u0930',plotgrid:'\u092d\u0942\u0916\u0902\u0921 \u0938\u0940\u092e\u093e \u0914\u0930 \u0917\u094d\u0930\u093f\u0921',bsett:'\u092c\u094d\u0932\u0949\u0915 \u0938\u0947\u091f\u093f\u0902\u0917',expdir:'\u0935\u093f\u0938\u094d\u0924\u093e\u0930 \u0926\u093f\u0936\u093e',draw:'\u092c\u094d\u0932\u0949\u0915 \u0916\u093f\u0902\u091a\u0947\u0902',place:'\u0938\u094d\u0925\u093e\u092a\u0928\u093e\u090f\u0902',expkml:'KML \u0928\u093f\u0930\u094d\u092f\u093e\u0924',spacing:'\u0917\u094d\u0930\u093f\u0921 (\u092e\u0940)',species:'\u092a\u094d\u0930\u091c\u093e\u0924\u093f',target:'\u0932\u0915\u094d\u0937\u094d\u092f \u092a\u094c\u0927\u0947',loadkml:'\u092a\u094d\u0932\u0949\u091f \u0938\u0940\u092e\u093e \u0932\u094b\u0921 \u0915\u0930\u0947\u0902 (KML, KMZ)',gengrid:'\u2699 \u0917\u094d\u0930\u093f\u0921 \u0924\u0948\u092f\u093e\u0930/\u0930\u093f\u092b\u094d\u0930\u0947\u0936',drawpoly:'\u270f\ufe0f \u092a\u0949\u0932\u0940\u0932\u093e\u0907\u0928 \u092c\u094d\u0932\u0949\u0915',finish:'\u2705 \u0938\u092e\u093e\u092a\u094d\u0924',undo:'\u21a9 \u092a\u0942\u0930\u094d\u0935\u0935\u0924',rmbnd:'\u2715 \u0938\u0940\u092e\u093e \u0939\u091f\u093e\u090f\u0902',expall:'\ud83d\udce6 \u0938\u092d\u0940 \u0928\u093f\u0930\u094d\u092f\u093e\u0924 (KML+JPG+SHP)',exppoly:'\u2b07 \u092c\u0939\u0941\u092d\u0941\u091c KML',expsap:'\u2b07 \u092a\u094c\u0927\u0947 KML',clearall:'\ud83d\uddd1 \u0938\u092c \u0938\u093e\u092b',osm:'OSM',sat:'\u0909\u092a\u0917\u094d\u0930\u0939',selsp:'\u2014 \u092a\u094d\u0930\u091c\u093e\u0924\u093f \u091a\u0941\u0928\u0947\u0902 \u2014',countph:'\u0938\u0902\u0916\u094d\u092f\u093e \u0926\u0930\u094d\u091c \u0915\u0930\u0947\u0902\u2026',rotate:'\u092b\u093c\u094b\u0928 \u0918\u0941\u092e\u093e\u090f\u0902\u0964',total:'\u0915\u0941\u0932',
+s_init:'KML \u0938\u0940\u092e\u093e \u0932\u094b\u0921 \u2192 \u0917\u094d\u0930\u093f\u0921 \u2192 \u092c\u094d\u0932\u0949\u0915 \u0916\u093f\u0902\u091a\u0947\u0902\u0964',s_no_bnd:'\u092a\u0939\u0932\u0947 KML \u0938\u0940\u092e\u093e \u0932\u094b\u0921 \u0915\u0930\u0947\u0902\u0964',s_no_grid:'\u092a\u0939\u0932\u0947 \u2699 \u0917\u094d\u0930\u093f\u0921 \u0924\u0948\u092f\u093e\u0930 \u0915\u0930\u0947\u0902\u0964',s_no_sp:'\u092a\u0939\u0932\u0947 \u092a\u094d\u0930\u091c\u093e\u0924\u093f \u091a\u0941\u0928\u0947\u0902\u0964',s_no_cnt:'\u092a\u094c\u0927\u094b\u0902 \u0915\u0940 \u0938\u0902\u0916\u094d\u092f\u093e \u0926\u0930\u094d\u091c \u0915\u0930\u0947\u0902\u0964',s_drawing:'\u0928\u0915\u094d\u0936\u0947 \u092a\u0930 \u22654 \u092c\u093f\u0902\u0926\u0941\u0964',s_cancel:'\u0921\u094d\u0930\u093e\u0907\u0902\u0917 \u0930\u0926\u094d\u0926\u0964',s_outside:'\u092c\u094d\u0932\u0949\u0915 \u0938\u0940\u092e\u093e \u0915\u0947 \u092c\u093e\u0939\u0930\u0964',s_no_free:'\u0915\u094b\u0908 \u092e\u0941\u0915\u094d\u0924 \u0917\u094d\u0930\u093f\u0921 \u092c\u093f\u0902\u0926\u0941 \u0928\u0939\u0940\u0902\u0964',s_need4:'\u0915\u092e \u0938\u0947 \u0915\u092e 4 \u092c\u093f\u0902\u0926\u0941\u0964',s_gen:'\u0917\u094d\u0930\u093f\u0921 \u0924\u0948\u092f\u093e\u0930 \u0939\u094b \u0930\u0939\u093e \u0939\u0948\u2026',s_no_undo:'\u092a\u0942\u0930\u094d\u0935\u0935\u0924 \u0915\u0947 \u0932\u093f\u090f \u0915\u0941\u091b \u0928\u0939\u0940\u0902\u0964',s_bnd_rm:'\u0938\u0940\u092e\u093e \u0939\u091f\u093e \u0926\u0940 \u0917\u0908\u0964',s_confirm:'\u0938\u092d\u0940 \u0938\u094d\u0925\u093e\u092a\u0928\u093e\u090f\u0902 \u0938\u093e\u092b \u0915\u0930\u0947\u0902?',s_poly_exp:'\u092c\u0939\u0941\u092d\u0941\u091c KML \u0928\u093f\u0930\u094d\u092f\u093e\u0924\u0964',s_no_export:'\u0915\u0941\u091b \u0928\u093f\u0930\u094d\u092f\u093e\u0924 \u0915\u0930\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f \u0928\u0939\u0940\u0902\u0964',s_exporting:'\u0928\u093f\u0930\u094d\u092f\u093e\u0924 \u092a\u0948\u0915\u0947\u091c \u092c\u0928 \u0930\u0939\u093e \u0939\u0948\u2026',s_export_done:()=>'\u0928\u093f\u0930\u094d\u092f\u093e\u0924 \u092a\u0948\u0915\u0947\u091c \u0924\u0948\u092f\u093e\u0930\u0964',
+s_gen_done:(n,f)=>`\u0917\u094d\u0930\u093f\u0921: ${n} \u092c\u093f\u0902\u0926\u0941 (${f} \u092e\u0941\u0915\u094d\u0924)\u0964`,s_badge:(n,f,m)=>`${n} \u092c\u093f\u0902\u0926\u0941 \u00b7 ${f} \u092e\u0941\u0915\u094d\u0924 \u00b7 ${m} \u092e\u0940`,s_bnd:(nm)=>`\u0938\u0940\u092e\u093e: ${nm}\u0964`,s_placed:(n,sp,c,w)=>`${sp} \u2014 ${n} \u092a\u094c\u0927\u0947\u0964${c}${w}`,s_clip:(p)=>` (\u26a0 ${p}% \u092d\u093e\u0917 \u0915\u091f\u093e)`,s_only:(n,t)=>`  \u26a0 \u0915\u0947\u0935\u0932 ${n}/${t}\u0964`,s_undo:(n,sp)=>`\u092a\u0942\u0930\u094d\u0935\u0935\u0924: ${n} \u00d7 ${sp}\u0964`,s_sap_exp:(n,k)=>`\u092a\u094c\u0927\u0947 KML: ${n}, ${k} \u092a\u094d\u0930\u091c\u093e\u0924\u093f\u0964`,bnd:'भूखंड सीमा',grid:'ग्रिड',soiltype:'मिट्टी प्रकार',th_soiltype:'प्रकार',th_area:'क्षेत्रफल',tbtitle_plant:'🌿 रोपण मैपर',tbtitle_soil:'🧪 मिट्टी मैपर',s_no_soil:'पहले मिट्टी प्रकार चुनें।',s_soil_overlap:'यह क्षेत्र पहले से दूसरे प्रकार से भरा है।',s_soil_placed:(t,ha)=>`${t} रखा गया — ${ha} हे.`,lang:'भाषा',mode:'मोड',tab_plant:'रोपण मैपर',tab_soil:'मिट्टी मैपर',tab_vec:'वेक्टर मैपर',tab_files:'फाइल ब्राउज़र',s_no_kml_loaded:'अभी तक कोई सीमा नहीं लोड हुई',th_species:'प्रजाति',th_count:'#',saplings:'पौधे',files_unsaved_title:'अनसेव कार्य',files_discard:'🗑 हटाएं',files_goback:'↩️ वापस जाएं',files_retry_tip:'अपलोड पुनः प्रयास',files_loading:'लोड हो रहा है…',files_saved_hdr:'📂 सहेजी गई फ़ाइलें',files_geojson_hdr:'📍 GeoJSON रिकॉर्ड (केवल पढ़ें)',files_no_saved:'अभी कोई फ़ाइल नहीं।',files_no_geojson:'अभी कोई GeoJSON नहीं।',files_view:'नक्शे पर देखें',files_to_kml:'KML में बदलें',files_dl_geojson:'GeoJSON डाउनलोड',files_delete:'हटाएं',files_tap_close:'बंद करने के लिए टैप करें',files_pending:(n)=>`${n} अपलोड बाकी`,files_viewing:(f)=>`👁 ${f} देख रहे हैं — टैप करें`,files_kml_done:(f)=>'📄 KML डाउनलोड: '+f,files_deleted:(f)=>'🗑 हटाया: '+f,files_no_sidecar:(f)=>'⚠️ '+f+' के लिए GeoJSON नहीं मिला',files_err_view:'देखने में त्रुटि: ',files_err_kml:'KML गड़बड़ी: ',files_err_dl:'डाउनलोड त्रुटि: ',files_err_del:'हटाने में त्रुटि: ',files_err_load:'फ़ाइलें लोड त्रुटि: ',files_unsaved_msg:(t)=>`${t} में अनसेव कार्य है। फ़ाइलें देखने के लिए हटाएं, या पहले एक्सपोर्ट करें।`,files_back_to:(t)=>'↩️ वापस '+t,files_delete_confirm:(f)=>`${f} हटाएं?
+डिवाइस कॉपी हटेगी। Drive कॉपी सुरक्षित रहेगी।`,
+},
+bn:{sub:'\u09ae\u09be\u09a0 \u09b8\u09b0\u099e\u09cd\u099c\u09be\u09ae \u2014 \u09b2\u09cd\u09af\u09be\u09a8\u09cd\u09a1\u09b8\u09cd\u0995\u09c7\u09aa',basemap:'\u09ad\u09bf\u09a4\u09cd\u09a4\u09bf \u09ae\u09be\u09a8\u099a\u09bf\u09a4\u09cd\u09b0',plotgrid:'\u09aa\u09cd\u09b2\u099f \u09b8\u09c0\u09ae\u09be\u09a8\u09be \u0993 \u0997\u09cd\u09b0\u09bf\u09a1',bsett:'\u09ac\u09cd\u09b2\u0995 \u09b8\u09c7\u099f\u09bf\u0982',expdir:'\u09aa\u09cd\u09b0\u09b8\u09be\u09b0 \u09a6\u09bf\u0995',draw:'\u09ac\u09cd\u09b2\u0995 \u0986\u0981\u0995\u09c1\u09a8',place:'\u09b8\u09cd\u09a5\u09be\u09aa\u09a8\u09be',expkml:'KML \u09b0\u09aa\u09cd\u09a4\u09be\u09a8\u09bf',spacing:'\u0997\u09cd\u09b0\u09bf\u09a1 (\u09ae\u09bf)',species:'\u09aa\u09cd\u09b0\u099c\u09be\u09a4\u09bf',target:'\u09b2\u0995\u09cd\u09b7\u09cd\u09af \u099a\u09be\u09b0\u09be',loadkml:'\u09aa\u09cd\u09b2\u099f \u09b8\u09c0\u09ae\u09be \u09b2\u09cb\u09a1 \u0995\u09b0\u09c1\u09a8 (KML, KMZ)',gengrid:'\u2699 \u0997\u09cd\u09b0\u09bf\u09a1 \u09a4\u09c8\u09b0\u09bf/\u09b0\u09bf\u09ab\u09cd\u09b0\u09c7\u09b6',drawpoly:'\u270f\ufe0f \u09aa\u09b2\u09bf\u09b2\u09be\u0987\u09a8 \u09ac\u09cd\u09b2\u0995',finish:'\u2705 \u09b6\u09c7\u09b7 \u0995\u09b0\u09c1\u09a8',undo:'\u21a9 \u09aa\u09c2\u09b0\u09cd\u09ac\u09be\u09ac\u09b8\u09cd\u09a5\u09be\u09df',rmbnd:'\u2715 \u09b8\u09c0\u09ae\u09be\u09a8\u09be \u09ae\u09c1\u099b\u09c1\u09a8',expall:'\ud83d\udce6 \u09b8\u09ac \u09b0\u09aa\u09cd\u09a4\u09be\u09a8\u09bf (KML+JPG+SHP)',exppoly:'\u2b07 \u09ac\u09b9\u09c1\u09ad\u09c1\u099c KML',expsap:'\u2b07 \u099a\u09be\u09b0\u09be KML',clearall:'\ud83d\uddd1 \u09b8\u09ac \u09ae\u09c1\u099b\u09c1\u09a8',osm:'OSM',sat:'\u09b8\u09cd\u09af\u09be\u099f\u09c7\u09b2\u09be\u0987\u099f',selsp:'\u2014 \u09aa\u09cd\u09b0\u099c\u09be\u09a4\u09bf \u09ac\u09c7\u099b\u09c1\u09a8 \u2014',countph:'\u09b8\u0982\u0996\u09cd\u09af\u09be \u09b2\u09bf\u0996\u09c1\u09a8\u2026',rotate:'\u09ab\u09cb\u09a8 \u0998\u09cb\u09b0\u09be\u09a8\u0964',total:'\u09ae\u09cb\u099f',
+s_init:'KML \u09b8\u09c0\u09ae\u09be\u09a8\u09be \u09b2\u09cb\u09a1 \u2192 \u0997\u09cd\u09b0\u09bf\u09a1 \u2192 \u09ac\u09cd\u09b2\u0995 \u0986\u0981\u0995\u09c1\u09a8\u0964',s_no_bnd:'\u09aa\u09cd\u09b0\u09a5\u09ae\u09c7 KML \u09b8\u09c0\u09ae\u09be\u09a8\u09be \u09b2\u09cb\u09a1 \u0995\u09b0\u09c1\u09a8\u0964',s_no_grid:'\u09aa\u09cd\u09b0\u09a5\u09ae\u09c7 \u2699 \u0997\u09cd\u09b0\u09bf\u09a1 \u09a4\u09c8\u09b0\u09bf \u0995\u09b0\u09c1\u09a8\u0964',s_no_sp:'\u09aa\u09cd\u09b0\u09a5\u09ae\u09c7 \u09aa\u09cd\u09b0\u099c\u09be\u09a4\u09bf \u09ac\u09c7\u099b\u09c1\u09a8\u0964',s_no_cnt:'\u099a\u09be\u09b0\u09be\u09b0 \u09b8\u0982\u0996\u09cd\u09af\u09be \u09b2\u09bf\u0996\u09c1\u09a8\u0964',s_drawing:'\u09ae\u09be\u09a8\u099a\u09bf\u09a4\u09cd\u09b0\u09c7 \u22654\u099f\u09bf \u09ac\u09bf\u09a8\u09cd\u09a6\u09c1 \u099f\u09cd\u09af\u09be\u09aa\u0964',s_cancel:'\u0986\u0981\u0995\u09be \u09ac\u09be\u09a4\u09bf\u09b2\u0964',s_outside:'\u09ac\u09cd\u09b2\u0995 \u09b8\u09c0\u09ae\u09be\u09a8\u09be\u09b0 \u09ac\u09be\u0987\u09b0\u09c7\u0964',s_no_free:'\u09ae\u09c1\u0995\u09cd\u09a4 \u0997\u09cd\u09b0\u09bf\u09a1 \u09a8\u09c7\u0987\u0964',s_need4:'4\u099f\u09bf \u09ac\u09bf\u09a8\u09cd\u09a6\u09c1 \u09a6\u09b0\u0995\u09be\u09b0\u0964',s_gen:'\u0997\u09cd\u09b0\u09bf\u09a1 \u09a4\u09c8\u09b0\u09bf \u09b9\u099a\u09cd\u099b\u09c7\u2026',s_no_undo:'\u09aa\u09c2\u09b0\u09cd\u09ac\u09be\u09ac\u09b8\u09cd\u09a5\u09be\u09df \u0995\u09b0\u09be\u09b0 \u0995\u09bf\u099b\u09c1 \u09a8\u09c7\u0987\u0964',s_bnd_rm:'\u09b8\u09c0\u09ae\u09be\u09a8\u09be \u09ae\u09c1\u099b\u09c7 \u0997\u09c7\u099b\u09c7\u0964',s_confirm:'\u09b8\u09ac \u09ae\u09c1\u099b\u09ac\u09c7\u09a8?',s_poly_exp:'\u09ac\u09b9\u09c1\u09ad\u09c1\u099c KML \u09b0\u09aa\u09cd\u09a4\u09be\u09a8\u09bf\u0964',s_no_export:'\u09b0\u09aa\u09cd\u09a4\u09be\u09a8\u09bf\u09b0 \u099c\u09a8\u09cd\u09af \u0995\u09bf\u099b\u09c1 \u09a8\u09c7\u0987\u0964',s_exporting:'\u09b0\u09aa\u09cd\u09a4\u09be\u09a8\u09bf \u09aa\u09cd\u09af\u09be\u0995\u09c7\u099c \u09a4\u09c8\u09b0\u09bf \u09b9\u099a\u09cd\u099b\u09c7\u2026',s_export_done:()=>'\u09b0\u09aa\u09cd\u09a4\u09be\u09a8\u09bf \u09aa\u09cd\u09af\u09be\u0995\u09c7\u099c \u09aa\u09cd\u09b0\u09b8\u09cd\u09a4\u09c1\u09a4\u0964',
+s_gen_done:(n,f)=>`\u0997\u09cd\u09b0\u09bf\u09a1: ${n} \u09ac\u09bf\u09a8\u09cd\u09a6\u09c1 (${f} \u09ae\u09c1\u0995\u09cd\u09a4)\u0964`,s_badge:(n,f,m)=>`${n} \u09ac\u09bf\u09a8\u09cd\u09a6\u09c1 \u00b7 ${f} \u09ae\u09c1\u0995\u09cd\u09a4 \u00b7 ${m} \u09ae\u09bf`,s_bnd:(nm)=>`\u09b8\u09c0\u09ae\u09be\u09a8\u09be: ${nm}\u0964`,s_placed:(n,sp,c,w)=>`${sp} \u2014 ${n}\u099f\u09bf\u0964${c}${w}`,s_clip:(p)=>` (\u26a0 ${p}% \u0995\u09be\u099f\u09be)`,s_only:(n,t)=>`  \u26a0 \u09ae\u09be\u09a4\u09cd\u09b0 ${n}/${t}\u0964`,s_undo:(n,sp)=>`\u09aa\u09c2\u09b0\u09cd\u09ac\u09be\u09ac\u09b8\u09cd\u09a5\u09be\u09df: ${n} \u00d7 ${sp}\u0964`,s_sap_exp:(n,k)=>`\u099a\u09be\u09b0\u09be KML: ${n}, ${k}\u099f\u09bf\u0964`,bnd:'প্লট সীমানা',grid:'গ্রিড',soiltype:'মাটির ধরন',th_soiltype:'ধরন',th_area:'এলাকা',tbtitle_plant:'🌿 রোপণ ম্যাপার',tbtitle_soil:'🧪 মাটি ম্যাপার',s_no_soil:'প্রথমে মাটির ধরন বেছে নিন।',s_soil_overlap:'এই অংশ ইতিমধ্যে অন্য ধরনের আওতায়।',s_soil_placed:(t,ha)=>`${t} বসানো হয়েছে — ${ha} হেক্টর।`,lang:'ভাষা',mode:'মোড',tab_plant:'রোপণ ম্যাপার',tab_soil:'মাটি ম্যাপার',tab_vec:'ভেক্টর মেকার',tab_files:'ফাইল ব্রাউজার',s_no_kml_loaded:'এখনও কোনও সীমা লোড হয়নি',th_species:'প্রজাতি',th_count:'#',saplings:'চারা',files_unsaved_title:'অসেভ কাজ',files_discard:'🗑 বাতিল',files_goback:'↩️ ফিরে যান',files_retry_tip:'আপলোড পুনরায় চেষ্টা',files_loading:'লোড হচ্ছে…',files_saved_hdr:'📂 সেভ ফাইল',files_geojson_hdr:'📍 GeoJSON রেকর্ড (শুধু পড়ুন)',files_no_saved:'এখনো কোনো ফাইল নেই।',files_no_geojson:'এখনো কোনো GeoJSON নেই।',files_view:'মানচিত্রে দেখুন',files_to_kml:'KML-এ রূপান্তর',files_dl_geojson:'GeoJSON ডাউনলোড',files_delete:'মুছুন',files_tap_close:'বন্ধ করতে ট্যাপ করুন',files_pending:(n)=>`${n} আপলোড বাকি`,files_viewing:(f)=>`👁 ${f} দেখা হচ্ছে — বিস্তারিত জানতে ট্যাপ করুন`,files_kml_done:(f)=>'📄 KML ডাউনলোড: '+f,files_deleted:(f)=>'🗑 মুছে গেছে: '+f,files_no_sidecar:(f)=>'⚠️ '+f+' এর GeoJSON পাওয়া যায়নি',files_err_view:'দেখার সমস্যা: ',files_err_kml:'KML ত্রুটি: ',files_err_dl:'ডাউনলোড ত্রুটি: ',files_err_del:'মোছার সমস্যা: ',files_err_load:'ফাইল লোড ত্রুটি: ',files_unsaved_msg:(t)=>`${t}-এ অসেভ কাজ আছে। ফাইল দেখতে বাতিল করুন, অথবা আগে এক্সপোর্ট করুন।`,files_back_to:(t)=>'↩️ ফিরে '+t,files_delete_confirm:(f)=>`${f} মুছবেন?
+ডিভাইসের কপি মুছবে। Drive কপি ঠিক থাকবে।`,
+},
+};
+
+let Lang=T.en;
+
+// Species display names per language (value of SPECIES_KEY → display label)
+const SP_NAMES={
+  "A. lebbeck (kalo shirish)":{hi:"कालो शिरीष (kalo shirish)",bn:"কালো শিরীষ (kalo shirish)"},
+  "A. heterophyllus (kathal)":{hi:"कटहल (kathal)",bn:"কাঁঠাল (kathal)"},
+  "A. indica (neem)":{hi:"नीम (neem)",bn:"নিম (neem)"},
+  "B. ceiba (shimul)":{hi:"शिमल (shimul)",bn:"শিমুল (shimul)"},
+  "C. tabularis (chikrashi)":{hi:"चिकरासी (chikrashi)",bn:"চিকরাশি (chikrashi)"},
+  "G. arborea (gamar)":{hi:"गामार (gamar)",bn:"গামার (gamar)"},
+  "L. speciosa (jarul)":{hi:"जारुल (jarul)",bn:"জারুল (jarul)"},
+  "M. champaca (champ)":{hi:"चंपा (champ)",bn:"চাঁপা (champ)"},
+  "S. catechu (khayer)":{hi:"खैर (khayer)",bn:"খয়ের (khayer)"},
+  "S. mahagoni (mehogani)":{hi:"महोगनी (mehogani)",bn:"মেহগনি (mehogani)"},
+  "S. cumini (jam)":{hi:"जामुन (jam)",bn:"জাম (jam)"},
+  "T. grandis (shegun)":{hi:"सागौन (shegun)",bn:"সেগুন (shegun)"},
+  "T. bellirica (boyra)":{hi:"बहेड़ा (boyra)",bn:"বহেড়া (boyra)"},
+  "T. myriocarpa (panisaj)":{hi:"पानीसाज (panisaj)",bn:"পানিসাজ (panisaj)"},
+//  "S. robusta (shal)":{hi:"साल (shal)",bn:"শাল (shal)"},
+//  "M. longifolia (mahuwa)":{hi:"महुआ (mahuwa)",bn:"মহুয়া (mahuwa)"},
+//  "M. indica (aam)":{hi:"आम (aam)",bn:"আম (aam)"},
+//  "N. cadamba (kadam)":{hi:"कदम (kadam)",bn:"কদম (kadam)"},
+  "Citrus sp. (lebu)":{hi:"नींबू (lebu)",bn:"লেবু (lebu)"},
+//  "A. catechu (supari)":{hi:"सुपारी (supari)",bn:"সুপারি (supari)"}
+};
+
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// TOOLTIPS — hover (mouse) or tap-hold (touch) shows the translated label
+// for an icon-only button. Tooltip text is looked up from Lang fresh at
+// SHOW time (not baked in at page-load), so it's automatically correct
+// after a language switch with no separate refresh step needed.
+// ═══════════════════════════════════════════════════════════════════════
+let _tipEl = null;
+function hideIconTip() { if (_tipEl) { _tipEl.remove(); _tipEl = null; } }
+function showIconTip(el, text) {
+  hideIconTip();
+  if (!text) return;
+  _tipEl = document.createElement('div');
+  _tipEl.className = 'icon-tip';
+  _tipEl.textContent = text;
+  document.body.appendChild(_tipEl);
+  const r = el.getBoundingClientRect();
+  _tipEl.style.left = Math.round(r.left + r.width / 2) + 'px';
+  _tipEl.style.top = Math.round(r.top - 8) + 'px';
+  requestAnimationFrame(() => {
+    if (!_tipEl) return;
+    const tr = _tipEl.getBoundingClientRect();
+    if (tr.left < 4) _tipEl.style.left = Math.round(4 + tr.width / 2) + 'px';
+    if (tr.right > innerWidth - 4) _tipEl.style.left = Math.round(innerWidth - 4 - tr.width / 2) + 'px';
+    if (tr.top < 4) { _tipEl.style.top = Math.round(r.bottom + 8) + 'px'; _tipEl.style.transform = 'translate(-50%,0)'; }
+  });
+}
+
+// keyOrFn: a Lang key string (resolved fresh each time), or a function
+// returning the text directly (for state-dependent tooltips like "current
+// direction: NE").
+function attachTip(el, keyOrFn) {
+  if (!el) return;
+  const getText = () => (typeof keyOrFn === 'function' ? keyOrFn() : Lang[keyOrFn]);
+  let touchTimer = null, longPressed = false;
+  el.addEventListener('mouseenter', () => showIconTip(el, getText()));
+  el.addEventListener('mouseleave', hideIconTip);
+  el.addEventListener('touchstart', () => {
+    longPressed = false;
+    touchTimer = setTimeout(() => {
+      longPressed = true;
+      showIconTip(el, getText());
+      if (navigator.vibrate) try { navigator.vibrate(8); } catch (e) {}
+    }, 480);
+  }, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    clearTimeout(touchTimer);
+    if (longPressed) { e.preventDefault(); hideIconTip(); longPressed = false; }
+  });
+  el.addEventListener('touchmove',   () => { clearTimeout(touchTimer); hideIconTip(); });
+  el.addEventListener('touchcancel', () => { clearTimeout(touchTimer); hideIconTip(); longPressed = false; });
+  el.addEventListener('touchcancel', () => { clearTimeout(touchTimer); hideIconTip(); });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CALLOUTS — small popovers replacing dropdowns, opened by a normal tap
+// (not tap-hold, which is reserved for tooltips) on an indicator/trigger
+// button. buildFn(box) populates the callout's content; option buttons are
+// responsible for calling closeCallout() themselves after a selection.
+// ═══════════════════════════════════════════════════════════════════════
+let _calloutEl = null, _calloutBackdrop = null;
+function closeCallout() {
+  if (_calloutEl) { _calloutEl.remove(); _calloutEl = null; }
+  if (_calloutBackdrop) { _calloutBackdrop.remove(); _calloutBackdrop = null; }
+}
+function openCallout(anchorEl, buildFn) {
+  closeCallout();
+  hideIconTip();
+  _calloutBackdrop = document.createElement('div');
+  _calloutBackdrop.className = 'callout-backdrop';
+  _calloutBackdrop.onclick = closeCallout;
+  document.body.appendChild(_calloutBackdrop);
+
+  _calloutEl = document.createElement('div');
+  _calloutEl.className = 'callout';
+  buildFn(_calloutEl);
+  document.body.appendChild(_calloutEl);
+
+  const r = anchorEl.getBoundingClientRect();
+  const cr = _calloutEl.getBoundingClientRect();
+  let left = r.left, top = r.bottom + 6;
+  if (left + cr.width > innerWidth - 4) left = innerWidth - 4 - cr.width;
+  if (top + cr.height > innerHeight - 4) top = r.top - cr.height - 6;
+  _calloutEl.style.left = Math.max(4, left) + 'px';
+  _calloutEl.style.top = Math.max(4, top) + 'px';
+}
+
+function calloutOptBtn(label, selected, onClick, extraClass) {
+  const b = document.createElement('button');
+  b.className = 'icon-btn callout-opt' + (selected ? ' sel' : '') + (extraClass ? ' ' + extraClass : '');
+  b.textContent = label;
+  b.onclick = () => { onClick(); closeCallout(); };
+  return b;
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// SPECIFIC CALLOUTS — each builds its own popover content and wires
+// selections back into the existing app logic (setLang, switchTab,
+// loadKMLFile, clearBoundary, setBasemap, selDir, soil-type selection).
+// ═══════════════════════════════════════════════════════════════════════
+let currentLangCode = 'en';
+
+function updateTopbarIndicators() {
+  const mb = document.getElementById('tb-mode-badge');
+  if (mb) mb.textContent = APP_MODE === 'soil' ? '\u{1F9EA}' : APP_MODE === 'vec' ? '\u{1F4D0}' : '\u{1F33F}' // MODE === 'files' ? '\u{1F4C1}' : APP_MODE === 'mrv' ? '\u{1F4CB}' : '\u{1F331}';
+  const lb = document.getElementById('tb-lang-badge');
+  if (lb) { const lc = _langCycle.find(l=>l[0]===currentLangCode); if(lc) lb.textContent=lc[1]; }
+}
+
+function openLangCallout(anchorEl) {
+  openCallout(anchorEl, (box) => {
+    const title = document.createElement('div');
+    title.className = 'callout-title'; title.textContent = Lang.lang || 'Language';
+    box.appendChild(title);
+    const row = document.createElement('div'); row.className = 'callout-row';
+    [['en', 'ENG'], ['hi', '\u0939\u093f\u0902'], ['bn', '\u09ac\u09be\u0982']].forEach(([code, label]) => {
+      row.appendChild(calloutOptBtn(label, currentLangCode === code, () => setLang(code), 'lang-opt'));
+    });
+    box.appendChild(row);
+  });
+}
+
+function openModeCallout(anchorEl) {
+  openCallout(anchorEl, (box) => {
+    const title = document.createElement('div');
+    title.className = 'callout-title'; title.textContent = Lang.mode || 'Mode';
+    box.appendChild(title);
+    const row = document.createElement('div'); row.className = 'callout-row';
+    const vecBtn = calloutOptBtn('\u{1F4D0}', APP_MODE === 'vec', () => switchTab('vec'));
+    attachTip(vecBtn, 'tab_vec');
+    const filesBtn = calloutOptBtn('\u{1F4C1}', APP_MODE === 'files', () => switchTab('files'));
+    attachTip(filesBtn, 'tab_files');
+    // MRV button removed v68
+    row.appendChild(vecBtn); row.appendChild(filesBtn);
+    box.appendChild(row);
+  });
+}
+
+
+function updateBasemapIndicator() {
+  // Sync topbar badge to current _basemapCycle emoji
+  const tb = document.getElementById('tb-basemap-badge');
+  if (tb) tb.textContent = _basemapCycle[_basemapIdx] || '\u{1F310}';
+  // Sync callout .basemap-ind dots
+  const icon = map.hasLayer(esriLayer)      ? '\u{1F310}'
+             : map.hasLayer(satLabelsLayer) ? '\u{1F5FA}'
+             : '\u{1F30F}';
+  document.querySelectorAll('.basemap-ind').forEach(el => el.textContent = icon);
+}
+
+function updatePMStats() {
+  const tot = blocks.reduce((s,b)=>s+(b.points?.length||0),0);
+  const pmT = document.getElementById('pm-stat-total'); if(pmT) pmT.textContent=tot;
+  const pmF = document.getElementById('pm-stat-free');  if(pmF) pmF.textContent=blocks.reduce((s,b)=>s+(b._free||0),0);
+  const pmS = document.getElementById('pm-stat-sp');    if(pmS) pmS.textContent=currentSpacing?(currentSpacing.toFixed(3)+'m'):'';
+}
+function openBasemapCallout(anchorEl) {
+  openCallout(anchorEl, (box) => {
+    const title = document.createElement('div');
+    title.className = 'callout-title'; title.textContent = Lang.basemap || 'Basemap';
+    box.appendChild(title);
+    const row = document.createElement('div'); row.className = 'callout-row';
+    const onSat = map.hasLayer(esriLayer);
+    const osmBtn = calloutOptBtn('\u{1F5FA}\uFE0F', !onSat, () => { setBasemap('osm'); updateBasemapIndicator(); });
+    attachTip(osmBtn, 'osm');
+    const satBtn = calloutOptBtn('\u{1F6F0}\uFE0F', onSat, () => { setBasemap('esri'); updateBasemapIndicator(); });
+    attachTip(satBtn, 'sat');
+    const slBtn = calloutOptBtn('🛰️🗺️', map.hasLayer(satLabelsLayer), () => { setBasemap('sat+labels'); updateBasemapIndicator(); updatePMStats(); closeCallout(); });
+    slBtn.title = 'Satellite + Place names';
+    row.appendChild(osmBtn); row.appendChild(satBtn); row.appendChild(slBtn);
+    box.appendChild(row);
+  });
+}
+
+function updateSoilTypeIndicator(autoStart) {
+  const el = document.getElementById('btn-soiltype-ind');
+  if (!el) return;
+  if (currentSoilType) {
+    el.textContent = currentSoilType;
+    el.style.background = SOIL_TYPE_INFO[currentSoilType].color;
+    el.style.color = currentSoilType === 'LL' ? '#fff' : '#111';
+    el.style.fontSize = '16px'; el.style.fontWeight = '700';
+    // Auto-start polyline draw if conditions are met
+    if (autoStart !== false && plotPoly && !isDrawing) {
+      setTimeout(startDrawBlock, 80);
+    }
+  } else {
+    el.textContent = '\u{1F33E}';
+    el.style.background = ''; el.style.color = '#fff'; el.style.fontSize = '24px'; el.style.fontWeight = 'normal';
+  }
+}
+function openSoilTypeCallout(anchorEl) {
+  openCallout(anchorEl, (box) => {
+    box.classList.add('wide-callout');
+    const title = document.createElement('div');
+    title.className = 'callout-title'; title.textContent = Lang.soiltype || 'Soil type';
+    box.appendChild(title);
+    const row = document.createElement('div'); row.className = 'callout-row';
+    Object.keys(SOIL_TYPE_INFO).forEach(t => {
+      const info = SOIL_TYPE_INFO[t];
+      const localLabel = currentLangCode === 'hi' ? (info.hi || info.label)
+                        : currentLangCode === 'bn' ? (info.bn || info.label)
+                        : info.label;
+      const b = document.createElement('button');
+      b.className = 'icon-btn callout-opt wide-opt' + (currentSoilType === t ? ' sel' : '');
+      b.style.background = info.color;
+      b.style.color = readableTextColor(info.color);
+      const ln = document.createElement('span');
+      ln.textContent = localLabel;
+      b.appendChild(ln);
+      b.onclick = () => { currentSoilType = t; closeCallout(); updateSoilTypeIndicator(true); };
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+  });
+}
+
+function updateDirIndicator() {
+  const el = document.getElementById('btn-dir-ind');
+  if (el) { el.textContent = currentDir; el.style.fontSize = '16px'; el.style.fontWeight = '700'; }
+}
+function openDirCallout(anchorEl) {
+  openCallout(anchorEl, (box) => {
+    const title = document.createElement('div');
+    title.className = 'callout-title'; title.textContent = Lang.expdir || 'Expansion direction';
+    box.appendChild(title);
+    const compass = document.createElement('div'); compass.className = 'dir-compass';
+    const rows = [['NW', 'N', 'NE'], ['W', null, 'E'], ['SW', 'S', 'SE']];
+    rows.forEach(rowDirs => {
+      const r = document.createElement('div'); r.className = 'cmp-r';
+      rowDirs.forEach(d => {
+        if (!d) { const c = document.createElement('div'); c.className = 'cd cd-c'; c.textContent = '\u2299'; r.appendChild(c); return; }
+        const c = document.createElement('div');
+        c.className = 'cd' + (currentDir === d ? ' sel' : '');
+        c.textContent = d;
+        c.onclick = () => { currentDir = d; updateDirIndicator(); closeCallout(); };
+        r.appendChild(c);
+      });
+      compass.appendChild(r);
+    });
+    box.appendChild(compass);
+  });
+}
+
+function setLang(code){
+  const lb=document.getElementById('tb-lang-badge');
+  if(lb){const lc=_langCycle.find(l=>l[0]===code);if(lc)lb.textContent=lc[1];}
+  // species/soil grids not present in Vector Tool
+  currentLangCode = code;
+  Lang=T[code];
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ if(Lang[el.dataset.i18n]) el.textContent=Lang[el.dataset.i18n]; });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ if(Lang[el.dataset.i18nPlaceholder]) el.placeholder=Lang[el.dataset.i18nPlaceholder]; });
+  const port=document.querySelector('#port p'); if(port) port.textContent=Lang.rotate;
+  if (typeof globalGrid !== 'undefined' && globalGrid.length) {
+    const free = globalGrid.length - usedKeys.size;
+    const gi = document.getElementById('grid-info');
+    if (gi) gi.textContent = Lang.s_badge(globalGrid.length, free, currentSpacing);
+  }
+  updateTopbarIndicators();
+    setStatus(Lang.s_init,'');
+  document.body.classList.remove('lang-en','lang-hi','lang-bn');
+  document.body.classList.add('lang-'+code);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SPECIES CONFIG
+// ═══════════════════════════════════════════════════════════════════════
+const SPECIES_COLORS = {
+  "A. lebbeck (kalo shirish)":  "#FFDDFF",
+  "A. heterophyllus (kathal)": "#006600",
+  "A. indica (neem)":          "#7B9E3A",
+  "B. ceiba (shimul)":         "#888888",
+  "C. tabularis (chikrashi)":  "#FF0000",
+  "G. arborea (gamar)":        "#FF8800",
+  "L. speciosa (jarul)":       "#DD88FF",
+  "M. champaca (champ)":       "#FFDD66",
+  "S. catechu (khayer)":       "#FFBB88",
+  "S. mahagoni (mehogani)":    "#880000",
+  "S. cumini (jam)":           "#8800FF",
+  "T. grandis (shegun)":       "#00FF00",
+  "T. bellirica (boyra)":      "#0000FF",
+  "T. myriocarpa (panisaj)":   "#7DC3E1",
+//  "S. robusta (shal)":         "#E6B8AF",
+//  "M. longifolia (mahuwa)":    "#C9DAF8",
+//  "M. indica (aam)":           "#6AA84F",
+//  "N. cadamba (kadam)":        "#E8820C",
+  "Citrus sp. (lebu)":         "#DDFFAA",
+//  "A. catechu (supari)":       "#FF6D01",
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// GLOBAL STATE
+// ═══════════════════════════════════════════════════════════════════════
+let APP_MODE = 'vec';   // default tab is Make Vector
+let currentSpacing = 3;   // grid spacing (m), driven by the spacing wheel picker
+let currentCount = 100;   // target sapling count, driven by the count wheel picker
+let map, osmLayer, esriLayer, satLabelsLayer;
+let boundaryLayer, gridLayer, saplingLayer, outlineLayer;
+let polylineHandler, isDrawing = false, _intentionalFinish = false;
+let currentDir  = "N";
+let kmlBaseName = "fieldmap";
+let plotPoly    = null;
+
+// globalGrid: array of { lat, lon, row, col, key }
+// row = index in lat direction (0 = southernmost)
+// col = index in lon direction (0 = westernmost)
+// Indexed into gridByKey Map for O(1) lookup
+let globalGrid  = [];
+let gridByKey   = new Map();   // key → grid point object
+let usedKeys    = new Set();   // keys of occupied grid points
+let spacingDeg  = 3 / 111320;  // updated on grid build
+
+// Placed blocks: { species, color, points[{lat,lon,row,col,key}], geom (Turf geom), areaSqm }
+let blocks = [];
+let exportDone = true;
+
+// ═══════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════
+
+// 2-letter species codes — fixed, never translated (per explicit instruction)
+const SPECIES_CODE = {
+  "A. lebbeck (kalo shirish)":  "KS",
+  "A. heterophyllus (kathal)": "KT",
+  "A. indica (neem)":          "NM",
+  "B. ceiba (shimul)":         "SH",
+  "C. tabularis (chikrashi)":  "CK",
+  "G. arborea (gamar)":        "GM",
+  "L. speciosa (jarul)":       "JR",
+  "M. champaca (champ)":       "CM",
+  "S. catechu (khayer)":       "KH",
+  "S. mahagoni (mehogani)":    "MH",
+  "S. cumini (jam)":           "JM",
+  "T. grandis (shegun)":       "SG",
+  "T. bellirica (boyra)":      "BR",
+  "T. myriocarpa (panisaj)":   "PS",
+//  "S. robusta (shal)":         "SL",
+//  "M. longifolia (mahuwa)":    "MU",
+//  "M. indica (aam)":           "AM",
+//  "N. cadamba (kadam)":        "KD",
+  "Citrus sp. (lebu)":         "LB",
+//  "A. catechu (supari)":       "SU",
+};
+
+
+// Species visible but not selectable — shown greyed with tooltip
+const DISABLED_SPECIES = {
+  "T. bellirica (boyra)":  "Stopgap 2024 only — not PDD certified",
+  "Citrus sp. (lebu)":     "Intercropping / live fence only — not standard ARR planting",
+};
+
+function readableTextColor(hex) {
+  const r = 255 - parseInt(hex.slice(1,3),16);
+  const g = 255 - parseInt(hex.slice(3,5),16);
+  const b = 255 - parseInt(hex.slice(5,7),16);
+  const lum = (0.299*r + 0.587*g + 0.114*b)/255;
+  return lum > 0.5 ? '#ffffff' : '#000000';
+}
+
+function speciesDisplayName(key) {
+  // Current-language display name for a species — shared by the species
+  // callout and the placements table, so both always agree and both
+  // refresh correctly on a language switch.
+  const enName = capitalize(key.match(/\(([^)]+)\)/)?.[1] || key);
+  if (currentLangCode === 'hi') return (SP_NAMES[key]?.hi || '').replace(/\s*\([^)]+\)\s*$/, '') || enName;
+  if (currentLangCode === 'bn') return (SP_NAMES[key]?.bn || '').replace(/\s*\([^)]+\)\s*$/, '') || enName;
+  return enName;
+}
+
+function speciesLocalName(key, code) {
+  if (code === 'en') return key;
+  const local = SP_NAMES[key];
+  return (local && local[code]) || key;
+}
+
+let currentSpecies = '';
+
+function updateSpeciesIndicator(autoStart) {
+  const el = document.getElementById('btn-species-ind');
+  if (!el) return;
+  if (currentSpecies) {
+    el.textContent = SPECIES_CODE[currentSpecies] || '??';
+    el.style.background = SPECIES_COLORS[currentSpecies];
+    el.style.color = readableTextColor(SPECIES_COLORS[currentSpecies]);
+    el.style.fontSize = '15px'; el.style.fontWeight = '700';
+    // Auto-start polyline draw if conditions are met and caller requests it
+    if (autoStart !== false && plotPoly && globalGrid.length && currentCount > 0 && !isDrawing) {
+      setTimeout(startDrawBlock, 80); // brief delay so callout closes first
+    }
+  } else {
+    el.textContent = '\u{1F33F}';
+    el.style.background = ''; el.style.color = '#fff'; el.style.fontSize = '19px'; el.style.fontWeight = 'normal';
+  }
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+function openSpeciesCallout(anchorEl) {
+  openCallout(anchorEl, (box) => {
+    box.classList.add('wide-callout');
+    const title = document.createElement('div');
+    title.className = 'callout-title'; title.textContent = Lang.species || 'Species';
+    box.appendChild(title);
+    const row = document.createElement('div'); row.className = 'callout-row';
+    Object.keys(SPECIES_COLORS).forEach(key => {
+      const color = SPECIES_COLORS[key];
+      const enName = capitalize(key.match(/\(([^)]+)\)/)?.[1] || key);
+      const hiName = (SP_NAMES[key]?.hi || '').replace(/\s*\([^)]+\)\s*$/, '');
+      const bnName = (SP_NAMES[key]?.bn || '').replace(/\s*\([^)]+\)\s*$/, '');
+      const localName = currentLangCode === 'hi' ? (hiName || enName)
+                       : currentLangCode === 'bn' ? (bnName || enName)
+                       : enName;
+      const b = document.createElement('button');
+      b.className = 'icon-btn callout-opt wide-opt' + (currentSpecies === key ? ' sel' : '');
+      b.style.background = color;
+      b.style.color = readableTextColor(color);
+      const ln = document.createElement('span');
+      ln.textContent = localName;
+      b.appendChild(ln);
+      if (DISABLED_SPECIES[key]) {
+        b.style.opacity = '0.4';
+        b.style.cursor = 'not-allowed';
+        b.title = DISABLED_SPECIES[key];
+      } else {
+        b.onclick = () => { currentSpecies = key; closeCallout(); updateSpeciesIndicator(true); };
+      }
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+  });
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// SCROLL-WHEEL NUMBER PICKER — native CSS scroll-snap (smooth, momentum,
+// works naturally with touch/mouse-wheel/trackpad without hand-rolled
+// drag physics). Tapping the centered value switches to a direct-entry
+// text input for typing an exact number. NOTE: this is a finite list
+// (clamped at min/max), not a true infinite-loop wheel — a real seamless
+// loop needs list-duplication + scroll-position teleporting, which is a
+// meaningfully bigger lift; flagged as a possible follow-up if wanted.
+// ═══════════════════════════════════════════════════════════════════════
+const ITEM_H = 18;
+
+function buildWheelPicker(container, opts) {
+  // opts: {min, max, step, decimals, value, onChange}
+  container.innerHTML = '';
+  container.classList.add('num-picker');
+
+  const wheel = document.createElement('div'); wheel.className = 'picker-wheel';
+  const track = document.createElement('div'); track.className = 'picker-track';
+  const mask = document.createElement('div'); mask.className = 'picker-center-mask';
+
+  const values = [];
+  for (let v = opts.min; v <= opts.max + 1e-9; v += opts.step) values.push(+v.toFixed(opts.decimals));
+
+  function spacer() { const sp = document.createElement('div'); sp.className = 'picker-item'; sp.style.visibility = 'hidden'; return sp; }
+  track.appendChild(spacer());
+  values.forEach(v => {
+    const item = document.createElement('div');
+    item.className = 'picker-item';
+    item.textContent = v.toFixed(opts.decimals);
+    item.dataset.value = v;
+    track.appendChild(item);
+  });
+  track.appendChild(spacer());
+
+  wheel.appendChild(track);
+  container.appendChild(wheel);
+  container.appendChild(mask);
+
+  function clampIdx(i) { return Math.max(0, Math.min(values.length - 1, i)); }
+  function valueToIdx(v) {
+    let best = 0, bestD = Infinity;
+    values.forEach((x, i) => { const d = Math.abs(x - v); if (d < bestD) { bestD = d; best = i; } });
+    return best;
+  }
+  function scrollToValue(v, smooth) {
+    wheel.scrollTo({ top: clampIdx(valueToIdx(v)) * ITEM_H, behavior: smooth ? 'smooth' : 'auto' });
+  }
+  function currentIdxFromScroll() { return clampIdx(Math.round(wheel.scrollTop / ITEM_H)); }
+  function refreshHighlight() {
+    const idx = currentIdxFromScroll();
+    track.querySelectorAll('.picker-item[data-value]').forEach((el, i) => {
+      el.classList.toggle('current', i === idx);
+    });
+  }
+
+  let scrollTimer = null;
+  wheel.addEventListener('scroll', () => {
+    refreshHighlight();
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => { opts.onChange(values[currentIdxFromScroll()]); }, 130);
+  }, { passive: true });
+
+  // Direct value entry: tap the masked center to type an exact number.
+  mask.style.pointerEvents = 'auto';
+  mask.style.cursor = 'text';
+  mask.addEventListener('click', () => {
+    const cur = values[currentIdxFromScroll()];
+    const input = document.createElement('input');
+    input.type = 'number'; input.value = cur; input.min = opts.min; input.max = opts.max; input.step = opts.step;
+    input.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;text-align:center;font-size:13px;padding:0;margin:0;border-radius:6px;z-index:5';
+    container.style.position = 'relative';
+    container.appendChild(input);
+    input.focus(); input.select();
+    function commit() {
+      let v = parseFloat(input.value);
+      if (isNaN(v)) v = cur;
+      v = Math.max(opts.min, Math.min(opts.max, v));
+      input.remove();
+      scrollToValue(v, true);
+      opts.onChange(v);
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
+  });
+
+  scrollToValue(opts.value, false);
+  refreshHighlight();
+  return { scrollToValue, getValues: () => values };
+}
+
+
+function init() {
+  // Spacing + count now use +/- buttons (replaced wheel pickers)
+  map = L.map('map', {zoomControl:false}).setView([26.72, 88.43], 14);
+  L.control.zoom({position:'topright'}).addTo(map);
+  osmLayer  = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:21,crossOrigin:true});
+  esriLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:21,maxNativeZoom:17,crossOrigin:true});
+  satLabelsLayer = L.layerGroup([L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:21,maxNativeZoom:17,crossOrigin:true}),L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:21,opacity:0.5})]);
+  esriLayer.addTo(map);
+  boundaryLayer = L.layerGroup().addTo(map);
+  gridLayer     = L.layerGroup().addTo(map);
+  outlineLayer  = L.layerGroup().addTo(map);
+  saplingLayer  = L.layerGroup().addTo(map);
+  // soilLayer removed — Vector Tool only
+  map.on(L.Draw.Event.CREATED, e => {
+    if (e.layerType !== 'polyline') return;
+    isDrawing = false;
+    document.getElementById(finishBtnId()).classList.add('b-off');
+    document.getElementById(drawBtnId()).classList.remove('b-off');
+    // plant/soil draw handlers removed — Vector Tool uses vecModeEnter handlers
+  });
+  map.on('draw:drawvertex', () => { updateVecStats(); });
+  map.on(L.Draw.Event.DRAWSTOP, () => {
+    isDrawing = false;
+    const btn = document.getElementById(finishBtnId());
+    if (btn) btn.classList.add('b-off');
+    const dbtn = document.getElementById(drawBtnId());
+    if (dbtn) dbtn.classList.remove('b-off');
+    // Suppress "Draw cancelled" if the user intentionally tapped Finish
+    // (DRAWSTOP fires after _finishShape() on both desktop and mobile)
+    if (!_intentionalFinish) setStatus(Lang.s_cancel,'');
+  });
+
+  // Wire tooltips for every icon button that declares a Lang-key tooltip
+  // (this also covers the topbar KML icon, which carries data-i18n-tip="loadkml")
+  document.querySelectorAll('[data-i18n-tip]').forEach(el => attachTip(el, el.dataset.i18nTip));
+  // Remaining indicator/trigger buttons get their own (mostly static) tooltips.
+  // Lang/Mode/Basemap moved into the topbar as tappable badges in v19.
+  attachTip(document.getElementById('tb-mode-badge'), 'mode');
+  attachTip(document.getElementById('tb-lang-badge'), 'lang');
+  attachTip(document.getElementById('tb-basemap-badge'), 'basemap');
+  const _dirInd = document.getElementById('btn-dir-ind');
+  if (_dirInd) attachTip(_dirInd, 'expdir');
+  const _soilInd = document.getElementById('btn-soiltype-ind');
+  if (_soilInd) attachTip(_soilInd, 'soiltype');
+  const _spInd = document.getElementById('btn-species-ind');
+  if (_spInd) attachTip(_spInd, 'species');
+
+  // Initial indicator states (Esri/satellite is the default basemap; N is the default direction)
+  updateBasemapIndicator(); updatePMStats();
+  updateDirIndicator();
+  updateSoilTypeIndicator();
+  updateSpeciesIndicator();
+  updateTopbarIndicators();
+
+  // Build project grid buttons and try to restore session from IndexedDB.
+  // If no stored session, the overlay stays visible for first-run setup.
+  setupBuildProjectGrid();
+  // Require launcher-level sign-in; redirect immediately if missing
+  const launcherAuth = arrAuthGet();
+  if (!launcherAuth) {
+    window.location.href = './index.html?redirect=' + encodeURIComponent(window.location.href);
+    return;
+  }
+  loadSessionFromIDB();
+}
+
+function toggleSB() {
+  const sb  = document.getElementById('sidebar');
+  const btn = document.getElementById('btn-sb');
+  sb.classList.toggle('collapsed');
+  const isOpen = !sb.classList.contains('collapsed');
+  if (btn) btn.textContent = isOpen ? '✕' : '☰';
+  setTimeout(() => map.invalidateSize(), 220);
+}
+function setBasemap(t) {
+  [esriLayer,osmLayer,satLabelsLayer].forEach(l=>{if(l&&map.hasLayer(l))map.removeLayer(l);});
+  if(t==='osm')osmLayer.addTo(map);
+  else if(t==='sat+labels')satLabelsLayer.addTo(map);
+  else esriLayer.addTo(map);
+}
+
+
+// ── GPS button (row 2) ─────────────────────────────────────────────────
+// Shared GPS watch for non-vector modes (plant/soil)
+let _nonVecWatchId   = null;
+let _nonVecLastPos   = null;
+
+function updateGpsBtn() {
+  const btn = document.getElementById('tb-gps-btn');
+  if (!btn) return;
+  const isVec = APP_MODE === 'vec';
+  const isFiles = APP_MODE === 'files';
+  if (isFiles) {
+    btn.style.background = '#374151'; btn.style.opacity = '0.35';
+    btn.style.pointerEvents = 'none';
+    return;
+  }
+  // Determine active position source
+  const pos = isVec ? window.vecLastPos : _nonVecLastPos;
+  const ready = isVec ? window.vecGpsReady : (_nonVecWatchId !== null && _nonVecLastPos !== null);
+  if (!ready || !pos) {
+    btn.style.background = '#374151'; btn.style.opacity = '0.55';
+    btn.style.pointerEvents = isFiles ? 'none' : 'auto';
+    btn.textContent = '🎯';
+    return;
+  }
+  const acc = pos.accuracy;
+  btn.style.opacity = '1';
+  btn.style.pointerEvents = 'auto';
+  btn.textContent = '🎯';
+  btn.style.background = acc < 10 ? '#065f46' : acc < 30 ? '#78350f' : '#7f1d1d';
+  btn.style.borderColor = acc < 10 ? '#34d399' : acc < 30 ? '#fbbf24' : '#f87171';
+}
+
+function handleGpsBtnTap() {
+  if (APP_MODE === 'files') return;
+  if (APP_MODE === 'vec') {
+    // Centre map on GPS position
+    if (window.vecLastPos) {
+      map.setView([window.vecLastPos.lat, window.vecLastPos.lon], Math.max(map.getZoom(), 16));
+    }
+    return;
+  }
+  // Plantation / Soil — toggle GPS watch
+  if (_nonVecWatchId !== null) {
+    // Already running — centre map
+    if (_nonVecLastPos) {
+      map.setView([_nonVecLastPos.lat, _nonVecLastPos.lon], Math.max(map.getZoom(), 16));
+    }
+    return;
+  }
+  // Start GPS watch
+  if (!navigator.geolocation) {
+    updateSbar(); return;
+  }
+  _nonVecWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      _nonVecLastPos = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy };
+      updateGpsBtn();
+      updateSbar();
+    },
+    () => { _nonVecLastPos = null; updateGpsBtn(); updateSbar(); },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+  );
+  updateSbar();
+}
+
+function stopNonVecGps() {
+  if (_nonVecWatchId !== null) {
+    navigator.geolocation.clearWatch(_nonVecWatchId);
+    _nonVecWatchId = null;
+  }
+  _nonVecLastPos = null;
+}
+
+// ── Sbar: mode name + GPS status ───────────────────────────────────────
+const MODE_ICON = { vec:'∡', plant:'🌳', soil:'⛏', files:'📁' };
+const MODE_NAME = { vec:'Vector', plant:'Plantation', soil:'Soil', files:'Files' };
+
+function updateSbar(msg, cls) {
+  const el = document.getElementById('sbar');
+  if (!el) return;
+  if (msg !== undefined) {
+    // Explicit message (errors, prompts) — show directly
+    el.textContent = msg; el.className = cls || ''; return;
+  }
+  const icon = MODE_ICON[APP_MODE] || '';
+  const name = MODE_NAME[APP_MODE] || APP_MODE;
+  let gpsStr = '';
+  if (APP_MODE === 'vec') {
+    if (!window.vecGpsReady) gpsStr = '🎯 acquiring…';
+    else if (window.vecLastPos) {
+      const acc = Math.round(window.vecLastPos.accuracy);
+      gpsStr = '🎯 ±' + acc + 'm';
+    } else gpsStr = '🎯 OFF';
+  } else if (APP_MODE === 'plant' || APP_MODE === 'soil') {
+    if (_nonVecWatchId !== null && _nonVecLastPos) {
+      gpsStr = '🎯 ±' + Math.round(_nonVecLastPos.accuracy) + 'm';
+    } else if (_nonVecWatchId !== null) {
+      gpsStr = '🎯 acquiring…';
+    } else {
+      gpsStr = 'GPS off';
+    }
+  }
+  el.textContent = icon + ' ' + name + (gpsStr ? '  ·  ' + gpsStr : '');
+  el.className = '';
+}
+
+function setStatus(msg, cls) {
+  updateSbar(msg, cls);
+}
+function ptKey(lat, lon) { return lat.toFixed(6)+','+lon.toFixed(6); }
+
+// ═══════════════════════════════════════════════════════════════════════
+// KML / KMZ LOAD
+// ═══════════════════════════════════════════════════════════════════════
+async function loadKMLFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  kmlBaseName = file.name.replace(/\.(kml|kmz)$/i, '');
+  let kmlText;
+  if (file.name.toLowerCase().endsWith('.kmz')) {
+    try {
+      const zip = await JSZip.loadAsync(file);
+      const kf  = Object.keys(zip.files).find(n=>n.toLowerCase().endsWith('.kml'));
+      if (!kf) { setStatus('No KML inside KMZ.','err'); return; }
+      kmlText = await zip.files[kf].async('string');
+    } catch(e) { setStatus('KMZ error: '+e.message,'err'); return; }
+  } else { kmlText = await new Promise((res,rej) => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsText(file,'UTF-8'); }); }
+  const doc    = new DOMParser().parseFromString(kmlText,'text/xml');
+  const coords = extractPolyCoords(doc);
+  if (!coords||coords.length<3) { setStatus('No polygon in KML.','err'); return; }
+  boundaryLayer.clearLayers(); gridLayer.clearLayers();
+  globalGrid=[]; gridByKey.clear(); usedKeys=new Set(); plotPoly=null;
+  const tC = coords.map(([lon,lat])=>[lon,lat]);
+  if (tC[0][0]!==tC[tC.length-1][0]||tC[0][1]!==tC[tC.length-1][1]) tC.push(tC[0]);
+  try { plotPoly = turf.polygon([tC]); }
+  catch(e) { setStatus('Polygon error: '+e.message,'err'); return; }
+  const llPoly = L.polygon(coords.map(([lon,lat])=>[lat,lon]),
+    {color:'#f97316',weight:2.5,dashArray:'6 4',fillOpacity:0.05,fillColor:'#f97316'});
+  llPoly.addTo(boundaryLayer);
+  map.fitBounds(llPoly.getBounds(),{padding:[16,16]});
+  document.getElementById('grid-info').textContent='';
+  setStatus(Lang.s_bnd(kmlBaseName),'');
+  input.value='';
+}
+
+function extractPolyCoords(doc) {
+  const el = doc.querySelector('Polygon coordinates,LinearRing coordinates,coordinates');
+  if (!el) return null;
+  return el.textContent.trim().split(/\s+/).map(s=>{
+    const p=s.split(','); return [parseFloat(p[0]),parseFloat(p[1])];
+  }).filter(([lon,lat])=>!isNaN(lon)&&!isNaN(lat));
+}
+
+function clearBoundary() {
+  boundaryLayer.clearLayers(); gridLayer.clearLayers();
+  plotPoly=null; globalGrid=[]; gridByKey.clear(); usedKeys=new Set();
+  kmlBaseName='fieldmap';
+  setStatus(Lang.s_bnd_rm,'');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// GLOBAL GRID GENERATION
+// Mirrors desktop _generate_cell_grid_fast:
+//   xs = origin_lon + col * spacingDeg  (col = 0, 1, 2, …)
+//   ys = origin_lat + row * spacingDeg  (row = 0, 1, 2, …)
+// Grid origin anchored to bbox SW corner + half-spacing so cells are
+// centred and symmetric. Row/col indices kept for sweep sort & adjacency.
+// ═══════════════════════════════════════════════════════════════════════
+function buildGlobalGrid() {
+  if (!plotPoly) { setStatus(Lang.s_no_bnd,'warn'); return; }
+  const spacingM = currentSpacing || 3;
+
+  // ── Effective spacing calculation ────────────────────────────────
+  // N = floor(Area_m² / spacing²)  — PDD contractual count
+  // s_eff = sqrt(Area_m² / N)      — effective spacing that places ≥N points
+  // Single analytic step, no iteration, no extra turf calls.
+  const areaSqM  = turf.area(plotPoly);
+  const N_target = Math.floor(areaSqM / (spacingM * spacingM));
+  const sEff     = N_target > 0 ? Math.sqrt(areaSqM / N_target) : spacingM;
+  spacingDeg     = sEff / 111320;
+
+  // Store for display
+  window._gridEffSpacing = sEff;
+  window._gridNTarget    = N_target;
+
+  const bb = turf.bbox(plotPoly);
+  setStatus(Lang.s_gen,'');
+  setTimeout(() => {
+    gridLayer.clearLayers();
+    usedKeys = new Set();
+    blocks.forEach(b => b.points.forEach(p => usedKeys.add(p.key)));
+
+    const originLon = bb[0] + spacingDeg / 2;
+    const originLat = bb[1] + spacingDeg / 2;
+    const nCols = Math.ceil((bb[2] - bb[0]) / spacingDeg) + 1;
+    const nRows = Math.ceil((bb[3] - bb[1]) / spacingDeg) + 1;
+
+    // Extract plot rings ONCE — avoids one turf.point()+turf call per
+    // candidate point (was the main-thread bottleneck stalling tile paint).
+    const plotRings = extractRings(plotPoly.geometry || plotPoly);
+
+    const newGrid = [];
+    const newMap  = new Map();
+
+    for (let row = 0; row < nRows; row++) {
+      const lat = originLat + row * spacingDeg;
+      if (lat > bb[3] + spacingDeg) break;
+      for (let col = 0; col < nCols; col++) {
+        const lon = originLon + col * spacingDeg;
+        if (lon > bb[2] + spacingDeg) break;
+        if (pointInPolygonsFast(lon, lat, plotRings)) {
+          const k = ptKey(lat, lon);
+          const pt = { lat, lon, row, col, key: k };
+          newGrid.push(pt);
+          newMap.set(k, pt);
+        }
+      }
+    }
+    globalGrid = newGrid;
+    gridByKey  = newMap;
+
+    // Render grid dots (Leaflet canvas renderer — handles large counts)
+    const cr = L.canvas();
+    newGrid.forEach(({lat, lon, key}) => {
+      L.circleMarker([lat, lon], {
+        renderer: cr, radius: 2,
+        fillColor: usedKeys.has(key) ? '#9ca3af' : '#6ee7b7',
+        color: 'transparent', fillOpacity: 0.7, interactive: false,
+      }).addTo(gridLayer);
+    });
+
+    const free = newGrid.length - usedKeys.size;
+    document.getElementById('grid-info').textContent = Lang.s_badge(newGrid.length,free,spacingM);
+    setStatus(Lang.s_gen_done(newGrid.length,free),'');
+  }, 30);
+}
+
+function refreshGridDots() {
+  gridLayer.clearLayers();
+  const cr = L.canvas();
+  globalGrid.forEach(({lat, lon, key}) => {
+    L.circleMarker([lat, lon], {
+      renderer: cr, radius: 2,
+      fillColor: usedKeys.has(key) ? '#9ca3af' : '#6ee7b7',
+      color: 'transparent', fillOpacity: 0.7, interactive: false,
+    }).addTo(gridLayer);
+  });
+  const free = globalGrid.length - usedKeys.size;
+  document.getElementById('grid-info').textContent = Lang.s_badge(globalGrid.length,free,currentSpacing);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SWEEP SORT
+// Determines the primary traversal order for point selection.
+// Mirrors desktop projection-based ordering but aligned to grid rows/cols
+// so the result is always a contiguous band (no scattered cells).
+//
+//   N : top rows first (row DESC), left→right within row (col ASC)
+//   S : bottom rows first (row ASC), left→right
+//   E : right cols first (col DESC), top→bottom within col (row DESC)
+//   W : left cols first (col ASC), top→bottom
+//   NE: anti-diagonal DESC (row+col DESC), then col ASC
+//   SW: anti-diagonal ASC (row+col ASC), then col ASC
+//   NW: diagonal DESC (row-col DESC), then col ASC
+//   SE: diagonal ASC (row-col ASC), then col ASC
+// ═══════════════════════════════════════════════════════════════════════
+function sweepCmp(dir, a, b) {
+  switch (dir) {
+    case 'N':  return (b.row - a.row) || (a.col - b.col);
+    case 'S':  return (a.row - b.row) || (a.col - b.col);
+    case 'E':  return (b.col - a.col) || (b.row - a.row);
+    case 'W':  return (a.col - b.col) || (b.row - a.row);
+    case 'NE': { const d=(b.row+b.col)-(a.row+a.col); return d||(a.col-b.col); }
+    case 'SW': { const d=(a.row+a.col)-(b.row+b.col); return d||(a.col-b.col); }
+    case 'NW': { const d=(b.row-b.col)-(a.row-a.col); return d||(a.col-b.col); }
+    case 'SE': { const d=(a.row-a.col)-(b.row-b.col); return d||(a.col-b.col); }
+    default:   return (b.row - a.row) || (a.col - b.col);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DRAW
+// ═══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+// PLACE BLOCK
+// ═══════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════
+// FAST POINT-IN-POLYGON  (replaces per-point turf.booleanPointInPolygon
+// calls). turf.point()+turf.booleanPointInPolygon() allocates a fresh
+// GeoJSON Feature object and re-walks the polygon's ring structure on
+// EVERY call. For a grid of a few thousand points this becomes a long
+// synchronous block that starves the event loop — including the Image
+// onload callbacks Leaflet uses to paint basemap tiles, so tiles visibly
+// stall while the grid is being filtered. Fix: extract the polygon's ring
+// coordinates ONCE, then run a tight native ray-casting loop per point
+// with zero allocation.
+// ═══════════════════════════════════════════════════════════════════════
+function extractRings(geom) {
+  if (!geom) return [];
+  if (geom.type === 'Polygon') return [geom.coordinates];
+  if (geom.type === 'MultiPolygon') return geom.coordinates;
+  return [];
+}
+
+function pointInRing(x, y, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    const hit = ((yi > y) !== (yj > y)) &&
+      (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (hit) inside = !inside;
+  }
+  return inside;
+}
+
+// polygons: pre-extracted via extractRings() — array of [outerRing, hole1, hole2...]
+function pointInPolygonsFast(lon, lat, polygons) {
+  for (let p = 0; p < polygons.length; p++) {
+    const rings = polygons[p];
+    if (!rings.length || !pointInRing(lon, lat, rings[0])) continue;
+    let inHole = false;
+    for (let h = 1; h < rings.length; h++) {
+      if (pointInRing(lon, lat, rings[h])) { inHole = true; break; }
+    }
+    if (!inHole) return true;
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SHARED POLYGON-OVERLAP CLIPPER
+// Used by both the Plantation Mapper (clip drawn block to plot boundary)
+// and the Soil Mapper (clip to plot boundary AND subtract whatever's
+// already been placed, guaranteeing no overlap between soil types).
+// usedUnionGeom may be null (plantation blocks don't need it — overlap
+// there is already prevented by the grid's usedKeys set).
+// ═══════════════════════════════════════════════════════════════════════
+function clipToPlotThenUsed(drawnPoly, usedUnionGeom) {
+  let poly = drawnPoly;
+  let pctClipped = 100;
+  if (plotPoly) {
+    try {
+      const cl = turf.intersect(drawnPoly, plotPoly);
+      if (!cl || turf.area(cl) < 0.1) return { poly: null, pctClipped: 0, error: 'outside' };
+      pctClipped = turf.area(cl) / turf.area(drawnPoly) * 100;
+      poly = cl;
+    } catch (e) {}
+  }
+  if (usedUnionGeom) {
+    try {
+      const diff = turf.difference(poly, usedUnionGeom);
+      if (!diff || turf.area(diff) < 0.1) return { poly: null, pctClipped, error: 'overlap' };
+      poly = diff;
+    } catch (e) {}
+  }
+  return { poly, pctClipped, error: null };
+}
+
+// Shared KML <Polygon> ring writer — used by vecExportKML()
+// and buildSoilKMLString(). (Previously called but never defined — a real
+// bug in v10 that threw at export time; fixed here.)
+function polygonXml(ring) {
+  const coordStr = ring.map(([lon, lat]) => `${lon},${lat},0`).join(' ');
+  return `<Polygon><outerBoundaryIs><LinearRing><coordinates>${coordStr}</coordinates></LinearRing></outerBoundaryIs></Polygon>`;
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// COMMON POLYLINE DRAW TOOL  —  one mode-aware implementation shared by
+// both Plantation and Soil tabs (was two near-duplicate functions).
+// ═══════════════════════════════════════════════════════════════════════
+function finishBtnId() { return APP_MODE === 'soil' ? 'btn-finish-soil' : 'btn-finish-plant'; }
+function drawBtnId() { return APP_MODE === 'soil' ? 'btn-draw-soil' : 'btn-draw-plant'; }
+
+function startDrawBlock() {
+  if (!plotPoly) { setStatus(Lang.s_no_bnd, 'warn'); return; }
+  if (APP_MODE === 'plant') {
+    if (!globalGrid.length) { setStatus(Lang.s_no_grid, 'warn'); return; }
+    if (!currentSpecies) { setStatus(Lang.s_no_sp, 'warn'); return; }
+    if (!currentCount || currentCount < 1) { setStatus(Lang.s_no_cnt, 'warn'); return; }
+  } else {
+    if (!currentSoilType) { setStatus(Lang.s_no_soil, 'warn'); return; }
+  }
+  if (isDrawing) return;
+  isDrawing = true;
+  document.getElementById(drawBtnId()).classList.add('b-off');
+  document.getElementById(finishBtnId()).classList.remove('b-off');
+  setStatus(Lang.s_drawing, '');
+  polylineHandler = new L.Draw.Polyline(map, { shapeOptions: { color: '#f97316', weight: 2, dashArray: '5 4' } });
+  polylineHandler.enable();
+}
+
+function finishDrawBlock() {
+  if (!isDrawing || !polylineHandler) return;
+  // Set a flag so DRAWSTOP knows this was intentional (not accidental)
+  _intentionalFinish = true;
+  try { polylineHandler._finishShape(); }
+  catch (e) {
+    polylineHandler.disable(); isDrawing = false;
+    document.getElementById(finishBtnId()).classList.add('b-off');
+  }
+  // Clear flag after a short delay (DRAWSTOP fires synchronously or very shortly after)
+  setTimeout(() => { _intentionalFinish = false; }, 300);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// COMMON EXPORTER  —  shared zip/KML/JPG/SHP assembly engine. Both modes
+// build a small "spec" object describing what to zip and hand it here,
+// instead of each maintaining its own copy of the zip/warnings/download
+// boilerplate.
+//   spec = {
+//     emptyMsg: string shown if nothing to export,
+//     kmlFiles: [{ name, build: ()=>string }],
+//     screenshots: [{ name, overlayFn, legendEntries, legendTitle }],
+//     shpLayers: [{ name, shapeType, geoRecords, fields, dbfRecords }],
+//     zipSuffix: string,           // e.g. 'fieldPMAP' or 'soilMap'
+//     extraNote: string            // optional, appended to the done message
+//   }
+// ═══════════════════════════════════════════════════════════════════════
+// Build a ZIP blob for one SHP layer (shp+shx+dbf+prj) — used both
+// ═══════════════════════════════════════════════════════════════════════
+// TABS  —  Plantation / Soil. Replaces the old full-screen launcher;
+// both tools now live in one view, switchable instantly without losing
+// the loaded boundary.
+// ═══════════════════════════════════════════════════════════════════════
+function switchTab(mode) {
+  APP_MODE = mode;
+  // Highlight persistent mode buttons
+  ['vec','soil','plant','files'].forEach(m => {
+    const b = document.getElementById('tbm-' + m);
+    if (b) b.classList.toggle('active', m === mode);
+  });
+  document.getElementById('mode-vec-body').classList.toggle('hidden', mode !== 'vec');
+  document.getElementById('mode-files-body').classList.toggle('hidden', mode !== 'files');
+  // MRV Tool moved to appMonitoringDashboard in v68
+  const ind = document.getElementById('btn-mode-ind');
+  if (ind) ind.textContent = mode === 'vec' ? '\u{1F4D0}' : '\u{1F4C1}';
+  updateTopbarIndicators();
+  if (isDrawing && polylineHandler) { try { polylineHandler.disable(); } catch (e) {} isDrawing = false; }
+  if (mode !== 'vec') vecModeLeave();
+  stopNonVecGps();
+  if (mode === 'vec') vecModeEnter();
+  updateGpsBtn(); updateSbar();
+  if (mode === 'files') filesEnterMode();
+  setTimeout(() => map && map.invalidateSize(), 50);
+}
+
+
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// SOIL MAPPER  —  first-line soil assessment by hand-drawn polygon.
+// Six soil classes, no grid needed. Uses the shared polyline draw tool
+// and clipToPlotThenUsed() clipper above, and the shared exporter below.
+// ═══════════════════════════════════════════════════════════════════════
+
+// ═
+// VECTOR TOOL  —  inline 3rd mode. See vecSelectTool() below.
+// ═
+
+// ═══════════════════════════════════════════════════════════════════════
+// VECTOR TOOL  — 3rd mode. POI/path/polygon, manual tap or GPS walk.
+// All state prefixed vec* to avoid collisions with plantation/soil globals.
+// ═══════════════════════════════════════════════════════════════════════
+
+const VEC_TYPES = {
+  'poi-m': ['waterSrc','fenceCorner','accessRoad','nursery','home','bldg','gate','well','other'],
+  'poi-g': ['waterSrc','fenceCorner','accessRoad','nursery','home','bldg','gate','well','other'],
+  'path-m':['path','fence','drain','road','tractorPath','sandBoulderPath','fuelwoodTrail','villageTrail','riverAccessTrail','transect','intercept','ridge','contour','other'],
+  'path-g':['path','fence','drain','road','tractorPath','sandBoulderPath','fuelwoodTrail','villageTrail','riverAccessTrail','transect','intercept','ridge','contour','other'],
+  'poly-m':['LP','nursery','pond','soilType','waterBody','other'],
+  'poly-g':['LP','nursery','pond','soilType','waterBody','other'],
+};
+const VEC_KML_SUFFIX = {
+  'poi-m':'poi','poi-g':'poi','path-m':'path','path-g':'path','poly-m':'poly','poly-g':'poly'
+};
+
+let vecTool          = null;
+let vecVertices      = [];
+let vecGpsWatchId    = null;   // recording walk watch (path/poly GPS)
+let vecBgWatchId     = null;   // background location watch (always on in vec mode)
+let vecGpsPaused     = false;
+let vecGpsPoints     = [];
+let vecSelectedType  = null;
+let vecLayerOnMap    = false;
+let _vecEditLayer    = null;   // Leaflet layer currently in edit mode
+let _vecEditCoords   = null;   // original coords for discard
+let _vecEditMeta     = null;   // {fname, geomType, name, type} for save
+let vecLastPos       = null;   // most recent position from background watch
+let vecGpsReady      = false;  // true once first fix received
+
+const vecLayer    = L.layerGroup();   // drawn features (POI dots, track lines)
+const vecLocLayer = L.layerGroup();   // live location dot + accuracy circle
+
+function vecEnsureLayer() {
+  if (!vecLayerOnMap) {
+    vecLayer.addTo(map);
+    vecLocLayer.addTo(map);
+    vecLayerOnMap = true;
+  }
+}
+
+// ── Enter / leave vec mode ────────────────────────────────────────────
+function vecModeEnter() {
+  vecEnsureLayer();
+  vecGpsReady = false;
+  vecLastPos  = null;
+  vecSetToolsEnabled(false);
+  setStatus('Acquiring GPS\u2026', '');
+  if (!navigator.geolocation) {
+    document.getElementById('vec-gps-status').textContent = 'GPS unavailable';
+    document.getElementById('vec-gps-status').style.color = '#f87171';
+    return;
+  }
+  vecBgWatchId = navigator.geolocation.watchPosition(
+    vecOnBgPos, vecOnBgErr,
+    { enableHighAccuracy:true, maximumAge:3000, timeout:20000 }
+  );
+}
+
+function vecModeLeave() {
+  const ls = document.getElementById('vec-sec-layers'); if (ls) ls.style.display = 'none';
+  if (vecBgWatchId !== null) {
+    navigator.geolocation.clearWatch(vecBgWatchId);
+    vecBgWatchId = null;
+  }
+  vecCancelAll();
+  vecLocLayer.clearLayers();
+  vecGpsReady = false;
+  vecLastPos  = null;
+  updateGpsBtn(); updateSbar();
+}
+
+// ── Background position handler ───────────────────────────────────────
+function vecOnBgPos(pos) {
+  const { latitude:lat, longitude:lon, accuracy } = pos.coords;
+  vecLastPos = { lat, lon, accuracy };
+
+  // First fix — unlock tools
+  if (!vecGpsReady) {
+    vecGpsReady = true;
+    vecSetToolsEnabled(true);
+    setStatus('GPS ready. Select a tool.', '');
+  }
+
+  // Update GPS button + sbar
+  updateGpsBtn();
+  updateSbar();
+  const accRound = Math.round(accuracy);
+  const statusEl = document.getElementById('vec-gps-status');
+  if (statusEl) {
+    statusEl.textContent = 'GPS \u00b1 ' + accRound + ' m';
+    statusEl.style.color = accuracy < 10 ? '#4ade80' : accuracy < 30 ? '#facc15' : '#f87171';
+  }
+
+  // Draw live location dot + accuracy ring on map
+  vecLocLayer.clearLayers();
+  L.circle([lat, lon], {
+    radius: accuracy, color:'#3b82f6', weight:1,
+    fillColor:'#3b82f6', fillOpacity:0.08
+  }).addTo(vecLocLayer);
+  L.circleMarker([lat, lon], {
+    radius:7, color:'#fff', weight:2,
+    fillColor:'#3b82f6', fillOpacity:1
+  }).addTo(vecLocLayer);
+
+  // Keep dot on screen during GPS walk (don't re-centre aggressively)
+  if (APP_MODE === 'vec' && vecTool && (vecTool === 'path-g' || vecTool === 'poly-g')) {
+    if (!map.getBounds().contains([lat, lon])) map.panTo([lat, lon]);
+  }
+
+  // Feed live location into recording walk if active
+  if (vecGpsWatchId !== null && !vecGpsPaused) vecRecordPoint(lat, lon);
+}
+
+function vecOnBgErr(err) {
+  const statusEl = document.getElementById('vec-gps-status');
+  if (statusEl) {
+    statusEl.textContent = err.code === 1 ? 'GPS denied' : 'GPS error';
+    statusEl.style.color = '#f87171';
+  }
+  updateGpsBtn(); updateSbar();
+}
+
+// ── Enable / disable tool buttons ─────────────────────────────────────
+function vecSetToolsEnabled(on) {
+  // Enable/disable FAM shape buttons (Step 1) and method buttons (Step 2)
+  document.querySelectorAll('.vec-tool-btn, .vec-method-btn').forEach(b => {
+    b.style.opacity      = on ? '1'    : '0.3';
+    b.style.pointerEvents= on ? 'auto' : 'none';
+  });
+  const zb = null /* vec-btn-zoom removed v73 */;
+  if (zb) {
+    zb.style.opacity      = on ? '1'    : '0.3';
+    zb.style.pointerEvents= on ? 'auto' : 'none';
+  }
+}
+
+// ── Zoom to current location ──────────────────────────────────────────
+function vecZoomToLocation() {
+  if (!vecLastPos) return;
+  map.setView([vecLastPos.lat, vecLastPos.lon], 16);
+}
+
+// ── Tool highlight (no-op stub — FAM uses its own sel class) ─────────
+function vecHighlight(tool) { /* handled by FAM selectors */ }
+
+// ── Select tool ───────────────────────────────────────────────────────
+const VEC_MODE_TAG = {'poi-m':'manual','poi-g':'gps','path-m':'manual','path-g':'gps','poly-m':'manual','poly-g':'gps'};
+
+// ── FAM sidebar state ──────────────────────────────────────────────────
+let _famShape  = null;   // 'poly' | 'path' | 'poi'
+let _famMethod = null;   // 'manual' | 'gps'
+
+// ── Start button gate: enabled only when name is non-empty ────────────
+function vecFamCheckReady() {
+  const sb  = document.getElementById('vec-btn-start-fam');
+  const nm  = document.getElementById('vec-feat-name');
+  if (!sb || !nm) return;
+  sb.disabled = nm.value.trim().length === 0;
+}
+
+function vecFamReset() {
+  _famShape = null; _famMethod = null;
+  ['poly','path','poi'].forEach(s => {
+    const b = document.getElementById('vt-' + s);
+    if (b) b.classList.remove('sel');
+  });
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m);
+    if (b) b.classList.remove('sel');
+  });
+  document.getElementById('vec-step2').style.display = 'none';
+  document.getElementById('vec-step3').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  document.getElementById('vec-sec-stats').style.display = 'none';
+  document.getElementById('vec-feat-name').value = '';
+  document.getElementById('vec-type-chips').innerHTML = '';
+  document.getElementById('vec-gps-info').textContent = '';
+  const sb = document.getElementById('vec-btn-start-fam');
+  if (sb) sb.disabled = true;
+  vecRecPanelHide();
+  vecStatsFloatHide();
+}
+
+function vecFamSelectShape(shape) {
+  if (!vecGpsReady) return;
+  _famShape = shape; _famMethod = null;
+  ['poly','path','poi'].forEach(s => {
+    const b = document.getElementById('vt-' + s);
+    if (b) b.classList.toggle('sel', s === shape);
+  });
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m);
+    if (b) b.classList.remove('sel');
+  });
+  document.getElementById('vec-step2').style.display = '';
+  document.getElementById('vec-step3').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  // GPS method not meaningful for POI (immediate capture) — disable it
+  const gpsBtn = document.getElementById('vec-meth-gps');
+  // POI GPS still valid (captures current pos), so keep both enabled
+  if (gpsBtn) gpsBtn.disabled = false;
+}
+
+function vecFamSelectMethod(method) {
+  if (!_famShape) return;
+  _famMethod = method;
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m);
+    if (b) b.classList.toggle('sel', m === method);
+  });
+  // Derive the v82 tool key
+  const tool = _famShape + '-' + (method === 'gps' ? 'g' : 'm');
+  vecTool = tool;
+
+  // Populate type chips
+  vecSelectedType = VEC_TYPES[tool][0];
+  const chips = document.getElementById('vec-type-chips');
+  chips.innerHTML = '';
+  VEC_TYPES[tool].forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'vec-type-chip' + (t === vecSelectedType ? ' sel' : '');
+    b.textContent = t;
+    b.onclick = () => {
+      vecSelectedType = t;
+      chips.querySelectorAll('.vec-type-chip').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+    chips.appendChild(b);
+  });
+
+  document.getElementById('vec-feat-name').value = '';
+  document.getElementById('vec-gps-info').textContent = '';
+  document.getElementById('vec-step3').style.display = '';
+
+  // Label + gate the start button
+  const sb = document.getElementById('vec-btn-start-fam');
+  if (sb) {
+    if (_famShape === 'poi') {
+      sb.textContent = method === 'gps' ? '📍 Capture GPS POI' : '📌 Tap map for POI';
+    } else if (method === 'manual') {
+      sb.textContent = '✏️ Start drawing';
+    } else {
+      sb.textContent = '▶ Start recording';
+    }
+    sb.disabled = true;  // re-gated: need name filled
+  }
+}
+
+function vecFamStart() {
+  if (!vecTool) return;
+  const tool = vecTool;
+  vecCancelAll();
+  vecTool = tool;  // restore after cancel clears it
+
+  if (tool === 'poi-g') {
+    vecDoGPSPOI();
+    document.getElementById('vec-step3').style.display = '';
+    document.getElementById('vec-sec-ctrl').style.display = '';
+  } else if (tool === 'poi-m') {
+    setStatus('Tap the map to drop a POI.', '');
+    map.once('click', vecOnMapClickPOI);
+    document.getElementById('vec-sec-ctrl').style.display = '';
+  } else if (tool === 'path-m' || tool === 'poly-m') {
+    setStatus('Tap map to add vertices. ↩ undo · ✅ finish.', '');
+    map.on('click', vecOnMapClickVertex);
+    // Build manual ctrl row
+    const row = document.getElementById('vec-ctrl-row');
+    row.innerHTML = '';
+    row.appendChild(vecMakeBtn('↩️','b-gray','Undo last vertex', vecUndoVertex));
+    row.appendChild(vecMakeBtn('✅','b-green','Finish', vecFinishManual));
+    row.appendChild(vecMakeBtn('🗑','b-red','Cancel', vecCancelAll));
+    document.getElementById('vec-sec-ctrl').style.display = '';
+    vecStatsFloatShow();
+    // Collapse sidebar
+    const sb = document.getElementById('sidebar');
+    if (sb && !sb.classList.contains('collapsed')) {
+      sb.classList.add('collapsed');
+      const btn = document.getElementById('btn-sb');
+      if (btn) btn.textContent = '☰';
+      setTimeout(() => map.invalidateSize(), 220);
+    }
+  } else {
+    // GPS walk: path-g / poly-g
+    vecRecPanelShow();
+    // Collapse sidebar
+    const sb = document.getElementById('sidebar');
+    if (sb && !sb.classList.contains('collapsed')) {
+      sb.classList.add('collapsed');
+      const btn = document.getElementById('btn-sb');
+      if (btn) btn.textContent = '☰';
+      setTimeout(() => map.invalidateSize(), 220);
+    }
+    vecStartRecording();
+  }
+}
+
+// ── Floating rec panel show/hide ──────────────────────────────────────
+function vecRecPanelShow() {
+  const panel = document.getElementById('vec-rec-panel');
+  if (panel) panel.style.display = 'block';
+}
+
+function vecRecPanelHide() {
+  const panel = document.getElementById('vec-rec-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+function vecStartRecording() {
+  vecGpsPoints = []; vecGpsPaused = false; vecLayer.clearLayers();
+  vecGpsWatchId = 1;  // sentinel: non-null means "recording active"
+  const panel = document.getElementById('vec-rec-panel');
+  if (panel) panel.style.display = 'block';
+  // Float stats shows above the rec panel; initialise with 0 pts label
+  const ptsEl = document.getElementById('sf-pts');
+  if (ptsEl) ptsEl.textContent = '0 pts';
+  vecStatsFloatShow();
+  setStatus('Recording… tap ✅ Finish or ✕ Cancel.', '');
+}
+
+function vecRecUndo() {
+  if (vecGpsPoints.length) {
+    vecGpsPoints.pop();
+    // Redraw with remaining points
+    const lls = vecGpsPoints.map(p => [p.lat, p.lon]);
+    vecLayer.clearLayers();
+    if (lls.length >= 2) {
+      const color = vecTool === 'poly-g' ? '#f97316' : '#3b82f6';
+      L.polyline(lls, { color, weight:2.5, opacity:.85 }).addTo(vecLayer);
+      L.circleMarker(lls[lls.length-1], {
+        radius:5, color:'#fff', fillColor:color, fillOpacity:1, weight:1.5
+      }).addTo(vecLayer);
+    }
+    // Refresh float stats
+    const pts2 = vecGpsPoints.map(p => [p.lon, p.lat]);
+    vecStatsFloatUpdate(pts2, vecTool === 'poly-g', vecGpsPoints.length);
+  }
+}
+
+function vecRecCancel() {
+  vecGpsWatchId = null;
+  vecGpsPaused = false; vecGpsPoints = []; vecVertices = [];
+  vecLayer.clearLayers();
+  vecRecPanelHide();
+  vecStatsFloatHide();
+  vecFamReset();
+  setStatus('Recording cancelled.', '');
+}
+
+// ── Floating stats panel helpers ───────────────────────────────────────
+function vecStatsFloatShow() {
+  const el = document.getElementById('vec-stats-float');
+  if (el) el.style.display = 'block';
+}
+function vecStatsFloatHide() {
+  const el = document.getElementById('vec-stats-float');
+  if (el) el.style.display = 'none';
+}
+function vecStatsFloatUpdate(pts, isPoly, ptCount) {
+  vecStatsFloatShow();
+  const ptsEl  = document.getElementById('sf-pts');
+  const aEl    = document.getElementById('sf-area');
+  const aVal   = document.getElementById('sf-area-val');
+  const pEl    = document.getElementById('sf-perim');
+  const pVal   = document.getElementById('sf-perim-val');
+  const lEl    = document.getElementById('sf-len');
+  const lVal   = document.getElementById('sf-len-val');
+  if (ptsEl) ptsEl.textContent = (ptCount || pts.length) + ' pts';
+  if (isPoly && pts.length >= 3) {
+    try {
+      const poly = turf.polygon([[...pts, pts[0]]]);
+      const areaSqm = turf.area(poly);
+      const perimM  = turf.length(turf.polygonToLine(poly), { units:'meters' });
+      if (aEl)  aEl.style.display = '';
+      if (aVal) aVal.textContent = areaSqm >= 10000 ? (areaSqm/10000).toFixed(3)+' ha' : areaSqm.toFixed(1)+' m²';
+      if (pEl)  pEl.style.display = '';
+      if (pVal) pVal.textContent = perimM.toFixed(1)+' m';
+      if (lEl)  lEl.style.display = 'none';
+    } catch(e) {}
+  } else {
+    if (aEl) aEl.style.display = 'none';
+    if (pEl) pEl.style.display = 'none';
+    if (pts.length >= 2) {
+      try {
+        const distM = turf.length(turf.lineString(pts), { units:'meters' });
+        if (lEl)  lEl.style.display = '';
+        if (lVal) lVal.textContent = distM >= 1000 ? (distM/1000).toFixed(3)+' km' : distM.toFixed(1)+' m';
+      } catch(e) {}
+    } else {
+      if (lEl) lEl.style.display = 'none';
+    }
+  }
+}
+
+function updateVecStats() {
+  if (!vecTool) return;
+  const statsEl = document.getElementById('vec-sec-stats');
+  const areaEl  = document.getElementById('vec-stat-area');
+  const areaVal = document.getElementById('vec-stat-area-val');
+  const lenVal  = document.getElementById('vec-stat-len-val');
+  if (!statsEl) return;
+  let pts = [];
+  // Manual tools: vertices stored in vecVertices[]
+  if (vecVertices && vecVertices.length)
+    pts = vecVertices.map(v => [v.lon, v.lat]);
+  // GPS tools: points stored in vecGpsPoints[]
+  if (!pts.length && vecGpsPoints && vecGpsPoints.length)
+    pts = vecGpsPoints.map(p => [p.lon, p.lat]);
+  if (pts.length < 2) { statsEl.style.display='none'; vecStatsFloatHide(); return; }
+  statsEl.style.display='';
+  const isPoly = vecTool==='poly-m'||vecTool==='poly-g';
+  // Also update floating panel
+  vecStatsFloatUpdate(pts, isPoly);
+  const perimEl = document.getElementById('vec-stat-perim');
+  const perimVal= document.getElementById('vec-stat-perim-val');
+  const lenRow  = document.getElementById('vec-stat-len-row');
+  if (isPoly && pts.length >= 3) {
+    try {
+      const poly = turf.polygon([[...pts, pts[0]]]);
+      const areaSqm = turf.area(poly);
+      const perimM  = turf.length(turf.polygonToLine(poly),{units:'meters'});
+      if (areaEl)  { areaEl.style.display=''; }
+      if (areaVal) areaVal.textContent = areaSqm>=10000?(areaSqm/10000).toFixed(3)+' ha':areaSqm.toFixed(1)+' m\u00b2';
+      if (perimEl) { perimEl.style.display=''; }
+      if (perimVal) perimVal.textContent = perimM.toFixed(1)+' m';
+      if (lenRow)  lenRow.style.display='none';
+    } catch(e) {}
+  } else {
+    if (areaEl)  areaEl.style.display='none';
+    if (perimEl) perimEl.style.display='none';
+    if (lenRow)  lenRow.style.display='';
+    try {
+      const distM = turf.length(turf.lineString(pts),{units:'meters'});
+      if (lenVal) lenVal.textContent = distM>=1000?(distM/1000).toFixed(3)+' km':distM.toFixed(1)+' m';
+    } catch(e) {}
+  }
+}
+
+// vecSelectTool — kept as internal helper; FAM UI calls vecFamStart() instead.
+// Called directly only by vecDoGPSPOI (post-capture ctrl rebuild).
+function vecSelectTool(tool) {
+  // no-op in FAM UI — selection handled by vecFamSelectShape/Method/Start
+}
+
+// ── GPS POI: immediate capture from background watch ──────────────────
+function vecDoGPSPOI() {
+  // vecLastPos guaranteed non-null because tools only enabled after first fix
+  const { lat, lon, accuracy } = vecLastPos;
+  L.circleMarker([lat, lon], {
+    radius:7, color:'#10b981', fillColor:'#10b981', fillOpacity:.9, weight:2
+  }).addTo(vecLayer);
+  document.getElementById('vec-gps-info').textContent =
+    'POI fixed \u00b1 ' + Math.round(accuracy) + ' m';
+  setStatus('GPS POI placed (\u00b1' + Math.round(accuracy) + ' m). Enter name + type, then \u{1F4E6}.', '');
+  // Build ctrl row with export + cancel
+  const row = document.getElementById('vec-ctrl-row');
+  row.innerHTML = '';
+  row.appendChild(vecMakeBtn('\u{1F4E6}','b-green','Export KML',
+    () => vecExportKML('poi', [[lon, lat]])));
+  row.appendChild(vecMakeBtn('\u{1F5D1}','b-red','Cancel', vecCancelAll));
+  document.getElementById('vec-sec-ctrl').style.display = '';
+  document.getElementById('vec-feat-name').focus();
+}
+
+// ── Control row builder ───────────────────────────────────────────────
+function vecMakeBtn(icon, cls, tip, fn) {
+  const b = document.createElement('button');
+  b.className = 'icon-btn ' + cls;
+  b.textContent = icon; b.title = tip; b.onclick = fn;
+  return b;
+}
+
+function vecBuildCtrl(tool) {
+  // FAM UI: ctrl row built directly in vecFamStart(); this is a no-op stub.
+}
+
+// ── Manual POI ────────────────────────────────────────────────────────
+function vecOnMapClickPOI(e) {
+  if (APP_MODE !== 'vec' || vecTool !== 'poi-m') return;
+  const { lat, lng } = e.latlng;
+  L.circleMarker([lat, lng], {
+    radius:7, color:'#f97316', fillColor:'#f97316', fillOpacity:.9, weight:2
+  }).addTo(vecLayer);
+  setStatus('POI placed. Enter name + type, then \u{1F4E6}.', '');
+  const row = document.getElementById('vec-ctrl-row');
+  row.innerHTML = '';
+  row.appendChild(vecMakeBtn('\u{1F4E6}','b-green','Export KML',
+    () => vecExportKML('poi', [[lng, lat]])));
+  row.appendChild(vecMakeBtn('\u{1F5D1}','b-red','Cancel', vecCancelAll));
+  document.getElementById('vec-sec-ctrl').style.display = '';
+}
+
+// ── Manual path / polygon ─────────────────────────────────────────────
+function vecOnMapClickVertex(e) {
+  if (APP_MODE !== 'vec') return;
+  vecVertices.push({ lat: e.latlng.lat, lon: e.latlng.lng });
+  vecRedrawManual();
+  updateVecStats();
+  // Update floating stats
+  const pts = vecVertices.map(v => [v.lon, v.lat]);
+  vecStatsFloatUpdate(pts, vecTool === 'poly-m', vecVertices.length);
+  setStatus(vecVertices.length + ' vertices.'
+    + (vecTool === 'poly-m' ? ' Need \u22653 to finish.' : ''), '');
+}
+
+function vecUndoVertex() {
+  if (!vecVertices.length) return;
+  vecVertices.pop(); vecRedrawManual();
+  if (vecVertices.length >= 2) {
+    const pts = vecVertices.map(v => [v.lon, v.lat]);
+    vecStatsFloatUpdate(pts, vecTool === 'poly-m', vecVertices.length);
+  } else {
+    vecStatsFloatHide();
+  }
+  setStatus(vecVertices.length ? vecVertices.length + ' vertices.' : 'All vertices cleared.', '');
+}
+
+function vecRedrawManual() {
+  vecLayer.clearLayers();
+  if (!vecVertices.length) return;
+  const lls = vecVertices.map(v => [v.lat, v.lon]);
+  if (vecTool === 'path-m') {
+    L.polyline(lls, { color:'#3b82f6', weight:3 }).addTo(vecLayer);
+  } else {
+    if (lls.length >= 3)
+      L.polygon(lls, { color:'#f97316', weight:2.5, fillOpacity:.15 }).addTo(vecLayer);
+    else
+      L.polyline(lls, { color:'#f97316', weight:2.5, dashArray:'5 4' }).addTo(vecLayer);
+  }
+  lls.forEach((ll, i) => L.circleMarker(ll, {
+    radius: i===0?6:4, color:'#fff',
+    fillColor: i===0?'#f97316':'#3b82f6', fillOpacity:1, weight:1.5
+  }).addTo(vecLayer));
+  for (let i = 0; i < lls.length - 1; i++) {
+    const a = vecVertices[i], b = vecVertices[i+1];
+    const dist = turf.distance(turf.point([a.lon,a.lat]), turf.point([b.lon,b.lat]), {units:'meters'});
+    const midLat=(lls[i][0]+lls[i+1][0])/2, midLon=(lls[i][1]+lls[i+1][1])/2;
+    const lbl = dist>=1000?(dist/1000).toFixed(2)+'km':Math.round(dist)+'m';
+    L.marker([midLat,midLon],{icon:L.divIcon({className:'',html:`<span style="background:rgba(0,0,0,.65);color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;white-space:nowrap">${lbl}</span>`,iconAnchor:[20,8]}),interactive:false}).addTo(vecLayer);
+  }
+  if (vecTool==='poly-m' && lls.length>=3) {
+    const a=vecVertices[lls.length-1],b=vecVertices[0];
+    const dist=turf.distance(turf.point([a.lon,a.lat]),turf.point([b.lon,b.lat]),{units:'meters'});
+    const midLat=(lls[lls.length-1][0]+lls[0][0])/2,midLon=(lls[lls.length-1][1]+lls[0][1])/2;
+    L.marker([midLat,midLon],{icon:L.divIcon({className:'',html:`<span style="background:rgba(249,115,22,.7);color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;white-space:nowrap">${Math.round(dist)}m</span>`,iconAnchor:[20,8]}),interactive:false}).addTo(vecLayer);
+  }
+}
+
+function vecFinishManual() {
+  const isPoly = vecTool === 'poly-m';
+  if (isPoly && vecVertices.length < 3) {
+    setStatus('Need \u22653 vertices for a polygon.', 'err'); return;
+  }
+  if (!isPoly && vecVertices.length < 2) {
+    setStatus('Need \u22652 vertices for a path.', 'err'); return;
+  }
+  map.off('click', vecOnMapClickVertex);
+  vecStatsFloatHide();
+  const coords = vecVertices.map(v => [v.lon, v.lat]);
+  updateVecStats();
+  if (isPoly) {
+    const ring = [...coords];
+    if (ring[0][0] !== ring[ring.length-1][0]) ring.push(ring[0]);
+    vecExportKMLWithEdit('poly', ring);
+  } else { vecExportKMLWithEdit('path', coords); }
+}
+
+// ── GPS walk — redirected to vecStartRecording() in FAM UI ───────────
+function vecGpsWalkStart() {
+  vecStartRecording();
+}
+
+function vecGpsTogglePause() {
+  const pb = document.getElementById('vec-btn-pause');
+  vecGpsPaused = !vecGpsPaused;
+  if (pb) pb.textContent = vecGpsPaused ? '\u25b6\ufe0f' : '\u23f8\ufe0f';
+  setStatus(vecGpsPaused
+    ? 'Paused. Tap \u25b6\ufe0f to resume or \u2705 to finish.'
+    : 'Recording\u2026', '');
+}
+
+function vecGpsFinish() {
+  vecGpsWatchId = null;   // stop recording (background watch continues)
+  vecGpsPaused = false;
+  vecRecPanelHide();
+  vecStatsFloatHide();
+  const gi = document.getElementById('vec-gps-info');
+  if (gi) gi.textContent = '';
+
+  const isPoly = vecTool === 'poly-g';
+  const minPts = isPoly ? 3 : 2;
+  if (vecGpsPoints.length < minPts) {
+    setStatus('Need at least ' + minPts + ' GPS points.', 'err'); return;
+  }
+  let coords = vecGpsPoints.map(p => [p.lon, p.lat]);
+  if (isPoly) {
+    const ring = [...coords];
+    if (ring[0][0] !== ring[ring.length-1][0]) ring.push(ring[0]);
+    try {
+      let poly = turf.polygon([ring]);
+      const unkinked = turf.unkinkPolygon(poly);
+      if (unkinked.features.length) {
+        const largest = unkinked.features.reduce((a,b) =>
+          turf.area(a) > turf.area(b) ? a : b);
+        poly = turf.simplify(largest, { tolerance:0.00001, highQuality:false });
+        coords = poly.geometry.coordinates[0];
+      } else { coords = ring; }
+    } catch(e) { coords = ring; }
+    vecExportKML('poly', coords);
+  } else { vecExportKML('path', coords); }
+  setTimeout(updateVecStats, 300);
+}
+
+// Called from background watch during an active recording session
+function vecRecordPoint(lat, lon) {
+  if (vecGpsPoints.length) {
+    const last = vecGpsPoints[vecGpsPoints.length - 1];
+    if (turf.distance(
+      turf.point([last.lon, last.lat]),
+      turf.point([lon, lat]),
+      { units:'meters' }) < 1) return;
+  }
+  vecGpsPoints.push({ lat, lon, accuracy: vecLastPos?.accuracy });
+  // Redraw recorded track
+  const lls = vecGpsPoints.map(p => [p.lat, p.lon]);
+  vecLayer.clearLayers();
+  const color = vecTool === 'poly-g' ? '#f97316' : '#3b82f6';
+  L.polyline(lls, { color, weight:2.5, opacity:.85 }).addTo(vecLayer);
+  L.circleMarker(lls[lls.length-1], {
+    radius:5, color:'#fff', fillColor:color, fillOpacity:1, weight:1.5
+  }).addTo(vecLayer);
+  // Update floating stats
+  const pts = lls.map(ll => [ll[1], ll[0]]);  // [lon, lat] for turf
+  const isPoly = vecTool === 'poly-g';
+  vecStatsFloatUpdate(pts, isPoly, vecGpsPoints.length);
+}
+
+// ── Cancel all ────────────────────────────────────────────────────────
+function vecCancelAll() {
+  vecGpsWatchId = null;   // stop recording sentinel
+  vecGpsPaused = false; vecGpsPoints = []; vecVertices = [];
+  map.off('click', vecOnMapClickVertex);
+  map.off('click', vecOnMapClickPOI);
+  if (vecLayerOnMap) vecLayer.clearLayers();
+  const gi = document.getElementById('vec-gps-info');
+  if (gi) gi.textContent = '';
+  vecRecPanelHide();
+  vecStatsFloatHide();
+  _famShape = null; _famMethod = null; vecTool = null;
+  ['poly','path','poi'].forEach(s => {
+    const b = document.getElementById('vt-' + s); if (b) b.classList.remove('sel');
+  });
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m); if (b) b.classList.remove('sel');
+  });
+  document.getElementById('vec-step2').style.display = 'none';
+  document.getElementById('vec-step3').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  document.getElementById('vec-sec-stats').style.display = 'none';
+}
+
+// ── KML export ────────────────────────────────────────────────────────
+async function vecExportKML(geomType, coords, stage, revision_reason) {
+  const raw   = (document.getElementById('vec-feat-name').value.trim() || 'feature');
+  const name  = raw.replace(/[^a-zA-Z0-9_\-]/g,'_');
+  const type  = vecSelectedType || 'other';
+  if (!stage) stage = 'eligibility';
+  const _vd=new Date(),_vp=n=>String(n).padStart(2,'0');
+  const ts = _vd.getFullYear()+_vp(_vd.getMonth()+1)+_vp(_vd.getDate())+'_'+_vp(_vd.getHours())+_vp(_vd.getMinutes())+_vp(_vd.getSeconds());
+  const capturedIso = _vd.toISOString();
+  const isGps = vecTool && vecTool.endsWith('-g');
+  const _modeTag = isGps ? '_gps' : '_manual';
+  const geomMethod = isGps ? 'gps_walk' : 'manual_tap';
+  const fname = name + '_' + type + '_' + (VEC_KML_SUFFIX[vecTool]||'feat') + _modeTag + '_' + ts + '.kml';
+
+  // ── Operator identity from suite auth ──
+  const _auth = arrAuthGet();
+  const opEmail = _auth ? _auth.email : 'unknown';
+  const opName  = _auth ? (_auth.name || _auth.email) : 'unknown';
+  const project = SESSION.projectKey || 'unknown';
+
+  // ── GPS accuracy: median of recorded points (gps walk) or last-fix accuracy (gps POI) ──
+  let gpsAccuracyM = null;
+  if (isGps) {
+    if (vecGpsPoints && vecGpsPoints.length) {
+      const accs = vecGpsPoints.filter(p => p.accuracy != null).map(p => p.accuracy);
+      if (accs.length) {
+        accs.sort((a,b)=>a-b);
+        gpsAccuracyM = Math.round(accs[Math.floor(accs.length/2)]);
+      }
+    } else if (vecLastPos && vecLastPos.accuracy != null) {
+      gpsAccuracyM = Math.round(vecLastPos.accuracy);
+    }
+  }
+  const pointCount = isGps
+    ? (vecGpsPoints ? vecGpsPoints.length : coords.length)
+    : (vecVertices ? vecVertices.length : coords.length);
+
+  const cStr  = coords.map(([lo,la]) => lo+','+la+',0').join('\n          ');
+  let gKml;
+  if (geomType==='poi')
+    gKml = '<Point><coordinates>'+cStr+'</coordinates></Point>';
+  else if (geomType==='path')
+    gKml = '<LineString><tessellate>1</tessellate><coordinates>'+cStr+'</coordinates></LineString>';
+  else
+    gKml = '<Polygon><outerBoundaryIs><LinearRing><coordinates>'+cStr+'</coordinates></LinearRing></outerBoundaryIs></Polygon>';
+
+  // ── Build ExtendedData fields ──
+  const _ed = (k,v) => v != null ? `      <Data name="${k}"><value>${v}</value></Data>` : '';
+  const extData = [
+    '      <ExtendedData>',
+    _ed('feature_name',  raw),
+    _ed('feature_type',  type),
+    _ed('stage',         stage),
+    revision_reason ? _ed('revision_reason', revision_reason) : '',
+    _ed('geometry_method', geomMethod),
+    _ed('point_count',   pointCount),
+    gpsAccuracyM != null ? _ed('gps_accuracy_m', gpsAccuracyM) : '',
+    _ed('captured_ts',   capturedIso),
+    _ed('operator_email',opEmail),
+    _ed('operator_name', opName),
+    _ed('project',       project),
+    '      </ExtendedData>',
+  ].filter(Boolean).join('\n');
+
+  const kml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<kml xmlns="http://www.opengis.net/kml/2.2">',
+    '  <Document>',
+    '    <name>'+raw+'_'+type+'_'+geomMethod+'</name>',
+    '    <Placemark>',
+    '      <name>'+raw+'_'+type+'_'+geomMethod+'</name>',
+    extData,
+    '      '+gKml,
+    '    </Placemark>',
+    '  </Document>',
+    '</kml>'
+  ].join('\n');
+  const kmlBlob = new Blob([kml], {type:'application/vnd.google-earth.kml+xml'});
+  dlBlob(fname, kmlBlob);
+  const vecFolder = APP_CONFIG.toolFolders.vec || 'VectorTool';
+  await opfsSaveToSent(vecFolder, fname, kmlBlob);
+  const gjName = fname.replace('.kml', '.geojson');
+  let gjGeom;
+  if (geomType==='poi') gjGeom={type:'Point',coordinates:coords[0]};
+  else if (geomType==='path') gjGeom={type:'LineString',coordinates:coords};
+  else gjGeom={type:'Polygon',coordinates:[coords]};
+  const gjProps = {
+    feature_name:    raw,
+    feature_type:    type,
+    stage,
+    geometry_method: geomMethod,
+    point_count:     pointCount,
+    captured_ts:     capturedIso,
+    operator_email:  opEmail,
+    operator_name:   opName,
+    project,
+  };
+  if (gpsAccuracyM != null) gjProps.gps_accuracy_m = gpsAccuracyM;
+  if (revision_reason)      gjProps.revision_reason = revision_reason;
+  await opfsSaveGeoJSON(vecFolder, gjName, {type:'FeatureCollection',features:[{type:'Feature',properties:gjProps,geometry:gjGeom}]});
+  setStatus('Exported: ' + fname, '');
+  uploadFile(fname, kmlBlob, vecFolder);
+  setTimeout(() => {
+    vecCancelAll(); vecTool = null;
+    if (APP_MODE === 'vec') setStatus('GPS ready. Select a tool.', '');
+  }, 1500);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+// FIRST-RUN SETUP  —  project selection only (auth from launcher)
+// On subsequent loads, session is restored from IDB without any prompt.
+// ═══════════════════════════════════════════════════════════════════════
+
+let _setupProjectKey = null;
+
+function setupBuildProjectGrid() {
+  const grid = document.getElementById('proj-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  Object.entries(APP_CONFIG.projects).forEach(([key, cfg]) => {
+    const b = document.createElement('button');
+    b.className = 'proj-btn';
+    b.textContent = cfg.label;
+    b.onclick = async () => {
+      _setupProjectKey = key;
+      grid.querySelectorAll('.proj-btn').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      // Derive userFolder from launcher auth (already confirmed at startup)
+      const auth = arrAuthGet();
+      if (!auth) {
+        window.location.href = './index.html?redirect=' + encodeURIComponent(window.location.href);
+        return;
+      }
+      const userFolder = makeUserFolder(auth.email);
+      await setupConfirm(userFolder);
+    };
+    grid.appendChild(b);
+  });
+}
+async function setupConfirm(userFolder) {
+  SESSION.projectKey = _setupProjectKey;
+  SESSION.userFolder = userFolder;
+  SESSION.setupDone  = true;
+  await idbSet('session', { projectKey: _setupProjectKey, userFolder });
+  setupDismiss();
+}
+
+function setupDismiss() {
+  const overlay = document.getElementById('setup-overlay');
+  if (overlay) overlay.classList.add('hidden');
+  const settingsBtn = document.getElementById('tb-settings-btn');
+  if (settingsBtn) settingsBtn.style.display = '';
+  updateSessionBadge();
+}
+
+function updateSessionBadge() {
+  const btn = document.getElementById('tb-settings-btn');
+  if (!btn) return;
+  const proj = SESSION.projectKey ? APP_CONFIG.projects[SESSION.projectKey]?.label || SESSION.projectKey : '';
+  btn.title = (SESSION.userFolder || '') + ' \u2014 ' + proj;
+}
+
+// ── Settings callout ──────────────────────────────────────────────────
+function openSettingsCallout(anchor) {
+  openCallout(anchor, (box) => {
+    const title = document.createElement('div');
+    title.className = 'callout-title'; title.textContent = 'Session';
+    box.appendChild(title);
+
+    const info = document.createElement('div');
+    info.style.cssText = 'font-size:11px;color:var(--mid);margin:4px 0 8px';
+    const proj = SESSION.projectKey ? APP_CONFIG.projects[SESSION.projectKey]?.label || SESSION.projectKey : '\u2014';
+    const auth = arrAuthGet();
+    info.innerHTML = '<div style="color:var(--dim);font-size:10px">User</div>'
+      + '<div style="font-weight:600;margin-bottom:6px">' + (SESSION.userFolder || '\u2014') + '</div>'
+      + '<div style="color:var(--dim);font-size:10px">Signed in as</div>'
+      + '<div style="font-weight:600;margin-bottom:6px">' + (auth?.email || '\u2014') + '</div>'
+      + '<div style="color:var(--dim);font-size:10px">Project</div>'
+      + '<div style="font-weight:600">' + proj + '</div>';
+    box.appendChild(info);
+
+    const row = document.createElement('div');
+    row.className = 'callout-row';
+
+    const chProj = document.createElement('button');
+    chProj.className = 'copt';
+    chProj.textContent = '\ud83d\udd04 Change Project';
+    chProj.onclick = () => {
+      closeCallout();
+      SESSION.setupDone = false;
+      SESSION.projectKey = null;
+      _setupProjectKey = null;
+      const overlay = document.getElementById('setup-overlay');
+      if (overlay) {
+        overlay.classList.remove('hidden');
+        setupBuildProjectGrid();
+      }
+    };
+    row.appendChild(chProj);
+
+    const goLauncher = document.createElement('button');
+    goLauncher.className = 'copt';
+    goLauncher.textContent = '\ud83c\udfe0 Suite / Sign out';
+    goLauncher.style.borderColor = '#4b5563';
+    goLauncher.onclick = () => { window.location.href = './index.html'; };
+    row.appendChild(goLauncher);
+
+    box.appendChild(row);
+  });
+}
+
+// ── Load session from IDB on startup ─────────────────────────────────
+async function loadSessionFromIDB() {
+  try {
+    const stored = await idbGet('session');
+    if (stored && stored.projectKey && stored.userFolder) {
+      SESSION.projectKey = stored.projectKey;
+      SESSION.userFolder = stored.userFolder;
+      SESSION.setupDone  = true;
+      setupDismiss();
+      outboxUpdateBadge();
+      return true;
+    }
+  } catch(e) { console.warn('IDB session load failed:', e); }
+  // No stored session — overlay stays, user picks project
+  return false;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// OPFS OUTBOX  —  structured local file storage + network-aware upload
+//
+// Outbox (flat naming):   /outbox/{toolFolder}_{filename}
+// Sent   (mirrors Drive): /sent/{toolFolder}/{filename}
+//
+// Flow:
+//   export fires → write blob to OPFS outbox → attempt Drive push
+//     success → move to sent/{toolFolder}/  + remove from outbox
+//     fail/offline → leave in outbox, show ⚠️ badge, retry on reconnect
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── OPFS helpers ─────────────────────────────────────────────────────
+async function opfsRoot() {
+  return await navigator.storage.getDirectory();
+}
+
+async function opfsDir(pathParts, create = true) {
+  let dir = await opfsRoot();
+  for (const part of pathParts) {
+    dir = await dir.getDirectoryHandle(part, { create });
+  }
+  return dir;
+}
+
+async function opfsWrite(dir, filename, blob) {
+  const fh  = await dir.getFileHandle(filename, { create: true });
+  const w   = await fh.createWritable();
+  await w.write(blob);
+  await w.close();
+}
+
+async function opfsReadBlob(dir, filename) {
+  const fh = await dir.getFileHandle(filename);
+  return await fh.getFile();   // returns a File (subclass of Blob)
+}
+
+async function opfsDelete(dir, filename) {
+  try { await dir.removeEntry(filename); } catch(e) {}
+}
+
+async function opfsList(dir) {
+  const names = [];
+  for await (const [name, handle] of dir.entries()) {
+    if (handle.kind === 'file') names.push(name);
+  }
+  return names;
+}
+
+// ── Outbox IDB helpers ────────────────────────────────────────────────
+// IDB stores metadata; OPFS stores actual blobs.
+async function idbOutboxAdd(item) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const req = db.transaction(IDB_OUTBOX, 'readwrite')
+      .objectStore(IDB_OUTBOX).add(item);
+    req.onsuccess = e => res(e.target.result);   // returns auto-increment id
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function idbOutboxGetAll() {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const req = db.transaction(IDB_OUTBOX, 'readonly')
+      .objectStore(IDB_OUTBOX).getAll();
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function idbOutboxDelete(id) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const req = db.transaction(IDB_OUTBOX, 'readwrite')
+      .objectStore(IDB_OUTBOX).delete(id);
+    req.onsuccess = () => res();
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+// ── Core outbox operations ────────────────────────────────────────────
+async function outboxEnqueue(filename, blob, toolFolder) {
+  // Write blob to OPFS outbox (flat — prefixed with toolFolder)
+  const outboxFilename = toolFolder + '_' + filename;
+  try {
+    const dir = await opfsDir(['outbox']);
+    await opfsWrite(dir, outboxFilename, blob);
+  } catch(e) { console.warn('OPFS write failed:', e.message); }
+
+  // Store metadata in IDB
+  return await idbOutboxAdd({
+    filename, outboxFilename, toolFolder,
+    mimeType: blob.type || 'application/octet-stream',
+    projectKey: SESSION.projectKey,
+    userFolder: SESSION.userFolder,
+    ts: Date.now(),
+    status: 'pending',
+    retries: 0,
+  });
+}
+
+async function outboxMarkSent(item) {
+  // /sent/ already written at export time — just delete from outbox
+  try {
+    const outboxDir = await opfsDir(['outbox']);
+    await opfsDelete(outboxDir, item.outboxFilename);
+  } catch(e) { console.warn('OPFS outbox cleanup:', e.message); }
+  await idbOutboxDelete(item.id);
+}
+
+// ── Drive push (network-aware) ────────────────────────────────────────
+async function doPushToDrive(filename, blob, toolFolder, projectKey, userFolder) {
+  const scriptUrl = APP_CONFIG.projects[projectKey]?.scriptUrl;
+  if (!scriptUrl || scriptUrl.startsWith('PLACEHOLDER')) return false;
+  try {
+    const b64 = await blobToBase64(blob);
+    await fetch(scriptUrl, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        username: userFolder, toolFolder, filename,
+        fileData: b64, mimeType: blob.type || 'application/octet-stream',
+      }),
+    });
+    return true;
+  } catch(e) { return false; }
+}
+
+// ── Main export upload entry point (replaces old pushToDrive) ────────
+async function uploadFile(filename, blob, toolFolder) {
+  if (!SESSION.setupDone || !SESSION.projectKey) return;
+
+  // 1. Enqueue to OPFS outbox (always — gives us local persistence)
+  const item = { filename, outboxFilename: toolFolder + '_' + filename,
+    toolFolder, mimeType: blob.type || 'application/octet-stream',
+    projectKey: SESSION.projectKey, userFolder: SESSION.userFolder,
+    ts: Date.now(), status: 'pending', retries: 0 };
+  const id = await outboxEnqueue(filename, blob, toolFolder);
+  item.id = id;
+
+  // 2. Attempt immediate push if online
+  if (navigator.onLine) {
+    const ok = await doPushToDrive(filename, blob, toolFolder, item.projectKey, item.userFolder);
+    if (ok) {
+      await outboxMarkSent(item);
+      outboxUpdateBadge();
+      return;
+    }
+  }
+
+  // 3. Failed or offline — stays in outbox, badge updated
+  outboxUpdateBadge();
+}
+
+// ── Batch upload (replaces pushAllToDrive) ────────────────────────────
+async function uploadAllFiles(files, toolFolder) {
+  const online = navigator.onLine;
+  setStatus(online ? '\u2601\ufe0f Syncing to Drive\u2026' : '\u26a0\ufe0f Offline \u2014 queued to outbox', '');
+
+  for (const { filename, blob } of files) {
+    await uploadFile(filename, blob, toolFolder);
+  }
+
+  const pending = (await idbOutboxGetAll()).length;
+  if (pending > 0) {
+    setStatus('\u26a0\ufe0f ' + pending + ' file(s) queued \u2014 will upload when online', '');
+  } else {
+    setStatus('\u2601\ufe0f Drive sync done', '');
+  }
+  outboxUpdateBadge();
+}
+
+// ── Outbox badge ──────────────────────────────────────────────────────
+async function outboxUpdateBadge() {
+  const badge = document.getElementById('tb-outbox-badge');
+  if (!badge) return;
+  try {
+    const items = await idbOutboxGetAll();
+    if (items.length > 0) {
+      badge.style.display = ''; badge.style.opacity='1'; badge.style.background='#b45309';
+      badge.textContent = '\ud83d\udce4 ' + items.length;
+      badge.title = items.length + ' file(s) pending upload';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+// ── Retry outbox on network reconnect ────────────────────────────────
+async function retryOutbox() {
+  if (!SESSION.setupDone) return;
+  const items = await idbOutboxGetAll();
+  if (!items.length) return;
+  setStatus('\u2601\ufe0f Network restored \u2014 uploading ' + items.length + ' queued file(s)\u2026', '');
+  let sent = 0;
+  for (const item of items) {
+    try {
+      const outboxDir = await opfsDir(['outbox']);
+      const blob = await opfsReadBlob(outboxDir, item.outboxFilename);
+      const ok = await doPushToDrive(item.filename, blob, item.toolFolder, item.projectKey, item.userFolder);
+      if (ok) { await outboxMarkSent(item); sent++; }
+    } catch(e) {}
+  }
+  outboxUpdateBadge();
+  const remaining = (await idbOutboxGetAll()).length;
+  setStatus(remaining === 0
+    ? '\u2601\ufe0f All queued files uploaded'
+    : '\u26a0\ufe0f ' + remaining + ' file(s) still pending', '');
+}
+
+window.addEventListener('online',  () => { retryOutbox(); retryDeferredJpgs(); });
+window.addEventListener('offline', () => {
+  setStatus('\u26a0\ufe0f No network \u2014 exports will queue to outbox', '');
+  outboxUpdateBadge();
+});
+
+// ── Outbox panel (opened from badge) ─────────────────────────────────
+async function openOutboxPanel(anchor) {
+  const items = await idbOutboxGetAll();
+  openCallout(anchor, async (box) => {
+    const title = document.createElement('div');
+    title.className = 'callout-title';
+    title.textContent = 'Outbox (' + items.length + ' pending)';
+    box.appendChild(title);
+
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:11px;color:var(--dim);padding:4px 0';
+      empty.textContent = 'All files uploaded \u2714';
+      box.appendChild(empty);
+      return;
+    }
+
+    // List pending files
+    const list = document.createElement('div');
+    list.style.cssText = 'max-height:160px;overflow-y:auto;font-size:10px;color:var(--mid);margin:4px 0';
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.style.cssText = 'padding:3px 0;border-bottom:1px solid var(--border)';
+      row.textContent = '\ud83d\udce4 ' + item.filename;
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+
+    const row = document.createElement('div');
+    row.className = 'callout-row';
+    row.style.marginTop = '8px';
+
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'copt';
+    retryBtn.textContent = '\u{1F504} Retry all';
+    retryBtn.onclick = () => { closeCallout(); retryOutbox(); };
+    row.appendChild(retryBtn);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'copt';
+    clearBtn.style.borderColor = '#dc2626';
+    clearBtn.textContent = '\u{1F5D1} Clear all';
+    clearBtn.onclick = async () => {
+      closeCallout();
+      for (const item of items) {
+        try {
+          const dir = await opfsDir(['outbox']);
+          await opfsDelete(dir, item.outboxFilename);
+          await idbOutboxDelete(item.id);
+        } catch(e) {}
+      }
+      outboxUpdateBadge();
+      setStatus('Outbox cleared.', '');
+    };
+    row.appendChild(clearBtn);
+    box.appendChild(row);
+  });
+}
+
+// ── Register service worker ───────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/ARRmapper/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(e => console.warn('SW registration failed:', e.message));
+  });
+  // Request persistent storage (auto-granted for PWA installs)
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().then(granted =>
+      console.log('Persistent storage:', granted ? 'granted' : 'not granted')
+    );
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// DEFERRED JPG EXPORT SYSTEM
+//
+// When the Google Static Maps API fetch fails (no network at export time),
+// the JPG capture returns noBasemap:true — a green-background image that
+// is useless for field documentation. Instead of uploading a blank image,
+// we serialize the map data needed to re-render it and queue a deferred
+// export job. When network restores, retryDeferredJpgs() re-runs the
+// full capture (new Maps API call) and uploads the real satellite image.
+//
+// IDB store: 'deferredJpgs' (added in IDB_VER 3)
+// Each job stores: tool type, filename(s), serialized plot + overlay data
+// ═══════════════════════════════════════════════════════════════════════
+
+async function idbDeferredAdd(job) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const req = db.transaction('deferredJpgs','readwrite')
+      .objectStore('deferredJpgs').add(job);
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function idbDeferredGetAll() {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const req = db.transaction('deferredJpgs','readonly')
+      .objectStore('deferredJpgs').getAll();
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+async function idbDeferredDelete(id) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const req = db.transaction('deferredJpgs','readwrite')
+      .objectStore('deferredJpgs').delete(id);
+    req.onsuccess = () => res();
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+// Queue a deferred soil JPG job
+function coordsToKMLStr(coords) {
+  return coords.map(c => c[0]+','+c[1]+',0').join(' ');
+}
+function geomToKML(g) {
+  if (!g) return '';
+  if (g.type === 'Point')
+    return '<Point><coordinates>'+g.coordinates[0]+','+g.coordinates[1]+',0</coordinates></Point>';
+  if (g.type === 'LineString')
+    return '<LineString><tessellate>1</tessellate><coordinates>'+coordsToKMLStr(g.coordinates)+'</coordinates></LineString>';
+  if (g.type === 'Polygon')
+    return '<Polygon><outerBoundaryIs><LinearRing><coordinates>'+coordsToKMLStr(g.coordinates[0])+'</coordinates></LinearRing></outerBoundaryIs></Polygon>';
+  if (g.type === 'MultiPolygon')
+    return '<MultiGeometry>'+g.coordinates.map(poly =>
+      '<Polygon><outerBoundaryIs><LinearRing><coordinates>'+coordsToKMLStr(poly[0])+'</coordinates></LinearRing></outerBoundaryIs></Polygon>'
+    ).join('')+'</MultiGeometry>';
+  return '';
+}
+function geojsonToKML(geojson, name) {
+  const placemarks = geojson.features.map(f => {
+    const props = Object.entries(f.properties||{}).map(([k,v])=>
+      '<Data name="'+k+'"><value>'+v+'</value></Data>').join('');
+    return '<Placemark><ExtendedData>'+props+'</ExtendedData>'+geomToKML(f.geometry)+'</Placemark>';
+  }).join('\n');
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+name+'</name>\n'+placemarks+'\n</Document></kml>';
+}
+
+// ── OPFS write helpers for export ─────────────────────────────────────
+async function opfsSaveToSent(toolFolder, filename, blob) {
+  try {
+    const dir = await opfsDir(['sent', toolFolder]);
+    await opfsWrite(dir, filename, blob);
+  } catch(e) { console.warn('OPFS sent write failed:', filename, e.message); }
+}
+async function opfsSaveGeoJSON(toolFolder, filename, geojson) {
+  try {
+    const dir = await opfsDir(['geojson', toolFolder]);
+    const blob = new Blob([JSON.stringify(geojson, null, 2)], { type:'application/geo+json' });
+    await opfsWrite(dir, filename, blob);
+  } catch(e) { console.warn('OPFS geojson write failed:', filename, e.message); }
+}
+
+// ── Unsaved work detection ────────────────────────────────────────────
+function hasUnsavedWork() {
+  if ((APP_MODE === 'plant' || APP_MODE === 'soil') && !exportDone) {
+    // no block-based state in Vector Tool
+  }
+  if (APP_MODE === 'vec' && vecTool &&
+      (vecVertices.length > 0 || vecGpsPoints.length > 0)) return true;
+  return false;
+}
+function unsavedToolName() {
+  return '📐 Vector Tool';
+}
+let _filesPriorMode = 'vec';
+
+// ── Files mode entry ──────────────────────────────────────────────────
+function filesEnterMode() {
+  _filesPriorMode = APP_MODE === 'files' ? _filesPriorMode : APP_MODE;
+  const warn  = document.getElementById('files-unsaved-warn');
+  const browser = document.getElementById('files-browser');
+  if (hasUnsavedWork()) {
+    warn.style.display = '';
+    browser.style.display = 'none';
+    const msg = document.getElementById('files-unsaved-msg');
+    if (msg) msg.textContent = Lang.files_unsaved_msg ? Lang.files_unsaved_msg(unsavedToolName()) : 'You have unsaved work in ' + unsavedToolName() + '. Discard to browse files, or export first.';
+    const backBtn = document.getElementById('files-goback-btn');
+    if (backBtn) backBtn.textContent = Lang.files_back_to ? Lang.files_back_to(unsavedToolName()) : '\u21a9\ufe0f Back to ' + unsavedToolName();
+  } else {
+    warn.style.display = 'none';
+    browser.style.display = '';
+    filesRefresh();
+  }
+  // Update outbox count
+  idbOutboxGetAll().then(items => {
+    const el = document.getElementById('files-outbox-count');
+    if (el) el.textContent = items.length > 0 ? '\u{1F4E4} ' + (Lang.files_pending ? Lang.files_pending(items.length) : items.length + ' pending upload') : '';
+  }).catch(() => {});
+}
+
+function filesDiscardAndBrowse() {
+  // Clear unsaved work and show browser
+  blocks = []; usedKeys = new Set(); globalGrid = [];
+  // soilBlocks removed — Vector Tool only
+  if (typeof vecCancelAll === 'function') vecCancelAll();
+  exportDone = true;
+  document.getElementById('files-unsaved-warn').style.display = 'none';
+  document.getElementById('files-browser').style.display = '';
+  filesRefresh();
+}
+
+function filesGoBack() {
+  switchTab(_filesPriorMode || 'plant');
+}
+
+// ── Files browser ─────────────────────────────────────────────────────
+let _filesViewLayer = null, _filesViewActiveFname = null;
+
+async function filesRefresh() {
+  const list = document.getElementById('files-list');
+  if (!list) return;
+  list.innerHTML = '<div style="font-size:11px;color:var(--dim);padding:8px">'+(Lang.files_loading||'Loading\u2026')+'</div>';
+
+  try {
+    const root = await opfsRoot();
+    const sentDir  = await opfsDir(['sent'],    false).catch(() => null);
+    const geojDir  = await opfsDir(['geojson'], false).catch(() => null);
+
+    list.innerHTML = '';
+
+    // ── Sent files ──
+    if (sentDir) {
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:10px;font-weight:700;color:var(--leaf);padding:6px 4px 2px;text-transform:uppercase;letter-spacing:.05em';
+      header.textContent = Lang.files_saved_hdr || '📂 Saved files';
+      list.appendChild(header);
+
+      const TOOL_ORDER = ['PlantationMapper','SoilMapper','VectorTool'];
+      let anyFile = false;
+      for (const toolName of TOOL_ORDER) {
+        let toolHandle;
+        try { toolHandle = await sentDir.getDirectoryHandle(toolName); } catch(e) { continue; }
+        const files = await opfsList(toolHandle);
+        if (!files.length) continue;
+        anyFile = true;
+        const toolId = 'sent-tool-' + toolName;
+        const icons = {PlantationMapper:'🌱',SoilMapper:'🧪',VectorTool:'📐'};
+        const toolHdr = document.createElement('div');
+        toolHdr.style.cssText = 'font-size:10px;font-weight:700;color:var(--dim);padding:5px 4px 2px;border-top:1px solid #374151;margin-top:4px;cursor:pointer;display:flex;align-items:center;gap:4px';
+        toolHdr.innerHTML = `<span>${icons[toolName]||''} ${toolName}</span><span id="${toolId}-chv" style="margin-left:auto;font-size:8px">▼</span>`;
+        const toolBody = document.createElement('div');
+        toolBody.id = toolId;
+        toolHdr.onclick = () => { const h = toolBody.style.display==='none'; toolBody.style.display=h?'':'none'; document.getElementById(toolId+'-chv').textContent=h?'▼':'▶'; };
+        list.appendChild(toolHdr);
+        list.appendChild(toolBody);
+        files.sort().reverse();
+        const sessions = {};
+        files.forEach(f => { const m=f.match(/_([0-9]{8}_[0-9]{6})/); const k=m?m[1]:'other'; if(!sessions[k])sessions[k]=[]; sessions[k].push(f); });
+        Object.entries(sessions).forEach(([ts, sf]) => {
+          const sh = document.createElement('div');
+          sh.style.cssText = 'font-size:9px;color:var(--dim);padding:3px 4px 1px;margin-top:2px';
+          sh.textContent = ts.replace('_',' ');
+          toolBody.appendChild(sh);
+          sf.forEach(fname => toolBody.appendChild(filesRowEl(fname, toolName, toolHandle, false)));
+        });
+      }
+      if (!anyFile) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'font-size:11px;color:var(--dim);padding:8px 4px';
+        empty.textContent = Lang.files_no_saved || 'No saved files yet.';
+        list.appendChild(empty);
+      }
+    }
+
+    // ── GeoJSON audit ──
+    if (geojDir) {
+      const gjHdr = document.createElement('div');
+      gjHdr.style.cssText = 'font-size:10px;font-weight:700;color:var(--leaf);padding:10px 4px 2px;text-transform:uppercase;letter-spacing:.05em;border-top:1px solid #374151;margin-top:8px';
+      gjHdr.textContent = Lang.files_geojson_hdr || '📍 GeoJSON audit (read-only)';
+      list.appendChild(gjHdr);
+
+      let anyGJ = false;
+      for await (const [toolName, toolHandle] of geojDir.entries()) {
+        if (toolHandle.kind !== 'directory') continue;
+        const files = await opfsList(toolHandle);
+        if (!files.length) continue;
+        anyGJ = true;
+        const toolHdr = document.createElement('div');
+        toolHdr.style.cssText = 'font-size:10px;color:var(--dim);padding:4px 4px 2px';
+        toolHdr.textContent = toolName;
+        list.appendChild(toolHdr);
+        files.sort().reverse();
+        for (const fname of files) {
+          const row = filesRowEl(fname, toolName, toolHandle, true);
+          list.appendChild(row);
+        }
+      }
+      if (!anyGJ) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'font-size:11px;color:var(--dim);padding:4px';
+        empty.textContent = Lang.files_no_geojson || 'No GeoJSON files yet.';
+        list.appendChild(empty);
+      }
+    }
+  } catch(e) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--red);padding:8px">'+(Lang.files_err_load||'Error loading files: ') + e.message + '</div>';
+  }
+}
+
+function filesRowEl(fname, toolName, dirHandle, isGeojson) {
+  const ext = fname.split('.').pop().toLowerCase();
+  const isImg = ext === 'jpg' || ext === 'jpeg' || ext === 'png';
+  const isZip = ext === 'zip';
+  const isKml = ext === 'kml';
+  const isGj  = ext === 'geojson';
+
+  const row = document.createElement('div');
+  row.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:6px;padding:5px 6px;font-size:10px;color:var(--mid);display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:2px 0';
+
+  const nameEl = document.createElement('span');
+  nameEl.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;color:var(--dim);max-width:140px';
+  nameEl.textContent = fname;
+  nameEl.title = fname;
+  row.appendChild(nameEl);
+
+  const btns = document.createElement('div');
+  btns.style.cssText = 'display:flex;gap:3px;flex-shrink:0';
+
+  // View button — for ZIPs (need GeoJSON) + JPGs + GeoJSONs
+  if (isZip || isImg || isGj) {
+    const vBtn = smallBtn('👁', Lang.files_view || 'View on map');
+    vBtn.dataset.fname = fname;
+    vBtn.onclick = () => {
+      // Toggle: if this file is already displayed, remove it
+      if (_filesViewLayer && _filesViewActiveFname === fname) {
+        map.removeLayer(_filesViewLayer); _filesViewLayer = null; _filesViewActiveFname = null;
+        vBtn.style.background = '#374151'; setStatus('', ''); return;
+      }
+      _filesViewActiveFname = fname;
+      // Reset all other view buttons
+      document.querySelectorAll('[data-fname]').forEach(b => b.style.background = '#374151');
+      vBtn.style.background = '#0d7377';
+      filesViewFile(fname, toolName, dirHandle, isGeojson);
+    };
+    btns.appendChild(vBtn);
+  }
+
+  // → KML button — for ZIPs and GeoJSONs (convert via geojson sidecar)
+  if ((isZip || isGj) && !isGeojson) {
+    const kBtn = smallBtn('\u{1F4C4}\u2192KML', 'Convert to KML');
+    kBtn.textContent = (Lang.files_to_kml||'\u{1F4C4}\u2192KML').length > 6 ? '\u{1F4C4}\u2192KML' : Lang.files_to_kml||'\u{1F4C4}\u2192KML';
+    kBtn.style.fontSize = '8px';
+    kBtn.onclick = () => filesConvertToKML(fname, toolName);
+    btns.appendChild(kBtn);
+  }
+
+  // Download button — for GeoJSONs
+  if (isGj) {
+    const dBtn = smallBtn('⬇', Lang.files_dl_geojson || 'Download GeoJSON');
+    dBtn.onclick = () => filesDownload(fname, dirHandle, 'application/geo+json');
+    btns.appendChild(dBtn);
+  }
+  if (isGj) {
+    const bndBtn = smallBtn('📌', 'Use as plot boundary');
+    bndBtn.style.color='#f59e0b';
+    bndBtn.onclick = () => filesLoadAsBoundary(fname, dirHandle);
+    btns.appendChild(bndBtn);
+  }
+  if ((isZip||isImg||isKml||isGj) && navigator.canShare) {
+    const shareBtn = smallBtn('📤', 'Share');
+    shareBtn.onclick = () => filesShare(fname, dirHandle, isImg?'image/jpeg':isGj?'application/geo+json':isZip?'application/zip':'application/vnd.google-earth.kml+xml');
+    btns.appendChild(shareBtn);
+  }
+
+  // Delete — only for sent files (not geojson audit)
+  if (!isGeojson && (isZip || isImg || isKml)) {
+    const delBtn = smallBtn('🗑', Lang.files_delete || 'Delete');
+    delBtn.style.color = '#f87171';
+    delBtn.onclick = () => filesDelete(fname, toolName, dirHandle, row);
+    btns.appendChild(delBtn);
+  }
+
+  row.appendChild(btns);
+  return row;
+}
+
+function smallBtn(icon, title) {
+  const b = document.createElement('button');
+  b.textContent = icon; b.title = title;
+  b.style.cssText = 'background:var(--mint);border:none;border-radius:4px;color:var(--ink);font-size:11px;padding:2px 5px;cursor:pointer;white-space:nowrap';
+  return b;
+}
+
+async function filesViewFile(fname, toolName, dirHandle, isGeojson) {
+  if (hasUnsavedWork()) {
+    filesEnterMode(); return;
+  }
+  try {
+    let geojson;
+    if (fname.endsWith('.geojson')) {
+      const file = await opfsReadBlob(dirHandle, fname);
+      geojson = JSON.parse(await file.text());
+    } else if (fname.endsWith('.jpg') || fname.endsWith('.jpeg')) {
+      // Show JPG in a simple overlay
+      const file = await opfsReadBlob(dirHandle, fname);
+      const url = URL.createObjectURL(file);
+      const img = document.createElement('img');
+      img.src = url; img.style.cssText = 'max-width:100%;max-height:80vh;display:block;margin:auto';
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px';
+      overlay.onclick = () => { URL.revokeObjectURL(url); document.body.removeChild(overlay); };
+      overlay.appendChild(img);
+      const close = document.createElement('div');
+      close.textContent = Lang.files_tap_close || 'Tap to close'; close.style.cssText = 'color:var(--dim);font-size:11px;margin-top:8px';
+      overlay.appendChild(close);
+      document.body.appendChild(overlay);
+      return;
+    } else if (fname.endsWith('.zip')) {
+      // Find matching GeoJSON sidecar in /geojson/toolFolder/
+      const gjName = fname.replace(/\.zip$/, '.geojson');
+      try {
+        const gjDir = await opfsDir(['geojson', toolName], false);
+        const gjFile = await opfsReadBlob(gjDir, gjName);
+        geojson = JSON.parse(await gjFile.text());
+      } catch(e) {
+        setStatus(Lang.files_no_sidecar ? Lang.files_no_sidecar(fname) : '\u26a0\ufe0f No GeoJSON found for ' + fname, ''); return;
+      }
+    }
+    if (!geojson) return;
+
+    // Clear existing drawn layers + render on map
+    if (_filesViewLayer) { map.removeLayer(_filesViewLayer); _filesViewLayer = null; }
+    _filesViewActiveFname = null;
+    _filesViewLayer = L.geoJSON(geojson, {
+      style: f => ({ color: f.properties?.color || '#3b82f6', weight: 2, fillOpacity: 0.3 }),
+      pointToLayer: (f, ll) => L.circleMarker(ll, {
+        radius: 5, fillColor: f.properties?.color || '#3b82f6',
+        color: '#fff', weight: 1, fillOpacity: 0.9
+      }),
+      onEachFeature: (f, layer) => {
+        if (f.properties) {
+          const info = Object.entries(f.properties).map(([k,v]) => k+': '+v).join('<br>');
+          layer.bindPopup(info);
+        }
+      }
+    }).addTo(map);
+    const bounds = _filesViewLayer.getBounds();
+    if (bounds.isValid()) map.fitBounds(bounds, { padding:[20,20] });
+    setStatus(Lang.files_viewing ? Lang.files_viewing(fname) : '👁 Viewing ' + fname, '');
+    // Show "pin as overlay" option in the layer list
+    renderLayerList();
+  } catch(e) {
+    setStatus((Lang.files_err_view||'Error viewing file: ') + e.message, 'err');
+  }
+}
+
+async function filesConvertToKML(fname, toolName) {
+  const gjName = fname.replace(/\.(zip|geojson)$/, '.geojson');
+  try {
+    const gjDir  = await opfsDir(['geojson', toolName], false);
+    const gjFile = await opfsReadBlob(gjDir, gjName);
+    const geojson = JSON.parse(await gjFile.text());
+    const kmlName = gjName.replace('.geojson', '.kml');
+    const kml = geojsonToKML(geojson, kmlName.replace('.kml',''));
+    dlBlob(kmlName, new Blob([kml], { type:'application/vnd.google-earth.kml+xml' }));
+    setStatus(Lang.files_kml_done ? Lang.files_kml_done(kmlName) : '\U0001f4c4 KML: ' + kmlName, '');
+  } catch(e) {
+    setStatus((Lang.files_err_kml||'KML convert failed: ') + e.message, 'err');
+  }
+}
+
+async function filesLoadAsBoundary(fname, dirHandle) {
+  try {
+    const file = await opfsReadBlob(dirHandle, fname);
+    const gj = JSON.parse(await file.text());
+    const feat = gj.features?.find(f=>f.geometry?.type==='Polygon'||f.geometry?.type==='MultiPolygon');
+    if (!feat) { setStatus('No polygon found.','err'); return; }
+    const coords = feat.geometry.type==='Polygon'?feat.geometry.coordinates[0]:feat.geometry.coordinates[0][0];
+    const tC = coords.map(([lon,lat])=>[lon,lat]);
+    if (tC[0][0]!==tC[tC.length-1][0]||tC[0][1]!==tC[tC.length-1][1]) tC.push(tC[0]);
+    plotPoly = turf.polygon([tC]);
+    boundaryLayer.clearLayers(); gridLayer.clearLayers();
+    globalGrid=[]; usedKeys=new Set();
+    kmlBaseName = fname.replace(/\.geojson$/,'');
+    const llPoly = L.polygon(tC.map(([lon,lat])=>[lat,lon]),{color:'#f97316',weight:2.5,dashArray:'6 4',fillOpacity:0.05});
+    llPoly.addTo(boundaryLayer);
+    map.fitBounds(llPoly.getBounds(),{padding:[16,16]});
+    setStatus('Boundary loaded: '+fname,'');
+    switchTab(_filesPriorMode || 'plant');
+  } catch(e) { setStatus('Failed: '+e.message,'err'); }
+}
+
+async function filesShare(fname, dirHandle, mimeType) {
+  try {
+    const blob = await opfsReadBlob(dirHandle, fname);
+    const shareFile = new File([blob], fname, {type:mimeType});
+    if (navigator.canShare({files:[shareFile]})) {
+      await navigator.share({files:[shareFile], title:fname});
+    } else { filesDownload(fname, dirHandle, mimeType); }
+  } catch(e) { if (e.name!=='AbortError') setStatus('Share failed: '+e.message,'err'); }
+}
+
+async function filesDownload(fname, dirHandle, mimeType) {
+  try {
+    const file = await opfsReadBlob(dirHandle, fname);
+    dlBlob(fname, new Blob([await file.arrayBuffer()], { type: mimeType }));
+  } catch(e) {
+    setStatus((Lang.files_err_dl||'Download failed: ') + e.message, 'err');
+  }
+}
+
+async function filesDelete(fname, toolName, dirHandle, rowEl) {
+  if (!confirm(Lang.files_delete_confirm ? Lang.files_delete_confirm(fname) : 'Delete ' + fname + '?\n\nThis removes the on-device copy. Drive copy is unaffected.')) return;
+  try {
+    await opfsDelete(dirHandle, fname);
+    rowEl.remove();
+    setStatus(Lang.files_deleted ? Lang.files_deleted(fname) : '🗑 Deleted: ' + fname, '');
+  } catch(e) {
+    setStatus((Lang.files_err_del||'Delete failed: ') + e.message, 'err');
+  }
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════════════
+
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// PORTRAIT MODE JS  —  species grid, soil grid, +/- controls,
+//                      float draw buttons, sidebar toggle
+// ═══════════════════════════════════════════════════════════════════════
+
+
+// Wraps vecExportKML — for manual features, shows edit panel instead of
+// immediately exporting. GPS features export directly as before.
+async function vecExportKMLWithEdit(geomType, coords) {
+  const isGPS = vecTool && vecTool.endsWith('-g');
+  if (isGPS) {
+    // GPS features: show a lightweight stage prompt before exporting
+    const stageOpts = [
+      ['eligibility','Eligibility check'],['negotiated','Negotiated boundary'],
+      ['surveyed','Surveyor (amin) boundary'],['cleared','Post-clearing boundary'],
+      ['final','Final (post-fencing)'],['revised','Revised']
+    ];
+    const chosen = await new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+      const box = document.createElement('div');
+      box.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;min-width:220px;max-width:290px';
+      box.innerHTML = '<div style="font-size:12px;color:var(--ink);font-weight:600;margin-bottom:10px">Polygon stage</div>';
+      stageOpts.forEach(([val, label]) => {
+        const b = document.createElement('button');
+        b.style.cssText = 'display:block;width:100%;text-align:left;background:var(--mint);border:none;border-radius:6px;color:var(--ink);font-size:11px;padding:7px 10px;margin-bottom:5px;cursor:pointer';
+        b.textContent = label;
+        b.onclick = () => { document.body.removeChild(overlay); resolve(val); };
+        box.appendChild(b);
+      });
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+    });
+    let revReason = null;
+    if (chosen === 'revised') {
+      const revOpts = [['flood_hazard','Flood hazard'],['fire_hazard','Fire hazard'],['bank_erosion','Bank erosion'],['beneficiary_dropout','Beneficiary dropout'],['encroachment','Encroachment'],['other','Other']];
+      revReason = await new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+        const box = document.createElement('div');
+        box.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;min-width:220px;max-width:290px';
+        box.innerHTML = '<div style="font-size:12px;color:var(--ink);font-weight:600;margin-bottom:10px">Revision reason</div>';
+        revOpts.forEach(([val, label]) => {
+          const b = document.createElement('button');
+          b.style.cssText = 'display:block;width:100%;text-align:left;background:var(--mint);border:none;border-radius:6px;color:var(--ink);font-size:11px;padding:7px 10px;margin-bottom:5px;cursor:pointer';
+          b.textContent = label;
+          b.onclick = () => { document.body.removeChild(overlay); resolve(val); };
+          box.appendChild(b);
+        });
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+      });
+    }
+    await vecExportKML(geomType, coords, chosen, revReason);
+    return;
+  }
+
+  // Build a Leaflet layer for editing
+  const lls = coords.map(([lon, lat]) => [lat, lon]);
+  let editLayer;
+  if (geomType === 'poly') {
+    editLayer = L.polygon(lls, { color:'#f59e0b', weight:2.5, fillOpacity:.1 });
+  } else if (geomType === 'path') {
+    editLayer = L.polyline(lls, { color:'#f59e0b', weight:3 });
+  } else {
+    // POI — no vertex edit, export directly
+    await vecExportKML(geomType, coords); return;
+  }
+
+  // Save metadata for later export
+  const raw  = (document.getElementById('vec-feat-name').value.trim() || 'feature');
+  const _stageSel = document.getElementById('vec-stage-sel');
+  const _revSel   = document.getElementById('vec-revision-sel');
+  const _stage    = _stageSel ? _stageSel.value : 'eligibility';
+  const _revReason = (_stage === 'revised' && _revSel) ? _revSel.value : null;
+  _vecEditMeta   = { geomType, name: raw, type: vecSelectedType || 'other', stage: _stage, revision_reason: _revReason };
+  _vecEditCoords = coords;
+  _vecEditLayer  = editLayer;
+
+  // Add to map and enable vertex editing
+  vecLayer.clearLayers();
+  editLayer.addTo(vecLayer);
+  if (editLayer.editing) editLayer.editing.enable();
+
+  // Show edit panel, hide controls
+  document.getElementById('vec-sec-edit').style.display = '';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  // Reset stage selector and revision row
+  const stageSel = document.getElementById('vec-stage-sel');
+  if (stageSel) { stageSel.value = 'eligibility'; }
+  const revRow = document.getElementById('vec-revision-row');
+  if (revRow) revRow.style.display = 'none';
+  if (stageSel && revRow) {
+    stageSel.onchange = () => {
+      revRow.style.display = stageSel.value === 'revised' ? '' : 'none';
+    };
+  }
+  setStatus('✏️ Drag vertices to adjust — then Save or Discard', '');
+}
+
+async function vecSaveEdit() {
+  if (!_vecEditLayer || !_vecEditMeta) return;
+
+  // Extract updated coords from the edited layer
+  let coords;
+  if (_vecEditMeta.geomType === 'poly') {
+    const lls = _vecEditLayer.getLatLngs()[0];
+    coords = lls.map(ll => [ll.lng, ll.lat]);
+    if (coords[0][0] !== coords[coords.length-1][0]) coords.push(coords[0]);
+  } else {
+    coords = _vecEditLayer.getLatLngs().map(ll => [ll.lng, ll.lat]);
+  }
+
+  if (_vecEditLayer.editing) _vecEditLayer.editing.disable();
+  document.getElementById('vec-sec-edit').style.display = 'none';
+
+  // Export with updated coords, carrying stage metadata
+  await vecExportKML(_vecEditMeta.geomType, coords, _vecEditMeta.stage, _vecEditMeta.revision_reason);
+  _vecEditLayer = null; _vecEditCoords = null; _vecEditMeta = null;
+}
+
+function vecDiscardEdit() {
+  if (_vecEditLayer && _vecEditLayer.editing) _vecEditLayer.editing.disable();
+  vecLayer.clearLayers();
+  _vecEditLayer = null; _vecEditCoords = null; _vecEditMeta = null;
+  document.getElementById('vec-sec-edit').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = '';
+  setStatus('Edit discarded.', '');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MULTI-LAYER OPFS VIEW
+// ═══════════════════════════════════════════════════════════════════════
+
+
+// with no sign-convention mismatch later.
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// ── Legacy Plot Sync ──────────────────────────────────────────────────
+// Fetches GeoJSONs from ARRmapper/VectorTool/_legacy/ in Drive and
+// writes them to OPFS /geojson/VectorTool/_legacy/ on the device.
+// Only downloads files not already present (diff by filename).
+
+const LEGACY_OPFS_PATH = ['geojson', 'VectorTool', '_legacy'];
+
+async function syncLegacyPlots() {
+  const btn    = document.getElementById('btn-sync-legacy');
+  const status = document.getElementById('legacy-sync-status');
+
+  if (!SESSION.setupDone || !SESSION.projectKey) {
+    status.textContent = '⚠️ Sign in first.';
+    status.style.color = '#fbbf24';
+    return;
+  }
+  const scriptUrl = APP_CONFIG.projects[SESSION.projectKey]?.scriptUrl;
+  if (!scriptUrl || scriptUrl.startsWith('PLACEHOLDER')) {
+    status.textContent = '⚠️ No script URL for this project.';
+    status.style.color = '#f87171';
+    return;
+  }
+
+  btn.disabled = true;
+  status.style.color = '#9ca3af';
+  status.textContent = 'Checking Drive…';
+
+  try {
+    // 1. Get list of files available in Drive _legacy/
+    const listResp = await fetch(scriptUrl + '?action=listLegacy');
+    const listData = await listResp.json();
+    if (!listData.ok) throw new Error(listData.error || 'listLegacy failed');
+
+    const driveFiles = listData.files; // array of filenames
+
+    // 2. Get list of files already in OPFS _legacy/
+    const legacyDir  = await opfsDir(LEGACY_OPFS_PATH, true);
+    const localFiles = new Set(await opfsList(legacyDir));
+
+    const toFetch = driveFiles.filter(f => !localFiles.has(f));
+
+    if (toFetch.length === 0) {
+      status.textContent = `✅ Already up to date (${driveFiles.length} plots).`;
+      status.style.color = '#6ee7b7';
+      btn.disabled = false;
+      return;
+    }
+
+    status.textContent = `Downloading ${toFetch.length} new plots…`;
+
+    // 3. Fetch each missing file sequentially (avoid hammering Apps Script)
+    let done = 0, failed = 0;
+    for (const fname of toFetch) {
+      try {
+        const resp = await fetch(scriptUrl + '?action=getLegacyFile&name=' + encodeURIComponent(fname));
+        const data = await resp.json();
+        if (!data.ok) throw new Error(data.error);
+        const blob = new Blob([data.content], { type: 'application/geo+json' });
+        await opfsWrite(legacyDir, fname, blob);
+        done++;
+        status.textContent = `Downloading… ${done}/${toFetch.length}`;
+      } catch (e) {
+        console.warn('Legacy fetch failed:', fname, e.message);
+        failed++;
+      }
+    }
+
+    const total = (await opfsList(legacyDir)).length;
+    status.textContent = `✅ Synced ${done} new plots${failed ? ` (${failed} failed)` : ''} — ${total} total on device.`;
+    status.style.color = failed ? '#fbbf24' : '#6ee7b7';
+
+      
+  } catch (e) {
+    status.textContent = '❌ Sync failed: ' + e.message;
+    status.style.color = '#f87171';
+    console.error('syncLegacyPlots:', e);
+  }
+
+  btn.disabled = false;
+}
+
+// MRV Tool removed — moved to appMonitoringDashboard
+
+
+const MAX_OVERLAY_LAYERS = 5;
+let overlayLayers = [];   // [{id, name, path, toolFolder, layer, visible}]
+
+async function openLayerPicker() {
+  const panel = document.getElementById('layer-picker-panel');
+  if (!panel) return;
+  panel.style.display = panel.style.display === 'none' ? '' : 'none';
+  if (panel.style.display === '') await layerPickerRefresh();
+}
+
+async function layerPickerRefresh() {
+  const list = document.getElementById('layer-picker-list');
+  if (!list) return;
+  list.innerHTML = '<div style="font-size:10px;color:var(--dim)">Loading…</div>';
+  const items = [];
+  const tools = ['VectorTool','PlantationMapper','SoilMapper'];
+  for (const tool of tools) {
+    try {
+      const dir = await opfsDir(['geojson', tool], false);
+      const files = await opfsList(dir);
+      files.filter(f => f.endsWith('.geojson')).forEach(f => {
+        items.push({ path: f, toolFolder: tool, name: f.replace('.geojson','') });
+      });
+    } catch(e) {}
+  }
+  if (!items.length) { list.innerHTML = '<div style="font-size:10px;color:var(--dim)">No GeoJSON files found.</div>'; return; }
+  list.innerHTML = '';
+  items.forEach(item => {
+    const alreadyOn = overlayLayers.find(l => l.path === item.path && l.toolFolder === item.toolFolder);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #1f2937;font-size:10px;color:var(--mid)';
+    const nameEl = document.createElement('span');
+    nameEl.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    nameEl.textContent = item.name;
+    nameEl.title = item.toolFolder + '/' + item.name;
+    const addBtn = document.createElement('button');
+    addBtn.textContent = alreadyOn ? '✓ On' : '+ Add';
+    addBtn.style.cssText = 'background:var(--mint);border:none;border-radius:4px;color:var(--ink);font-size:9px;padding:2px 6px;cursor:pointer;flex-shrink:0';
+    addBtn.disabled = !!alreadyOn || overlayLayers.length >= MAX_OVERLAY_LAYERS;
+    addBtn.onclick = async () => { await addOverlayLayer(item); await layerPickerRefresh(); renderLayerList(); };
+    row.appendChild(nameEl);
+    row.appendChild(addBtn);
+    list.appendChild(row);
+  });
+}
+
+async function addOverlayLayer(item) {
+  if (overlayLayers.length >= MAX_OVERLAY_LAYERS) { setStatus('Max 5 overlay layers.', 'warn'); return; }
+  try {
+    const dir = await opfsDir(['geojson', item.toolFolder], false);
+    const file = await opfsReadBlob(dir, item.path);
+    const gj = JSON.parse(await file.text());
+
+    // Viewport filter: skip if bbox doesn't intersect current map view (zoom > 12)
+    if (map.getZoom() > 12) {
+      try {
+        const bounds = turf.bbox(gj);
+        const mapB = map.getBounds();
+        const intersects = bounds[0] < mapB.getEast() && bounds[2] > mapB.getWest() &&
+                           bounds[1] < mapB.getNorth() && bounds[3] > mapB.getSouth();
+        if (!intersects) { setStatus('Layer is outside current view area.', 'warn'); return; }
+      } catch(e) {}
+    }
+
+    const COLORS = ['#f59e0b','#3b82f6','#10b981','#f97316','#8b5cf6'];
+    const color = COLORS[overlayLayers.length % COLORS.length];
+    const layer = L.geoJSON(gj, {
+      style: () => ({ color, weight:2, fillOpacity:0.2 }),
+      pointToLayer: (f, ll) => L.circleMarker(ll, { radius:5, fillColor:color, color:'#fff', weight:1, fillOpacity:.9 }),
+    }).addTo(map);
+
+    const id = Date.now() + Math.random();
+    overlayLayers.push({ id, name: item.name, path: item.path, toolFolder: item.toolFolder, layer, visible: true, color });
+    setStatus('Layer added: ' + item.name, '');
+  } catch(e) { setStatus('Load failed: ' + e.message, 'err'); }
+}
+
+function renderLayerList() {
+  const list = document.getElementById('overlay-layer-list');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!overlayLayers.length) { list.style.display = 'none'; return; }
+  list.style.display = '';
+  overlayLayers.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:5px;padding:4px 6px;background:var(--card);border-radius:5px;margin-bottom:3px;font-size:10px';
+    const dot = document.createElement('span');
+    dot.style.cssText = `width:10px;height:10px;border-radius:50%;background:${item.color};flex-shrink:0`;
+    const name = document.createElement('span');
+    name.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mid)';
+    name.textContent = item.name; name.title = item.name;
+    const visBtn = document.createElement('button');
+    visBtn.textContent = item.visible ? '👁' : '👁‍🗨';
+    visBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px';
+    visBtn.onclick = () => {
+      item.visible = !item.visible;
+      item.visible ? item.layer.addTo(map) : map.removeLayer(item.layer);
+      renderLayerList();
+    };
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.style.cssText = 'background:none;border:none;cursor:pointer;color:var(--red);font-size:12px;padding:0 2px';
+    delBtn.onclick = () => {
+      map.removeLayer(item.layer);
+      overlayLayers.splice(idx, 1);
+      renderLayerList();
+    };
+    row.appendChild(dot); row.appendChild(name); row.appendChild(visBtn); row.appendChild(delBtn);
+    list.appendChild(row);
+  });
+}
+
+
+const SOIL_TYPE_INFO = {
+  S:  { label: 'Sandy',            hi: '\u092c\u0932\u0941\u0908',                                   bn: '\u09ac\u09c7\u09b2\u09c7',                                       color: '#f5deb3' },
+  SL: { label: 'Sandy Loam',       hi: '\u092c\u0932\u0941\u0908 \u0926\u094b\u092e\u091f',          bn: '\u09ac\u09c7\u09b2\u09c7 \u09a6\u09cb\u0986\u0981\u09b6',        color: '#deb887' },
+  L:  { label: 'Loam',             hi: '\u0926\u094b\u092e\u091f',                                   bn: '\u09a6\u09cb\u0986\u0981\u09b6',                                  color: '#cd853f' },
+
+
+
+// ── Basemap cycle: SAT→MAP→MIX ───────────────────────────────────────
+const _basemapCycle = ['🌐','🌏','🗺'];
+let _basemapIdx = 0;
+function cycleBasemap(btn) {
+  _basemapIdx = (_basemapIdx + 1) % _basemapCycle.length;
+  btn.textContent = _basemapCycle[_basemapIdx];
+  [esriLayer, osmLayer, satLabelsLayer].forEach(l => { if (l && map.hasLayer(l)) map.removeLayer(l); });
+  if      (_basemapIdx === 0) esriLayer.addTo(map);       // 🌐 Satellite
+  else if (_basemapIdx === 1) osmLayer.addTo(map);         // 🌏 Map
+  else                        satLabelsLayer.addTo(map);   // 🗺 Hybrid
+}
+
+// ── Language cycle: ENG→বাংলা→हिंदी ────────────────────────────────
+const _langCycle = [['en','E'],['bn','ব'],['hi','ह']];
+let _langIdx = 0;
+function cycleLang(btn) {
+  _langIdx = (_langIdx + 1) % _langCycle.length;
+  const [code, label] = _langCycle[_langIdx];
+  btn.textContent = label;
+  setLang(code);
+}
+
+window.addEventListener('load', ()=>{ init(); setLang('en'); switchTab('vec'); updateSbar(); initThemeBtn(); });
+</script>
+</body>
+</html>
