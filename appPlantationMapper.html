@@ -749,7 +749,7 @@ async function pushAllToDrive(files, toolFolder) {
 // Numbers always stay ASCII. Species shown phonetically in HIN/BEN.
 // ═══════════════════════════════════════════════════════════════════════
 const T={
-en:{sub:'Field v13 \u2014 landscape',basemap:'Basemap',plotgrid:'Plot boundary & grid',bsett:'Block settings',expdir:'Expansion direction',draw:'Draw block',place:'Placements',expkml:'Export KML',spacing:'Grid (m)',species:'Species',target:'Target saplings',loadkml:'Load plot boundary (KML, KMZ)',gengrid:'\u2699 Generate / Refresh Grid',drawpoly:'\u270f\ufe0f Draw Polyline Block',finish:'\u2705 Finish & Place',undo:'\u21a9 Undo last block',rmbnd:'\u2715 Remove boundary',expall:'\ud83d\udce6 Export All (KML+JPG+SHP)',exppoly:'\u2b07 Polygons KML',expsap:'\u2b07 Saplings KML',clearall:'\ud83d\uddd1 Clear all',osm:'OSM',sat:'Satellite',selsp:'\u2014 select species \u2014',countph:'enter count\u2026',rotate:'Rotate to landscape for the field mapper.',total:'Total',
+en:{sub:'Field v14 \u2014 landscape',basemap:'Basemap',plotgrid:'Plot boundary & grid',bsett:'Block settings',expdir:'Expansion direction',draw:'Draw block',place:'Placements',expkml:'Export KML',spacing:'Grid (m)',species:'Species',target:'Target saplings',loadkml:'Load plot boundary (KML, KMZ)',gengrid:'\u2699 Generate / Refresh Grid',drawpoly:'\u270f\ufe0f Draw Polyline Block',finish:'\u2705 Finish & Place',undo:'\u21a9 Undo last block',rmbnd:'\u2715 Remove boundary',expall:'\ud83d\udce6 Export All (KML+JPG+SHP)',exppoly:'\u2b07 Polygons KML',expsap:'\u2b07 Saplings KML',clearall:'\ud83d\uddd1 Clear all',osm:'OSM',sat:'Satellite',selsp:'\u2014 select species \u2014',countph:'enter count\u2026',rotate:'Rotate to landscape for the field mapper.',total:'Total',
 s_init:'Load a KML boundary \u2192 Generate Grid \u2192 draw blocks.',s_no_bnd:'Load a KML boundary first.',s_no_grid:'Click \u2699 Generate Grid first.',s_no_sp:'Select a species first.',s_no_cnt:'Enter a target sapling count.',s_drawing:'Tap \u22654 vertices on map. Tap Finish & Place when done.',s_cancel:'Draw cancelled.',s_outside:'Block is outside the plot boundary.',s_no_free:'No free grid points in drawn area.',s_need4:'Need \u22654 vertices.',s_gen:'Generating grid\u2026',s_no_undo:'Nothing to undo.',s_bnd_rm:'Boundary removed.',s_confirm:'Clear all placements?',s_poly_exp:'Polygon KML exported.',s_no_export:'Nothing to export.',s_exporting:'Building export package\u2026',s_export_done:()=>'Export package ready.',
 s_gen_done:(n,f)=>`Grid: ${n} points (${f} free).`,s_badge:(n,f,m)=>`${n} pts \u00b7 ${f} free \u00b7 ${m}m spacing`,s_bnd:(nm)=>`Boundary: ${nm}. Click \u2699 Generate Grid.`,s_placed:(n,sp,c,w)=>`Placed ${n} \u00d7 ${sp}.${c}${w}`,s_clip:(p)=>` (\u26a0 clipped ${p}%)`,s_only:(n,t)=>`  \u26a0 only ${n}/${t} free.`,s_undo:(n,sp)=>`Undid: ${n} \u00d7 ${sp}.`,s_sap_exp:(n,k)=>`Sapling KML: ${n} pts in ${k} folders.`,bnd:'Plot boundary',grid:'Grid',soiltype:'Soil type',th_soiltype:'Soil type',th_area:'Area',tbtitle_plant:'🌳 Plantation Mapper',tbtitle_soil:'⛏ Soil Mapper',s_no_soil:'Select a soil type first.',s_soil_overlap:'Area already covered by another soil type.',s_soil_placed:(t,ha)=>`Placed ${t} — ${ha} ha.`,lang:'Language',mode:'Mode',tab_plant:'Plantation Mapper',tab_soil:'Soil Mapper',tab_vec:'Make Vector',tab_files:'Browse Files',s_no_kml_loaded:'No boundary loaded yet',th_species:'Species',th_count:'#',saplings:'saplings',files_unsaved_title:'Unsaved Work',files_discard:'🗑 Discard',files_goback:'↩️ Go back',files_retry_tip:'Retry pending uploads',files_loading:'Loading…',files_saved_hdr:'📂 Saved files',files_geojson_hdr:'📍 GeoJSON audit (read-only)',files_no_saved:'No saved files yet.',files_no_geojson:'No GeoJSON files yet.',files_view:'View on map',files_to_kml:'Convert to KML',files_dl_geojson:'Download GeoJSON',files_delete:'Delete',files_tap_close:'Tap to close',files_pending:(n)=>`${n} pending upload`,files_viewing:(f)=>`👁 Viewing ${f} — tap features for details`,files_kml_done:(f)=>'📄 KML downloaded: '+f,files_deleted:(f)=>'🗑 Deleted: '+f,files_no_sidecar:(f)=>'⚠️ No GeoJSON found for '+f,files_err_view:'Error viewing file: ',files_err_kml:'KML convert failed: ',files_err_dl:'Download failed: ',files_err_del:'Delete failed: ',files_err_load:'Error loading files: ',files_unsaved_msg:(t)=>`You have unsaved work in ${t}. Discard to browse files, or go back and export first.`,files_back_to:(t)=>'↩️ Back to '+t,files_delete_confirm:(f)=>`Delete ${f}?\n\nThis removes the on-device copy. Drive copy is unaffected.`,
 },
@@ -1806,6 +1806,8 @@ function _drawOnClick(e) {
   _drawRedraw();
 }
 
+function _saplingLayerStopProp(e) { L.DomEvent.stopPropagation(e); }
+
 function startDrawBlock() {
   if (!plotPoly) { setStatus(Lang.s_no_bnd, 'warn'); return; }
   if (APP_MODE === 'plant') {
@@ -1822,9 +1824,12 @@ function startDrawBlock() {
   document.getElementById(drawBtnId()).classList.add('b-off');
   document.getElementById(finishBtnId()).classList.remove('b-off');
   setStatus('Tap map to add vertices · ✅ to finish', '');
-  // Disable click interactivity on placed blocks so taps always place vertices
+  // Stop clicks on placed sapling markers from propagating to the map as draw vertices
   map.closePopup();
-  if (saplingLayer) saplingLayer.eachLayer(l => { if (l.options) l.options.interactive = false; });
+  if (saplingLayer) saplingLayer.eachLayer(l => {
+    l.off('click', _saplingLayerStopProp);
+    l.on('click', _saplingLayerStopProp);
+  });
   map.on('click', _drawOnClick);
 }
 
@@ -1833,8 +1838,8 @@ function finishDrawBlock() {
   if (_drawVertices.length < 3) { setStatus(Lang.s_need4 || 'Need ≥3 vertices', 'warn'); return; }
   map.off('click', _drawOnClick);
   isDrawing = false;
-  // Re-enable placed block interactivity
-  if (saplingLayer) saplingLayer.eachLayer(l => { if (l.options) l.options.interactive = true; });
+  // Restore sapling marker click behaviour
+  if (saplingLayer) saplingLayer.eachLayer(l => { l.off('click', _saplingLayerStopProp); });
   document.getElementById(finishBtnId()).classList.add('b-off');
   document.getElementById(drawBtnId()).classList.remove('b-off');
   if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; }
@@ -1945,7 +1950,7 @@ function switchTab(mode) {
   const ind = document.getElementById('btn-mode-ind');
   if (ind) ind.textContent = mode === 'plant' ? '\u{1F331}' : '\u{1F4C1}';
   updateTopbarIndicators();
-  if (isDrawing) { map.off('click', _drawOnClick); if (saplingLayer) saplingLayer.eachLayer(l => { if (l.options) l.options.interactive = true; }); if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; } isDrawing = false; }
+  if (isDrawing) { map.off('click', _drawOnClick); if (saplingLayer) saplingLayer.eachLayer(l => { l.off('click', _saplingLayerStopProp); }); if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; } isDrawing = false; }
   if (mode !== 'plant') stopNonVecGps();
   // vec mode removed
   updateGpsBtn(); updateSbar();
@@ -3009,7 +3014,7 @@ function buildSpeciesGrid() {
     } else {
       tile.style.cssText = `background:${color};color:${textColor};border-color:${color}`;
       tile.title = localName;
-      tile.onclick = () => { currentSpecies = key; closeCallout(); updateSpeciesIndicator(true); };
+      tile.onclick = () => { currentSpecies = key; closeCallout(); updateSpeciesGridSelection(); closeSidebarPortrait(); updateSpeciesIndicator(true); };
     }
     tile.textContent = localName;
     grid.appendChild(tile);
@@ -4068,6 +4073,11 @@ function buildDbf(fields, records) {
 
   return u8;
 }
+
+// WGS84 projection string for .prj sidecar
+const WGS84_PRJ =
+  'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],' +
+  'PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
 
 // Convenience: build a full {shp,shx,dbf,prj} set for one layer
 function buildShapefileSet(shapeType, geoRecords, fields, dbfRecords) {
