@@ -912,10 +912,7 @@ function updateBasemapIndicator() {
 }
 
 function updatePMStats() {
-  const tot = blocks.reduce((s,b)=>s+(b.points?.length||0),0);
-  const pmT = document.getElementById('pm-stat-total'); if(pmT) pmT.textContent=tot;
-  const pmF = document.getElementById('pm-stat-free');  if(pmF) pmF.textContent=blocks.reduce((s,b)=>s+(b._free||0),0);
-  const pmS = document.getElementById('pm-stat-sp');    if(pmS) pmS.textContent=currentSpacing?(currentSpacing.toFixed(3)+'m'):'';
+  // Soil Mapper has no PM sapling stats — no-op (PM leftover from monolith split)
 }
 function openBasemapCallout(anchorEl) {
   openCallout(anchorEl, (box) => {
@@ -1073,7 +1070,8 @@ let gridByKey   = new Map();   // key → grid point object
 let usedKeys    = new Set();   // keys of occupied grid points
 let spacingDeg  = 3 / 111320;  // updated on grid build
 
-// Placed blocks: { species, color, points[{lat,lon,row,col,key}], geom (Turf geom), areaSqm }
+// blocks unused in Soil Mapper (PM leftover) — declared to avoid ReferenceError
+let blocks = [];
 let exportDone = true;
 
 // ═══════════════════════════════════════════════════════════════════════
