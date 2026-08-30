@@ -1057,7 +1057,7 @@ let currentSpacing = 3;   // grid spacing (m), driven by the spacing wheel picke
 let currentCount = 100;   // target sapling count, driven by the count wheel picker
 let map, osmLayer, esriLayer, satLabelsLayer;
 let boundaryLayer, gridLayer, saplingLayer, outlineLayer;
-let polylineHandler, isDrawing = false, _intentionalFinish = false;
+let isDrawing = false;
 let kmlBaseName = "fieldmap";
 let plotPoly    = null;
 
@@ -1295,25 +1295,7 @@ function init() {
   outlineLayer  = L.layerGroup().addTo(map);
   saplingLayer  = L.layerGroup().addTo(map);
   soilLayer = L.layerGroup().addTo(map);
-  map.on(L.Draw.Event.CREATED, e => {
-    if (e.layerType !== 'polyline') return;
-    isDrawing = false;
-    document.getElementById(finishBtnId()).classList.add('b-off');
-    document.getElementById(drawBtnId()).classList.remove('b-off');
-    placeSoilBlock(e.layer.getLatLngs());
-  });
-  map.on('draw:drawvertex', () => { updateVecStats(); });
-  map.on(L.Draw.Event.DRAWSTOP, () => {
-    isDrawing = false;
-    map.doubleClickZoom.enable();
-    const btn = document.getElementById(finishBtnId());
-    if (btn) btn.classList.add('b-off');
-    const dbtn = document.getElementById(drawBtnId());
-    if (dbtn) dbtn.classList.remove('b-off');
-    // Suppress "Draw cancelled" if the user intentionally tapped Finish
-    // (DRAWSTOP fires after _finishShape() on both desktop and mobile)
-    if (!_intentionalFinish) setStatus(Lang.s_cancel,'');
-  });
+  // Drawing uses click-based vertex collection (no L.Draw events needed)
 
   // Wire tooltips for every icon button that declares a Lang-key tooltip
   // (this also covers the topbar KML icon, which carries data-i18n-tip="loadkml")
@@ -1745,6 +1727,48 @@ function polygonXml(ring) {
 function finishBtnId() { return APP_MODE === 'soil' ? 'btn-finish-soil' : 'btn-finish-plant'; }
 function drawBtnId() { return APP_MODE === 'soil' ? 'btn-draw-soil' : 'btn-draw-plant'; }
 
+// ── Click-based polygon drawing (no L.Draw) ──────────────────────────
+let _drawVertices = [];
+let _drawLayer = null;
+
+function _drawRedraw() {
+  if (_drawLayer) { _drawLayer.clearLayers(); }
+  else { _drawLayer = L.layerGroup().addTo(map); }
+  const lls = _drawVertices.map(v => [v.lat, v.lng]);
+  if (!lls.length) return;
+  // Draw polygon fill once we have 3+ vertices, otherwise just a line
+  if (lls.length >= 3)
+    L.polygon(lls, { color:'#f97316', weight:2, dashArray:'5 4', fillOpacity:.1 }).addTo(_drawLayer);
+  else
+    L.polyline(lls, { color:'#f97316', weight:2, dashArray:'5 4' }).addTo(_drawLayer);
+  // Vertex markers
+  lls.forEach((ll, i) => L.circleMarker(ll, {
+    radius: i===0?7:4, color:'#fff',
+    fillColor: i===0?'#f97316':'#3b82f6', fillOpacity:1, weight:1.5
+  }).addTo(_drawLayer));
+  // Arm length labels (turf)
+  for (let i = 0; i < lls.length - 1; i++) {
+    const a = _drawVertices[i], b = _drawVertices[i+1];
+    const dist = turf.distance(turf.point([a.lng,a.lat]), turf.point([b.lng,b.lat]), {units:'meters'});
+    const mid = [(lls[i][0]+lls[i+1][0])/2, (lls[i][1]+lls[i+1][1])/2];
+    const lbl = dist>=1000?(dist/1000).toFixed(2)+'km':Math.round(dist)+'m';
+    L.marker(mid,{icon:L.divIcon({className:'',html:`<span style="background:rgba(0,0,0,.65);color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;white-space:nowrap">${lbl}</span>`,iconAnchor:[20,8]}),interactive:false}).addTo(_drawLayer);
+  }
+  // Closing arm label when polygon
+  if (lls.length >= 3) {
+    const a=_drawVertices[lls.length-1], b=_drawVertices[0];
+    const dist=turf.distance(turf.point([a.lng,a.lat]),turf.point([b.lng,b.lat]),{units:'meters'});
+    const mid=[(lls[lls.length-1][0]+lls[0][0])/2,(lls[lls.length-1][1]+lls[0][1])/2];
+    L.marker(mid,{icon:L.divIcon({className:'',html:`<span style="background:rgba(249,115,22,.7);color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;white-space:nowrap">${Math.round(dist)}m</span>`,iconAnchor:[20,8]}),interactive:false}).addTo(_drawLayer);
+  }
+  setStatus(_drawVertices.length + ' vertices — tap to add · ✅ to finish (≥3 needed)', '');
+}
+
+function _drawOnClick(e) {
+  _drawVertices.push(e.latlng);
+  _drawRedraw();
+}
+
 function startDrawBlock() {
   if (!plotPoly) { setStatus(Lang.s_no_bnd, 'warn'); return; }
   if (APP_MODE === 'plant') {
@@ -1756,31 +1780,27 @@ function startDrawBlock() {
   }
   if (isDrawing) return;
   isDrawing = true;
+  _drawVertices = [];
+  if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; }
   document.getElementById(drawBtnId()).classList.add('b-off');
   document.getElementById(finishBtnId()).classList.remove('b-off');
-  setStatus(Lang.s_drawing, '');
-  map.doubleClickZoom.disable();
-  polylineHandler = new L.Draw.Polyline(map, {
-    shapeOptions: { color: '#f97316', weight: 2, dashArray: '5 4' },
-    showLength: true,
-    metric: true,
-    feet: false,
-    repeatMode: false,
-  });
-  polylineHandler.enable();
+  setStatus('Tap map to add vertices · ✅ to finish', '');
+  map.on('click', _drawOnClick);
 }
 
 function finishDrawBlock() {
-  if (!isDrawing || !polylineHandler) return;
-  // Set a flag so DRAWSTOP knows this was intentional (not accidental)
-  _intentionalFinish = true;
-  try { polylineHandler._finishShape(); }
-  catch (e) {
-    polylineHandler.disable(); isDrawing = false;
-    document.getElementById(finishBtnId()).classList.add('b-off');
-  }
-  // Clear flag after a short delay (DRAWSTOP fires synchronously or very shortly after)
-  setTimeout(() => { _intentionalFinish = false; }, 300);
+  if (!isDrawing) return;
+  if (_drawVertices.length < 3) { setStatus(Lang.s_need4 || 'Need ≥3 vertices', 'warn'); return; }
+  map.off('click', _drawOnClick);
+  isDrawing = false;
+  document.getElementById(finishBtnId()).classList.add('b-off');
+  document.getElementById(drawBtnId()).classList.remove('b-off');
+  if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; }
+  // Build closed latlngs array matching what placeSoilBlock/placeBlock expect
+  const latlngs = _drawVertices.map(v => L.latLng(v.lat, v.lng));
+  if (APP_MODE === 'soil') placeSoilBlock(latlngs);
+  else placeBlock(latlngs);
+  _drawVertices = [];
 }
 
 function undoLastBlock() { undoLastSoil(); }
@@ -1879,7 +1899,7 @@ function switchTab(mode) {
   const ind = document.getElementById('btn-mode-ind');
   if (ind) ind.textContent = mode === 'soil' ? '\u{1F9EA}' : '\u{1F4C1}';
   updateTopbarIndicators();
-  if (isDrawing && polylineHandler) { try { polylineHandler.disable(); } catch (e) {} isDrawing = false; }
+  if (isDrawing) { map.off('click', _drawOnClick); if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; } isDrawing = false; }
   if (mode !== 'soil') stopNonVecGps();
   // vec mode removed
   updateGpsBtn(); updateSbar();
