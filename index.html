@@ -15,7 +15,7 @@
 <script>
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v37</title>
+<title>ARR Project Suite v38</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{ --card-name: var(--forest); }
@@ -461,12 +461,13 @@ function initGSI(redirectAfter) {
     callback: r => handleLauncherCredential(r, redirectAfter),
     auto_select: false,
     cancel_on_tap_outside: false,
+    use_fedcm_for_prompt: true,
   });
   google.accounts.id.renderButton(
     document.getElementById('gsi-btn-wrap'),
     { theme:'filled_blue', size:'large', text:'signin_with', width:220 }
   );
-  google.accounts.id.prompt(n => {});
+  google.accounts.id.prompt();
 }
 
 function handleLauncherCredential(response, redirectAfter) {
