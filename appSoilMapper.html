@@ -942,7 +942,7 @@ function updateSoilTypeIndicator(autoStart) {
     el.style.fontSize = '16px'; el.style.fontWeight = '700';
     // Auto-start polyline draw if conditions are met
     if (autoStart !== false && plotPoly && !isDrawing) {
-      setTimeout(startDrawBlock, 80);
+      setTimeout(startDrawBlock, 200);
     }
   } else {
     el.textContent = '\u{1F33E}';
@@ -1144,7 +1144,7 @@ function updateSpeciesIndicator(autoStart) {
     el.style.fontSize = '15px'; el.style.fontWeight = '700';
     // Auto-start polyline draw if conditions are met and caller requests it
     if (autoStart !== false && plotPoly && globalGrid.length && currentCount > 0 && !isDrawing) {
-      setTimeout(startDrawBlock, 80); // brief delay so callout closes first
+      setTimeout(startDrawBlock, 200); // brief delay so callout closes first
     }
   } else {
     el.textContent = '\u{1F33F}';
@@ -2945,7 +2945,8 @@ function buildSoilGrid() {
     tile.textContent = soilTxt;
     tile.onclick = () => {
       currentSoilType = t;
-      updateSoilTypeIndicator();
+      closeCallout();
+      updateSoilTypeIndicator(true);
     };
     grid.appendChild(tile);
   });
@@ -3652,19 +3653,26 @@ function drawSoilGroupOverlay(ctx, mapRef, soilGroups) {
 function drawSoilBlockOverlay(ctx, mapRef, blocksData) {
   (blocksData || soilBlocks).forEach(b => {
     try {
-      const geom = b.geom.geometry || b.geom;
-      const polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
+      // Normalise: handle Feature, GeometryCollection, Polygon, MultiPolygon
+      let geom = b.geom;
+      if (geom && geom.type === 'Feature') geom = geom.geometry;
+      if (!geom) return;
+      const polys = geom.type === 'Polygon' ? [geom.coordinates]
+                  : geom.type === 'MultiPolygon' ? geom.coordinates
+                  : [];
+      if (!polys.length) return;
       ctx.fillStyle = hexToRgba(b.color, 0.62);
-      ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
-      polys.forEach(rings => rings.forEach(ring => {
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
+      polys.forEach(rings => {
+        if (!rings || !rings[0]) return;
         ctx.beginPath();
-        ring.forEach(([lon, lat], i) => {
+        rings[0].forEach(([lon, lat], i) => {
           const pt = mapRef.latLngToContainerPoint([lat, lon]);
           if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
         });
         ctx.closePath(); ctx.fill(); ctx.stroke();
-      }));
-    } catch (e) {}
+      });
+    } catch (e) { console.warn('drawSoilBlockOverlay error:', e.message); }
   });
 }
 
@@ -4202,6 +4210,13 @@ function computePlotBbox(geom) {
            minLat: Math.min(...lats), maxLat: Math.max(...lats) };
 }
 
+
+function hexToRgba(hex, a) {
+  hex = hex.replace('#','');
+  if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+  const r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
 </script>
 </body>
 </html>
