@@ -1785,6 +1785,9 @@ function startDrawBlock() {
   document.getElementById(drawBtnId()).classList.add('b-off');
   document.getElementById(finishBtnId()).classList.remove('b-off');
   setStatus('Tap map to add vertices · ✅ to finish', '');
+  // Disable click interactivity on placed blocks so taps always place vertices
+  map.closePopup();
+  if (soilLayer) soilLayer.eachLayer(l => { if (l.options) l.options.interactive = false; });
   map.on('click', _drawOnClick);
 }
 
@@ -1793,6 +1796,8 @@ function finishDrawBlock() {
   if (_drawVertices.length < 3) { setStatus(Lang.s_need4 || 'Need ≥3 vertices', 'warn'); return; }
   map.off('click', _drawOnClick);
   isDrawing = false;
+  // Re-enable placed block interactivity
+  if (soilLayer) soilLayer.eachLayer(l => { if (l.options) l.options.interactive = true; });
   document.getElementById(finishBtnId()).classList.add('b-off');
   document.getElementById(drawBtnId()).classList.remove('b-off');
   if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; }
@@ -1903,7 +1908,7 @@ function switchTab(mode) {
   const ind = document.getElementById('btn-mode-ind');
   if (ind) ind.textContent = mode === 'soil' ? '\u{1F9EA}' : '\u{1F4C1}';
   updateTopbarIndicators();
-  if (isDrawing) { map.off('click', _drawOnClick); if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; } isDrawing = false; }
+  if (isDrawing) { map.off('click', _drawOnClick); if (soilLayer) soilLayer.eachLayer(l => { if (l.options) l.options.interactive = true; }); if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; } isDrawing = false; }
   if (mode !== 'soil') stopNonVecGps();
   // vec mode removed
   updateGpsBtn(); updateSbar();
