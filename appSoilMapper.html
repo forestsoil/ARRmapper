@@ -1300,11 +1300,12 @@ function init() {
     isDrawing = false;
     document.getElementById(finishBtnId()).classList.add('b-off');
     document.getElementById(drawBtnId()).classList.remove('b-off');
-    placeSoilBlock((e.layer.getLatLngs()[0] || e.layer.getLatLngs()));
+    placeSoilBlock(e.layer.getLatLngs());
   });
   map.on('draw:drawvertex', () => { updateVecStats(); });
   map.on(L.Draw.Event.DRAWSTOP, () => {
     isDrawing = false;
+    map.doubleClickZoom.enable();
     const btn = document.getElementById(finishBtnId());
     if (btn) btn.classList.add('b-off');
     const dbtn = document.getElementById(drawBtnId());
@@ -1758,16 +1759,13 @@ function startDrawBlock() {
   document.getElementById(drawBtnId()).classList.add('b-off');
   document.getElementById(finishBtnId()).classList.remove('b-off');
   setStatus(Lang.s_drawing, '');
-  polylineHandler = new L.Draw.Polygon(map, {
-    allowIntersection: false,
-    showArea: false,
+  map.doubleClickZoom.disable();
+  polylineHandler = new L.Draw.Polyline(map, {
+    shapeOptions: { color: '#f97316', weight: 2, dashArray: '5 4' },
     showLength: true,
     metric: true,
     feet: false,
-    measurementOptions: { showLength: true, metric: true, feet: false },
-    shapeOptions: { color: '#f97316', weight: 2, dashArray: '5 4', fill: false },
-    touchIcon: new L.DivIcon({ className: 'leaflet-div-icon leaflet-editing-icon', iconSize: new L.Point(8,8) }),
-    icon: new L.DivIcon({ className: 'leaflet-div-icon leaflet-editing-icon', iconSize: new L.Point(8,8) }),
+    repeatMode: false,
   });
   polylineHandler.enable();
 }
