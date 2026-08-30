@@ -1695,7 +1695,7 @@ function clipToPlotThenUsed(drawnPoly, usedUnionGeom) {
   if (plotPoly) {
     try {
       const cl = turf.intersect(drawnPoly, plotPoly);
-      if (!cl || turf.area(cl) < 0.1) return { poly: null, pctClipped: 0, error: 'outside' };
+      if (!cl || turf.area(cl) < 0.1) /* outside — place as-drawn */
       pctClipped = turf.area(cl) / turf.area(drawnPoly) * 100;
       poly = cl;
     } catch (e) {}
@@ -1797,7 +1797,11 @@ function finishDrawBlock() {
   document.getElementById(drawBtnId()).classList.remove('b-off');
   if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; }
   // Build closed latlngs array matching what placeSoilBlock/placeBlock expect
-  const latlngs = _drawVertices.map(v => L.latLng(v.lat, v.lng));
+  // Build [lon,lat] ring, fix geometry, convert back to L.latLng array
+  let coords = _drawVertices.map(v => [v.lng, v.lat]);
+  coords.push(coords[0]); // close ring
+  coords = fixPolygonGeometry(coords); // fix winding + self-intersections
+  const latlngs = coords.map(([lng, lat]) => L.latLng(lat, lng));
   if (APP_MODE === 'soil') placeSoilBlock(latlngs);
   else placeBlock(latlngs);
   _drawVertices = [];
@@ -3153,28 +3157,56 @@ let currentSoilType = null;
 
 
 function placeSoilBlock(latlngs) {
-  if (latlngs.length < 4) { setStatus(Lang.s_need4, 'warn'); return; }
-  const soilType = currentSoilType;
-  if (!soilType) { setStatus(Lang.s_no_soil, 'warn'); return; }
+  if (latlngs.length < 3) { setStatus('Need ≥3 vertices', 'warn'); return; }
+  const soilType = currentSoilType || 'S'; // default Sandy
+  currentSoilType = soilType;
   const info = SOIL_TYPE_INFO[soilType];
 
+  // Build GeoJSON from latlngs (already geometry-fixed by finishDrawBlock)
   const coords = latlngs.map(ll => [ll.lng, ll.lat]);
-  if (coords[0][0] !== coords[coords.length - 1][0] || coords[0][1] !== coords[coords.length - 1][1])
+  if (coords[0][0] !== coords[coords.length-1][0] || coords[0][1] !== coords[coords.length-1][1])
     coords.push(coords[0]);
+
   let drawnPoly;
-  try { drawnPoly = turf.polygon([coords]); } catch (e) { setStatus('Polygon error.', 'err'); return; }
+  try { drawnPoly = turf.polygon([coords]); }
+  catch(e) { setStatus('Polygon error: ' + e.message, 'err'); return; }
 
-  const { poly, error } = clipToPlotThenUsed(drawnPoly, soilUsedUnion);
-  if (error === 'outside') { setStatus(Lang.s_outside, 'warn'); return; }
-  if (error === 'overlap') { setStatus(Lang.s_soil_overlap, 'warn'); return; }
+  // Clip to KML boundary if loaded — for area calculation only, never rejects placement
+  let poly = drawnPoly;
+  let areaSqm = Math.round(turf.area(drawnPoly));
+  if (plotPoly) {
+    try {
+      const pp = (plotPoly.type === 'Feature') ? plotPoly
+               : { type:'Feature', properties:{}, geometry: plotPoly.geometry || plotPoly };
+      const cl = turf.intersect(drawnPoly, pp);
+      if (cl && turf.area(cl) > 0.1) {
+        poly = cl;
+        areaSqm = Math.round(turf.area(cl));
+        const pct = Math.round(turf.area(cl) / turf.area(drawnPoly) * 100);
+        if (pct < 99) setStatus('Clipped to boundary (' + pct + '% inside)', '');
+      }
+    } catch(e) { /* clip failed — use full drawn polygon */ }
+  }
 
-  const areaSqm = Math.round(turf.area(poly));
+  // Subtract already-used soil areas
+  if (soilUsedUnion) {
+    try {
+      const diff = turf.difference(poly, soilUsedUnion);
+      if (diff && turf.area(diff) > 0.1) {
+        poly = diff;
+        areaSqm = Math.round(turf.area(diff));
+      } else {
+        setStatus(Lang.s_soil_overlap || 'Area already covered', 'warn'); return;
+      }
+    } catch(e) {}
+  }
+
   const geom = poly.geometry || poly;
   const rings = geom.type === 'Polygon' ? [geom.coordinates[0]] : geom.coordinates.map(p => p[0]);
   rings.forEach(ring => {
     const ll = ring.map(([lon, lat]) => [lat, lon]);
-    L.polygon(ll, { color: '#333', weight: 1, fillColor: info.color, fillOpacity: 0.6 })
-      .bindPopup(`<b>${escXml(info.label)} (${soilType})</b>`).addTo(soilLayer);
+    L.polygon(ll, { color:'#333', weight:1, fillColor:info.color, fillOpacity:0.6 })
+      .bindPopup('<b>' + escXml(info.label) + ' (' + soilType + ')</b>').addTo(soilLayer);
   });
 
   exportDone = false;
@@ -3182,7 +3214,7 @@ function placeSoilBlock(latlngs) {
   soilUsedUnion = soilUsedUnion ? (turf.union(soilUsedUnion, poly) || soilUsedUnion) : poly;
 
   updateSoilSummary();
-  setStatus(Lang.s_soil_placed(soilType, (areaSqm / 10000).toFixed(3)), '');
+  setStatus(Lang.s_soil_placed ? Lang.s_soil_placed(soilType, (areaSqm/10000).toFixed(3)) : soilType + ' placed — ' + (areaSqm/10000).toFixed(3) + ' ha', '');
 }
 
 function undoLastSoil() {
@@ -3924,6 +3956,111 @@ function cycleLang(btn) {
 }
 
 window.addEventListener('load', ()=>{ init(); setLang('en'); switchTab('soil'); updateSbar(); initThemeBtn(); });
+
+
+// ── Missing functions injected from ARRmapper ─────────────────────
+
+// ── fixPolygonGeometry — QGIS "Fix Geometries / Structure" equivalent ──────
+// Approximates GEOSMakeValid(STRUCTURE): deduplicates vertices, fixes winding,
+// unkinks self-intersections, simplifies spikes/collinear edges, takes largest
+// valid fragment. Applied to ALL polygon paths before export or placement.
+function fixPolygonGeometry(coords) {
+  // coords = [[lon,lat],...] — may be open or closed ring
+  try {
+    // Step 0: close ring
+    let ring = [...coords];
+    if (ring[0][0] !== ring[ring.length-1][0] || ring[0][1] !== ring[ring.length-1][1])
+      ring.push(ring[0]);
+
+    // Step 1: remove duplicate consecutive vertices (degenerate edges)
+    ring = ring.filter((pt, i) => {
+      if (i === 0) return true;
+      return !(Math.abs(pt[0]-ring[i-1][0]) < 1e-10 && Math.abs(pt[1]-ring[i-1][1]) < 1e-10);
+    });
+
+    // Need at least 4 points (3 unique + closing) for a valid polygon
+    if (ring.length < 4) return coords;
+
+    // Step 2: build turf feature
+    let feat;
+    try { feat = turf.polygon([ring]); }
+    catch(e) { return coords; }
+
+    // Step 3: fix winding order (CCW exterior ring)
+    try { feat = turf.rewind(feat, { reverse: false, mutate: false }); } catch(e) {}
+
+    // Step 4: unkink — split at self-intersections, take largest fragment
+    // (equivalent to GEOSMakeValid Structure noding + polygon building)
+    try {
+      const unkinked = turf.unkinkPolygon(feat);
+      if (unkinked && unkinked.features && unkinked.features.length > 0) {
+        feat = unkinked.features.reduce((a, b) => turf.area(a) >= turf.area(b) ? a : b);
+      }
+    } catch(e) {}
+
+    // Step 5: simplify — removes spikes and collinear vertices
+    // tolerance 0.00001° ≈ 1m at equator — tight enough to preserve shape
+    try { feat = turf.simplify(feat, { tolerance: 0.000005, highQuality: true }); } catch(e) {}
+
+    // Return fixed ring
+    const fixed = feat.geometry.coordinates[0];
+    return fixed.length >= 4 ? fixed : coords;
+
+  } catch(e) {
+    return coords; // fallback: return original coords unchanged
+  }
+}
+
+function dlBlob(name, blob) {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function tsSuffix() {
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  // Use local time (not UTC) so filenames match the field worker's clock
+  return '_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes());
+}
+
+function escXml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function buildPolygonKMLString() {
+  const _polyAudit = _auditProps();
+  const pms = blocks.map((b, i) => {
+    if (!b.geom) return '';
+    const col = hexKml(b.color);
+    const geom = b.geom.geometry || b.geom;
+    let geoXml;
+    if (geom.type === 'Polygon') {
+      geoXml = polygonXml(geom.coordinates[0]);
+    } else if (geom.type === 'MultiPolygon') {
+      geoXml = `<MultiGeometry>\n` +
+        geom.coordinates.map(poly => polygonXml(poly[0])).join('\n') +
+        `\n    </MultiGeometry>`;
+    } else { return ''; }
+    return `  <Placemark>
+    <name>${escXml(b.species)} block ${i+1}</name>
+    <Style>
+      <LineStyle><color>${col}</color><width>2</width></LineStyle>
+      <PolyStyle><color>55${col.slice(2)}</color></PolyStyle>
+    </Style>
+    <ExtendedData>
+      <Data name="speciesName"><value>${escXml(b.species)}</value></Data>
+      <Data name="speciesColor"><value>${escXml(b.color)}</value></Data>
+      <Data name="areaSqm"><value>${b.areaSqm}</value></Data>
+      <Data name="saplingCount"><value>${b.points.length}</value></Data>
+      <Data name="operator_email"><value>${escXml(_polyAudit.operator_email)}</value></Data>
+      <Data name="operator_name"><value>${escXml(_polyAudit.operator_name)}</value></Data>
+      <Data name="project"><value>${escXml(_polyAudit.project)}</value></Data>
+      <Data name="captured_ts"><value>${_polyAudit.captured_ts}</value></Data>
+    </ExtendedData>
+    ${geoXml}
+  </Placemark>`;
+  }).filter(Boolean);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n  <name>${escXml(kmlBaseName)}_fieldPMAP_polygons</name>\n${pms.join('\n')}\n</Document>\n</kml>`;
+}
 </script>
 </body>
 </html>

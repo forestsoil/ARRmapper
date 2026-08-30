@@ -289,7 +289,7 @@ body.lang-bn .pm-label,body.lang-hi .pm-label{font-size:14px}
   transition:border-color .12s,background .12s;text-align:left;
 }
 .vec-shape-btn.sel{border-color:var(--leaf);background:var(--mint)}
-.vec-shape-btn .icon{font-size:22px;line-height:1;flex-shrink:0;color:var(--ink)}
+.vec-shape-btn .icon{font-size:22px;line-height:1;flex-shrink:0;color:var(--mist)}  
 .vec-shape-btn .lbl{font-size:13px;font-weight:600;color:var(--mid);line-height:1}
 .vec-shape-btn.sel .lbl{color:var(--forest)}
 .vec-method-row{display:flex;gap:6px}
@@ -2650,8 +2650,9 @@ function vecFinishManual() {
   const coords = vecVertices.map(v => [v.lon, v.lat]);
   updateVecStats();
   if (isPoly) {
-    const ring = [...coords];
+    let ring = [...coords];
     if (ring[0][0] !== ring[ring.length-1][0]) ring.push(ring[0]);
+    ring = fixPolygonGeometry(ring); // QGIS Structure-equivalent geometry fix
     vecExportKMLWithEdit('poly', ring);
   } else { vecExportKMLWithEdit('path', coords); }
 }
@@ -2687,16 +2688,7 @@ function vecGpsFinish() {
   if (isPoly) {
     const ring = [...coords];
     if (ring[0][0] !== ring[ring.length-1][0]) ring.push(ring[0]);
-    try {
-      let poly = turf.polygon([ring]);
-      const unkinked = turf.unkinkPolygon(poly);
-      if (unkinked.features.length) {
-        const largest = unkinked.features.reduce((a,b) =>
-          turf.area(a) > turf.area(b) ? a : b);
-        poly = turf.simplify(largest, { tolerance:0.00001, highQuality:false });
-        coords = poly.geometry.coordinates[0];
-      } else { coords = ring; }
-    } catch(e) { coords = ring; }
+    coords = fixPolygonGeometry(ring); // QGIS Structure-equivalent geometry fix
     vecExportKML('poly', coords);
   } else { vecExportKML('path', coords); }
   setTimeout(updateVecStats, 300);
@@ -5742,6 +5734,55 @@ function cycleLang(btn) {
 }
 
 window.addEventListener('load', ()=>{ init(); setLang('en'); switchTab('vec'); updateSbar(); initThemeBtn(); });
+
+// ── fixPolygonGeometry — QGIS "Fix Geometries / Structure" equivalent ──────
+// Approximates GEOSMakeValid(STRUCTURE): deduplicates vertices, fixes winding,
+// unkinks self-intersections, simplifies spikes/collinear edges, takes largest
+// valid fragment. Applied to ALL polygon paths before export or placement.
+function fixPolygonGeometry(coords) {
+  // coords = [[lon,lat],...] — may be open or closed ring
+  try {
+    // Step 0: close ring
+    let ring = [...coords];
+    if (ring[0][0] !== ring[ring.length-1][0] || ring[0][1] !== ring[ring.length-1][1])
+      ring.push(ring[0]);
+
+    // Step 1: remove duplicate consecutive vertices (degenerate edges)
+    ring = ring.filter((pt, i) => {
+      if (i === 0) return true;
+      return !(Math.abs(pt[0]-ring[i-1][0]) < 1e-10 && Math.abs(pt[1]-ring[i-1][1]) < 1e-10);
+    });
+
+    // Need at least 4 points (3 unique + closing) for a valid polygon
+    if (ring.length < 4) return coords;
+
+    // Step 2: build turf feature
+    let feat;
+    try { feat = turf.polygon([ring]); }
+    catch(e) { return coords; }
+
+    // Step 3: fix winding order (CCW exterior ring)
+    try { feat = turf.rewind(feat, { reverse: false, mutate: false }); } catch(e) {}
+
+    // Step 4: unkink — split at self-intersections, take largest fragment
+    try {
+      const unkinked = turf.unkinkPolygon(feat);
+      if (unkinked && unkinked.features && unkinked.features.length > 0) {
+        feat = unkinked.features.reduce((a, b) => turf.area(a) >= turf.area(b) ? a : b);
+      }
+    } catch(e) {}
+
+    // Step 5: simplify — removes spikes and collinear vertices
+    try { feat = turf.simplify(feat, { tolerance: 0.000005, highQuality: true }); } catch(e) {}
+
+    // Return fixed ring
+    const fixed = feat.geometry.coordinates[0];
+    return fixed.length >= 4 ? fixed : coords;
+
+  } catch(e) {
+    return coords;
+  }
+}
 </script>
 </body>
 </html>
