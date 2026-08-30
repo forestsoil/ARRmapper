@@ -4066,6 +4066,142 @@ function buildPolygonKMLString() {
   }).filter(Boolean);
   return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n  <name>${escXml(kmlBaseName)}_fieldPMAP_polygons</name>\n${pms.join('\n')}\n</Document>\n</kml>`;
 }
+
+// ── Injected missing export functions ─────────────────────────────
+
+async function captureFramedScreenshot(overlayFn, legendEntries, legendTitle, opts) {
+  opts = opts || {};
+  if (!plotPoly) return { blob: null, usedOsmFallback: false, noBasemap: true };
+  const geom = plotPoly.geometry || plotPoly;
+  const W = 1500, H = 1000;
+
+  const rot = computePlotRotation(geom);
+  const capW = rot.rotated ? H : W, capH = rot.rotated ? W : H;
+
+  const bbox = turf.bbox(geom);
+  const { mLon, mLat } = metersPerDegree((bbox[1] + bbox[3]) / 2);
+  const marginM = Math.max(rot.longM, rot.shortM) * 0.08;
+  const minLon = bbox[0] - marginM / mLon, maxLon = bbox[2] + marginM / mLon;
+  const minLat = bbox[1] - marginM / mLat, maxLat = bbox[3] + marginM / mLat;
+  const centerLat = (minLat + maxLat) / 2, centerLon = (minLon + maxLon) / 2;
+
+  // Best zoom: largest integer zoom where expanded bbox fits within capW x capH
+  let zoom = 1;
+  for (let z = 20; z >= 1; z--) {
+    const sc = 256 * Math.pow(2, z);
+    const wx1 = ((minLon + 180) / 360) * sc, wx2 = ((maxLon + 180) / 360) * sc;
+    const wy1 = (0.5 - Math.log((1 + Math.sin(maxLat*Math.PI/180)) / (1 - Math.sin(maxLat*Math.PI/180))) / (4*Math.PI)) * sc;
+    const wy2 = (0.5 - Math.log((1 + Math.sin(minLat*Math.PI/180)) / (1 - Math.sin(minLat*Math.PI/180))) / (4*Math.PI)) * sc;
+    if ((wx2 - wx1) <= capW && (wy2 - wy1) <= capH) { zoom = z; break; }
+  }
+
+  // Web Mercator projector
+  const sc = 256 * Math.pow(2, zoom);
+  const wMercY = lat => (0.5 - Math.log((1 + Math.sin(lat*Math.PI/180)) / (1 - Math.sin(lat*Math.PI/180))) / (4*Math.PI)) * sc;
+  const wMercX = lon => ((lon + 180) / 360) * sc;
+  const cX = wMercX(centerLon), cY = wMercY(centerLat);
+
+  // Static Maps: max 640x640 CSS (scale=2 -> 1280x1280 actual px).
+  // Request at capW/2 x capH/2 CSS (capped at 640), scale=2 returns double.
+  // Image is then scaled to fill capW x capH — ~17% upscale at most,
+  // invisible on satellite imagery. scaleX/Y correct vector coords for this.
+  const cssW = Math.min(640, Math.round(capW / 2));
+  const cssH = Math.min(640, Math.round(capH / 2));
+  const imgW = cssW * 2, imgH = cssH * 2;
+  const scaleX = capW / imgW, scaleY = capH / imgH;
+
+  function project(lat, lon) {
+    return {
+      x: capW / 2 + (wMercX(lon) - cX) * scaleX,
+      y: capH / 2 + (wMercY(lat) - cY) * scaleY,
+    };
+  }
+  const fakeMap = { latLngToContainerPoint: ([lat, lon]) => project(lat, lon) };
+
+  const interCanvas = document.createElement('canvas');
+  interCanvas.width = capW; interCanvas.height = capH;
+  const ictx = interCanvas.getContext('2d');
+  ictx.fillStyle = '#dbe9d8'; ictx.fillRect(0, 0, capW, capH);
+
+  // Fetch Google Satellite basemap
+  let usedStaticMap = false;
+  const apiKey = APP_CONFIG.mapsApiKey;
+  if (!opts.noBasemap && apiKey) {
+    try {
+      const mapUrl = 'https://maps.googleapis.com/maps/api/staticmap'
+        + '?center=' + centerLat + ',' + centerLon
+        + '&zoom=' + zoom
+        + '&size=' + cssW + 'x' + cssH
+        + '&scale=2&maptype=satellite&key=' + apiKey;
+      const resp = await fetch(mapUrl);
+      if (resp.ok) {
+        const imgBlob = await resp.blob();
+        const img = await new Promise((res, rej) => {
+          const el = new Image();
+          const url = URL.createObjectURL(imgBlob);
+          el.onload = () => { URL.revokeObjectURL(url); res(el); };
+          el.onerror = rej;
+          el.src = url;
+        });
+        ictx.drawImage(img, 0, 0, capW, capH);
+        usedStaticMap = true;
+      }
+    } catch (e) { console.error('Static Maps fetch failed:', e.message); }
+  }
+
+  // Vector overlay
+  try { overlayFn(ictx, fakeMap); } catch (e) { console.error('overlay error', e); }
+
+  // Plot boundary (yellow)
+  try {
+    ictx.strokeStyle = '#ffe600'; ictx.lineWidth = 3;
+    const polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
+    polys.forEach(rings => rings.forEach(ring => {
+      ictx.beginPath();
+      ring.forEach(([lon, lat], i) => {
+        const pt = project(lat, lon);
+        if (i === 0) ictx.moveTo(pt.x, pt.y); else ictx.lineTo(pt.x, pt.y);
+      });
+      ictx.closePath(); ictx.stroke();
+    }));
+  } catch (e) {}
+
+  // Rotate combined image onto final canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#dbe9d8'; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.translate(W / 2, H / 2);
+  ctx.rotate(rot.R);
+  ctx.drawImage(interCanvas, -capW / 2, -capH / 2);
+  ctx.restore();
+
+  const corner = bestLegendCornerUV(geom, rot);
+  if (legendEntries && legendEntries.length) drawLegendAtCorner(ctx, W, H, legendEntries, legendTitle, corner);
+  drawNorthArrowAtCorner(ctx, W, H, OPPOSITE_CORNER[corner], rot.R);
+
+  const blob = await canvasToBlobSafe(canvas);
+  return { blob, usedOsmFallback: false, noBasemap: !usedStaticMap, usedStaticMap };
+}
+
+
+// ── Aliases for renamed helper functions ─────────────────────────────
+function drawLegend(...a) { return drawLegendAtCorner(...a); }
+function drawNorthArrow(...a) { return drawNorthArrowAtCorner(...a); }
+function metersPerDeg(lat) { return metersPerDegree(lat); }
+function chooseFrame(...a) { return chooseFrameOrientation(...a); }
+function bestLegendCorner(...a) { return bestLegendCornerUV(...a); }
+function computePlotBbox(geom) {
+  let coords = [];
+  if (geom.type === 'Polygon') coords = geom.coordinates[0];
+  else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(p => p[0].forEach(c => coords.push(c)));
+  if (!coords.length) return null;
+  const lons = coords.map(c=>c[0]), lats = coords.map(c=>c[1]);
+  return { minLon: Math.min(...lons), maxLon: Math.max(...lons),
+           minLat: Math.min(...lats), maxLat: Math.max(...lats) };
+}
+
 </script>
 </body>
 </html>
