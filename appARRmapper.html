@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>ARR Mapper v97 · Asha 1</title>
+<title>ARR Mapper v98 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -1128,7 +1128,7 @@ function updateSoilTypeIndicator(autoStart) {
     el.style.fontSize = '16px'; el.style.fontWeight = '700';
     // Auto-start polyline draw if conditions are met
     if (autoStart !== false && plotPoly && !isDrawing) {
-      setTimeout(startDrawBlock, 80);
+      setTimeout(startDrawBlock, 200);
     }
   } else {
     el.textContent = '\u{1F33E}';
@@ -1333,7 +1333,7 @@ function updateSpeciesIndicator(autoStart) {
     el.style.fontSize = '15px'; el.style.fontWeight = '700';
     // Auto-start polyline draw if conditions are met and caller requests it
     if (autoStart !== false && plotPoly && globalGrid.length && currentCount > 0 && !isDrawing) {
-      setTimeout(startDrawBlock, 80); // brief delay so callout closes first
+      setTimeout(startDrawBlock, 200); // brief delay so callout closes first
     }
   } else {
     el.textContent = '\u{1F33F}';
@@ -3914,7 +3914,7 @@ function buildSpeciesGrid() {
     } else {
       tile.style.cssText = `background:${color};color:${textColor};border-color:${color}`;
       tile.title = localName;
-      tile.onclick = () => { currentSpecies = key; updateSpeciesIndicator(true); };
+      tile.onclick = () => { currentSpecies = key; closeCallout(); updateSpeciesIndicator(true); };
     }
     tile.textContent = localName;
     grid.appendChild(tile);
@@ -3957,7 +3957,8 @@ function buildSoilGrid() {
     tile.textContent = soilTxt;
     tile.onclick = () => {
       currentSoilType = t;
-      updateSoilTypeIndicator();
+      closeCallout();
+      updateSoilTypeIndicator(true);
     };
     grid.appendChild(tile);
   });
