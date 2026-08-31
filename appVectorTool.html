@@ -489,9 +489,9 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <button class="tb-uni-btn" id="tb-settings-btn" onclick="openSettingsCallout(this)" style="display:none" title="Session / Settings">👤</button>
   </div>
   <div style="display:flex;align-items:center;width:100%;padding:2px 4px 3px;gap:2px">
-    <span style="flex:1"></span>
     <button class="tb-uni-btn tb-mode-btn" id="tbm-vec"   onclick="switchTab('vec')"   title="Vector Tool">∡</button>
     <button class="tb-uni-btn tb-mode-btn" id="tbm-files" onclick="switchTab('files')" title="File Browser">📁</button>
+    <span style="flex:1"></span>
     <button class="tb-uni-btn" id="tbm-clear" onclick="clearAll()" title="Clear All" style="background:#8b0000">🗑</button>
     <button class="tb-uni-btn" id="tb-outbox-badge" onclick="openOutboxPanel(this)" title="Outbox" style="background:var(--mint);opacity:0.5" disabled>📤</button>
     <button class="tb-uni-btn" id="tb-gps-btn" onclick="handleGpsBtnTap()" title="GPS / Centre map" style="background:var(--mint);opacity:0.5">🎯</button>
@@ -503,88 +503,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
   <input type="file" id="kml-input" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,*/*" onchange="loadKMLFile(this)"/>
 
-    <div class="sec">
-      <div class="sec-t" style="margin-top:8px"><span id="sp-sel-label" style="color:var(--mid)">—</span></div>
-      <div id="species-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-height:210px;overflow-y:auto;margin-top:6px"></div>
-    </div>
 
-    <div class="sec">
-      <div style="font-size:10px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;padding:4px 0">
-        <span>Total: <span id="pm-stat-total" style="color:var(--leaf)">0</span></span>
-        <span>Free: <span id="pm-stat-free" style="color:#34d399">0</span></span>
-        <span id="pm-stat-sp" style="color:#a78bfa"></span>
-      </div>
-    </div>
-
-    <div class="sec">
-      <div class="icon-row">
-        <button class="icon-btn b-teal" onclick="startDrawBlock()" id="btn-draw-plant"  data-i18n-tip="drawpoly">✏️</button>
-        <button class="icon-btn b-amber b-off" id="btn-finish-plant" onclick="finishDrawBlock()" ontouchstart="event.stopPropagation()" data-i18n-tip="finish">✅</button>
-        <button class="icon-btn b-gray" onclick="undoLastBlock()" data-i18n-tip="undo">↩️</button>
-        <button class="icon-btn b-green" onclick="runExportTask()" data-i18n-tip="expall">📦</button>
-        <button class="icon-btn b-red" onclick="clearAllBlocks()" data-i18n-tip="clearall">🗑️</button>
-      </div>
-    </div>
-
-    <div class="sec" style="flex:1">
-      <div class="sec-t sec-t-toggle" onclick="toggleSummary('sp-summary-body',this)" data-i18n="place">Placements</div>
-      <div id="sp-summary-body">
-      <table id="sp-table">
-        <thead><tr><th data-i18n="th_species">Species</th><th data-i18n="th_count">#</th><th data-i18n="th_area">Area</th></tr></thead>
-        <tbody id="sp-tbody"></tbody>
-      </table>
-      <div id="total-row" style="margin-top:4px;font-size:10px;color:var(--leaf)">Total: 0 saplings</div>
-      </div>
-    </div>
-
-  <!-- Overlay layers for Plant mode -->
-  <div class="sec" id="plant-sec-layers">
-    <div class="sec-t" style="display:flex;align-items:center;justify-content:space-between">
-      <span>🗂️ Overlays</span>
-      <button onclick="switchTab('files')" style="background:var(--mint);border:none;border-radius:5px;color:var(--ink);font-size:10px;padding:2px 8px;cursor:pointer">+ Add via Files</button>
-    </div>
-    <div id="overlay-layer-list-plant" style="display:none;margin-top:6px"></div>
-    <div id="layer-picker-panel-plant" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px;max-height:160px;overflow-y:auto">
-      <div id="layer-picker-list-plant"></div>
-    </div>
-  </div>
-
-  </div>
-
-    <div class="sec">
-      <div class="icon-row">
-        <button class="icon-btn b-teal" onclick="startDrawBlock()" id="btn-draw-soil" data-i18n-tip="drawpoly">✏️</button>
-        <button class="icon-btn b-amber b-off" id="btn-finish-soil" onclick="finishDrawBlock()" ontouchstart="event.stopPropagation()" data-i18n-tip="finish">✅</button>
-        <button class="icon-btn b-gray" onclick="undoLastBlock()" data-i18n-tip="undo">↩️</button>
-        <button class="icon-btn b-green" onclick="runExportTask()" data-i18n-tip="expall">📦</button>
-        <button class="icon-btn b-red" onclick="clearAllBlocks()" data-i18n-tip="clearall">🗑️</button>
-      </div>
-    </div>
-
-    <div class="sec" style="flex:1">
-      <div class="sec-t sec-t-toggle" onclick="toggleSummary('soil-summary-body',this)" data-i18n="place">Placements</div>
-      <div id="soil-summary-body">
-      <table id="soil-table">
-        <thead><tr><th data-i18n="th_soiltype">Soil type</th><th data-i18n="th_area">Area</th></tr></thead>
-        <tbody id="soil-tbody"></tbody>
-      </table>
-      <div id="soil-total-row" style="margin-top:4px;font-size:10px;color:var(--leaf)">Total: 0 ha</div>
-      </div>
-    </div>
-
-  <!-- Overlay layers for Soil mode -->
-  <div class="sec" id="soil-sec-layers">
-    <div class="sec-t" style="display:flex;align-items:center;justify-content:space-between">
-      <span>🗂️ Overlays</span>
-      <button onclick="switchTab('files')" style="background:var(--mint);border:none;border-radius:5px;color:var(--ink);font-size:10px;padding:2px 8px;cursor:pointer">+ Add via Files</button>
-    </div>
-    <div id="overlay-layer-list-soil" style="display:none;margin-top:6px"></div>
-    <div id="layer-picker-panel-soil" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px;max-height:160px;overflow-y:auto">
-      <div id="layer-picker-list-soil"></div>
-    </div>
-  </div>
-
-  </div>
 
   <div id="mode-vec-body">
 
