@@ -7,7 +7,7 @@
 <script>
 (function(){const t=localStorage.getItem('arr_theme')||'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
 </script>
-<title>Daily Report v14</title>
+<title>Daily Report v15</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;padding-bottom:60px}
@@ -482,7 +482,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v14';
+const APP_VERSION    = 'DRT-v15';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -1083,16 +1083,24 @@ function attTodayKey() {
   return `att_submitted_${userEmail}_${new Date().toISOString().slice(0,10)}`;
 }
 
+function attTimeWindow() {
+  const h = new Date().getHours();
+  if (h >= 0  && h < 7)  return 'blocked';
+  if (h >= 7  && h < 12) return 'normal';
+  return 'late';  // 12–23
+}
+
 function initAttChiclets() {
   const stored = localStorage.getItem(attTodayKey());
   const bar    = document.getElementById('att-bar');
   const status = document.getElementById('att-status');
-  bar.style.display    = 'flex';
+  bar.style.display    = 'none';
   status.style.display = 'none';
+
+  // Already submitted today
   if (stored) {
     try {
       const s = JSON.parse(stored);
-      bar.style.display    = 'none';
       status.style.display = 'flex';
       if (s.type === 'Attended') {
         status.className   = 'att-ok';
@@ -1102,6 +1110,17 @@ function initAttChiclets() {
         status.textContent = `🚫 Leave · ${s.leave_reasons || 'Leave'}`;
       }
     } catch(e) {}
+    return;
+  }
+
+  const win = attTimeWindow();
+  if (win === 'blocked') {
+    status.style.display = 'flex';
+    status.className     = '';
+    status.style.background = 'var(--mid)';
+    status.textContent   = '🕐 Attendance opens at 07:00';
+  } else {
+    bar.style.display = 'flex';
   }
 }
 
@@ -1109,16 +1128,24 @@ function openAttModal(type) {
   attModalType = type;
   const today   = new Date().toISOString().slice(0,10);
   const nowTime = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
-  const outTime = type === 'Attended'
-    ? new Date(Date.now() + 8*60*60*1000).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false})
-    : nowTime;
+  const win = attTimeWindow();
+  let inTime, outTime;
+  if (type !== 'Attended') {
+    inTime = nowTime; outTime = nowTime;
+  } else if (win === 'late') {
+    inTime = '11:00'; outTime = '19:00';
+  } else {
+    inTime  = nowTime;
+    outTime = new Date(Date.now() + 8*60*60*1000).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
+  }
 
   document.getElementById('att-modal-title').textContent =
     type === 'Attended' ? '✅ Mark Attendance' : '🚫 Mark Leave';
   document.getElementById('att-modal-sub').textContent =
     type === 'Attended' ? 'Confirm you are present for work today.' : 'Select reason(s) for leave (up to 3).';
   document.getElementById('att-modal-info').innerHTML =
-    `<b>Reporter:</b> ${userName}<br><b>Date:</b> ${today}<br><b>In:</b> ${nowTime}&ensp;·&ensp;<b>Out:</b> ${outTime}`;
+    `<b>Reporter:</b> ${userName}<br><b>Date:</b> ${today}<br><b>In:</b> ${inTime}&ensp;·&ensp;<b>Out:</b> ${outTime}`
+    + (win === 'late' && type === 'Attended' ? `<br><span style="font-size:10px;color:var(--amber)">⚑ Late check-in — recorded as standard shift</span>` : '');
 
   const reasonsWrap = document.getElementById('att-reasons-wrap');
   reasonsWrap.style.display = type === 'Leave' ? '' : 'none';
@@ -1161,11 +1188,17 @@ async function submitAttendance() {
   btn.disabled = true;
 
   const today   = new Date().toISOString().slice(0,10);
-  const nowISO  = new Date().toISOString();
   const nowTime = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
-  const outTime = attModalType === 'Attended'
-    ? new Date(Date.now() + 8*60*60*1000).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false})
-    : nowTime;
+  const win = attTimeWindow();
+  let inTime, outTime;
+  if (attModalType !== 'Attended') {
+    inTime = nowTime; outTime = nowTime;
+  } else if (win === 'late') {
+    inTime = '11:00'; outTime = '19:00';
+  } else {
+    inTime  = nowTime;
+    outTime = new Date(Date.now() + 8*60*60*1000).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
+  }
 
   let leaveReasons = '';
   if (attModalType === 'Leave') {
@@ -1189,7 +1222,7 @@ async function submitAttendance() {
     operator_name:  userName,
     project,
     type:         attModalType,
-    in_time:      nowTime,
+    in_time:      inTime,
     out_time:     outTime,
     leave_reasons: leaveReasons,
     gps_lat:      gpsLat !== null ? gpsLat.toFixed(6) : '',
@@ -1203,7 +1236,7 @@ async function submitAttendance() {
     if (!resp.ok) throw new Error(resp.error || 'submitAttendance failed');
 
     // Store in localStorage — blocks re-submission from this device+login today
-    localStorage.setItem(attTodayKey(), JSON.stringify({ type: attModalType, in_time: nowTime, leave_reasons: leaveReasons, uuid }));
+    localStorage.setItem(attTodayKey(), JSON.stringify({ type: attModalType, in_time: inTime, leave_reasons: leaveReasons, uuid }));
 
     closeAttModal();
     initAttChiclets();   // re-render: hide chiclets, show status badge
