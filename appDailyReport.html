@@ -7,7 +7,7 @@
 <script>
 (function(){const t=localStorage.getItem('arr_theme')||'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
 </script>
-<title>Daily Report v15</title>
+<title>Daily Report v16</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;padding-bottom:60px}
@@ -231,6 +231,24 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
     <div class="att-modal-title" id="att-modal-title"></div>
     <div class="att-modal-sub" id="att-modal-sub"></div>
     <div class="att-modal-info" id="att-modal-info"></div>
+    <!-- Advance leave date + days — shown only for Advance modal -->
+    <div id="att-advance-wrap" style="display:none;margin-bottom:14px">
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <div style="flex:2">
+          <div class="field-label" style="margin-bottom:4px;font-size:11px">Start Date</div>
+          <input class="field-input" type="date" id="att-adv-date" style="font-size:12px">
+        </div>
+        <div style="flex:1">
+          <div class="field-label" style="margin-bottom:4px;font-size:11px">Days (max 3)</div>
+          <input class="field-input" type="number" id="att-adv-days" min="1" max="3" value="1" style="font-size:12px">
+        </div>
+      </div>
+      <div id="att-adv-warning" style="display:none;margin-top:8px;font-size:11px;
+        color:#FF3300;background:rgba(255,51,0,.1);border-radius:6px;padding:8px 10px">
+        ⚠️ For leave longer than 3 days, please call your supervisor.
+      </div>
+    </div>
+
     <!-- Leave reasons — shown only for Leave modal -->
     <div id="att-reasons-wrap" style="display:none">
       <div class="att-reason-grid" id="att-reason-grid">
@@ -257,7 +275,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   <!-- Attendance chiclets -->
   <div id="att-bar" style="display:none">
     <button class="att-chiclet" id="att-attended" onclick="openAttModal('Attended')">✅ Attended</button>
-    <button class="att-chiclet" id="att-leave"    onclick="openAttModal('Leave')">🚫 Leave</button>
+    <button class="att-chiclet" id="att-leave"    onclick="openAttModal('Leave')">🚫 Leave Today</button>
+    <button class="att-chiclet" id="att-advance"  onclick="openAttModal('Advance')" style="background:#993300;font-size:12px">📅 Leave Advance</button>
   </div>
   <div id="att-status" style="display:none"></div>
 
@@ -482,7 +501,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v15';
+const APP_VERSION    = 'DRT-v16';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -498,7 +517,7 @@ let outbox = JSON.parse(localStorage.getItem('drt_outbox') || '[]');
 let LANG = 'en';
 
 // Attendance state
-let attModalType = null;   // 'Attended' | 'Leave'
+let attModalType = null;   // 'Attended' | 'Leave' | 'Advance'
 let attRows = [];
 let attChart = null;
 let attDashUnlocked = false;
@@ -1139,16 +1158,30 @@ function openAttModal(type) {
     outTime = new Date(Date.now() + 8*60*60*1000).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
   }
 
-  document.getElementById('att-modal-title').textContent =
-    type === 'Attended' ? '✅ Mark Attendance' : '🚫 Mark Leave';
-  document.getElementById('att-modal-sub').textContent =
-    type === 'Attended' ? 'Confirm you are present for work today.' : 'Select reason(s) for leave (up to 3).';
+  const titles = { Attended:'✅ Mark Attendance', Leave:'🚫 Leave Today', Advance:'📅 Leave Advance' };
+  const subs   = { Attended:'Confirm you are present for work today.',
+                   Leave:'Select reason(s) for leave (up to 3).',
+                   Advance:'Select start date, number of days, and reason(s).' };
+  document.getElementById('att-modal-title').textContent = titles[type];
+  document.getElementById('att-modal-sub').textContent   = subs[type];
   document.getElementById('att-modal-info').innerHTML =
-    `<b>Reporter:</b> ${userName}<br><b>Date:</b> ${today}<br><b>In:</b> ${inTime}&ensp;·&ensp;<b>Out:</b> ${outTime}`
+    `<b>Reporter:</b> ${userName}<br><b>Date:</b> ${today}`
+    + (type !== 'Advance' ? `<br><b>In:</b> ${inTime}&ensp;·&ensp;<b>Out:</b> ${outTime}` : '')
     + (win === 'late' && type === 'Attended' ? `<br><span style="font-size:10px;color:var(--amber)">⚑ Late check-in — recorded as standard shift</span>` : '');
 
+  // Show/hide advance fields
+  const advWrap = document.getElementById('att-advance-wrap');
+  advWrap.style.display = type === 'Advance' ? '' : 'none';
+  if (type === 'Advance') {
+    const tomorrow = new Date(Date.now() + 864e5).toISOString().slice(0,10);
+    document.getElementById('att-adv-date').min   = tomorrow;
+    document.getElementById('att-adv-date').value = tomorrow;
+    document.getElementById('att-adv-days').value = '1';
+    document.getElementById('att-adv-warning').style.display = 'none';
+  }
+
   const reasonsWrap = document.getElementById('att-reasons-wrap');
-  reasonsWrap.style.display = type === 'Leave' ? '' : 'none';
+  reasonsWrap.style.display = (type === 'Leave' || type === 'Advance') ? '' : 'none';
 
   // Reset reason pills
   document.querySelectorAll('.att-reason-pill').forEach(p => p.classList.remove('sel'));
@@ -1156,9 +1189,20 @@ function openAttModal(type) {
   document.getElementById('att-other-text').value = '';
 
   const submitBtn = document.getElementById('att-modal-submit');
-  submitBtn.textContent = type === 'Attended' ? 'Submit Today\'s Attendance' : 'Submit Leave';
+  submitBtn.textContent = type === 'Attended' ? 'Submit Today\'s Attendance'
+                        : type === 'Advance'  ? 'Submit Advance Leave'
+                        : 'Submit Leave Today';
   submitBtn.className   = type === 'Attended' ? 'att-modal-btn attended' : 'att-modal-btn leave';
   submitBtn.disabled    = false;
+
+  // Days input watcher for warning
+  if (type === 'Advance') {
+    document.getElementById('att-adv-days').oninput = function() {
+      const v = parseInt(this.value) || 1;
+      this.value = Math.min(3, Math.max(1, v));
+      document.getElementById('att-adv-warning').style.display = parseInt(this.value) >= 3 ? '' : 'none';
+    };
+  }
 
   document.getElementById('att-modal-bg').style.display = 'flex';
 }
@@ -1189,57 +1233,92 @@ async function submitAttendance() {
 
   const today   = new Date().toISOString().slice(0,10);
   const nowTime = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
-  const win = attTimeWindow();
-  let inTime, outTime;
-  if (attModalType !== 'Attended') {
-    inTime = nowTime; outTime = nowTime;
-  } else if (win === 'late') {
-    inTime = '11:00'; outTime = '19:00';
-  } else {
-    inTime  = nowTime;
-    outTime = new Date(Date.now() + 8*60*60*1000).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
-  }
+  const win     = attTimeWindow();
+  const project = localStorage.getItem('arr_project') || '';
 
+  // Collect leave reasons (used by Leave and Advance)
   let leaveReasons = '';
-  if (attModalType === 'Leave') {
+  if (attModalType === 'Leave' || attModalType === 'Advance') {
     const sel = [...document.querySelectorAll('.att-reason-pill.sel')].map(p => p.dataset.reason);
     const otherText = document.getElementById('att-other-text').value.trim();
-    if (sel.includes('Other') && otherText) {
-      const idx = sel.indexOf('Other');
-      sel[idx] = `Other: ${otherText}`;
-    }
+    if (sel.includes('Other') && otherText) sel[sel.indexOf('Other')] = `Other: ${otherText}`;
     leaveReasons = sel.join(' | ');
   }
 
-  const uuid = crypto.randomUUID();
-  const project = localStorage.getItem('arr_project') || '';
-
-  const row = {
-    uuid,
-    submitted_ts: '',   // server stamps
-    date:         today,
-    operator_email: userEmail,
-    operator_name:  userName,
-    project,
-    type:         attModalType,
-    in_time:      inTime,
-    out_time:     outTime,
-    leave_reasons: leaveReasons,
-    gps_lat:      gpsLat !== null ? gpsLat.toFixed(6) : '',
-    gps_lng:      gpsLng !== null ? gpsLng.toFixed(6) : '',
-    gps_accuracy_m: gpsAcc !== null ? gpsAcc.toFixed(1) : '',
-    app_version:  APP_VERSION,
-  };
-
   try {
-    const resp = await gasGet({ action: 'submitAttendance', row: JSON.stringify(row) });
-    if (!resp.ok) throw new Error(resp.error || 'submitAttendance failed');
+    if (attModalType === 'Advance') {
+      // Build one row per day
+      const startDate = document.getElementById('att-adv-date').value;
+      const numDays   = Math.min(3, Math.max(1, parseInt(document.getElementById('att-adv-days').value) || 1));
+      if (!startDate) { btn.disabled = false; alert('Please select a start date.'); return; }
 
-    // Store in localStorage — blocks re-submission from this device+login today
-    localStorage.setItem(attTodayKey(), JSON.stringify({ type: attModalType, in_time: inTime, leave_reasons: leaveReasons, uuid }));
+      for (let i = 0; i < numDays; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().slice(0,10);
+        const row = {
+          uuid:           crypto.randomUUID(),
+          submitted_ts:   '',
+          date:           dateStr,
+          operator_email: userEmail,
+          operator_name:  userName,
+          project,
+          type:           'Leave',
+          in_time:        '00:00',
+          out_time:       '00:00',
+          leave_reasons:  leaveReasons,
+          gps_lat:        gpsLat !== null ? gpsLat.toFixed(6) : '',
+          gps_lng:        gpsLng !== null ? gpsLng.toFixed(6) : '',
+          gps_accuracy_m: gpsAcc !== null ? gpsAcc.toFixed(1) : '',
+          app_version:    APP_VERSION,
+        };
+        const resp = await gasGet({ action: 'submitAttendance', row: JSON.stringify(row) });
+        if (!resp.ok) throw new Error(resp.error || 'submitAttendance failed');
+      }
+      closeAttModal();
+      alert(`✅ Advance leave submitted for ${numDays} day${numDays > 1 ? 's' : ''} from ${startDate}.`);
 
-    closeAttModal();
-    initAttChiclets();   // re-render: hide chiclets, show status badge
+    } else {
+      // Today: Attended or Leave Today
+      let inTime, outTime;
+      if (attModalType === 'Leave') {
+        inTime = nowTime; outTime = nowTime;
+      } else if (win === 'late') {
+        inTime = '11:00'; outTime = '19:00';
+      } else {
+        inTime  = nowTime;
+        outTime = new Date(Date.now() + 8*60*60*1000)
+          .toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
+      }
+
+      const row = {
+        uuid:           crypto.randomUUID(),
+        submitted_ts:   '',
+        date:           today,
+        operator_email: userEmail,
+        operator_name:  userName,
+        project,
+        type:           attModalType === 'Leave' ? 'Leave' : 'Attended',
+        in_time:        inTime,
+        out_time:       outTime,
+        leave_reasons:  leaveReasons,
+        gps_lat:        gpsLat !== null ? gpsLat.toFixed(6) : '',
+        gps_lng:        gpsLng !== null ? gpsLng.toFixed(6) : '',
+        gps_accuracy_m: gpsAcc !== null ? gpsAcc.toFixed(1) : '',
+        app_version:    APP_VERSION,
+      };
+
+      const resp = await gasGet({ action: 'submitAttendance', row: JSON.stringify(row) });
+      if (!resp.ok) throw new Error(resp.error || 'submitAttendance failed');
+
+      // Guard: block re-submission from same device+login today
+      localStorage.setItem(attTodayKey(), JSON.stringify({
+        type: row.type, in_time: inTime, leave_reasons: leaveReasons, uuid: row.uuid
+      }));
+      closeAttModal();
+      initAttChiclets();
+    }
+
   } catch(e) {
     btn.disabled = false;
     alert('Submission failed. Please try again.');
