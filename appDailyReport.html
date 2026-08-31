@@ -1132,14 +1132,22 @@ function initAttChiclets() {
     return;
   }
 
-  const win = attTimeWindow();
+  const win    = attTimeWindow();
   if (win === 'blocked') {
     status.style.display = 'flex';
     status.className     = '';
     status.style.background = 'var(--mid)';
     status.textContent   = '🕐 Attendance opens at 07:00';
+    // Still show Leave Advance — illness has no timetable
+    document.getElementById('att-advance').style.display = '';
+    bar.style.display = 'flex';
+    document.getElementById('att-attended').style.display = 'none';
+    document.getElementById('att-leave').style.display    = 'none';
   } else {
     bar.style.display = 'flex';
+    document.getElementById('att-attended').style.display = '';
+    document.getElementById('att-leave').style.display    = '';
+    document.getElementById('att-advance').style.display  = '';
   }
 }
 
