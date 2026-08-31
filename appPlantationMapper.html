@@ -231,7 +231,8 @@ select option{background:var(--card)}
 .pm-label{font-size:10px;color:var(--dim);flex:1;min-width:0}
 .pm-val{font-size:12px;font-weight:700;color:var(--ink);min-width:36px;text-align:center}
 .pm-btn{background:var(--mint);border:none;border-radius:5px;color:var(--ink);font-size:16px;width:28px;height:28px;cursor:pointer;flex-shrink:0;line-height:1}
-/* soil mode CSS removed */
+#mode-plant-body .icon-row:has(#btn-draw-plant),
+#mode-soil-body .icon-row:has(#btn-draw-soil){flex-wrap:nowrap}
 
 /* ── Collapsible summary ─────────────────────────────────────────── */
 .sec-t-toggle{cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px}
@@ -488,9 +489,9 @@ function arrAuthRenderChip(containerId, onSignOut) {
     <button class="tb-uni-btn" id="tb-settings-btn" onclick="openSettingsCallout(this)" style="display:none" title="Session / Settings">👤</button>
   </div>
   <div style="display:flex;align-items:center;width:100%;padding:2px 4px 3px;gap:2px">
+    <span style="flex:1"></span>
     <button class="tb-uni-btn tb-mode-btn" id="tbm-plant" onclick="switchTab('plant')" title="Plantation Mapper">🌳</button>
     <button class="tb-uni-btn tb-mode-btn" id="tbm-files" onclick="switchTab('files')" title="File Browser">📁</button>
-    <span style="flex:1"></span>
     <button class="tb-uni-btn" id="tbm-clear" onclick="clearAll()" title="Clear All" style="background:#8b0000">🗑</button>
     <button class="tb-uni-btn" id="tb-outbox-badge" onclick="openOutboxPanel(this)" title="Outbox" style="background:var(--mint);opacity:0.5" disabled>📤</button>
     <button class="tb-uni-btn" id="tb-gps-btn" onclick="handleGpsBtnTap()" title="GPS / Centre map" style="background:var(--mint);opacity:0.5">🎯</button>
@@ -575,6 +576,135 @@ function arrAuthRenderChip(containerId, onSignOut) {
   </div>
 
   </div>
+
+    <div class="sec">
+      <div class="icon-row">
+        <button class="icon-btn b-teal" onclick="startDrawBlock()" id="btn-draw-soil" data-i18n-tip="drawpoly">✏️</button>
+        <button class="icon-btn b-amber b-off" id="btn-finish-soil" onclick="finishDrawBlock()" ontouchstart="event.stopPropagation()" data-i18n-tip="finish">✅</button>
+        <button class="icon-btn b-gray" onclick="undoLastBlock()" data-i18n-tip="undo">↩️</button>
+        <button class="icon-btn b-green" onclick="runExportTask()" data-i18n-tip="expall">📦</button>
+        <button class="icon-btn b-red" onclick="clearAllBlocks()" data-i18n-tip="clearall">🗑️</button>
+      </div>
+    </div>
+
+    <div class="sec" style="flex:1">
+      <div class="sec-t sec-t-toggle" onclick="toggleSummary('soil-summary-body',this)" data-i18n="place">Placements</div>
+      <div id="soil-summary-body">
+      <table id="soil-table">
+        <thead><tr><th data-i18n="th_soiltype">Soil type</th><th data-i18n="th_area">Area</th></tr></thead>
+        <tbody id="soil-tbody"></tbody>
+      </table>
+      <div id="soil-total-row" style="margin-top:4px;font-size:10px;color:var(--leaf)">Total: 0 ha</div>
+      </div>
+    </div>
+
+  <!-- Overlay layers for Soil mode -->
+  <div class="sec" id="soil-sec-layers">
+    <div class="sec-t" style="display:flex;align-items:center;justify-content:space-between">
+      <span>🗂️ Overlays</span>
+      <button onclick="switchTab('files')" style="background:var(--mint);border:none;border-radius:5px;color:var(--ink);font-size:10px;padding:2px 8px;cursor:pointer">+ Add via Files</button>
+    </div>
+    <div id="overlay-layer-list-soil" style="display:none;margin-top:6px"></div>
+    <div id="layer-picker-panel-soil" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px;max-height:160px;overflow-y:auto">
+      <div id="layer-picker-list-soil"></div>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- Step 1: Shape -->
+  <div class="vec-step" id="vec-step1">
+    <div class="vec-step-label">① Shape</div>
+    <div class="vec-shape-grid">
+      <button class="vec-shape-btn vec-tool-btn" id="vt-poly" onclick="vecFamSelectShape('poly')" style="opacity:.3;pointer-events:none">
+        <span class="icon"> ⬢ </span><span class="lbl">Polygon</span>
+      </button>
+      <button class="vec-shape-btn vec-tool-btn" id="vt-path" onclick="vecFamSelectShape('path')" style="opacity:.3;pointer-events:none">
+        <span class="icon"> ⤳ </span><span class="lbl">Path</span>
+      </button>
+      <button class="vec-shape-btn vec-tool-btn" id="vt-poi" onclick="vecFamSelectShape('poi')" style="opacity:.3;pointer-events:none">
+        <span class="icon"> ⚑ </span><span class="lbl">Point (POI)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Method (hidden until shape chosen) -->
+  <div class="vec-step" id="vec-step2" style="display:none">
+    <div class="vec-step-label">② Method</div>
+    <div class="vec-method-row">
+      <button class="vec-method-btn" id="vec-meth-manual" onclick="vecFamSelectMethod('manual')">✋ Manual</button>
+      <button class="vec-method-btn" id="vec-meth-gps"    onclick="vecFamSelectMethod('gps')">📍 GPS</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Name + Type + Start (hidden until method chosen) -->
+  <div class="vec-step" id="vec-step3" style="display:none">
+    <div class="vec-step-label">③ Details &amp; Start</div>
+    <input id="vec-feat-name" class="vec-name-input" type="text" placeholder="Feature name… (required)" maxlength="60" oninput="vecFamCheckReady()"/>
+    <div id="vec-type-chips" class="vec-type-chips"></div>
+    <div id="vec-gps-info" style="font-size:10px;color:var(--dim);min-height:14px;margin-bottom:4px"></div>
+    <button class="vec-start-btn" id="vec-btn-start-fam" onclick="vecFamStart()" disabled>▶ Start</button>
+  </div>
+
+  <!-- Manual tool controls (shown after start for manual tools) -->
+  <div class="vec-step" id="vec-sec-ctrl" style="display:none">
+    <div class="icon-row" id="vec-ctrl-row"></div>
+  </div>
+
+  <!-- Live stats -->
+  <div class="vec-step" id="vec-sec-stats" style="display:none">
+    <div style="font-size:10px;color:var(--dim);line-height:1.7">
+      <div id="vec-stat-area" style="display:none">📐 Area: <strong id="vec-stat-area-val" style="color:var(--ink)">—</strong></div>
+      <div id="vec-stat-perim" style="display:none">🔲 Perim: <strong id="vec-stat-perim-val" style="color:var(--ink)">—</strong></div>
+      <div id="vec-stat-len-row">📏 Length: <strong id="vec-stat-len-val" style="color:var(--ink)">—</strong></div>
+    </div>
+  </div>
+
+  <!-- Overlays -->
+  <div class="vec-step" id="vec-sec-layers" style="display:none">
+    <div class="sec-t" style="display:flex;align-items:center;justify-content:space-between">
+      <span>🗂️ Overlays</span>
+      <button onclick="switchTab('files')" style="background:var(--mint);border:none;border-radius:5px;color:var(--ink);font-size:10px;padding:2px 8px;cursor:pointer">+ Add via Files</button>
+    </div>
+    <div id="overlay-layer-list" style="display:none;margin-top:6px"></div>
+    <div id="layer-picker-panel" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px;max-height:180px;overflow-y:auto">
+      <div id="layer-picker-list"></div>
+    </div>
+  </div>
+
+  <!-- Vec edit section (post-finish, manual only) -->
+  <div class="sec" id="vec-sec-edit" style="display:none">
+    <div class="sec-t" style="color:var(--amber)">✏️ Editing vertices</div>
+    <div style="font-size:10px;color:var(--dim);margin:4px 0 8px">Drag vertices to adjust. GPS features cannot be edited.</div>
+    <div style="margin-bottom:6px">
+      <div class="sec-t" style="font-size:10px;margin-bottom:3px" id="vec-stage-label">Stage</div>
+      <select id="vec-stage-sel" style="font-size:11px;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--ink);padding:4px 6px">
+        <option value="eligibility">Eligibility check</option>
+        <option value="negotiated">Negotiated boundary</option>
+        <option value="surveyed">Surveyor (amin) boundary</option>
+        <option value="cleared">Post-clearing boundary</option>
+        <option value="final">Final (post-fencing)</option>
+        <option value="revised">Revised</option>
+      </select>
+    </div>
+    <div id="vec-revision-row" style="display:none;margin-bottom:6px">
+      <div class="sec-t" style="font-size:10px;margin-bottom:3px" id="vec-revision-label">Revision reason</div>
+      <select id="vec-revision-sel" style="font-size:11px;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--ink);padding:4px 6px">
+        <option value="flood_hazard">Flood hazard</option>
+        <option value="fire_hazard">Fire hazard</option>
+        <option value="bank_erosion">Bank erosion</option>
+        <option value="beneficiary_dropout">Beneficiary dropout</option>
+        <option value="encroachment">Encroachment</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="icon-row">
+      <button class="icon-btn b-teal" id="btn-vec-save-edit" onclick="vecSaveEdit()" style="font-size:11px">💾 Save</button>
+      <button class="icon-btn b-gray" id="btn-vec-discard-edit" onclick="vecDiscardEdit()" style="font-size:11px">✕ Discard</button>
+    </div>
+  </div>
+
+</div>
 
   <div id="mode-files-body" class="hidden">
     <div id="files-unsaved-warn" class="sec" style="display:none">
@@ -749,7 +879,7 @@ async function pushAllToDrive(files, toolFolder) {
 // Numbers always stay ASCII. Species shown phonetically in HIN/BEN.
 // ═══════════════════════════════════════════════════════════════════════
 const T={
-en:{sub:'Field v15 \u2014 landscape',basemap:'Basemap',plotgrid:'Plot boundary & grid',bsett:'Block settings',expdir:'Expansion direction',draw:'Draw block',place:'Placements',expkml:'Export KML',spacing:'Grid (m)',species:'Species',target:'Target saplings',loadkml:'Load plot boundary (KML, KMZ)',gengrid:'\u2699 Generate / Refresh Grid',drawpoly:'\u270f\ufe0f Draw Polyline Block',finish:'\u2705 Finish & Place',undo:'\u21a9 Undo last block',rmbnd:'\u2715 Remove boundary',expall:'\ud83d\udce6 Export All (KML+JPG+SHP)',exppoly:'\u2b07 Polygons KML',expsap:'\u2b07 Saplings KML',clearall:'\ud83d\uddd1 Clear all',osm:'OSM',sat:'Satellite',selsp:'\u2014 select species \u2014',countph:'enter count\u2026',rotate:'Rotate to landscape for the field mapper.',total:'Total',
+en:{sub:'Field v13 \u2014 landscape',basemap:'Basemap',plotgrid:'Plot boundary & grid',bsett:'Block settings',expdir:'Expansion direction',draw:'Draw block',place:'Placements',expkml:'Export KML',spacing:'Grid (m)',species:'Species',target:'Target saplings',loadkml:'Load plot boundary (KML, KMZ)',gengrid:'\u2699 Generate / Refresh Grid',drawpoly:'\u270f\ufe0f Draw Polyline Block',finish:'\u2705 Finish & Place',undo:'\u21a9 Undo last block',rmbnd:'\u2715 Remove boundary',expall:'\ud83d\udce6 Export All (KML+JPG+SHP)',exppoly:'\u2b07 Polygons KML',expsap:'\u2b07 Saplings KML',clearall:'\ud83d\uddd1 Clear all',osm:'OSM',sat:'Satellite',selsp:'\u2014 select species \u2014',countph:'enter count\u2026',rotate:'Rotate to landscape for the field mapper.',total:'Total',
 s_init:'Load a KML boundary \u2192 Generate Grid \u2192 draw blocks.',s_no_bnd:'Load a KML boundary first.',s_no_grid:'Click \u2699 Generate Grid first.',s_no_sp:'Select a species first.',s_no_cnt:'Enter a target sapling count.',s_drawing:'Tap \u22654 vertices on map. Tap Finish & Place when done.',s_cancel:'Draw cancelled.',s_outside:'Block is outside the plot boundary.',s_no_free:'No free grid points in drawn area.',s_need4:'Need \u22654 vertices.',s_gen:'Generating grid\u2026',s_no_undo:'Nothing to undo.',s_bnd_rm:'Boundary removed.',s_confirm:'Clear all placements?',s_poly_exp:'Polygon KML exported.',s_no_export:'Nothing to export.',s_exporting:'Building export package\u2026',s_export_done:()=>'Export package ready.',
 s_gen_done:(n,f)=>`Grid: ${n} points (${f} free).`,s_badge:(n,f,m)=>`${n} pts \u00b7 ${f} free \u00b7 ${m}m spacing`,s_bnd:(nm)=>`Boundary: ${nm}. Click \u2699 Generate Grid.`,s_placed:(n,sp,c,w)=>`Placed ${n} \u00d7 ${sp}.${c}${w}`,s_clip:(p)=>` (\u26a0 clipped ${p}%)`,s_only:(n,t)=>`  \u26a0 only ${n}/${t} free.`,s_undo:(n,sp)=>`Undid: ${n} \u00d7 ${sp}.`,s_sap_exp:(n,k)=>`Sapling KML: ${n} pts in ${k} folders.`,bnd:'Plot boundary',grid:'Grid',soiltype:'Soil type',th_soiltype:'Soil type',th_area:'Area',tbtitle_plant:'🌳 Plantation Mapper',tbtitle_soil:'⛏ Soil Mapper',s_no_soil:'Select a soil type first.',s_soil_overlap:'Area already covered by another soil type.',s_soil_placed:(t,ha)=>`Placed ${t} — ${ha} ha.`,lang:'Language',mode:'Mode',tab_plant:'Plantation Mapper',tab_soil:'Soil Mapper',tab_vec:'Make Vector',tab_files:'Browse Files',s_no_kml_loaded:'No boundary loaded yet',th_species:'Species',th_count:'#',saplings:'saplings',files_unsaved_title:'Unsaved Work',files_discard:'🗑 Discard',files_goback:'↩️ Go back',files_retry_tip:'Retry pending uploads',files_loading:'Loading…',files_saved_hdr:'📂 Saved files',files_geojson_hdr:'📍 GeoJSON audit (read-only)',files_no_saved:'No saved files yet.',files_no_geojson:'No GeoJSON files yet.',files_view:'View on map',files_to_kml:'Convert to KML',files_dl_geojson:'Download GeoJSON',files_delete:'Delete',files_tap_close:'Tap to close',files_pending:(n)=>`${n} pending upload`,files_viewing:(f)=>`👁 Viewing ${f} — tap features for details`,files_kml_done:(f)=>'📄 KML downloaded: '+f,files_deleted:(f)=>'🗑 Deleted: '+f,files_no_sidecar:(f)=>'⚠️ No GeoJSON found for '+f,files_err_view:'Error viewing file: ',files_err_kml:'KML convert failed: ',files_err_dl:'Download failed: ',files_err_del:'Delete failed: ',files_err_load:'Error loading files: ',files_unsaved_msg:(t)=>`You have unsaved work in ${t}. Discard to browse files, or go back and export first.`,files_back_to:(t)=>'↩️ Back to '+t,files_delete_confirm:(f)=>`Delete ${f}?\n\nThis removes the on-device copy. Drive copy is unaffected.`,
 },
@@ -924,9 +1054,14 @@ function openModeCallout(anchorEl) {
     const row = document.createElement('div'); row.className = 'callout-row';
     const plantBtn = calloutOptBtn('\u{1F331}', APP_MODE === 'plant', () => switchTab('plant'));
     attachTip(plantBtn, 'tab_plant');
+    const soilBtn = calloutOptBtn('\u{1F9EA}', APP_MODE === 'soil', () => switchTab('soil'));
+    attachTip(soilBtn, 'tab_soil');
+    const vecBtn = calloutOptBtn('\u{1F4D0}', APP_MODE === 'vec', () => switchTab('vec'));
+    attachTip(vecBtn, 'tab_vec');
     const filesBtn = calloutOptBtn('\u{1F4C1}', APP_MODE === 'files', () => switchTab('files'));
     attachTip(filesBtn, 'tab_files');
-    row.appendChild(plantBtn); row.appendChild(filesBtn);
+    // MRV button removed v68
+    row.appendChild(plantBtn); row.appendChild(soilBtn); row.appendChild(vecBtn); row.appendChild(filesBtn);
     box.appendChild(row);
   });
 }
@@ -1040,13 +1175,14 @@ function openDirCallout(anchorEl) {
 function setLang(code){
   const lb=document.getElementById('tb-lang-badge');
   if(lb){const lc=_langCycle.find(l=>l[0]===code);if(lc)lb.textContent=lc[1];}
-  setTimeout(() => { buildSpeciesGrid(); updateSpeciesGridSelection(); }, 0);
+  setTimeout(() => { buildSpeciesGrid(); buildSoilGrid(); updateSpeciesGridSelection(); updateSoilGridSelection(); }, 0);
   currentLangCode = code;
   Lang=T[code];
   document.querySelectorAll('[data-i18n]').forEach(el=>{ if(Lang[el.dataset.i18n]) el.textContent=Lang[el.dataset.i18n]; });
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ if(Lang[el.dataset.i18nPlaceholder]) el.placeholder=Lang[el.dataset.i18nPlaceholder]; });
   const port=document.querySelector('#port p'); if(port) port.textContent=Lang.rotate;
   updateSummary();
+  updateSoilSummary();
   if (typeof globalGrid !== 'undefined' && globalGrid.length) {
     const free = globalGrid.length - usedKeys.size;
     const gi = document.getElementById('grid-info');
@@ -1087,12 +1223,12 @@ const SPECIES_COLORS = {
 // ═══════════════════════════════════════════════════════════════════════
 // GLOBAL STATE
 // ═══════════════════════════════════════════════════════════════════════
-let APP_MODE = 'plant';   // default tab is Make Vector
+let APP_MODE = 'plant';
 let currentSpacing = 3;   // grid spacing (m), driven by the spacing wheel picker
 let currentCount = 100;   // target sapling count, driven by the count wheel picker
 let map, osmLayer, esriLayer, satLabelsLayer;
 let boundaryLayer, gridLayer, saplingLayer, outlineLayer;
-let isDrawing = false;
+let polylineHandler, isDrawing = false, _intentionalFinish = false;
 let currentDir  = "N";
 let kmlBaseName = "fieldmap";
 let plotPoly    = null;
@@ -1331,8 +1467,26 @@ function init() {
   gridLayer     = L.layerGroup().addTo(map);
   outlineLayer  = L.layerGroup().addTo(map);
   saplingLayer  = L.layerGroup().addTo(map);
-  // soilLayer removed — Plantation Mapper only
-  // Drawing uses click-based vertex collection (no L.Draw events needed)
+  soilLayer = L.layerGroup().addTo(map);
+  map.on(L.Draw.Event.CREATED, e => {
+    if (e.layerType !== 'polyline') return;
+    isDrawing = false;
+    document.getElementById(finishBtnId()).classList.add('b-off');
+    document.getElementById(drawBtnId()).classList.remove('b-off');
+    if (APP_MODE === 'soil') placeSoilBlock(e.layer.getLatLngs());
+    else placeBlock(e.layer.getLatLngs());
+  });
+  map.on('draw:drawvertex', () => { updateVecStats(); });
+  map.on(L.Draw.Event.DRAWSTOP, () => {
+    isDrawing = false;
+    const btn = document.getElementById(finishBtnId());
+    if (btn) btn.classList.add('b-off');
+    const dbtn = document.getElementById(drawBtnId());
+    if (dbtn) dbtn.classList.remove('b-off');
+    // Suppress "Draw cancelled" if the user intentionally tapped Finish
+    // (DRAWSTOP fires after _finishShape() on both desktop and mobile)
+    if (!_intentionalFinish) setStatus(Lang.s_cancel,'');
+  });
 
   // Wire tooltips for every icon button that declares a Lang-key tooltip
   // (this also covers the topbar KML icon, which carries data-i18n-tip="loadkml")
@@ -1360,6 +1514,7 @@ function init() {
   // If no stored session, the overlay stays visible for first-run setup.
   setupBuildProjectGrid();
   buildSpeciesGrid();
+  buildSoilGrid();
   updatePMDisplays();
   // Require launcher-level sign-in; redirect immediately if missing
   const launcherAuth = arrAuthGet();
@@ -1542,8 +1697,10 @@ function extractPolyCoords(doc) {
 function clearBoundary() {
   boundaryLayer.clearLayers(); gridLayer.clearLayers();
   plotPoly=null; globalGrid=[]; gridByKey.clear(); usedKeys=new Set();
+  soilLayer.clearLayers(); soilBlocks=[]; soilUsedUnion=null;
   kmlBaseName='fieldmap';
   document.getElementById('grid-info').textContent='';
+  updateSoilSummary();
   setStatus(Lang.s_bnd_rm,'');
 }
 
@@ -1732,7 +1889,7 @@ function clipToPlotThenUsed(drawnPoly, usedUnionGeom) {
   if (plotPoly) {
     try {
       const cl = turf.intersect(drawnPoly, plotPoly);
-      if (!cl || turf.area(cl) < 0.1) /* outside — place as-drawn */
+      if (!cl || turf.area(cl) < 0.1) return { poly: null, pctClipped: 0, error: 'outside' };
       pctClipped = turf.area(cl) / turf.area(drawnPoly) * 100;
       poly = cl;
     } catch (e) {}
@@ -1764,48 +1921,6 @@ function polygonXml(ring) {
 function finishBtnId() { return APP_MODE === 'soil' ? 'btn-finish-soil' : 'btn-finish-plant'; }
 function drawBtnId() { return APP_MODE === 'soil' ? 'btn-draw-soil' : 'btn-draw-plant'; }
 
-// ── Click-based polygon drawing (no L.Draw) ──────────────────────────
-let _drawVertices = [];
-let _drawLayer = null;
-
-function _drawRedraw() {
-  if (_drawLayer) { _drawLayer.clearLayers(); }
-  else { _drawLayer = L.layerGroup().addTo(map); }
-  const lls = _drawVertices.map(v => [v.lat, v.lng]);
-  if (!lls.length) return;
-  // Draw polygon fill once we have 3+ vertices, otherwise just a line
-  if (lls.length >= 3)
-    L.polygon(lls, { color:'#f97316', weight:2, dashArray:'5 4', fillOpacity:.1 }).addTo(_drawLayer);
-  else
-    L.polyline(lls, { color:'#f97316', weight:2, dashArray:'5 4' }).addTo(_drawLayer);
-  // Vertex markers
-  lls.forEach((ll, i) => L.circleMarker(ll, {
-    radius: i===0?7:4, color:'#fff',
-    fillColor: i===0?'#f97316':'#3b82f6', fillOpacity:1, weight:1.5
-  }).addTo(_drawLayer));
-  // Arm length labels (turf)
-  for (let i = 0; i < lls.length - 1; i++) {
-    const a = _drawVertices[i], b = _drawVertices[i+1];
-    const dist = turf.distance(turf.point([a.lng,a.lat]), turf.point([b.lng,b.lat]), {units:'meters'});
-    const mid = [(lls[i][0]+lls[i+1][0])/2, (lls[i][1]+lls[i+1][1])/2];
-    const lbl = dist>=1000?(dist/1000).toFixed(2)+'km':Math.round(dist)+'m';
-    L.marker(mid,{icon:L.divIcon({className:'',html:`<span style="background:rgba(0,0,0,.65);color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;white-space:nowrap">${lbl}</span>`,iconAnchor:[20,8]}),interactive:false}).addTo(_drawLayer);
-  }
-  // Closing arm label when polygon
-  if (lls.length >= 3) {
-    const a=_drawVertices[lls.length-1], b=_drawVertices[0];
-    const dist=turf.distance(turf.point([a.lng,a.lat]),turf.point([b.lng,b.lat]),{units:'meters'});
-    const mid=[(lls[lls.length-1][0]+lls[0][0])/2,(lls[lls.length-1][1]+lls[0][1])/2];
-    L.marker(mid,{icon:L.divIcon({className:'',html:`<span style="background:rgba(249,115,22,.7);color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;white-space:nowrap">${Math.round(dist)}m</span>`,iconAnchor:[20,8]}),interactive:false}).addTo(_drawLayer);
-  }
-  setStatus(_drawVertices.length + ' vertices — tap to add · ✅ to finish (≥3 needed)', '');
-}
-
-function _drawOnClick(e) {
-  _drawVertices.push(e.latlng);
-  _drawRedraw();
-}
-
 function startDrawBlock() {
   if (!plotPoly) { setStatus(Lang.s_no_bnd, 'warn'); return; }
   if (APP_MODE === 'plant') {
@@ -1817,43 +1932,29 @@ function startDrawBlock() {
   }
   if (isDrawing) return;
   isDrawing = true;
-  _drawVertices = [];
-  if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; }
   document.getElementById(drawBtnId()).classList.add('b-off');
   document.getElementById(finishBtnId()).classList.remove('b-off');
-  setStatus('Tap map to add vertices · ✅ to finish', '');
-  // Remove placed-block layers so existing markers can't intercept taps as draw vertices
-  map.closePopup();
-  if (saplingLayer && map.hasLayer(saplingLayer)) map.removeLayer(saplingLayer);
-  if (outlineLayer && map.hasLayer(outlineLayer)) map.removeLayer(outlineLayer);
-  map.on('click', _drawOnClick);
+  setStatus(Lang.s_drawing, '');
+  polylineHandler = new L.Draw.Polyline(map, { shapeOptions: { color: '#f97316', weight: 2, dashArray: '5 4' } });
+  polylineHandler.enable();
 }
 
 function finishDrawBlock() {
-  if (!isDrawing) return;
-  if (_drawVertices.length < 3) { setStatus(Lang.s_need4 || 'Need ≥3 vertices', 'warn'); return; }
-  map.off('click', _drawOnClick);
-  isDrawing = false;
-  // Re-add placed-block layers now that drawing is done
-  if (saplingLayer && !map.hasLayer(saplingLayer)) saplingLayer.addTo(map);
-  if (outlineLayer && !map.hasLayer(outlineLayer)) outlineLayer.addTo(map);
-  document.getElementById(finishBtnId()).classList.add('b-off');
-  document.getElementById(drawBtnId()).classList.remove('b-off');
-  if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; }
-  // Build closed latlngs array matching what placeSoilBlock/placeBlock expect
-  // Build [lon,lat] ring, fix geometry, convert back to L.latLng array
-  let coords = _drawVertices.map(v => [v.lng, v.lat]);
-  coords.push(coords[0]); // close ring
-  coords = fixPolygonGeometry(coords); // fix winding + self-intersections
-  const latlngs = coords.map(([lng, lat]) => L.latLng(lat, lng));
-  if (APP_MODE === 'soil') placeSoilBlock(latlngs);
-  else placeBlock(latlngs);
-  _drawVertices = [];
+  if (!isDrawing || !polylineHandler) return;
+  // Set a flag so DRAWSTOP knows this was intentional (not accidental)
+  _intentionalFinish = true;
+  try { polylineHandler._finishShape(); }
+  catch (e) {
+    polylineHandler.disable(); isDrawing = false;
+    document.getElementById(finishBtnId()).classList.add('b-off');
+  }
+  // Clear flag after a short delay (DRAWSTOP fires synchronously or very shortly after)
+  setTimeout(() => { _intentionalFinish = false; }, 300);
 }
 
-function undoLastBlock() { undoLast(); }
-function clearAllBlocks() { clearAll(); }
-async function runExportTask() { return exportAllTask(); }
+function undoLastBlock() { APP_MODE === 'soil' ? undoLastSoil() : undoLast(); }
+function clearAllBlocks() { APP_MODE === 'soil' ? clearAllSoil() : clearAll(); }
+async function runExportTask() { return APP_MODE === 'soil' ? exportSoilTask() : exportAllTask(); }
 
 // ═══════════════════════════════════════════════════════════════════════
 // COMMON EXPORTER  —  shared zip/KML/JPG/SHP assembly engine. Both modes
@@ -1941,15 +2042,18 @@ function switchTab(mode) {
     const b = document.getElementById('tbm-' + m);
     if (b) b.classList.toggle('active', m === mode);
   });
-  document.getElementById('mode-plant-body').classList.toggle('hidden', mode !== 'plant');
-  document.getElementById('mode-files-body').classList.toggle('hidden', mode !== 'files');
+  const _mp = document.getElementById('mode-plant-body'); if (_mp) _mp.classList.toggle('hidden', mode !== 'plant');
+  const _ms = document.getElementById('mode-soil-body');  if (_ms) _ms.classList.toggle('hidden', mode !== 'soil');
+  const _mv = document.getElementById('mode-vec-body');   if (_mv) _mv.classList.toggle('hidden', mode !== 'vec');
+  const _mf = document.getElementById('mode-files-body'); if (_mf) _mf.classList.toggle('hidden', mode !== 'files');
   // MRV Tool moved to appMonitoringDashboard in v68
   const ind = document.getElementById('btn-mode-ind');
-  if (ind) ind.textContent = mode === 'plant' ? '\u{1F331}' : '\u{1F4C1}';
+  if (ind) ind.textContent = mode === 'soil' ? '\u{1F9EA}' : mode === 'vec' ? '\u{1F4D0}' : '\u{1F331}';
   updateTopbarIndicators();
-  if (isDrawing) { map.off('click', _drawOnClick); if (saplingLayer && !map.hasLayer(saplingLayer)) saplingLayer.addTo(map); if (outlineLayer && !map.hasLayer(outlineLayer)) outlineLayer.addTo(map); if (_drawLayer) { _drawLayer.clearLayers(); _drawLayer.remove(); _drawLayer = null; } isDrawing = false; }
-  if (mode !== 'plant') stopNonVecGps();
-  // vec mode removed
+  if (isDrawing && polylineHandler) { try { polylineHandler.disable(); } catch (e) {} isDrawing = false; }
+  if (mode !== 'vec') vecModeLeave();
+  if (mode !== 'plant' && mode !== 'soil') stopNonVecGps();
+  if (mode === 'vec') vecModeEnter();
   updateGpsBtn(); updateSbar();
   if (mode === 'files') filesEnterMode();
   setTimeout(() => map && map.invalidateSize(), 50);
@@ -1964,9 +2068,774 @@ function switchTab(mode) {
 // and clipToPlotThenUsed() clipper above, and the shared exporter below.
 // ═══════════════════════════════════════════════════════════════════════
 
-// ═  See vecSelectTool() below.
+// ═
+// VECTOR TOOL  —  inline 3rd mode. See vecSelectTool() below.
 // ═
 
+// ═══════════════════════════════════════════════════════════════════════
+// VECTOR TOOL  — 3rd mode. POI/path/polygon, manual tap or GPS walk.
+// All state prefixed vec* to avoid collisions with plantation/soil globals.
+// ═══════════════════════════════════════════════════════════════════════
+
+const VEC_TYPES = {
+  'poi-m': ['waterSrc','fenceCorner','accessRoad','nursery','home','bldg','gate','well','other'],
+  'poi-g': ['waterSrc','fenceCorner','accessRoad','nursery','home','bldg','gate','well','other'],
+  'path-m':['path','fence','drain','road','tractorPath','sandBoulderPath','fuelwoodTrail','villageTrail','riverAccessTrail','transect','intercept','ridge','contour','other'],
+  'path-g':['path','fence','drain','road','tractorPath','sandBoulderPath','fuelwoodTrail','villageTrail','riverAccessTrail','transect','intercept','ridge','contour','other'],
+  'poly-m':['LP','nursery','pond','soilType','waterBody','other'],
+  'poly-g':['LP','nursery','pond','soilType','waterBody','other'],
+};
+const VEC_KML_SUFFIX = {
+  'poi-m':'poi','poi-g':'poi','path-m':'path','path-g':'path','poly-m':'poly','poly-g':'poly'
+};
+
+let vecTool          = null;
+let vecVertices      = [];
+let vecGpsWatchId    = null;   // recording walk watch (path/poly GPS)
+let vecBgWatchId     = null;   // background location watch (always on in vec mode)
+let vecGpsPaused     = false;
+let vecGpsPoints     = [];
+let vecSelectedType  = null;
+let vecLayerOnMap    = false;
+let _vecEditLayer    = null;   // Leaflet layer currently in edit mode
+let _vecEditCoords   = null;   // original coords for discard
+let _vecEditMeta     = null;   // {fname, geomType, name, type} for save
+let vecLastPos       = null;   // most recent position from background watch
+let vecGpsReady      = false;  // true once first fix received
+
+const vecLayer    = L.layerGroup();   // drawn features (POI dots, track lines)
+const vecLocLayer = L.layerGroup();   // live location dot + accuracy circle
+
+function vecEnsureLayer() {
+  if (!vecLayerOnMap) {
+    vecLayer.addTo(map);
+    vecLocLayer.addTo(map);
+    vecLayerOnMap = true;
+  }
+}
+
+// ── Enter / leave vec mode ────────────────────────────────────────────
+function vecModeEnter() {
+  vecEnsureLayer();
+  vecGpsReady = false;
+  vecLastPos  = null;
+  vecSetToolsEnabled(false);
+  setStatus('Acquiring GPS\u2026', '');
+  if (!navigator.geolocation) {
+    document.getElementById('vec-gps-status').textContent = 'GPS unavailable';
+    document.getElementById('vec-gps-status').style.color = '#f87171';
+    return;
+  }
+  vecBgWatchId = navigator.geolocation.watchPosition(
+    vecOnBgPos, vecOnBgErr,
+    { enableHighAccuracy:true, maximumAge:3000, timeout:20000 }
+  );
+}
+
+function vecModeLeave() {
+  const ls = document.getElementById('vec-sec-layers'); if (ls) ls.style.display = 'none';
+  if (vecBgWatchId !== null) {
+    navigator.geolocation.clearWatch(vecBgWatchId);
+    vecBgWatchId = null;
+  }
+  vecCancelAll();
+  vecLocLayer.clearLayers();
+  vecGpsReady = false;
+  vecLastPos  = null;
+  updateGpsBtn(); updateSbar();
+}
+
+// ── Background position handler ───────────────────────────────────────
+function vecOnBgPos(pos) {
+  const { latitude:lat, longitude:lon, accuracy } = pos.coords;
+  vecLastPos = { lat, lon, accuracy };
+
+  // First fix — unlock tools
+  if (!vecGpsReady) {
+    vecGpsReady = true;
+    vecSetToolsEnabled(true);
+    setStatus('GPS ready. Select a tool.', '');
+  }
+
+  // Update GPS button + sbar
+  updateGpsBtn();
+  updateSbar();
+  const accRound = Math.round(accuracy);
+  const statusEl = document.getElementById('vec-gps-status');
+  if (statusEl) {
+    statusEl.textContent = 'GPS \u00b1 ' + accRound + ' m';
+    statusEl.style.color = accuracy < 10 ? '#4ade80' : accuracy < 30 ? '#facc15' : '#f87171';
+  }
+
+  // Draw live location dot + accuracy ring on map
+  vecLocLayer.clearLayers();
+  L.circle([lat, lon], {
+    radius: accuracy, color:'#3b82f6', weight:1,
+    fillColor:'#3b82f6', fillOpacity:0.08
+  }).addTo(vecLocLayer);
+  L.circleMarker([lat, lon], {
+    radius:7, color:'#fff', weight:2,
+    fillColor:'#3b82f6', fillOpacity:1
+  }).addTo(vecLocLayer);
+
+  // Keep dot on screen during GPS walk (don't re-centre aggressively)
+  if (APP_MODE === 'vec' && vecTool && (vecTool === 'path-g' || vecTool === 'poly-g')) {
+    if (!map.getBounds().contains([lat, lon])) map.panTo([lat, lon]);
+  }
+
+  // Feed live location into recording walk if active
+  if (vecGpsWatchId !== null && !vecGpsPaused) vecRecordPoint(lat, lon);
+}
+
+function vecOnBgErr(err) {
+  const statusEl = document.getElementById('vec-gps-status');
+  if (statusEl) {
+    statusEl.textContent = err.code === 1 ? 'GPS denied' : 'GPS error';
+    statusEl.style.color = '#f87171';
+  }
+  updateGpsBtn(); updateSbar();
+}
+
+// ── Enable / disable tool buttons ─────────────────────────────────────
+function vecSetToolsEnabled(on) {
+  // Enable/disable FAM shape buttons (Step 1) and method buttons (Step 2)
+  document.querySelectorAll('.vec-tool-btn, .vec-method-btn').forEach(b => {
+    b.style.opacity      = on ? '1'    : '0.3';
+    b.style.pointerEvents= on ? 'auto' : 'none';
+  });
+  const zb = null /* vec-btn-zoom removed v73 */;
+  if (zb) {
+    zb.style.opacity      = on ? '1'    : '0.3';
+    zb.style.pointerEvents= on ? 'auto' : 'none';
+  }
+}
+
+// ── Zoom to current location ──────────────────────────────────────────
+function vecZoomToLocation() {
+  if (!vecLastPos) return;
+  map.setView([vecLastPos.lat, vecLastPos.lon], 16);
+}
+
+// ── Tool highlight (no-op stub — FAM uses its own sel class) ─────────
+function vecHighlight(tool) { /* handled by FAM selectors */ }
+
+// ── Select tool ───────────────────────────────────────────────────────
+const VEC_MODE_TAG = {'poi-m':'manual','poi-g':'gps','path-m':'manual','path-g':'gps','poly-m':'manual','poly-g':'gps'};
+
+// ── FAM sidebar state ──────────────────────────────────────────────────
+let _famShape  = null;   // 'poly' | 'path' | 'poi'
+let _famMethod = null;   // 'manual' | 'gps'
+
+// ── Start button gate: enabled only when name is non-empty ────────────
+function vecFamCheckReady() {
+  const sb  = document.getElementById('vec-btn-start-fam');
+  const nm  = document.getElementById('vec-feat-name');
+  if (!sb || !nm) return;
+  sb.disabled = nm.value.trim().length === 0;
+}
+
+function vecFamReset() {
+  _famShape = null; _famMethod = null;
+  ['poly','path','poi'].forEach(s => {
+    const b = document.getElementById('vt-' + s);
+    if (b) b.classList.remove('sel');
+  });
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m);
+    if (b) b.classList.remove('sel');
+  });
+  document.getElementById('vec-step2').style.display = 'none';
+  document.getElementById('vec-step3').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  document.getElementById('vec-sec-stats').style.display = 'none';
+  document.getElementById('vec-feat-name').value = '';
+  document.getElementById('vec-type-chips').innerHTML = '';
+  document.getElementById('vec-gps-info').textContent = '';
+  const sb = document.getElementById('vec-btn-start-fam');
+  if (sb) sb.disabled = true;
+  vecRecPanelHide();
+  vecStatsFloatHide();
+}
+
+function vecFamSelectShape(shape) {
+  if (!vecGpsReady) return;
+  _famShape = shape; _famMethod = null;
+  ['poly','path','poi'].forEach(s => {
+    const b = document.getElementById('vt-' + s);
+    if (b) b.classList.toggle('sel', s === shape);
+  });
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m);
+    if (b) b.classList.remove('sel');
+  });
+  document.getElementById('vec-step2').style.display = '';
+  document.getElementById('vec-step3').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  // GPS method not meaningful for POI (immediate capture) — disable it
+  const gpsBtn = document.getElementById('vec-meth-gps');
+  // POI GPS still valid (captures current pos), so keep both enabled
+  if (gpsBtn) gpsBtn.disabled = false;
+}
+
+function vecFamSelectMethod(method) {
+  if (!_famShape) return;
+  _famMethod = method;
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m);
+    if (b) b.classList.toggle('sel', m === method);
+  });
+  // Derive the v82 tool key
+  const tool = _famShape + '-' + (method === 'gps' ? 'g' : 'm');
+  vecTool = tool;
+
+  // Populate type chips
+  vecSelectedType = VEC_TYPES[tool][0];
+  const chips = document.getElementById('vec-type-chips');
+  chips.innerHTML = '';
+  VEC_TYPES[tool].forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'vec-type-chip' + (t === vecSelectedType ? ' sel' : '');
+    b.textContent = t;
+    b.onclick = () => {
+      vecSelectedType = t;
+      chips.querySelectorAll('.vec-type-chip').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+    chips.appendChild(b);
+  });
+
+  document.getElementById('vec-feat-name').value = '';
+  document.getElementById('vec-gps-info').textContent = '';
+  document.getElementById('vec-step3').style.display = '';
+
+  // Label + gate the start button
+  const sb = document.getElementById('vec-btn-start-fam');
+  if (sb) {
+    if (_famShape === 'poi') {
+      sb.textContent = method === 'gps' ? '📍 Capture GPS POI' : '📌 Tap map for POI';
+    } else if (method === 'manual') {
+      sb.textContent = '✏️ Start drawing';
+    } else {
+      sb.textContent = '▶ Start recording';
+    }
+    sb.disabled = true;  // re-gated: need name filled
+  }
+}
+
+function vecFamStart() {
+  if (!vecTool) return;
+  const tool = vecTool;
+  vecCancelAll();
+  vecTool = tool;  // restore after cancel clears it
+
+  if (tool === 'poi-g') {
+    vecDoGPSPOI();
+    document.getElementById('vec-step3').style.display = '';
+    document.getElementById('vec-sec-ctrl').style.display = '';
+  } else if (tool === 'poi-m') {
+    setStatus('Tap the map to drop a POI.', '');
+    map.once('click', vecOnMapClickPOI);
+    document.getElementById('vec-sec-ctrl').style.display = '';
+  } else if (tool === 'path-m' || tool === 'poly-m') {
+    setStatus('Tap map to add vertices. ↩ undo · ✅ finish.', '');
+    map.on('click', vecOnMapClickVertex);
+    // Build manual ctrl row
+    const row = document.getElementById('vec-ctrl-row');
+    row.innerHTML = '';
+    row.appendChild(vecMakeBtn('↩️','b-gray','Undo last vertex', vecUndoVertex));
+    row.appendChild(vecMakeBtn('✅','b-green','Finish', vecFinishManual));
+    row.appendChild(vecMakeBtn('🗑','b-red','Cancel', vecCancelAll));
+    document.getElementById('vec-sec-ctrl').style.display = '';
+    vecStatsFloatShow();
+    // Collapse sidebar
+    const sb = document.getElementById('sidebar');
+    if (sb && !sb.classList.contains('collapsed')) {
+      sb.classList.add('collapsed');
+      const btn = document.getElementById('btn-sb');
+      if (btn) btn.textContent = '☰';
+      setTimeout(() => map.invalidateSize(), 220);
+    }
+  } else {
+    // GPS walk: path-g / poly-g
+    vecRecPanelShow();
+    // Collapse sidebar
+    const sb = document.getElementById('sidebar');
+    if (sb && !sb.classList.contains('collapsed')) {
+      sb.classList.add('collapsed');
+      const btn = document.getElementById('btn-sb');
+      if (btn) btn.textContent = '☰';
+      setTimeout(() => map.invalidateSize(), 220);
+    }
+    vecStartRecording();
+  }
+}
+
+// ── Floating rec panel show/hide ──────────────────────────────────────
+function vecRecPanelShow() {
+  const panel = document.getElementById('vec-rec-panel');
+  if (panel) panel.style.display = 'block';
+}
+
+function vecRecPanelHide() {
+  const panel = document.getElementById('vec-rec-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+function vecStartRecording() {
+  vecGpsPoints = []; vecGpsPaused = false; vecLayer.clearLayers();
+  vecGpsWatchId = 1;  // sentinel: non-null means "recording active"
+  const panel = document.getElementById('vec-rec-panel');
+  if (panel) panel.style.display = 'block';
+  // Float stats shows above the rec panel; initialise with 0 pts label
+  const ptsEl = document.getElementById('sf-pts');
+  if (ptsEl) ptsEl.textContent = '0 pts';
+  vecStatsFloatShow();
+  setStatus('Recording… tap ✅ Finish or ✕ Cancel.', '');
+}
+
+function vecRecUndo() {
+  if (vecGpsPoints.length) {
+    vecGpsPoints.pop();
+    // Redraw with remaining points
+    const lls = vecGpsPoints.map(p => [p.lat, p.lon]);
+    vecLayer.clearLayers();
+    if (lls.length >= 2) {
+      const color = vecTool === 'poly-g' ? '#f97316' : '#3b82f6';
+      L.polyline(lls, { color, weight:2.5, opacity:.85 }).addTo(vecLayer);
+      L.circleMarker(lls[lls.length-1], {
+        radius:5, color:'#fff', fillColor:color, fillOpacity:1, weight:1.5
+      }).addTo(vecLayer);
+    }
+    // Refresh float stats
+    const pts2 = vecGpsPoints.map(p => [p.lon, p.lat]);
+    vecStatsFloatUpdate(pts2, vecTool === 'poly-g', vecGpsPoints.length);
+  }
+}
+
+function vecRecCancel() {
+  vecGpsWatchId = null;
+  vecGpsPaused = false; vecGpsPoints = []; vecVertices = [];
+  vecLayer.clearLayers();
+  vecRecPanelHide();
+  vecStatsFloatHide();
+  vecFamReset();
+  setStatus('Recording cancelled.', '');
+}
+
+// ── Floating stats panel helpers ───────────────────────────────────────
+function vecStatsFloatShow() {
+  const el = document.getElementById('vec-stats-float');
+  if (el) el.style.display = 'block';
+}
+function vecStatsFloatHide() {
+  const el = document.getElementById('vec-stats-float');
+  if (el) el.style.display = 'none';
+}
+function vecStatsFloatUpdate(pts, isPoly, ptCount) {
+  vecStatsFloatShow();
+  const ptsEl  = document.getElementById('sf-pts');
+  const aEl    = document.getElementById('sf-area');
+  const aVal   = document.getElementById('sf-area-val');
+  const pEl    = document.getElementById('sf-perim');
+  const pVal   = document.getElementById('sf-perim-val');
+  const lEl    = document.getElementById('sf-len');
+  const lVal   = document.getElementById('sf-len-val');
+  if (ptsEl) ptsEl.textContent = (ptCount || pts.length) + ' pts';
+  if (isPoly && pts.length >= 3) {
+    try {
+      const poly = turf.polygon([[...pts, pts[0]]]);
+      const areaSqm = turf.area(poly);
+      const perimM  = turf.length(turf.polygonToLine(poly), { units:'meters' });
+      if (aEl)  aEl.style.display = '';
+      if (aVal) aVal.textContent = areaSqm >= 10000 ? (areaSqm/10000).toFixed(3)+' ha' : areaSqm.toFixed(1)+' m²';
+      if (pEl)  pEl.style.display = '';
+      if (pVal) pVal.textContent = perimM.toFixed(1)+' m';
+      if (lEl)  lEl.style.display = 'none';
+    } catch(e) {}
+  } else {
+    if (aEl) aEl.style.display = 'none';
+    if (pEl) pEl.style.display = 'none';
+    if (pts.length >= 2) {
+      try {
+        const distM = turf.length(turf.lineString(pts), { units:'meters' });
+        if (lEl)  lEl.style.display = '';
+        if (lVal) lVal.textContent = distM >= 1000 ? (distM/1000).toFixed(3)+' km' : distM.toFixed(1)+' m';
+      } catch(e) {}
+    } else {
+      if (lEl) lEl.style.display = 'none';
+    }
+  }
+}
+
+function updateVecStats() {
+  if (!vecTool) return;
+  const statsEl = document.getElementById('vec-sec-stats');
+  const areaEl  = document.getElementById('vec-stat-area');
+  const areaVal = document.getElementById('vec-stat-area-val');
+  const lenVal  = document.getElementById('vec-stat-len-val');
+  if (!statsEl) return;
+  let pts = [];
+  // Manual tools: vertices stored in vecVertices[]
+  if (vecVertices && vecVertices.length)
+    pts = vecVertices.map(v => [v.lon, v.lat]);
+  // GPS tools: points stored in vecGpsPoints[]
+  if (!pts.length && vecGpsPoints && vecGpsPoints.length)
+    pts = vecGpsPoints.map(p => [p.lon, p.lat]);
+  if (pts.length < 2) { statsEl.style.display='none'; vecStatsFloatHide(); return; }
+  statsEl.style.display='';
+  const isPoly = vecTool==='poly-m'||vecTool==='poly-g';
+  // Also update floating panel
+  vecStatsFloatUpdate(pts, isPoly);
+  const perimEl = document.getElementById('vec-stat-perim');
+  const perimVal= document.getElementById('vec-stat-perim-val');
+  const lenRow  = document.getElementById('vec-stat-len-row');
+  if (isPoly && pts.length >= 3) {
+    try {
+      const poly = turf.polygon([[...pts, pts[0]]]);
+      const areaSqm = turf.area(poly);
+      const perimM  = turf.length(turf.polygonToLine(poly),{units:'meters'});
+      if (areaEl)  { areaEl.style.display=''; }
+      if (areaVal) areaVal.textContent = areaSqm>=10000?(areaSqm/10000).toFixed(3)+' ha':areaSqm.toFixed(1)+' m\u00b2';
+      if (perimEl) { perimEl.style.display=''; }
+      if (perimVal) perimVal.textContent = perimM.toFixed(1)+' m';
+      if (lenRow)  lenRow.style.display='none';
+    } catch(e) {}
+  } else {
+    if (areaEl)  areaEl.style.display='none';
+    if (perimEl) perimEl.style.display='none';
+    if (lenRow)  lenRow.style.display='';
+    try {
+      const distM = turf.length(turf.lineString(pts),{units:'meters'});
+      if (lenVal) lenVal.textContent = distM>=1000?(distM/1000).toFixed(3)+' km':distM.toFixed(1)+' m';
+    } catch(e) {}
+  }
+}
+
+// vecSelectTool — kept as internal helper; FAM UI calls vecFamStart() instead.
+// Called directly only by vecDoGPSPOI (post-capture ctrl rebuild).
+function vecSelectTool(tool) {
+  // no-op in FAM UI — selection handled by vecFamSelectShape/Method/Start
+}
+
+// ── GPS POI: immediate capture from background watch ──────────────────
+function vecDoGPSPOI() {
+  // vecLastPos guaranteed non-null because tools only enabled after first fix
+  const { lat, lon, accuracy } = vecLastPos;
+  L.circleMarker([lat, lon], {
+    radius:7, color:'#10b981', fillColor:'#10b981', fillOpacity:.9, weight:2
+  }).addTo(vecLayer);
+  document.getElementById('vec-gps-info').textContent =
+    'POI fixed \u00b1 ' + Math.round(accuracy) + ' m';
+  setStatus('GPS POI placed (\u00b1' + Math.round(accuracy) + ' m). Enter name + type, then \u{1F4E6}.', '');
+  // Build ctrl row with export + cancel
+  const row = document.getElementById('vec-ctrl-row');
+  row.innerHTML = '';
+  row.appendChild(vecMakeBtn('\u{1F4E6}','b-green','Export KML',
+    () => vecExportKML('poi', [[lon, lat]])));
+  row.appendChild(vecMakeBtn('\u{1F5D1}','b-red','Cancel', vecCancelAll));
+  document.getElementById('vec-sec-ctrl').style.display = '';
+  document.getElementById('vec-feat-name').focus();
+}
+
+// ── Control row builder ───────────────────────────────────────────────
+function vecMakeBtn(icon, cls, tip, fn) {
+  const b = document.createElement('button');
+  b.className = 'icon-btn ' + cls;
+  b.textContent = icon; b.title = tip; b.onclick = fn;
+  return b;
+}
+
+function vecBuildCtrl(tool) {
+  // FAM UI: ctrl row built directly in vecFamStart(); this is a no-op stub.
+}
+
+// ── Manual POI ────────────────────────────────────────────────────────
+function vecOnMapClickPOI(e) {
+  if (APP_MODE !== 'vec' || vecTool !== 'poi-m') return;
+  const { lat, lng } = e.latlng;
+  L.circleMarker([lat, lng], {
+    radius:7, color:'#f97316', fillColor:'#f97316', fillOpacity:.9, weight:2
+  }).addTo(vecLayer);
+  setStatus('POI placed. Enter name + type, then \u{1F4E6}.', '');
+  const row = document.getElementById('vec-ctrl-row');
+  row.innerHTML = '';
+  row.appendChild(vecMakeBtn('\u{1F4E6}','b-green','Export KML',
+    () => vecExportKML('poi', [[lng, lat]])));
+  row.appendChild(vecMakeBtn('\u{1F5D1}','b-red','Cancel', vecCancelAll));
+  document.getElementById('vec-sec-ctrl').style.display = '';
+}
+
+// ── Manual path / polygon ─────────────────────────────────────────────
+function vecOnMapClickVertex(e) {
+  if (APP_MODE !== 'vec') return;
+  vecVertices.push({ lat: e.latlng.lat, lon: e.latlng.lng });
+  vecRedrawManual();
+  updateVecStats();
+  // Update floating stats
+  const pts = vecVertices.map(v => [v.lon, v.lat]);
+  vecStatsFloatUpdate(pts, vecTool === 'poly-m', vecVertices.length);
+  setStatus(vecVertices.length + ' vertices.'
+    + (vecTool === 'poly-m' ? ' Need \u22653 to finish.' : ''), '');
+}
+
+function vecUndoVertex() {
+  if (!vecVertices.length) return;
+  vecVertices.pop(); vecRedrawManual();
+  if (vecVertices.length >= 2) {
+    const pts = vecVertices.map(v => [v.lon, v.lat]);
+    vecStatsFloatUpdate(pts, vecTool === 'poly-m', vecVertices.length);
+  } else {
+    vecStatsFloatHide();
+  }
+  setStatus(vecVertices.length ? vecVertices.length + ' vertices.' : 'All vertices cleared.', '');
+}
+
+function vecRedrawManual() {
+  vecLayer.clearLayers();
+  if (!vecVertices.length) return;
+  const lls = vecVertices.map(v => [v.lat, v.lon]);
+  if (vecTool === 'path-m') {
+    L.polyline(lls, { color:'#3b82f6', weight:3 }).addTo(vecLayer);
+  } else {
+    if (lls.length >= 3)
+      L.polygon(lls, { color:'#f97316', weight:2.5, fillOpacity:.15 }).addTo(vecLayer);
+    else
+      L.polyline(lls, { color:'#f97316', weight:2.5, dashArray:'5 4' }).addTo(vecLayer);
+  }
+  lls.forEach((ll, i) => L.circleMarker(ll, {
+    radius: i===0?6:4, color:'#fff',
+    fillColor: i===0?'#f97316':'#3b82f6', fillOpacity:1, weight:1.5
+  }).addTo(vecLayer));
+  for (let i = 0; i < lls.length - 1; i++) {
+    const a = vecVertices[i], b = vecVertices[i+1];
+    const dist = turf.distance(turf.point([a.lon,a.lat]), turf.point([b.lon,b.lat]), {units:'meters'});
+    const midLat=(lls[i][0]+lls[i+1][0])/2, midLon=(lls[i][1]+lls[i+1][1])/2;
+    const lbl = dist>=1000?(dist/1000).toFixed(2)+'km':Math.round(dist)+'m';
+    L.marker([midLat,midLon],{icon:L.divIcon({className:'',html:`<span style="background:rgba(0,0,0,.65);color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;white-space:nowrap">${lbl}</span>`,iconAnchor:[20,8]}),interactive:false}).addTo(vecLayer);
+  }
+  if (vecTool==='poly-m' && lls.length>=3) {
+    const a=vecVertices[lls.length-1],b=vecVertices[0];
+    const dist=turf.distance(turf.point([a.lon,a.lat]),turf.point([b.lon,b.lat]),{units:'meters'});
+    const midLat=(lls[lls.length-1][0]+lls[0][0])/2,midLon=(lls[lls.length-1][1]+lls[0][1])/2;
+    L.marker([midLat,midLon],{icon:L.divIcon({className:'',html:`<span style="background:rgba(249,115,22,.7);color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;white-space:nowrap">${Math.round(dist)}m</span>`,iconAnchor:[20,8]}),interactive:false}).addTo(vecLayer);
+  }
+}
+
+function vecFinishManual() {
+  const isPoly = vecTool === 'poly-m';
+  if (isPoly && vecVertices.length < 3) {
+    setStatus('Need \u22653 vertices for a polygon.', 'err'); return;
+  }
+  if (!isPoly && vecVertices.length < 2) {
+    setStatus('Need \u22652 vertices for a path.', 'err'); return;
+  }
+  map.off('click', vecOnMapClickVertex);
+  vecStatsFloatHide();
+  const coords = vecVertices.map(v => [v.lon, v.lat]);
+  updateVecStats();
+  if (isPoly) {
+    let ring = [...coords];
+    if (ring[0][0] !== ring[ring.length-1][0]) ring.push(ring[0]);
+    ring = fixPolygonGeometry(ring); // QGIS Structure-equivalent geometry fix
+    vecExportKMLWithEdit('poly', ring);
+  } else { vecExportKMLWithEdit('path', coords); }
+}
+
+// ── GPS walk — redirected to vecStartRecording() in FAM UI ───────────
+function vecGpsWalkStart() {
+  vecStartRecording();
+}
+
+function vecGpsTogglePause() {
+  const pb = document.getElementById('vec-btn-pause');
+  vecGpsPaused = !vecGpsPaused;
+  if (pb) pb.textContent = vecGpsPaused ? '\u25b6\ufe0f' : '\u23f8\ufe0f';
+  setStatus(vecGpsPaused
+    ? 'Paused. Tap \u25b6\ufe0f to resume or \u2705 to finish.'
+    : 'Recording\u2026', '');
+}
+
+function vecGpsFinish() {
+  vecGpsWatchId = null;   // stop recording (background watch continues)
+  vecGpsPaused = false;
+  vecRecPanelHide();
+  vecStatsFloatHide();
+  const gi = document.getElementById('vec-gps-info');
+  if (gi) gi.textContent = '';
+
+  const isPoly = vecTool === 'poly-g';
+  const minPts = isPoly ? 3 : 2;
+  if (vecGpsPoints.length < minPts) {
+    setStatus('Need at least ' + minPts + ' GPS points.', 'err'); return;
+  }
+  let coords = vecGpsPoints.map(p => [p.lon, p.lat]);
+  if (isPoly) {
+    const ring = [...coords];
+    if (ring[0][0] !== ring[ring.length-1][0]) ring.push(ring[0]);
+    coords = fixPolygonGeometry(ring); // QGIS Structure-equivalent geometry fix
+    vecExportKML('poly', coords);
+  } else { vecExportKML('path', coords); }
+  setTimeout(updateVecStats, 300);
+}
+
+// Called from background watch during an active recording session
+function vecRecordPoint(lat, lon) {
+  if (vecGpsPoints.length) {
+    const last = vecGpsPoints[vecGpsPoints.length - 1];
+    if (turf.distance(
+      turf.point([last.lon, last.lat]),
+      turf.point([lon, lat]),
+      { units:'meters' }) < 1) return;
+  }
+  vecGpsPoints.push({ lat, lon, accuracy: vecLastPos?.accuracy });
+  // Redraw recorded track
+  const lls = vecGpsPoints.map(p => [p.lat, p.lon]);
+  vecLayer.clearLayers();
+  const color = vecTool === 'poly-g' ? '#f97316' : '#3b82f6';
+  L.polyline(lls, { color, weight:2.5, opacity:.85 }).addTo(vecLayer);
+  L.circleMarker(lls[lls.length-1], {
+    radius:5, color:'#fff', fillColor:color, fillOpacity:1, weight:1.5
+  }).addTo(vecLayer);
+  // Update floating stats
+  const pts = lls.map(ll => [ll[1], ll[0]]);  // [lon, lat] for turf
+  const isPoly = vecTool === 'poly-g';
+  vecStatsFloatUpdate(pts, isPoly, vecGpsPoints.length);
+}
+
+// ── Cancel all ────────────────────────────────────────────────────────
+function vecCancelAll() {
+  vecGpsWatchId = null;   // stop recording sentinel
+  vecGpsPaused = false; vecGpsPoints = []; vecVertices = [];
+  map.off('click', vecOnMapClickVertex);
+  map.off('click', vecOnMapClickPOI);
+  if (vecLayerOnMap) vecLayer.clearLayers();
+  const gi = document.getElementById('vec-gps-info');
+  if (gi) gi.textContent = '';
+  vecRecPanelHide();
+  vecStatsFloatHide();
+  _famShape = null; _famMethod = null; vecTool = null;
+  ['poly','path','poi'].forEach(s => {
+    const b = document.getElementById('vt-' + s); if (b) b.classList.remove('sel');
+  });
+  ['manual','gps'].forEach(m => {
+    const b = document.getElementById('vec-meth-' + m); if (b) b.classList.remove('sel');
+  });
+  document.getElementById('vec-step2').style.display = 'none';
+  document.getElementById('vec-step3').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  document.getElementById('vec-sec-stats').style.display = 'none';
+}
+
+// ── KML export ────────────────────────────────────────────────────────
+async function vecExportKML(geomType, coords, stage, revision_reason) {
+  const raw   = (document.getElementById('vec-feat-name').value.trim() || 'feature');
+  const name  = raw.replace(/[^a-zA-Z0-9_\-]/g,'_');
+  const type  = vecSelectedType || 'other';
+  if (!stage) stage = 'eligibility';
+  const _vd=new Date(),_vp=n=>String(n).padStart(2,'0');
+  const ts = _vd.getFullYear()+_vp(_vd.getMonth()+1)+_vp(_vd.getDate())+'_'+_vp(_vd.getHours())+_vp(_vd.getMinutes())+_vp(_vd.getSeconds());
+  const capturedIso = _vd.toISOString();
+  const isGps = vecTool && vecTool.endsWith('-g');
+  const _modeTag = isGps ? '_gps' : '_manual';
+  const geomMethod = isGps ? 'gps_walk' : 'manual_tap';
+  const fname = name + '_' + type + '_' + (VEC_KML_SUFFIX[vecTool]||'feat') + _modeTag + '_' + ts + '.kml';
+
+  // ── Operator identity from suite auth ──
+  const _auth = arrAuthGet();
+  const opEmail = _auth ? _auth.email : 'unknown';
+  const opName  = _auth ? (_auth.name || _auth.email) : 'unknown';
+  const project = SESSION.projectKey || 'unknown';
+
+  // ── GPS accuracy: median of recorded points (gps walk) or last-fix accuracy (gps POI) ──
+  let gpsAccuracyM = null;
+  if (isGps) {
+    if (vecGpsPoints && vecGpsPoints.length) {
+      const accs = vecGpsPoints.filter(p => p.accuracy != null).map(p => p.accuracy);
+      if (accs.length) {
+        accs.sort((a,b)=>a-b);
+        gpsAccuracyM = Math.round(accs[Math.floor(accs.length/2)]);
+      }
+    } else if (vecLastPos && vecLastPos.accuracy != null) {
+      gpsAccuracyM = Math.round(vecLastPos.accuracy);
+    }
+  }
+  const pointCount = isGps
+    ? (vecGpsPoints ? vecGpsPoints.length : coords.length)
+    : (vecVertices ? vecVertices.length : coords.length);
+
+  const cStr  = coords.map(([lo,la]) => lo+','+la+',0').join('\n          ');
+  let gKml;
+  if (geomType==='poi')
+    gKml = '<Point><coordinates>'+cStr+'</coordinates></Point>';
+  else if (geomType==='path')
+    gKml = '<LineString><tessellate>1</tessellate><coordinates>'+cStr+'</coordinates></LineString>';
+  else
+    gKml = '<Polygon><outerBoundaryIs><LinearRing><coordinates>'+cStr+'</coordinates></LinearRing></outerBoundaryIs></Polygon>';
+
+  // ── Build ExtendedData fields ──
+  const _ed = (k,v) => v != null ? `      <Data name="${k}"><value>${v}</value></Data>` : '';
+  const extData = [
+    '      <ExtendedData>',
+    _ed('feature_name',  raw),
+    _ed('feature_type',  type),
+    _ed('stage',         stage),
+    revision_reason ? _ed('revision_reason', revision_reason) : '',
+    _ed('geometry_method', geomMethod),
+    _ed('point_count',   pointCount),
+    gpsAccuracyM != null ? _ed('gps_accuracy_m', gpsAccuracyM) : '',
+    _ed('captured_ts',   capturedIso),
+    _ed('operator_email',opEmail),
+    _ed('operator_name', opName),
+    _ed('project',       project),
+    '      </ExtendedData>',
+  ].filter(Boolean).join('\n');
+
+  const kml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<kml xmlns="http://www.opengis.net/kml/2.2">',
+    '  <Document>',
+    '    <name>'+raw+'_'+type+'_'+geomMethod+'</name>',
+    '    <Placemark>',
+    '      <name>'+raw+'_'+type+'_'+geomMethod+'</name>',
+    extData,
+    '      '+gKml,
+    '    </Placemark>',
+    '  </Document>',
+    '</kml>'
+  ].join('\n');
+  const kmlBlob = new Blob([kml], {type:'application/vnd.google-earth.kml+xml'});
+  dlBlob(fname, kmlBlob);
+  const vecFolder = APP_CONFIG.toolFolders.vec || 'VectorTool';
+  await opfsSaveToSent(vecFolder, fname, kmlBlob);
+  const gjName = fname.replace('.kml', '.geojson');
+  let gjGeom;
+  if (geomType==='poi') gjGeom={type:'Point',coordinates:coords[0]};
+  else if (geomType==='path') gjGeom={type:'LineString',coordinates:coords};
+  else gjGeom={type:'Polygon',coordinates:[coords]};
+  const gjProps = {
+    feature_name:    raw,
+    feature_type:    type,
+    stage,
+    geometry_method: geomMethod,
+    point_count:     pointCount,
+    captured_ts:     capturedIso,
+    operator_email:  opEmail,
+    operator_name:   opName,
+    project,
+  };
+  if (gpsAccuracyM != null) gjProps.gps_accuracy_m = gpsAccuracyM;
+  if (revision_reason)      gjProps.revision_reason = revision_reason;
+  await opfsSaveGeoJSON(vecFolder, gjName, {type:'FeatureCollection',features:[{type:'Feature',properties:gjProps,geometry:gjGeom}]});
+  setStatus('Exported: ' + fname, '');
+  uploadFile(fname, kmlBlob, vecFolder);
+  setTimeout(() => {
+    vecCancelAll(); vecTool = null;
+    if (APP_MODE === 'vec') setStatus('GPS ready. Select a tool.', '');
+  }, 1500);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════
 // FIRST-RUN SETUP  —  project selection only (auth from launcher)
 // On subsequent loads, session is restored from IDB without any prompt.
@@ -2072,19 +2941,6 @@ function openSettingsCallout(anchor) {
 
 // ── Load session from IDB on startup ─────────────────────────────────
 async function loadSessionFromIDB() {
-  // ── Auto-select project from launcher localStorage ────────────────
-  const launcherProject = localStorage.getItem('arr_project');
-  const auth = arrAuthGet();
-  if (launcherProject && auth && APP_CONFIG.projects[launcherProject]) {
-    SESSION.projectKey = launcherProject;
-    SESSION.userFolder = makeUserFolder(auth.email);
-    SESSION.setupDone  = true;
-    await idbSet('session', { projectKey: launcherProject, userFolder: SESSION.userFolder });
-    setupDismiss();
-    outboxUpdateBadge();
-    return true;
-  }
-  // ── Fall back to IDB stored session ──────────────────────────────
   try {
     const stored = await idbGet('session');
     if (stored && stored.projectKey && stored.userFolder) {
@@ -2434,6 +3290,25 @@ async function idbDeferredDelete(id) {
 }
 
 // Queue a deferred soil JPG job
+async function deferSoilJpg(filename, ts, toolFolder, legend, legendTitle) {
+  if (!plotPoly) return;
+  await idbDeferredAdd({
+    tool: 'soil',
+    filename, ts, toolFolder, legendTitle,
+    legendJson:     JSON.stringify(legend),
+    plotPolyJson:   JSON.stringify(plotPoly),
+    soilBlocksJson: JSON.stringify(soilBlocks.map(b => ({
+      soilType: b.soilType, color: b.color, areaSqm: b.areaSqm,
+      geom: b.geom,
+    }))),
+    projectKey: SESSION.projectKey,
+    userFolder:  SESSION.userFolder,
+    ts:          Date.now(),
+  });
+  console.log('Deferred JPG queued:', filename);
+}
+
+// Queue deferred plantation JPG jobs (two images per session)
 async function deferPlantJpgs(filename1, filename2, ts, toolFolder,
     plantLegend, soilLegend, soilGroups) {
   if (!plotPoly) return;
@@ -2576,6 +3451,14 @@ function buildPlantSoilGeoJSON(soilGroupsData) {
     geometry: g.geom.geometry || g.geom
   }))};
 }
+function buildAssessedSoilGeoJSON() {
+  const audit = _auditProps();
+  return { type:'FeatureCollection', features: soilBlocks.map(b => ({
+    type:'Feature',
+    properties:{ soilType:b.soilType, color:b.color, areaSqm:b.areaSqm, ...audit },
+    geometry: b.geom.geometry || b.geom
+  }))};
+}
 function coordsToKMLStr(coords) {
   return coords.map(c => c[0]+','+c[1]+',0').join(' ');
 }
@@ -2627,7 +3510,10 @@ function hasUnsavedWork() {
   return false;
 }
 function unsavedToolName() {
-  return '🌱 Plantation Mapper';
+  if (APP_MODE === 'plant' || blocks.length > 0) return '🌱 Plantation Mapper';
+  if (APP_MODE === 'soil' || soilBlocks.length > 0) return '🧪 Soil Mapper';
+  if (APP_MODE === 'vec') return '📐 Vector Tool';
+  return 'the active tool';
 }
 let _filesPriorMode = 'plant';
 
@@ -2658,7 +3544,8 @@ function filesEnterMode() {
 function filesDiscardAndBrowse() {
   // Clear unsaved work and show browser
   blocks = []; usedKeys = new Set(); globalGrid = [];
-
+  soilBlocks = [];
+  if (typeof vecCancelAll === 'function') vecCancelAll();
   exportDone = true;
   document.getElementById('files-unsaved-warn').style.display = 'none';
   document.getElementById('files-browser').style.display = '';
@@ -3011,7 +3898,7 @@ function buildSpeciesGrid() {
     } else {
       tile.style.cssText = `background:${color};color:${textColor};border-color:${color}`;
       tile.title = localName;
-      tile.onclick = () => { currentSpecies = key; closeCallout(); updateSpeciesGridSelection(); closeSidebarPortrait(); updateSpeciesIndicator(true); };
+      tile.onclick = () => { currentSpecies = key; closeCallout(); updateSpeciesIndicator(true); };
     }
     tile.textContent = localName;
     grid.appendChild(tile);
@@ -3033,6 +3920,46 @@ function updateSpeciesGridSelection() {
     label.textContent = currentLangCode === 'hi' ? (hiName || enName)
                       : currentLangCode === 'bn' ? (bnName || enName)
                       : enName;
+  }
+}
+
+// ── Soil 3-column grid ────────────────────────────────────────────────
+function buildSoilGrid() {
+  const grid = document.getElementById('soil-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  Object.keys(SOIL_TYPE_INFO).forEach(t => {
+    const info = SOIL_TYPE_INFO[t];
+    const localLabel = currentLangCode === 'hi' ? (info.hi || info.label)
+                     : currentLangCode === 'bn' ? (info.bn || info.label)
+                     : info.label;
+    const tile = document.createElement('button');
+    tile.className = 'soil-tile' + (currentSoilType === t ? ' sel' : '');
+    tile.dataset.soilKey = t;
+    const soilTxt = localLabel.toUpperCase();
+    tile.style.cssText = `background:${info.color};color:${readableTextColor(info.color)};border-color:${info.color}`;
+    tile.textContent = soilTxt;
+    tile.onclick = () => {
+      currentSoilType = t;
+      closeCallout();
+      updateSoilTypeIndicator(true);
+    };
+    grid.appendChild(tile);
+  });
+}
+
+function updateSoilGridSelection() {
+  const grid = document.getElementById('soil-grid');
+  if (!grid) return;
+  grid.querySelectorAll('.soil-tile').forEach(t => {
+    t.classList.toggle('sel', t.dataset.soilKey === currentSoilType);
+  });
+  const label = document.getElementById('soil-sel-label');
+  if (label && currentSoilType && SOIL_TYPE_INFO[currentSoilType]) {
+    const info = SOIL_TYPE_INFO[currentSoilType];
+    label.textContent = currentLangCode === 'hi' ? (info.hi || info.label)
+                      : currentLangCode === 'bn' ? (info.bn || info.label)
+                      : info.label;
   }
 }
 
@@ -3099,6 +4026,128 @@ function toggleSummary(bodyId, headerEl) {
 
 // Wraps vecExportKML — for manual features, shows edit panel instead of
 // immediately exporting. GPS features export directly as before.
+async function vecExportKMLWithEdit(geomType, coords) {
+  const isGPS = vecTool && vecTool.endsWith('-g');
+  if (isGPS) {
+    // GPS features: show a lightweight stage prompt before exporting
+    const stageOpts = [
+      ['eligibility','Eligibility check'],['negotiated','Negotiated boundary'],
+      ['surveyed','Surveyor (amin) boundary'],['cleared','Post-clearing boundary'],
+      ['final','Final (post-fencing)'],['revised','Revised']
+    ];
+    const chosen = await new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+      const box = document.createElement('div');
+      box.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;min-width:220px;max-width:290px';
+      box.innerHTML = '<div style="font-size:12px;color:var(--ink);font-weight:600;margin-bottom:10px">Polygon stage</div>';
+      stageOpts.forEach(([val, label]) => {
+        const b = document.createElement('button');
+        b.style.cssText = 'display:block;width:100%;text-align:left;background:var(--mint);border:none;border-radius:6px;color:var(--ink);font-size:11px;padding:7px 10px;margin-bottom:5px;cursor:pointer';
+        b.textContent = label;
+        b.onclick = () => { document.body.removeChild(overlay); resolve(val); };
+        box.appendChild(b);
+      });
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+    });
+    let revReason = null;
+    if (chosen === 'revised') {
+      const revOpts = [['flood_hazard','Flood hazard'],['fire_hazard','Fire hazard'],['bank_erosion','Bank erosion'],['beneficiary_dropout','Beneficiary dropout'],['encroachment','Encroachment'],['other','Other']];
+      revReason = await new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+        const box = document.createElement('div');
+        box.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;min-width:220px;max-width:290px';
+        box.innerHTML = '<div style="font-size:12px;color:var(--ink);font-weight:600;margin-bottom:10px">Revision reason</div>';
+        revOpts.forEach(([val, label]) => {
+          const b = document.createElement('button');
+          b.style.cssText = 'display:block;width:100%;text-align:left;background:var(--mint);border:none;border-radius:6px;color:var(--ink);font-size:11px;padding:7px 10px;margin-bottom:5px;cursor:pointer';
+          b.textContent = label;
+          b.onclick = () => { document.body.removeChild(overlay); resolve(val); };
+          box.appendChild(b);
+        });
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+      });
+    }
+    await vecExportKML(geomType, coords, chosen, revReason);
+    return;
+  }
+
+  // Build a Leaflet layer for editing
+  const lls = coords.map(([lon, lat]) => [lat, lon]);
+  let editLayer;
+  if (geomType === 'poly') {
+    editLayer = L.polygon(lls, { color:'#f59e0b', weight:2.5, fillOpacity:.1 });
+  } else if (geomType === 'path') {
+    editLayer = L.polyline(lls, { color:'#f59e0b', weight:3 });
+  } else {
+    // POI — no vertex edit, export directly
+    await vecExportKML(geomType, coords); return;
+  }
+
+  // Save metadata for later export
+  const raw  = (document.getElementById('vec-feat-name').value.trim() || 'feature');
+  const _stageSel = document.getElementById('vec-stage-sel');
+  const _revSel   = document.getElementById('vec-revision-sel');
+  const _stage    = _stageSel ? _stageSel.value : 'eligibility';
+  const _revReason = (_stage === 'revised' && _revSel) ? _revSel.value : null;
+  _vecEditMeta   = { geomType, name: raw, type: vecSelectedType || 'other', stage: _stage, revision_reason: _revReason };
+  _vecEditCoords = coords;
+  _vecEditLayer  = editLayer;
+
+  // Add to map and enable vertex editing
+  vecLayer.clearLayers();
+  editLayer.addTo(vecLayer);
+  if (editLayer.editing) editLayer.editing.enable();
+
+  // Show edit panel, hide controls
+  document.getElementById('vec-sec-edit').style.display = '';
+  document.getElementById('vec-sec-ctrl').style.display = 'none';
+  // Reset stage selector and revision row
+  const stageSel = document.getElementById('vec-stage-sel');
+  if (stageSel) { stageSel.value = 'eligibility'; }
+  const revRow = document.getElementById('vec-revision-row');
+  if (revRow) revRow.style.display = 'none';
+  if (stageSel && revRow) {
+    stageSel.onchange = () => {
+      revRow.style.display = stageSel.value === 'revised' ? '' : 'none';
+    };
+  }
+  setStatus('✏️ Drag vertices to adjust — then Save or Discard', '');
+}
+
+async function vecSaveEdit() {
+  if (!_vecEditLayer || !_vecEditMeta) return;
+
+  // Extract updated coords from the edited layer
+  let coords;
+  if (_vecEditMeta.geomType === 'poly') {
+    const lls = _vecEditLayer.getLatLngs()[0];
+    coords = lls.map(ll => [ll.lng, ll.lat]);
+    if (coords[0][0] !== coords[coords.length-1][0]) coords.push(coords[0]);
+  } else {
+    coords = _vecEditLayer.getLatLngs().map(ll => [ll.lng, ll.lat]);
+  }
+
+  if (_vecEditLayer.editing) _vecEditLayer.editing.disable();
+  document.getElementById('vec-sec-edit').style.display = 'none';
+
+  // Export with updated coords, carrying stage metadata
+  await vecExportKML(_vecEditMeta.geomType, coords, _vecEditMeta.stage, _vecEditMeta.revision_reason);
+  _vecEditLayer = null; _vecEditCoords = null; _vecEditMeta = null;
+}
+
+function vecDiscardEdit() {
+  if (_vecEditLayer && _vecEditLayer.editing) _vecEditLayer.editing.disable();
+  vecLayer.clearLayers();
+  _vecEditLayer = null; _vecEditCoords = null; _vecEditMeta = null;
+  document.getElementById('vec-sec-edit').style.display = 'none';
+  document.getElementById('vec-sec-ctrl').style.display = '';
+  setStatus('Edit discarded.', '');
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // MULTI-LAYER OPFS VIEW
 // ═══════════════════════════════════════════════════════════════════════
@@ -3227,7 +4276,204 @@ const SOIL_TYPE_INFO = {
 };
 
 let soilLayer = null;
+let soilBlocks = [];
+let soilUsedUnion = null;
+let currentSoilType = null;
 
+
+
+function placeSoilBlock(latlngs) {
+  if (latlngs.length < 4) { setStatus(Lang.s_need4, 'warn'); return; }
+  const soilType = currentSoilType;
+  if (!soilType) { setStatus(Lang.s_no_soil, 'warn'); return; }
+  const info = SOIL_TYPE_INFO[soilType];
+
+  const coords = latlngs.map(ll => [ll.lng, ll.lat]);
+  if (coords[0][0] !== coords[coords.length - 1][0] || coords[0][1] !== coords[coords.length - 1][1])
+    coords.push(coords[0]);
+  let drawnPoly;
+  try { drawnPoly = turf.polygon([coords]); } catch (e) { setStatus('Polygon error.', 'err'); return; }
+
+  const { poly, error } = clipToPlotThenUsed(drawnPoly, soilUsedUnion);
+  if (error === 'outside') { setStatus(Lang.s_outside, 'warn'); return; }
+  if (error === 'overlap') { setStatus(Lang.s_soil_overlap, 'warn'); return; }
+
+  const areaSqm = Math.round(turf.area(poly));
+  const geom = poly.geometry || poly;
+  const rings = geom.type === 'Polygon' ? [geom.coordinates[0]] : geom.coordinates.map(p => p[0]);
+  rings.forEach(ring => {
+    const ll = ring.map(([lon, lat]) => [lat, lon]);
+    L.polygon(ll, { color: '#333', weight: 1, fillColor: info.color, fillOpacity: 0.6 })
+      .bindPopup(`<b>${escXml(info.label)} (${soilType})</b>`).addTo(soilLayer);
+  });
+
+  exportDone = false;
+  soilBlocks.push({ soilType, color: info.color, geom: poly, areaSqm });
+  soilUsedUnion = soilUsedUnion ? (turf.union(soilUsedUnion, poly) || soilUsedUnion) : poly;
+
+  updateSoilSummary();
+  setStatus(Lang.s_soil_placed(soilType, (areaSqm / 10000).toFixed(3)), '');
+}
+
+function undoLastSoil() {
+  if (!soilBlocks.length) { setStatus(Lang.s_no_undo, 'warn'); return; }
+  soilBlocks.pop();
+  soilLayer.clearLayers();
+  soilUsedUnion = null;
+  const remaining = soilBlocks;
+  soilBlocks = [];
+  remaining.forEach(b => {
+    const geom = b.geom.geometry || b.geom;
+    const rings = geom.type === 'Polygon' ? [geom.coordinates[0]] : geom.coordinates.map(p => p[0]);
+    rings.forEach(ring => {
+      const ll = ring.map(([lon, lat]) => [lat, lon]);
+      L.polygon(ll, { color: '#333', weight: 1, fillColor: b.color, fillOpacity: 0.6 })
+        .bindPopup(`<b>${escXml(SOIL_TYPE_INFO[b.soilType].label)} (${b.soilType})</b>`).addTo(soilLayer);
+    });
+    soilBlocks.push(b);
+    soilUsedUnion = soilUsedUnion ? (turf.union(soilUsedUnion, b.geom) || soilUsedUnion) : b.geom;
+  });
+  updateSoilSummary();
+  setStatus(Lang.s_init, '');
+}
+
+function clearAllSoil() {
+  if (!confirm(Lang.s_confirm)) return;
+  soilBlocks = []; soilUsedUnion = null;
+  soilLayer.clearLayers();
+  updateSoilSummary();
+  setStatus(Lang.s_init, '');
+}
+
+function updateSoilSummary() {
+  const agg = {};
+  soilBlocks.forEach(b => {
+    if (!agg[b.soilType]) agg[b.soilType] = { color: b.color, area: 0 };
+    agg[b.soilType].area += b.areaSqm;
+  });
+  const tbody = document.getElementById('soil-tbody');
+  tbody.innerHTML = '';
+  let totalArea = 0;
+  Object.entries(agg).sort().forEach(([t, v]) => {
+    totalArea += v.area;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><span class="sdot" style="background:${v.color}"></span>${t}</td>`
+                 + `<td>${(v.area / 10000).toFixed(3)}ha</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('soil-total-row').textContent =
+    `${Lang.total}: ${(totalArea / 10000).toFixed(3)} ha`;
+}
+
+
+function buildSoilKMLString() {
+  const _soilAudit = _auditProps();
+  const pms = soilBlocks.map((b, i) => {
+    const col = hexKml(b.color);
+    const geom = b.geom.geometry || b.geom;
+    let geoXml;
+    if (geom.type === 'Polygon') geoXml = polygonXml(geom.coordinates[0]);
+    else geoXml = `<MultiGeometry>\n` + geom.coordinates.map(poly => polygonXml(poly[0])).join('\n') + `\n    </MultiGeometry>`;
+    return `  <Placemark>
+    <name>${SOIL_TYPE_INFO[b.soilType].label} (${b.soilType}) block ${i+1}</name>
+    <Style>
+      <LineStyle><color>${col}</color><width>2</width></LineStyle>
+      <PolyStyle><color>88${col.slice(2)}</color></PolyStyle>
+    </Style>
+    <ExtendedData>
+      <Data name="soilType"><value>${b.soilType}</value></Data>
+      <Data name="soilColor"><value>${escXml(b.color)}</value></Data>
+      <Data name="areaSqm"><value>${b.areaSqm}</value></Data>
+      <Data name="operator_email"><value>${escXml(_soilAudit.operator_email)}</value></Data>
+      <Data name="operator_name"><value>${escXml(_soilAudit.operator_name)}</value></Data>
+      <Data name="project"><value>${escXml(_soilAudit.project)}</value></Data>
+      <Data name="captured_ts"><value>${_soilAudit.captured_ts}</value></Data>
+    </ExtendedData>
+    ${geoXml}
+  </Placemark>`;
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n  <name>${escXml(kmlBaseName)}_soilMap</name>\n${pms.join('\n')}\n</Document>\n</kml>`;
+}
+
+async function exportSoilTask() {
+  if (!soilBlocks.length) { setStatus(Lang.s_no_export, 'warn'); return; }
+  const soilAreaByType = {};
+  soilBlocks.forEach(b => { soilAreaByType[b.soilType] = (soilAreaByType[b.soilType]||0) + b.areaSqm; });
+  const legend = Object.keys(SOIL_TYPE_INFO)
+    .filter(t => soilBlocks.some(b => b.soilType === t))
+    .map(t => {
+      const ha = (soilAreaByType[t]/10000).toFixed(2);
+      return { color: SOIL_TYPE_INFO[t].color, label: `${t} \u2014 ${SOIL_TYPE_INFO[t].label} (${ha} ha)` };
+    });
+
+  const geoRecs = [], dbfRecs = [];
+  soilBlocks.forEach(b => {
+    const g = b.geom.geometry || b.geom;
+    const parts = g.type === 'Polygon' ? [g.coordinates[0]] : g.coordinates.map(p => p[0]);
+    geoRecs.push({ parts: parts.map(ring => ring.map(([lon, lat]) => [lon, lat])) });
+    dbfRecs.push({ soilType: b.soilType, soilColor: b.color, areaSqm: b.areaSqm });
+  });
+
+  const _d = new Date();
+  const _p = n => String(n).padStart(2,'0');
+  const ts = _d.getFullYear()+_p(_d.getMonth()+1)+_p(_d.getDate())+'_'+_p(_d.getHours())+_p(_d.getMinutes())+_p(_d.getSeconds());
+  const shpLayer = {
+    name: `${kmlBaseName}_assessedSoilMap`, shapeType: 5,
+    geoRecords: geoRecs,
+    fields: [
+      { name: 'soilType',  type: 'C', length: 4  },
+      { name: 'soilColor', type: 'C', length: 10 },
+      { name: 'areaSqm',   type: 'N', length: 12, decimals: 2 },
+    ],
+    dbfRecords: dbfRecs,
+  };
+
+  // Capture JPG once — reused for local ZIP and Drive upload
+  setStatus(Lang.s_exporting || 'Building export…', '');
+  const shotResult = await captureFramedScreenshot(
+    (ctx, mapRef) => drawSoilBlockOverlay(ctx, mapRef), legend, Lang.th_soiltype);
+  const jpgBlob = shotResult.usedStaticMap ? shotResult.blob : null;
+  const shpZip  = await buildShpZip(shpLayer);
+  if (!shotResult.usedStaticMap) {
+    deferSoilJpg(`${kmlBaseName}_assessedSoilMap_${ts}.jpg`,
+      ts, APP_CONFIG.toolFolders.soil || 'SoilMapper', legend, Lang.th_soiltype || 'Soil type');
+    setStatus('⚠️ Map image deferred — no network for satellite basemap', '');
+  }
+
+  // Local combined ZIP
+  const localZip = new JSZip();
+  if (jpgBlob) localZip.file(`${kmlBaseName}_assessedSoilMap.jpg`, jpgBlob);
+  if (shpLayer.geoRecords.length) {
+    try {
+      const set = buildShapefileSet(shpLayer.shapeType, shpLayer.geoRecords, shpLayer.fields, shpLayer.dbfRecords);
+      const folder = localZip.folder('shapefiles');
+      folder.file(shpLayer.name + '.shp', set.shp);
+      folder.file(shpLayer.name + '.shx', set.shx);
+      folder.file(shpLayer.name + '.dbf', set.dbf);
+      folder.file(shpLayer.name + '.prj', set.prj);
+    } catch(e) {}
+  }
+  const localZipBlob = await localZip.generateAsync({ type: 'blob' });
+  // local copy goes to OPFS /sent/ — no browser download dialog for soil
+  setStatus(Lang.s_export_done ? Lang.s_export_done() : 'Export ready.', '');
+
+  const soilFolder = APP_CONFIG.toolFolders.soil || 'SoilMapper';
+  if (shpZip) await opfsSaveToSent(soilFolder, `${kmlBaseName}_assessedSoilMap_${ts}.zip`, shpZip);
+  if (jpgBlob) await opfsSaveToSent(soilFolder, `${kmlBaseName}_assessedSoilMap_${ts}.jpg`, jpgBlob);
+  const soilGJ = buildAssessedSoilGeoJSON();
+  await opfsSaveGeoJSON(soilFolder, `${kmlBaseName}_assessedSoilMap_${ts}.geojson`, soilGJ);
+  try {
+    const soilKml = new Blob([geojsonToKML(soilGJ, `${kmlBaseName}_assessedSoilMap_${ts}`)], {type:'application/vnd.google-earth.kml+xml'});
+    await opfsSaveToSent(soilFolder, `${kmlBaseName}_assessedSoilMap_${ts}.kml`, soilKml);
+  } catch(e) { console.warn('Soil KML:', e.message); }
+
+  // Drive push (background) — individual files with shared timestamp
+  const driveFiles = [];
+  if (shpZip) driveFiles.push({ filename: `${kmlBaseName}_assessedSoilMap_${ts}.zip`, blob: shpZip });
+  if (jpgBlob) driveFiles.push({ filename: `${kmlBaseName}_assessedSoilMap_${ts}.jpg`, blob: jpgBlob });
+  if (driveFiles.length) uploadAllFiles(driveFiles, APP_CONFIG.toolFolders.soil || 'SoilMapper');
+  exportDone = true;
+}
 
 
 function placeBlock(latlngs) {
@@ -3246,21 +4492,9 @@ function placeBlock(latlngs) {
   let drawnPoly;
   try { drawnPoly = turf.polygon([coords]); } catch(e) { setStatus('Polygon error.','err'); return; }
 
-  // Clip to KML boundary for accurate grid — never reject even if mostly outside
-  let blockPoly = drawnPoly;
-  let clipWarn = '';
-  if (plotPoly) {
-    try {
-      const pp = (plotPoly.type === 'Feature') ? plotPoly
-               : { type:'Feature', properties:{}, geometry: plotPoly.geometry || plotPoly };
-      const cl = turf.intersect(drawnPoly, pp);
-      if (cl && turf.area(cl) > 0.1) {
-        const pct = turf.area(cl) / turf.area(drawnPoly) * 100;
-        blockPoly = cl;
-        clipWarn = pct < 95 ? Lang.s_clip(pct.toFixed(0)) : '';
-      }
-    } catch(e) { /* clip failed — use full drawn polygon */ }
-  }
+  const { poly: blockPoly, pctClipped, error: clipErr } = clipToPlotThenUsed(drawnPoly, null);
+  if (clipErr === 'outside') { setStatus(Lang.s_outside,'warn'); return; }
+  const clipWarn = pctClipped < 95 ? Lang.s_clip(pctClipped.toFixed(0)) : '';
 
   // ── Phase 1: free globalGrid points INSIDE the drawn block ──────────────
   // Native ray-casting against pre-extracted rings — avoids one turf call
@@ -3558,6 +4792,35 @@ const SOIL_COLOR_DICT = {
 // SOIL POLYGON COMPUTATION
 // Groups placed blocks by soil class, unions their geometries per class.
 // Blocks whose species has no soil mapping are skipped (matches desktop).
+// ═══════════════════════════════════════════════════════════════════════
+function computeSoilGroups() {
+  const groups = {};   // soilClass -> { color, geoms:[turf geom], areaSqm }
+  let skipped = 0;
+  blocks.forEach(b => {
+    const cls = SOIL_CLASS_DICT[b.species];
+    if (!cls) { skipped++; return; }
+    if (!groups[cls]) groups[cls] = { color: SOIL_COLOR_DICT[cls] || '#999999', geoms: [] };
+    if (b.geom) groups[cls].geoms.push(b.geom.geometry || b.geom);
+  });
+  const result = [];
+  Object.entries(groups).forEach(([cls, g]) => {
+    let merged = g.geoms[0];
+    for (let i = 1; i < g.geoms.length; i++) {
+      try { merged = turf.union(merged, g.geoms[i]) || merged; } catch(e) {}
+    }
+    if (merged) {
+      const fc = merged.geometry ? merged : turf.feature(merged);
+      result.push({
+        soilClass: cls,
+        color: g.color,
+        geom: fc.geometry || fc,
+        areaSqm: Math.round(turf.area(fc)),
+      });
+    }
+  });
+  return { groups: result, skipped };
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // SCREENSHOT CAPTURE
 // Draws current basemap tiles + a custom overlay onto an offscreen canvas,
@@ -3913,6 +5176,64 @@ function drawPlantationOverlay(ctx, mapRef, blocksData) {
   });
 }
 
+function drawSoilGroupOverlay(ctx, mapRef, soilGroups) {
+  soilGroups.forEach(g => {
+    try {
+      const geom = g.geom.geometry || g.geom;
+      const polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
+      ctx.fillStyle = hexToRgba(g.color, 0.55);
+      ctx.strokeStyle = g.color; ctx.lineWidth = 1.5;
+      polys.forEach(rings => rings.forEach(ring => {
+        ctx.beginPath();
+        ring.forEach(([lon, lat], i) => {
+          const pt = mapRef.latLngToContainerPoint([lat, lon]);
+          if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      }));
+    } catch (e) {}
+  });
+}
+
+function drawSoilBlockOverlay(ctx, mapRef, blocksData) {
+  (blocksData || soilBlocks).forEach(b => {
+    try {
+      const geom = b.geom.geometry || b.geom;
+      const polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
+      ctx.fillStyle = hexToRgba(b.color, 0.62);
+      ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
+      polys.forEach(rings => rings.forEach(ring => {
+        ctx.beginPath();
+        ring.forEach(([lon, lat], i) => {
+          const pt = mapRef.latLngToContainerPoint([lat, lon]);
+          if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      }));
+    } catch (e) {}
+  });
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// MINIMAL SHAPEFILE WRITER  (.shp / .shx / .dbf / .prj)
+// Implements the ESRI Shapefile binary spec directly — no external library.
+// Supports Point and Polygon (incl. multi-part records for MultiPolygon).
+// Geographic coordinates (lon/lat, WGS84) written as-is; .prj declares the
+// matching geographic CRS so GIS software places the layer correctly.
+// ═══════════════════════════════════════════════════════════════════════
+const WGS84_PRJ =
+  'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],' +
+  'PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
+
+function shpBBox(allXY) {
+  let xmin=Infinity, ymin=Infinity, xmax=-Infinity, ymax=-Infinity;
+  allXY.forEach(([x,y]) => { if(x<xmin)xmin=x; if(x>xmax)xmax=x; if(y<ymin)ymin=y; if(y>ymax)ymax=y; });
+  return [xmin,ymin,xmax,ymax];
+}
+
+// records: for 'point' → [{x,y}]; for 'polygon' → [{parts:[[ [x,y],... ], ...]}] (each part = one ring)
 function buildShpShx(shapeType, records) {
   // shapeType: 1 = Point, 5 = Polygon
   const recBlocks = [];   // {contentBytes: Uint8Array, contentWords: int}
@@ -4070,11 +5391,6 @@ function buildDbf(fields, records) {
 
   return u8;
 }
-
-// WGS84 projection string for .prj sidecar
-const WGS84_PRJ =
-  'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],' +
-  'PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
 
 // Convenience: build a full {shp,shx,dbf,prj} set for one layer
 function buildShapefileSet(shapeType, geoRecords, fields, dbfRecords) {
@@ -4404,9 +5720,6 @@ function cycleLang(btn) {
 
 window.addEventListener('load', ()=>{ init(); setLang('en'); switchTab('plant'); updateSbar(); initThemeBtn(); });
 
-
-// ── Missing functions injected from ARRmapper ─────────────────────
-
 // ── fixPolygonGeometry — QGIS "Fix Geometries / Structure" equivalent ──────
 // Approximates GEOSMakeValid(STRUCTURE): deduplicates vertices, fixes winding,
 // unkinks self-intersections, simplifies spikes/collinear edges, takes largest
@@ -4437,7 +5750,6 @@ function fixPolygonGeometry(coords) {
     try { feat = turf.rewind(feat, { reverse: false, mutate: false }); } catch(e) {}
 
     // Step 4: unkink — split at self-intersections, take largest fragment
-    // (equivalent to GEOSMakeValid Structure noding + polygon building)
     try {
       const unkinked = turf.unkinkPolygon(feat);
       if (unkinked && unkinked.features && unkinked.features.length > 0) {
@@ -4446,7 +5758,6 @@ function fixPolygonGeometry(coords) {
     } catch(e) {}
 
     // Step 5: simplify — removes spikes and collinear vertices
-    // tolerance 0.00001° ≈ 1m at equator — tight enough to preserve shape
     try { feat = turf.simplify(feat, { tolerance: 0.000005, highQuality: true }); } catch(e) {}
 
     // Return fixed ring
@@ -4454,271 +5765,9 @@ function fixPolygonGeometry(coords) {
     return fixed.length >= 4 ? fixed : coords;
 
   } catch(e) {
-    return coords; // fallback: return original coords unchanged
+    return coords;
   }
 }
-
-function dlBlob(name, blob) {
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
-
-function computeSoilGroups() {
-  const groups = {};   // soilClass -> { color, geoms:[turf geom], areaSqm }
-  let skipped = 0;
-  blocks.forEach(b => {
-    const cls = SOIL_CLASS_DICT[b.species];
-    if (!cls) { skipped++; return; }
-    if (!groups[cls]) groups[cls] = { color: SOIL_COLOR_DICT[cls] || '#999999', geoms: [] };
-    if (b.geom) groups[cls].geoms.push(b.geom.geometry || b.geom);
-  });
-  const result = [];
-  Object.entries(groups).forEach(([cls, g]) => {
-    let merged = g.geoms[0];
-    for (let i = 1; i < g.geoms.length; i++) {
-      try { merged = turf.union(merged, g.geoms[i]) || merged; } catch(e) {}
-    }
-    if (merged) {
-      const fc = merged.geometry ? merged : turf.feature(merged);
-      result.push({
-        soilClass: cls,
-        color: g.color,
-        geom: fc.geometry || fc,
-        areaSqm: Math.round(turf.area(fc)),
-      });
-    }
-  });
-  return { groups: result, skipped };
-}
-
-function drawSoilGroupOverlay(ctx, mapRef, soilGroups) {
-  soilGroups.forEach(g => {
-    try {
-      const geom = g.geom.geometry || g.geom;
-      const polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
-      ctx.fillStyle = hexToRgba(g.color, 0.55);
-      ctx.strokeStyle = g.color; ctx.lineWidth = 1.5;
-      polys.forEach(rings => rings.forEach(ring => {
-        ctx.beginPath();
-        ring.forEach(([lon, lat], i) => {
-          const pt = mapRef.latLngToContainerPoint([lat, lon]);
-          if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
-        });
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-      }));
-    } catch (e) {}
-  });
-}
-
-function buildSoilKMLString() {
-  const _soilAudit = _auditProps();
-  const pms = soilBlocks.map((b, i) => {
-    const col = hexKml(b.color);
-    const geom = b.geom.geometry || b.geom;
-    let geoXml;
-    if (geom.type === 'Polygon') geoXml = polygonXml(geom.coordinates[0]);
-    else geoXml = `<MultiGeometry>\n` + geom.coordinates.map(poly => polygonXml(poly[0])).join('\n') + `\n    </MultiGeometry>`;
-    return `  <Placemark>
-    <name>${SOIL_TYPE_INFO[b.soilType].label} (${b.soilType}) block ${i+1}</name>
-    <Style>
-      <LineStyle><color>${col}</color><width>2</width></LineStyle>
-      <PolyStyle><color>88${col.slice(2)}</color></PolyStyle>
-    </Style>
-    <ExtendedData>
-      <Data name="soilType"><value>${b.soilType}</value></Data>
-      <Data name="soilColor"><value>${escXml(b.color)}</value></Data>
-      <Data name="areaSqm"><value>${b.areaSqm}</value></Data>
-      <Data name="operator_email"><value>${escXml(_soilAudit.operator_email)}</value></Data>
-      <Data name="operator_name"><value>${escXml(_soilAudit.operator_name)}</value></Data>
-      <Data name="project"><value>${escXml(_soilAudit.project)}</value></Data>
-      <Data name="captured_ts"><value>${_soilAudit.captured_ts}</value></Data>
-    </ExtendedData>
-    ${geoXml}
-  </Placemark>`;
-  });
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n<Document>\n  <name>${escXml(kmlBaseName)}_soilMap</name>\n${pms.join('\n')}\n</Document>\n</kml>`;
-}
-
-// ── Injected missing export functions ─────────────────────────────
-
-function shpBBox(allXY) {
-  let xmin=Infinity, ymin=Infinity, xmax=-Infinity, ymax=-Infinity;
-  allXY.forEach(([x,y]) => { if(x<xmin)xmin=x; if(x>xmax)xmax=x; if(y<ymin)ymin=y; if(y>ymax)ymax=y; });
-  return [xmin,ymin,xmax,ymax];
-}
-
-function drawSoilBlockOverlay(ctx, mapRef, blocksData) {
-  (blocksData || soilBlocks).forEach(b => {
-    try {
-      // Normalise: handle Feature, GeometryCollection, Polygon, MultiPolygon
-      let geom = b.geom;
-      if (geom && geom.type === 'Feature') geom = geom.geometry;
-      if (!geom) return;
-      const polys = geom.type === 'Polygon' ? [geom.coordinates]
-                  : geom.type === 'MultiPolygon' ? geom.coordinates
-                  : [];
-      if (!polys.length) return;
-      ctx.fillStyle = hexToRgba(b.color, 0.62);
-      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
-      polys.forEach(rings => {
-        if (!rings || !rings[0]) return;
-        ctx.beginPath();
-        rings[0].forEach(([lon, lat], i) => {
-          const pt = mapRef.latLngToContainerPoint([lat, lon]);
-          if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
-        });
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-      });
-    } catch (e) { console.warn('drawSoilBlockOverlay error:', e.message); }
-  });
-}
-
-async function captureFramedScreenshot(overlayFn, legendEntries, legendTitle, opts) {
-  opts = opts || {};
-  if (!plotPoly) return { blob: null, usedOsmFallback: false, noBasemap: true };
-  const geom = plotPoly.geometry || plotPoly;
-  const W = 1500, H = 1000;
-
-  const rot = computePlotRotation(geom);
-  const capW = rot.rotated ? H : W, capH = rot.rotated ? W : H;
-
-  const bbox = turf.bbox(geom);
-  const { mLon, mLat } = metersPerDegree((bbox[1] + bbox[3]) / 2);
-  const marginM = Math.max(rot.longM, rot.shortM) * 0.08;
-  const minLon = bbox[0] - marginM / mLon, maxLon = bbox[2] + marginM / mLon;
-  const minLat = bbox[1] - marginM / mLat, maxLat = bbox[3] + marginM / mLat;
-  const centerLat = (minLat + maxLat) / 2, centerLon = (minLon + maxLon) / 2;
-
-  // Best zoom: largest integer zoom where expanded bbox fits within capW x capH
-  let zoom = 1;
-  for (let z = 20; z >= 1; z--) {
-    const sc = 256 * Math.pow(2, z);
-    const wx1 = ((minLon + 180) / 360) * sc, wx2 = ((maxLon + 180) / 360) * sc;
-    const wy1 = (0.5 - Math.log((1 + Math.sin(maxLat*Math.PI/180)) / (1 - Math.sin(maxLat*Math.PI/180))) / (4*Math.PI)) * sc;
-    const wy2 = (0.5 - Math.log((1 + Math.sin(minLat*Math.PI/180)) / (1 - Math.sin(minLat*Math.PI/180))) / (4*Math.PI)) * sc;
-    if ((wx2 - wx1) <= capW && (wy2 - wy1) <= capH) { zoom = z; break; }
-  }
-
-  // Web Mercator projector
-  const sc = 256 * Math.pow(2, zoom);
-  const wMercY = lat => (0.5 - Math.log((1 + Math.sin(lat*Math.PI/180)) / (1 - Math.sin(lat*Math.PI/180))) / (4*Math.PI)) * sc;
-  const wMercX = lon => ((lon + 180) / 360) * sc;
-  const cX = wMercX(centerLon), cY = wMercY(centerLat);
-
-  // Static Maps: max 640x640 CSS (scale=2 -> 1280x1280 actual px).
-  // Request at capW/2 x capH/2 CSS (capped at 640), scale=2 returns double.
-  // Image is then scaled to fill capW x capH — ~17% upscale at most,
-  // invisible on satellite imagery. scaleX/Y correct vector coords for this.
-  const cssW = Math.min(640, Math.round(capW / 2));
-  const cssH = Math.min(640, Math.round(capH / 2));
-  const imgW = cssW * 2, imgH = cssH * 2;
-  const scaleX = capW / imgW, scaleY = capH / imgH;
-
-  function project(lat, lon) {
-    return {
-      x: capW / 2 + (wMercX(lon) - cX) * scaleX,
-      y: capH / 2 + (wMercY(lat) - cY) * scaleY,
-    };
-  }
-  const fakeMap = { latLngToContainerPoint: ([lat, lon]) => project(lat, lon) };
-
-  const interCanvas = document.createElement('canvas');
-  interCanvas.width = capW; interCanvas.height = capH;
-  const ictx = interCanvas.getContext('2d');
-  ictx.fillStyle = '#dbe9d8'; ictx.fillRect(0, 0, capW, capH);
-
-  // Fetch Google Satellite basemap
-  let usedStaticMap = false;
-  const apiKey = APP_CONFIG.mapsApiKey;
-  if (!opts.noBasemap && apiKey) {
-    try {
-      const mapUrl = 'https://maps.googleapis.com/maps/api/staticmap'
-        + '?center=' + centerLat + ',' + centerLon
-        + '&zoom=' + zoom
-        + '&size=' + cssW + 'x' + cssH
-        + '&scale=2&maptype=satellite&key=' + apiKey;
-      const resp = await fetch(mapUrl);
-      if (resp.ok) {
-        const imgBlob = await resp.blob();
-        const img = await new Promise((res, rej) => {
-          const el = new Image();
-          const url = URL.createObjectURL(imgBlob);
-          el.onload = () => { URL.revokeObjectURL(url); res(el); };
-          el.onerror = rej;
-          el.src = url;
-        });
-        ictx.drawImage(img, 0, 0, capW, capH);
-        usedStaticMap = true;
-      }
-    } catch (e) { console.error('Static Maps fetch failed:', e.message); }
-  }
-
-  // Vector overlay
-  try { overlayFn(ictx, fakeMap); } catch (e) { console.error('overlay error', e); }
-
-  // Plot boundary (yellow)
-  try {
-    ictx.strokeStyle = '#ffe600'; ictx.lineWidth = 3;
-    const polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
-    polys.forEach(rings => rings.forEach(ring => {
-      ictx.beginPath();
-      ring.forEach(([lon, lat], i) => {
-        const pt = project(lat, lon);
-        if (i === 0) ictx.moveTo(pt.x, pt.y); else ictx.lineTo(pt.x, pt.y);
-      });
-      ictx.closePath(); ictx.stroke();
-    }));
-  } catch (e) {}
-
-  // Rotate combined image onto final canvas
-  const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#dbe9d8'; ctx.fillRect(0, 0, W, H);
-  ctx.save();
-  ctx.translate(W / 2, H / 2);
-  ctx.rotate(rot.R);
-  ctx.drawImage(interCanvas, -capW / 2, -capH / 2);
-  ctx.restore();
-
-  const corner = bestLegendCornerUV(geom, rot);
-  if (legendEntries && legendEntries.length) drawLegendAtCorner(ctx, W, H, legendEntries, legendTitle, corner);
-  drawNorthArrowAtCorner(ctx, W, H, OPPOSITE_CORNER[corner], rot.R);
-
-  const blob = await canvasToBlobSafe(canvas);
-  return { blob, usedOsmFallback: false, noBasemap: !usedStaticMap, usedStaticMap };
-}
-
-// ── Aliases for renamed helper functions ─────────────────────────────
-function shpWrite(dv, offset, val) { /* inlined in buildShpShx */ }
-function dbfWrite(dv, offset, val) { /* inlined in buildShpShx */ }
-function drawLegend(...a) { return drawLegendAtCorner(...a); }
-function drawNorthArrow(...a) { return drawNorthArrowAtCorner(...a); }
-function metersPerDeg(lat) { return metersPerDegree(lat); }
-function chooseFrame(...a) { return chooseFrameOrientation(...a); }
-function bestLegendCorner(...a) { return bestLegendCornerUV(...a); }
-function computePlotBbox(geom) {
-  // Compute bbox of a GeoJSON geometry for screenshot framing
-  let coords = [];
-  if (geom.type === 'Polygon') coords = geom.coordinates[0];
-  else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(p => p[0].forEach(c => coords.push(c)));
-  if (!coords.length) return null;
-  const lons = coords.map(c=>c[0]), lats = coords.map(c=>c[1]);
-  return { minLon: Math.min(...lons), maxLon: Math.max(...lons),
-           minLat: Math.min(...lats), maxLat: Math.max(...lats) };
-}
-
-function cornerXY(corner, w, h, boxW, boxH) {
-  const m = 10;
-  switch (corner) {
-    case 'ul': return [m, m];
-    case 'ur': return [w - boxW - m, m];
-    case 'll': return [m, h - boxH - m];
-    default:   return [w - boxW - m, h - boxH - m]; // lr
-  }
-}
-
 </script>
 </body>
 </html>
