@@ -7,7 +7,7 @@
 <script>
 (function(){const t=localStorage.getItem('arr_theme')||'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
 </script>
-<title>Daily Report v13</title>
+<title>Daily Report v14</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;padding-bottom:60px}
@@ -18,7 +18,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .tb-home{font-size:16px}
 .tb-title{font-size:13px;font-weight:700;flex-shrink:0;color:var(--mist)}
 .tb-tabs{display:flex;gap:2px;background:rgba(0,0,0,.25);border-radius:20px;padding:2px;
-  flex:1;max-width:220px;margin:0 auto}
+  flex:1;max-width:320px;margin:0 auto}
 .tb-tab{background:none;border:none;border-radius:18px;padding:4px 0;font-size:11px;
   font-weight:600;color:var(--mist);cursor:pointer;font-family:inherit;opacity:.6;
   transition:all .15s;flex:1;text-align:center}
@@ -112,6 +112,43 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 #outbox-badge{display:none;background:var(--amber);color:#000;border-radius:50%;
   font-size:9px;font-weight:700;padding:1px 5px;margin-left:4px}
 
+/* ── Attendance chiclets ── */
+#att-bar{display:flex;gap:10px;margin-bottom:14px}
+.att-chiclet{flex:1;padding:13px 8px;border:none;border-radius:10px;font-size:13px;
+  font-weight:700;color:#fff;cursor:pointer;font-family:inherit;transition:opacity .15s;
+  display:flex;align-items:center;justify-content:center;gap:6px}
+.att-chiclet:active{opacity:.8}
+#att-attended{background:#006600}
+#att-leave{background:#FF3300}
+#att-status{padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;
+  color:#fff;margin-bottom:14px;display:none;align-items:center;gap:8px}
+#att-status.att-ok{background:#006600}
+#att-status.att-leave{background:#FF3300}
+
+/* ── Attendance modal ── */
+.att-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center}
+.att-modal{background:var(--card);border-radius:16px 16px 0 0;padding:20px 16px 32px;
+  width:100%;max-width:480px;max-height:80vh;overflow-y:auto}
+.att-modal-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.att-modal-sub{font-size:11px;color:var(--mid);margin-bottom:16px}
+.att-modal-info{background:var(--bg);border:1px solid var(--rule);border-radius:8px;
+  padding:10px 12px;font-size:11px;color:var(--mid);margin-bottom:14px;line-height:1.6}
+.att-modal-info b{color:var(--ink)}
+.att-reason-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.att-reason-pill{background:var(--bg);border:1.5px solid var(--rule);border-radius:20px;
+  padding:7px 13px;font-size:11px;font-weight:600;color:var(--mid);cursor:pointer;
+  font-family:inherit;transition:all .15s}
+.att-reason-pill.sel{background:#FF3300;border-color:#FF3300;color:#fff}
+#att-other-wrap{margin-bottom:12px;display:none}
+.att-modal-btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:13px;
+  font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.att-modal-btn.attended{background:#006600;color:#fff}
+.att-modal-btn.leave{background:#FF3300;color:#fff}
+.att-modal-btn:disabled{opacity:.4;cursor:default}
+.att-modal-cancel{width:100%;padding:9px;border:none;background:none;font-size:12px;
+  color:var(--mid);cursor:pointer;font-family:inherit;margin-top:6px}
+
 /* Validation highlight */
 .field-input.err{border-color:var(--red)}
 
@@ -172,8 +209,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   <a class="arr-chip tb-home" href="index.html" title="Back to Suite">🏠</a>
   <span class="tb-title">Daily Report</span>
   <div class="tb-tabs" id="tb-tabs" style="display:none">
-    <button class="tb-tab active" id="tbt-report"   onclick="switchAppTab('report')">Report</button>
-    <button class="tb-tab"        id="tbt-dashboard" onclick="switchAppTab('dashboard')">Dashboard</button>
+    <button class="tb-tab active" id="tbt-report"     onclick="switchAppTab('report')">Report</button>
+    <button class="tb-tab"        id="tbt-dashboard"  onclick="switchAppTab('dashboard')">Work Dashboard</button>
+    <button class="tb-tab"        id="tbt-attendance" onclick="switchAppTab('attendance')">Attendance</button>
   </div>
   <div class="tb-right">
     <div class="tb-lang">
@@ -187,8 +225,41 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   </div>
 </div>
 
+<!-- ATTENDANCE MODAL -->
+<div id="att-modal-bg" class="att-modal-bg" style="display:none" onclick="attModalBgClick(event)">
+  <div class="att-modal" id="att-modal">
+    <div class="att-modal-title" id="att-modal-title"></div>
+    <div class="att-modal-sub" id="att-modal-sub"></div>
+    <div class="att-modal-info" id="att-modal-info"></div>
+    <!-- Leave reasons — shown only for Leave modal -->
+    <div id="att-reasons-wrap" style="display:none">
+      <div class="att-reason-grid" id="att-reason-grid">
+        <button class="att-reason-pill" data-reason="Sick / Medical"                   onclick="toggleReason(this)">🤒 Sick / Medical</button>
+        <button class="att-reason-pill" data-reason="Personal / Family"                onclick="toggleReason(this)">🏠 Personal / Family</button>
+        <button class="att-reason-pill" data-reason="Public Holiday"                   onclick="toggleReason(this)">🎌 Public Holiday</button>
+        <button class="att-reason-pill" data-reason="Family / Community Festival"      onclick="toggleReason(this)">🪔 Family / Community Festival</button>
+        <button class="att-reason-pill" data-reason="Training / Meeting"               onclick="toggleReason(this)">📋 Training / Meeting</button>
+        <button class="att-reason-pill" data-reason="Field not accessible"             onclick="toggleReason(this)">🌧️ Field not accessible</button>
+        <button class="att-reason-pill" data-reason="Other"                            onclick="toggleReason(this)">✏️ Other</button>
+      </div>
+      <div id="att-other-wrap">
+        <input class="field-input" id="att-other-text" type="text" maxlength="80" placeholder="Describe reason…">
+      </div>
+    </div>
+    <button class="att-modal-btn" id="att-modal-submit" onclick="submitAttendance()"></button>
+    <button class="att-modal-cancel" onclick="closeAttModal()">Cancel</button>
+  </div>
+</div>
+
 <!-- MAIN FORM -->
 <div id="main-screen">
+
+  <!-- Attendance chiclets -->
+  <div id="att-bar" style="display:none">
+    <button class="att-chiclet" id="att-attended" onclick="openAttModal('Attended')">✅ Attended</button>
+    <button class="att-chiclet" id="att-leave"    onclick="openAttModal('Leave')">🚫 Leave</button>
+  </div>
+  <div id="att-status" style="display:none"></div>
 
   <!-- Auto fields -->
   <div class="sec">
@@ -353,9 +424,65 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   </div>
 </div>
 
+<!-- ATTENDANCE SCREEN -->
+<div id="att-screen" style="display:none;max-width:900px;margin:0 auto;padding:16px 14px">
+  <div id="att-dash-locked" style="display:none;flex-direction:column;align-items:center;
+    justify-content:center;min-height:40vh;gap:12px;text-align:center;padding:32px">
+    <span style="font-size:32px">🔒</span>
+    <p style="font-size:13px;color:var(--mid)">Attendance dashboard is restricted to authorised users.</p>
+  </div>
+  <div id="att-dash-content" style="display:none">
+    <!-- KPIs -->
+    <div class="dash-sec">
+      <div class="dash-sec-title">
+        Attendance Overview
+        <button class="dash-refresh" onclick="loadAttDashboard()">↻ Refresh</button>
+      </div>
+      <div class="dash-kpi-row">
+        <div class="kpi-card"><div class="kpi-val" id="att-kpi-today-present">—</div><div class="kpi-lbl">Present Today</div></div>
+        <div class="kpi-card"><div class="kpi-val" id="att-kpi-today-leave">—</div><div class="kpi-lbl">On Leave Today</div></div>
+        <div class="kpi-card"><div class="kpi-val" id="att-kpi-week">—</div><div class="kpi-lbl">This Week</div></div>
+        <div class="kpi-card"><div class="kpi-val" id="att-kpi-month">—</div><div class="kpi-lbl">This Month</div></div>
+        <div class="kpi-card"><div class="kpi-val" id="att-kpi-staff">—</div><div class="kpi-lbl">Unique Staff</div></div>
+      </div>
+    </div>
+
+    <!-- Period filter -->
+    <div class="dash-sec">
+      <div class="dash-sec-title">Filter</div>
+      <div class="chart-selector">
+        <button class="chart-sel-btn active" onclick="setAttPeriod('day',this)">Today</button>
+        <button class="chart-sel-btn" onclick="setAttPeriod('week',this)">This Week</button>
+        <button class="chart-sel-btn" onclick="setAttPeriod('month',this)">This Month</button>
+        <button class="chart-sel-btn" onclick="setAttPeriod('all',this)">All</button>
+      </div>
+    </div>
+
+    <!-- Attendance chart -->
+    <div class="dash-sec">
+      <div class="dash-sec-title">Daily Attendance (30d)</div>
+      <div class="chart-wrap"><canvas id="att-chart"></canvas></div>
+    </div>
+
+    <!-- Log table -->
+    <div class="dash-sec">
+      <div class="dash-sec-title">Attendance Log</div>
+      <div style="overflow-x:auto">
+        <table class="log-table">
+          <thead><tr>
+            <th>Date</th><th>Name</th><th>Email</th>
+            <th>Type</th><th>In</th><th>Out</th><th>Reasons</th><th>GPS</th>
+          </tr></thead>
+          <tbody id="att-log-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v12';
+const APP_VERSION    = 'DRT-v14';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -369,6 +496,13 @@ let gpsLat = null, gpsLng = null, gpsAcc = null;
 let photos = [];   // {blob, dataUrl, filename}
 let outbox = JSON.parse(localStorage.getItem('drt_outbox') || '[]');
 let LANG = 'en';
+
+// Attendance state
+let attModalType = null;   // 'Attended' | 'Leave'
+let attRows = [];
+let attChart = null;
+let attDashUnlocked = false;
+let attPeriod = 'day';
 
 // ── Lang strings ──────────────────────────────────────────────────────────────
 const STRINGS = {
@@ -542,6 +676,7 @@ function showApp(auth) {
   startGPS();
   updateOutboxBadge();
   document.getElementById('tb-tabs').style.display = 'flex';
+  initAttChiclets();
 }
 
 // ── GPS ───────────────────────────────────────────────────────────────────────
@@ -943,6 +1078,255 @@ function resetForm() {
   document.getElementById('af-date').textContent = new Date().toISOString().slice(0,10);
 }
 
+// ── Attendance chiclets ───────────────────────────────────────────────────────
+function attTodayKey() {
+  return `att_submitted_${userEmail}_${new Date().toISOString().slice(0,10)}`;
+}
+
+function initAttChiclets() {
+  const stored = localStorage.getItem(attTodayKey());
+  const bar    = document.getElementById('att-bar');
+  const status = document.getElementById('att-status');
+  bar.style.display    = 'flex';
+  status.style.display = 'none';
+  if (stored) {
+    try {
+      const s = JSON.parse(stored);
+      bar.style.display    = 'none';
+      status.style.display = 'flex';
+      if (s.type === 'Attended') {
+        status.className   = 'att-ok';
+        status.textContent = `✅ Attended · ${s.in_time}`;
+      } else {
+        status.className   = 'att-leave';
+        status.textContent = `🚫 Leave · ${s.leave_reasons || 'Leave'}`;
+      }
+    } catch(e) {}
+  }
+}
+
+function openAttModal(type) {
+  attModalType = type;
+  const today   = new Date().toISOString().slice(0,10);
+  const nowTime = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
+  const outTime = type === 'Attended'
+    ? new Date(Date.now() + 8*60*60*1000).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false})
+    : nowTime;
+
+  document.getElementById('att-modal-title').textContent =
+    type === 'Attended' ? '✅ Mark Attendance' : '🚫 Mark Leave';
+  document.getElementById('att-modal-sub').textContent =
+    type === 'Attended' ? 'Confirm you are present for work today.' : 'Select reason(s) for leave (up to 3).';
+  document.getElementById('att-modal-info').innerHTML =
+    `<b>Reporter:</b> ${userName}<br><b>Date:</b> ${today}<br><b>In:</b> ${nowTime}&ensp;·&ensp;<b>Out:</b> ${outTime}`;
+
+  const reasonsWrap = document.getElementById('att-reasons-wrap');
+  reasonsWrap.style.display = type === 'Leave' ? '' : 'none';
+
+  // Reset reason pills
+  document.querySelectorAll('.att-reason-pill').forEach(p => p.classList.remove('sel'));
+  document.getElementById('att-other-wrap').style.display = 'none';
+  document.getElementById('att-other-text').value = '';
+
+  const submitBtn = document.getElementById('att-modal-submit');
+  submitBtn.textContent = type === 'Attended' ? 'Submit Today\'s Attendance' : 'Submit Leave';
+  submitBtn.className   = type === 'Attended' ? 'att-modal-btn attended' : 'att-modal-btn leave';
+  submitBtn.disabled    = false;
+
+  document.getElementById('att-modal-bg').style.display = 'flex';
+}
+
+function closeAttModal() {
+  document.getElementById('att-modal-bg').style.display = 'none';
+  attModalType = null;
+}
+
+function attModalBgClick(e) {
+  if (e.target === document.getElementById('att-modal-bg')) closeAttModal();
+}
+
+function toggleReason(btn) {
+  const selected = document.querySelectorAll('.att-reason-pill.sel');
+  if (!btn.classList.contains('sel') && selected.length >= 3) return; // max 3
+  btn.classList.toggle('sel');
+  const anyOther = [...document.querySelectorAll('.att-reason-pill.sel')]
+    .some(p => p.dataset.reason === 'Other');
+  document.getElementById('att-other-wrap').style.display = anyOther ? '' : 'none';
+  if (!anyOther) document.getElementById('att-other-text').value = '';
+}
+
+async function submitAttendance() {
+  if (!attModalType) return;
+  const btn = document.getElementById('att-modal-submit');
+  btn.disabled = true;
+
+  const today   = new Date().toISOString().slice(0,10);
+  const nowISO  = new Date().toISOString();
+  const nowTime = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
+  const outTime = attModalType === 'Attended'
+    ? new Date(Date.now() + 8*60*60*1000).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false})
+    : nowTime;
+
+  let leaveReasons = '';
+  if (attModalType === 'Leave') {
+    const sel = [...document.querySelectorAll('.att-reason-pill.sel')].map(p => p.dataset.reason);
+    const otherText = document.getElementById('att-other-text').value.trim();
+    if (sel.includes('Other') && otherText) {
+      const idx = sel.indexOf('Other');
+      sel[idx] = `Other: ${otherText}`;
+    }
+    leaveReasons = sel.join(' | ');
+  }
+
+  const uuid = crypto.randomUUID();
+  const project = localStorage.getItem('arr_project') || '';
+
+  const row = {
+    uuid,
+    submitted_ts: '',   // server stamps
+    date:         today,
+    operator_email: userEmail,
+    operator_name:  userName,
+    project,
+    type:         attModalType,
+    in_time:      nowTime,
+    out_time:     outTime,
+    leave_reasons: leaveReasons,
+    gps_lat:      gpsLat !== null ? gpsLat.toFixed(6) : '',
+    gps_lng:      gpsLng !== null ? gpsLng.toFixed(6) : '',
+    gps_accuracy_m: gpsAcc !== null ? gpsAcc.toFixed(1) : '',
+    app_version:  APP_VERSION,
+  };
+
+  try {
+    const resp = await gasGet({ action: 'submitAttendance', row: JSON.stringify(row) });
+    if (!resp.ok) throw new Error(resp.error || 'submitAttendance failed');
+
+    // Store in localStorage — blocks re-submission from this device+login today
+    localStorage.setItem(attTodayKey(), JSON.stringify({ type: attModalType, in_time: nowTime, leave_reasons: leaveReasons, uuid }));
+
+    closeAttModal();
+    initAttChiclets();   // re-render: hide chiclets, show status badge
+  } catch(e) {
+    btn.disabled = false;
+    alert('Submission failed. Please try again.');
+  }
+}
+
+// ── Attendance dashboard ──────────────────────────────────────────────────────
+async function openAttDashboard() {
+  if (attDashUnlocked) { loadAttDashboard(); return; }
+  if (!userEmail) return;
+  const ok = await checkDashAccess(userEmail);   // reuse existing manifest check
+  if (ok) {
+    attDashUnlocked = true;
+    document.getElementById('att-dash-locked').style.display  = 'none';
+    document.getElementById('att-dash-content').style.display = 'block';
+    loadAttDashboard();
+  } else {
+    document.getElementById('att-dash-locked').style.display  = 'flex';
+    document.getElementById('att-dash-content').style.display = 'none';
+  }
+}
+
+function loadAttDashboard() {
+  const cb = 'att_cb_' + Date.now();
+  const s  = document.createElement('script');
+  s.src    = GAS_URL + '?action=getAttendance&callback=' + cb;
+  s.onerror = () => { try{document.head.removeChild(s)}catch(e){} };
+  window[cb] = data => {
+    try{document.head.removeChild(s)}catch(e){}
+    delete window[cb];
+    if (!data.ok) return;
+    attRows = data.rows || [];
+    renderAttDashboard();
+  };
+  document.head.appendChild(s);
+}
+
+function setAttPeriod(period, btn) {
+  attPeriod = period;
+  document.querySelectorAll('#att-screen .chart-sel-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAttDashboard();
+}
+
+function renderAttDashboard() {
+  const today    = new Date().toISOString().slice(0,10);
+  const weekAgo  = new Date(Date.now()-7*864e5).toISOString().slice(0,10);
+  const monthAgo = new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+
+  const todayRows  = attRows.filter(r => String(r.date).slice(0,10) === today);
+  const weekRows   = attRows.filter(r => String(r.date).slice(0,10) >= weekAgo);
+  const monthRows  = attRows.filter(r => String(r.date).slice(0,10) >= monthAgo);
+  const uniqueStaff = new Set(attRows.map(r => r.operator_email)).size;
+
+  document.getElementById('att-kpi-today-present').textContent = todayRows.filter(r=>r.type==='Attended').length;
+  document.getElementById('att-kpi-today-leave').textContent   = todayRows.filter(r=>r.type==='Leave').length;
+  document.getElementById('att-kpi-week').textContent          = weekRows.length;
+  document.getElementById('att-kpi-month').textContent         = monthRows.length;
+  document.getElementById('att-kpi-staff').textContent         = uniqueStaff;
+
+  // Filter rows for table
+  let filtered = attRows;
+  if (attPeriod === 'day')   filtered = todayRows;
+  if (attPeriod === 'week')  filtered = weekRows;
+  if (attPeriod === 'month') filtered = monthRows;
+  const sorted = [...filtered].sort((a,b) => String(b.date).localeCompare(String(a.date)));
+
+  document.getElementById('att-log-body').innerHTML = sorted.length
+    ? sorted.map(r => {
+        const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(4)}°N ${parseFloat(r.gps_lng).toFixed(4)}°E` : '—';
+        const badge = r.type === 'Attended'
+          ? '<span style="color:#006600;font-weight:700">✅ Attended</span>'
+          : '<span style="color:#FF3300;font-weight:700">🚫 Leave</span>';
+        return `<tr>
+          <td>${String(r.date).slice(0,10)}</td>
+          <td>${r.operator_name||'—'}</td>
+          <td style="font-size:10px">${r.operator_email||'—'}</td>
+          <td>${badge}</td>
+          <td style="white-space:nowrap">${r.in_time||'—'}</td>
+          <td style="white-space:nowrap">${r.out_time||'—'}</td>
+          <td style="font-size:10px">${r.leave_reasons||'—'}</td>
+          <td style="font-size:10px;white-space:nowrap">${gps}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="8" class="dash-empty">No attendance records</td></tr>';
+
+  // 30-day attendance chart
+  const days = [];
+  for (let i=29;i>=0;i--) {
+    const d = new Date(Date.now()-i*864e5).toISOString().slice(0,10);
+    days.push(d);
+  }
+  const presentData = days.map(d => attRows.filter(r=>String(r.date).slice(0,10)===d&&r.type==='Attended').length);
+  const leaveData   = days.map(d => attRows.filter(r=>String(r.date).slice(0,10)===d&&r.type==='Leave').length);
+  const isDark      = document.documentElement.getAttribute('data-theme')==='dark';
+  const gridColor   = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
+  const labelColor  = isDark ? '#d8f3dc' : '#1b4332';
+
+  if (attChart) attChart.destroy();
+  const ctx = document.getElementById('att-chart').getContext('2d');
+  attChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: days.map(d=>d.slice(5)),
+      datasets: [
+        { label:'Attended', data:presentData, backgroundColor:'rgba(0,102,0,.75)', borderColor:'#006600', borderWidth:1, borderRadius:3 },
+        { label:'Leave',    data:leaveData,   backgroundColor:'rgba(255,51,0,.65)', borderColor:'#FF3300', borderWidth:1, borderRadius:3 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:labelColor, font:{size:11} } } },
+      scales:{
+        x:{ stacked:true, ticks:{ color:labelColor, font:{size:10}, maxRotation:45 }, grid:{ color:gridColor } },
+        y:{ stacked:true, ticks:{ color:labelColor, font:{size:10} }, grid:{ color:gridColor }, beginAtZero:true }
+      }
+    }
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 // ── inv_manifest auth ────────────────────────────────────────────────────────
 const INV_MANIFEST_URL = 'inv_manifest.json';
@@ -972,11 +1356,14 @@ async function sha256(str) {
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchAppTab(tab) {
-  document.getElementById('main-screen').style.display = tab === 'report' ? 'block' : 'none';
-  document.getElementById('dash-screen').style.display = tab === 'dashboard' ? 'block' : 'none';
-  document.getElementById('tbt-report').classList.toggle('active', tab === 'report');
-  document.getElementById('tbt-dashboard').classList.toggle('active', tab === 'dashboard');
-  if (tab === 'dashboard') openDashboard();
+  document.getElementById('main-screen').style.display  = tab === 'report'     ? 'block' : 'none';
+  document.getElementById('dash-screen').style.display  = tab === 'dashboard'  ? 'block' : 'none';
+  document.getElementById('att-screen').style.display   = tab === 'attendance' ? 'block' : 'none';
+  document.getElementById('tbt-report').classList.toggle('active',     tab === 'report');
+  document.getElementById('tbt-dashboard').classList.toggle('active',  tab === 'dashboard');
+  document.getElementById('tbt-attendance').classList.toggle('active', tab === 'attendance');
+  if (tab === 'dashboard')  openDashboard();
+  if (tab === 'attendance') openAttDashboard();
 }
 
 async function openDashboard() {
