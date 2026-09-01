@@ -1066,9 +1066,9 @@ function openModeCallout(anchorEl) {
     title.className = 'callout-title'; title.textContent = Lang.mode || 'Mode';
     box.appendChild(title);
     const row = document.createElement('div'); row.className = 'callout-row';
-    const plantBtn = calloutOptBtn('\u{1F331}', APP_MODE === 'plant', () => switchTab('plant'));
+    const plantBtn = calloutOptBtn('\u{1F331}', APP_MODE === 'plant', () => switchTab('vec'));
     attachTip(plantBtn, 'tab_plant');
-    const soilBtn = calloutOptBtn('\u{1F9EA}', APP_MODE === 'soil', () => switchTab('soil'));
+    const soilBtn = calloutOptBtn('\u{1F9EA}', APP_MODE === 'soil', () => switchTab('vec'));
     attachTip(soilBtn, 'tab_soil');
     const vecBtn = calloutOptBtn('\u{1F4D0}', APP_MODE === 'vec', () => switchTab('vec'));
     attachTip(vecBtn, 'tab_vec');
@@ -1589,35 +1589,28 @@ function updateGpsBtn() {
 
 function handleGpsBtnTap() {
   if (APP_MODE === 'files') return;
-  if (APP_MODE === 'vec') {
-    // Centre map on GPS position
-    if (window.vecLastPos) {
-      map.setView([window.vecLastPos.lat, window.vecLastPos.lon], Math.max(map.getZoom(), 16));
-    }
-    return;
-  }
-  // Plantation / Soil — toggle GPS watch
-  if (_nonVecWatchId !== null) {
-    // Already running — centre map
-    if (_nonVecLastPos) {
-      map.setView([_nonVecLastPos.lat, _nonVecLastPos.lon], Math.max(map.getZoom(), 16));
-    }
-    return;
-  }
-  // Start GPS watch
-  if (!navigator.geolocation) {
-    updateSbar(); return;
-  }
-  _nonVecWatchId = navigator.geolocation.watchPosition(
+  if (!navigator.geolocation) { updateSbar(); return; }
+  // Always fly to current location immediately, regardless of mode or watch state
+  navigator.geolocation.getCurrentPosition(
     pos => {
-      _nonVecLastPos = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy };
-      updateGpsBtn();
-      updateSbar();
+      const lat = pos.coords.latitude, lon = pos.coords.longitude;
+      map.setView([lat, lon], Math.max(map.getZoom(), 16));
     },
-    () => { _nonVecLastPos = null; updateGpsBtn(); updateSbar(); },
-    { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+    () => { updateSbar(); },
+    { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
   );
-  updateSbar();
+  // Ensure background watch is running for soil/plant modes
+  if (APP_MODE !== 'vec' && _nonVecWatchId === null) {
+    _nonVecWatchId = navigator.geolocation.watchPosition(
+      pos => {
+        _nonVecLastPos = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy };
+        updateGpsBtn();
+        updateSbar();
+      },
+      () => { _nonVecLastPos = null; updateGpsBtn(); updateSbar(); },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+    );
+  }
 }
 
 function stopNonVecGps() {
