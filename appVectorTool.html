@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>Vector Tool · ARR Suite</title>
+<title>ARR Mapper v98 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -503,7 +503,121 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
   <input type="file" id="kml-input" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,*/*" onchange="loadKMLFile(this)"/>
 
+  <div id="mode-plant-body" class="hidden">
 
+    <div class="sec">
+      <!-- Row 1: Spacing + Generate -->
+      <div class="pm-row">
+        <span class="pm-label" data-i18n="spacing">Grid (m)</span>
+        <button class="pm-btn" onclick="adjustSpacing(-0.1)">−</button>
+        <input id="spacing-input" type="number" step="0.001" min="0.5" max="30" value="3.000"
+          style="width:64px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--ink);font-size:11px;text-align:center;padding:2px;margin-left:2px"
+          oninput="currentSpacing=Math.max(0.5,Math.min(30,parseFloat(this.value)||0.5));updatePMDisplays()" />
+        <button class="pm-btn" onclick="adjustSpacing(+0.1)">+</button>
+        <button class="icon-btn b-teal" onclick="buildGlobalGrid()" id="btn-gengrid" data-i18n-tip="gengrid" style="margin-left:4px;width:32px;height:32px;flex-shrink:0">⚙️</button>
+      </div>
+      <!-- Row 2: Count + Direction -->
+      <div class="pm-row">
+        <span class="pm-label" data-i18n="saplings">Saplings</span>
+        <button class="pm-btn" onclick="adjustCount(-1)">−</button>
+        <input id="count-input" type="number" step="1" min="1" max="2000"
+          style="width:44px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--ink);font-size:11px;text-align:center;padding:2px"
+          oninput="currentCount=Math.max(1,Math.min(2000,parseInt(this.value)||1));updatePMDisplays()" />
+        <button class="pm-btn" onclick="adjustCount(+1)">+</button>
+        <button class="icon-btn indicator-btn b-gray" id="btn-dir-ind" onclick="openDirCallout(this)" style="margin-left:4px;width:32px;height:32px;flex-shrink:0">🧭</button>
+      </div>
+      <div id="grid-info"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-t" style="margin-top:8px"><span id="sp-sel-label" style="color:var(--mid)">—</span></div>
+      <div id="species-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-height:210px;overflow-y:auto;margin-top:6px"></div>
+    </div>
+
+    <div class="sec">
+      <div style="font-size:10px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;padding:4px 0">
+        <span>Total: <span id="pm-stat-total" style="color:var(--leaf)">0</span></span>
+        <span>Free: <span id="pm-stat-free" style="color:#34d399">0</span></span>
+        <span id="pm-stat-sp" style="color:#a78bfa"></span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="icon-row">
+        <button class="icon-btn b-teal" onclick="startDrawBlock()" id="btn-draw-plant"  data-i18n-tip="drawpoly">✏️</button>
+        <button class="icon-btn b-amber b-off" id="btn-finish-plant" onclick="finishDrawBlock()" ontouchstart="event.stopPropagation()" data-i18n-tip="finish">✅</button>
+        <button class="icon-btn b-gray" onclick="undoLastBlock()" data-i18n-tip="undo">↩️</button>
+        <button class="icon-btn b-green" onclick="runExportTask()" data-i18n-tip="expall">📦</button>
+        <button class="icon-btn b-red" onclick="clearAllBlocks()" data-i18n-tip="clearall">🗑️</button>
+      </div>
+    </div>
+
+    <div class="sec" style="flex:1">
+      <div class="sec-t sec-t-toggle" onclick="toggleSummary('sp-summary-body',this)" data-i18n="place">Placements</div>
+      <div id="sp-summary-body">
+      <table id="sp-table">
+        <thead><tr><th data-i18n="th_species">Species</th><th data-i18n="th_count">#</th><th data-i18n="th_area">Area</th></tr></thead>
+        <tbody id="sp-tbody"></tbody>
+      </table>
+      <div id="total-row" style="margin-top:4px;font-size:10px;color:var(--leaf)">Total: 0 saplings</div>
+      </div>
+    </div>
+
+  <!-- Overlay layers for Plant mode -->
+  <div class="sec" id="plant-sec-layers">
+    <div class="sec-t" style="display:flex;align-items:center;justify-content:space-between">
+      <span>🗂️ Overlays</span>
+      <button onclick="switchTab('files')" style="background:var(--mint);border:none;border-radius:5px;color:var(--ink);font-size:10px;padding:2px 8px;cursor:pointer">+ Add via Files</button>
+    </div>
+    <div id="overlay-layer-list-plant" style="display:none;margin-top:6px"></div>
+    <div id="layer-picker-panel-plant" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px;max-height:160px;overflow-y:auto">
+      <div id="layer-picker-list-plant"></div>
+    </div>
+  </div>
+
+  </div>
+
+  <div id="mode-soil-body" class="hidden">
+
+    <div class="sec">
+      <div class="sec-t" style="margin-top:8px"><span id="soil-sel-label" style="color:var(--mid)">—</span></div>
+      <div id="soil-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:6px"></div>
+    </div>
+
+    <div class="sec">
+      <div class="icon-row">
+        <button class="icon-btn b-teal" onclick="startDrawBlock()" id="btn-draw-soil" data-i18n-tip="drawpoly">✏️</button>
+        <button class="icon-btn b-amber b-off" id="btn-finish-soil" onclick="finishDrawBlock()" ontouchstart="event.stopPropagation()" data-i18n-tip="finish">✅</button>
+        <button class="icon-btn b-gray" onclick="undoLastBlock()" data-i18n-tip="undo">↩️</button>
+        <button class="icon-btn b-green" onclick="runExportTask()" data-i18n-tip="expall">📦</button>
+        <button class="icon-btn b-red" onclick="clearAllBlocks()" data-i18n-tip="clearall">🗑️</button>
+      </div>
+    </div>
+
+    <div class="sec" style="flex:1">
+      <div class="sec-t sec-t-toggle" onclick="toggleSummary('soil-summary-body',this)" data-i18n="place">Placements</div>
+      <div id="soil-summary-body">
+      <table id="soil-table">
+        <thead><tr><th data-i18n="th_soiltype">Soil type</th><th data-i18n="th_area">Area</th></tr></thead>
+        <tbody id="soil-tbody"></tbody>
+      </table>
+      <div id="soil-total-row" style="margin-top:4px;font-size:10px;color:var(--leaf)">Total: 0 ha</div>
+      </div>
+    </div>
+
+  <!-- Overlay layers for Soil mode -->
+  <div class="sec" id="soil-sec-layers">
+    <div class="sec-t" style="display:flex;align-items:center;justify-content:space-between">
+      <span>🗂️ Overlays</span>
+      <button onclick="switchTab('files')" style="background:var(--mint);border:none;border-radius:5px;color:var(--ink);font-size:10px;padding:2px 8px;cursor:pointer">+ Add via Files</button>
+    </div>
+    <div id="overlay-layer-list-soil" style="display:none;margin-top:6px"></div>
+    <div id="layer-picker-panel-soil" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px;max-height:160px;overflow-y:auto">
+      <div id="layer-picker-list-soil"></div>
+    </div>
+  </div>
+
+  </div>
 
   <div id="mode-vec-body">
 
@@ -1123,7 +1237,7 @@ const SPECIES_COLORS = {
 // ═══════════════════════════════════════════════════════════════════════
 // GLOBAL STATE
 // ═══════════════════════════════════════════════════════════════════════
-let APP_MODE = 'vec';
+let APP_MODE = 'vec';   // default tab is Make Vector
 let currentSpacing = 3;   // grid spacing (m), driven by the spacing wheel picker
 let currentCount = 100;   // target sapling count, driven by the count wheel picker
 let map, osmLayer, esriLayer, satLabelsLayer;
@@ -1942,10 +2056,10 @@ function switchTab(mode) {
     const b = document.getElementById('tbm-' + m);
     if (b) b.classList.toggle('active', m === mode);
   });
-  const _mp = document.getElementById('mode-plant-body'); if (_mp) _mp.classList.toggle('hidden', mode !== 'plant');
-  const _ms = document.getElementById('mode-soil-body');  if (_ms) _ms.classList.toggle('hidden', mode !== 'soil');
-  const _mv = document.getElementById('mode-vec-body');   if (_mv) _mv.classList.toggle('hidden', mode !== 'vec');
-  const _mf = document.getElementById('mode-files-body'); if (_mf) _mf.classList.toggle('hidden', mode !== 'files');
+  document.getElementById('mode-plant-body').classList.toggle('hidden', mode !== 'plant');
+  document.getElementById('mode-soil-body').classList.toggle('hidden', mode !== 'soil');
+  document.getElementById('mode-vec-body').classList.toggle('hidden', mode !== 'vec');
+  document.getElementById('mode-files-body').classList.toggle('hidden', mode !== 'files');
   // MRV Tool moved to appMonitoringDashboard in v68
   const ind = document.getElementById('btn-mode-ind');
   if (ind) ind.textContent = mode === 'soil' ? '\u{1F9EA}' : mode === 'vec' ? '\u{1F4D0}' : '\u{1F331}';
@@ -3453,7 +3567,7 @@ function filesDiscardAndBrowse() {
 }
 
 function filesGoBack() {
-  switchTab(_filesPriorMode || 'vec');
+  switchTab(_filesPriorMode || 'plant');
 }
 
 // ── Files browser ─────────────────────────────────────────────────────
@@ -3729,7 +3843,7 @@ async function filesLoadAsBoundary(fname, dirHandle) {
     llPoly.addTo(boundaryLayer);
     map.fitBounds(llPoly.getBounds(),{padding:[16,16]});
     setStatus('Boundary loaded: '+fname,'');
-    switchTab(_filesPriorMode || 'vec');
+    switchTab(_filesPriorMode || 'plant');
   } catch(e) { setStatus('Failed: '+e.message,'err'); }
 }
 

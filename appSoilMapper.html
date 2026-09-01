@@ -5,7 +5,7 @@
 <meta name="google-site-verification" content="GekGUbu3LKZ6Mn9ZtOm5obfpuD3NjYmOkoW8CgMmsHw" />
 <link rel="manifest" href="manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>Soil Mapper · ARR Suite</title>
+<title>ARR Mapper v98 · Asha 1</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
@@ -503,6 +503,79 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
   <input type="file" id="kml-input" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,*/*" onchange="loadKMLFile(this)"/>
 
+  <div id="mode-plant-body" class="hidden">
+
+    <div class="sec">
+      <!-- Row 1: Spacing + Generate -->
+      <div class="pm-row">
+        <span class="pm-label" data-i18n="spacing">Grid (m)</span>
+        <button class="pm-btn" onclick="adjustSpacing(-0.1)">−</button>
+        <input id="spacing-input" type="number" step="0.001" min="0.5" max="30" value="3.000"
+          style="width:64px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--ink);font-size:11px;text-align:center;padding:2px;margin-left:2px"
+          oninput="currentSpacing=Math.max(0.5,Math.min(30,parseFloat(this.value)||0.5));updatePMDisplays()" />
+        <button class="pm-btn" onclick="adjustSpacing(+0.1)">+</button>
+        <button class="icon-btn b-teal" onclick="buildGlobalGrid()" id="btn-gengrid" data-i18n-tip="gengrid" style="margin-left:4px;width:32px;height:32px;flex-shrink:0">⚙️</button>
+      </div>
+      <!-- Row 2: Count + Direction -->
+      <div class="pm-row">
+        <span class="pm-label" data-i18n="saplings">Saplings</span>
+        <button class="pm-btn" onclick="adjustCount(-1)">−</button>
+        <input id="count-input" type="number" step="1" min="1" max="2000"
+          style="width:44px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--ink);font-size:11px;text-align:center;padding:2px"
+          oninput="currentCount=Math.max(1,Math.min(2000,parseInt(this.value)||1));updatePMDisplays()" />
+        <button class="pm-btn" onclick="adjustCount(+1)">+</button>
+        <button class="icon-btn indicator-btn b-gray" id="btn-dir-ind" onclick="openDirCallout(this)" style="margin-left:4px;width:32px;height:32px;flex-shrink:0">🧭</button>
+      </div>
+      <div id="grid-info"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-t" style="margin-top:8px"><span id="sp-sel-label" style="color:var(--mid)">—</span></div>
+      <div id="species-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-height:210px;overflow-y:auto;margin-top:6px"></div>
+    </div>
+
+    <div class="sec">
+      <div style="font-size:10px;color:var(--dim);display:flex;gap:8px;flex-wrap:wrap;padding:4px 0">
+        <span>Total: <span id="pm-stat-total" style="color:var(--leaf)">0</span></span>
+        <span>Free: <span id="pm-stat-free" style="color:#34d399">0</span></span>
+        <span id="pm-stat-sp" style="color:#a78bfa"></span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="icon-row">
+        <button class="icon-btn b-teal" onclick="startDrawBlock()" id="btn-draw-plant"  data-i18n-tip="drawpoly">✏️</button>
+        <button class="icon-btn b-amber b-off" id="btn-finish-plant" onclick="finishDrawBlock()" ontouchstart="event.stopPropagation()" data-i18n-tip="finish">✅</button>
+        <button class="icon-btn b-gray" onclick="undoLastBlock()" data-i18n-tip="undo">↩️</button>
+        <button class="icon-btn b-green" onclick="runExportTask()" data-i18n-tip="expall">📦</button>
+        <button class="icon-btn b-red" onclick="clearAllBlocks()" data-i18n-tip="clearall">🗑️</button>
+      </div>
+    </div>
+
+    <div class="sec" style="flex:1">
+      <div class="sec-t sec-t-toggle" onclick="toggleSummary('sp-summary-body',this)" data-i18n="place">Placements</div>
+      <div id="sp-summary-body">
+      <table id="sp-table">
+        <thead><tr><th data-i18n="th_species">Species</th><th data-i18n="th_count">#</th><th data-i18n="th_area">Area</th></tr></thead>
+        <tbody id="sp-tbody"></tbody>
+      </table>
+      <div id="total-row" style="margin-top:4px;font-size:10px;color:var(--leaf)">Total: 0 saplings</div>
+      </div>
+    </div>
+
+  <!-- Overlay layers for Plant mode -->
+  <div class="sec" id="plant-sec-layers">
+    <div class="sec-t" style="display:flex;align-items:center;justify-content:space-between">
+      <span>🗂️ Overlays</span>
+      <button onclick="switchTab('files')" style="background:var(--mint);border:none;border-radius:5px;color:var(--ink);font-size:10px;padding:2px 8px;cursor:pointer">+ Add via Files</button>
+    </div>
+    <div id="overlay-layer-list-plant" style="display:none;margin-top:6px"></div>
+    <div id="layer-picker-panel-plant" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px;max-height:160px;overflow-y:auto">
+      <div id="layer-picker-list-plant"></div>
+    </div>
+  </div>
+
+  </div>
 
   <div id="mode-soil-body" class="hidden">
 
@@ -546,6 +619,106 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
   </div>
 
+  <div id="mode-vec-body">
+
+  <!-- GPS status bar -->
+  <div class="vec-step" style="border-bottom:1px solid var(--border)">
+    <div id="vec-gps-status" style="font-size:11px;color:var(--amber);text-align:center;padding:2px 0">Acquiring GPS…</div>
+  </div>
+
+  <!-- Step 1: Shape -->
+  <div class="vec-step" id="vec-step1">
+    <div class="vec-step-label">① Shape</div>
+    <div class="vec-shape-grid">
+      <button class="vec-shape-btn vec-tool-btn" id="vt-poly" onclick="vecFamSelectShape('poly')" style="opacity:.3;pointer-events:none">
+        <span class="icon"> ⬢ </span><span class="lbl">Polygon</span>
+      </button>
+      <button class="vec-shape-btn vec-tool-btn" id="vt-path" onclick="vecFamSelectShape('path')" style="opacity:.3;pointer-events:none">
+        <span class="icon"> ⤳ </span><span class="lbl">Path</span>
+      </button>
+      <button class="vec-shape-btn vec-tool-btn" id="vt-poi" onclick="vecFamSelectShape('poi')" style="opacity:.3;pointer-events:none">
+        <span class="icon"> ⚑ </span><span class="lbl">Point (POI)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Method (hidden until shape chosen) -->
+  <div class="vec-step" id="vec-step2" style="display:none">
+    <div class="vec-step-label">② Method</div>
+    <div class="vec-method-row">
+      <button class="vec-method-btn" id="vec-meth-manual" onclick="vecFamSelectMethod('manual')">✋ Manual</button>
+      <button class="vec-method-btn" id="vec-meth-gps"    onclick="vecFamSelectMethod('gps')">📍 GPS</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Name + Type + Start (hidden until method chosen) -->
+  <div class="vec-step" id="vec-step3" style="display:none">
+    <div class="vec-step-label">③ Details &amp; Start</div>
+    <input id="vec-feat-name" class="vec-name-input" type="text" placeholder="Feature name… (required)" maxlength="60" oninput="vecFamCheckReady()"/>
+    <div id="vec-type-chips" class="vec-type-chips"></div>
+    <div id="vec-gps-info" style="font-size:10px;color:var(--dim);min-height:14px;margin-bottom:4px"></div>
+    <button class="vec-start-btn" id="vec-btn-start-fam" onclick="vecFamStart()" disabled>▶ Start</button>
+  </div>
+
+  <!-- Manual tool controls (shown after start for manual tools) -->
+  <div class="vec-step" id="vec-sec-ctrl" style="display:none">
+    <div class="icon-row" id="vec-ctrl-row"></div>
+  </div>
+
+  <!-- Live stats -->
+  <div class="vec-step" id="vec-sec-stats" style="display:none">
+    <div style="font-size:10px;color:var(--dim);line-height:1.7">
+      <div id="vec-stat-area" style="display:none">📐 Area: <strong id="vec-stat-area-val" style="color:var(--ink)">—</strong></div>
+      <div id="vec-stat-perim" style="display:none">🔲 Perim: <strong id="vec-stat-perim-val" style="color:var(--ink)">—</strong></div>
+      <div id="vec-stat-len-row">📏 Length: <strong id="vec-stat-len-val" style="color:var(--ink)">—</strong></div>
+    </div>
+  </div>
+
+  <!-- Overlays -->
+  <div class="vec-step" id="vec-sec-layers" style="display:none">
+    <div class="sec-t" style="display:flex;align-items:center;justify-content:space-between">
+      <span>🗂️ Overlays</span>
+      <button onclick="switchTab('files')" style="background:var(--mint);border:none;border-radius:5px;color:var(--ink);font-size:10px;padding:2px 8px;cursor:pointer">+ Add via Files</button>
+    </div>
+    <div id="overlay-layer-list" style="display:none;margin-top:6px"></div>
+    <div id="layer-picker-panel" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:6px;padding:6px;max-height:180px;overflow-y:auto">
+      <div id="layer-picker-list"></div>
+    </div>
+  </div>
+
+  <!-- Vec edit section (post-finish, manual only) -->
+  <div class="sec" id="vec-sec-edit" style="display:none">
+    <div class="sec-t" style="color:var(--amber)">✏️ Editing vertices</div>
+    <div style="font-size:10px;color:var(--dim);margin:4px 0 8px">Drag vertices to adjust. GPS features cannot be edited.</div>
+    <div style="margin-bottom:6px">
+      <div class="sec-t" style="font-size:10px;margin-bottom:3px" id="vec-stage-label">Stage</div>
+      <select id="vec-stage-sel" style="font-size:11px;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--ink);padding:4px 6px">
+        <option value="eligibility">Eligibility check</option>
+        <option value="negotiated">Negotiated boundary</option>
+        <option value="surveyed">Surveyor (amin) boundary</option>
+        <option value="cleared">Post-clearing boundary</option>
+        <option value="final">Final (post-fencing)</option>
+        <option value="revised">Revised</option>
+      </select>
+    </div>
+    <div id="vec-revision-row" style="display:none;margin-bottom:6px">
+      <div class="sec-t" style="font-size:10px;margin-bottom:3px" id="vec-revision-label">Revision reason</div>
+      <select id="vec-revision-sel" style="font-size:11px;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--ink);padding:4px 6px">
+        <option value="flood_hazard">Flood hazard</option>
+        <option value="fire_hazard">Fire hazard</option>
+        <option value="bank_erosion">Bank erosion</option>
+        <option value="beneficiary_dropout">Beneficiary dropout</option>
+        <option value="encroachment">Encroachment</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="icon-row">
+      <button class="icon-btn b-teal" id="btn-vec-save-edit" onclick="vecSaveEdit()" style="font-size:11px">💾 Save</button>
+      <button class="icon-btn b-gray" id="btn-vec-discard-edit" onclick="vecDiscardEdit()" style="font-size:11px">✕ Discard</button>
+    </div>
+  </div>
+
+</div>
 
   <div id="mode-files-body" class="hidden">
     <div id="files-unsaved-warn" class="sec" style="display:none">
@@ -1064,7 +1237,7 @@ const SPECIES_COLORS = {
 // ═══════════════════════════════════════════════════════════════════════
 // GLOBAL STATE
 // ═══════════════════════════════════════════════════════════════════════
-let APP_MODE = 'soil';
+let APP_MODE = 'vec';   // default tab is Make Vector
 let currentSpacing = 3;   // grid spacing (m), driven by the spacing wheel picker
 let currentCount = 100;   // target sapling count, driven by the count wheel picker
 let map, osmLayer, esriLayer, satLabelsLayer;
@@ -1883,10 +2056,10 @@ function switchTab(mode) {
     const b = document.getElementById('tbm-' + m);
     if (b) b.classList.toggle('active', m === mode);
   });
-  const _mp = document.getElementById('mode-plant-body'); if (_mp) _mp.classList.toggle('hidden', mode !== 'plant');
-  const _ms = document.getElementById('mode-soil-body');  if (_ms) _ms.classList.toggle('hidden', mode !== 'soil');
-  const _mv = document.getElementById('mode-vec-body');   if (_mv) _mv.classList.toggle('hidden', mode !== 'vec');
-  const _mf = document.getElementById('mode-files-body'); if (_mf) _mf.classList.toggle('hidden', mode !== 'files');
+  document.getElementById('mode-plant-body').classList.toggle('hidden', mode !== 'plant');
+  document.getElementById('mode-soil-body').classList.toggle('hidden', mode !== 'soil');
+  document.getElementById('mode-vec-body').classList.toggle('hidden', mode !== 'vec');
+  document.getElementById('mode-files-body').classList.toggle('hidden', mode !== 'files');
   // MRV Tool moved to appMonitoringDashboard in v68
   const ind = document.getElementById('btn-mode-ind');
   if (ind) ind.textContent = mode === 'soil' ? '\u{1F9EA}' : mode === 'vec' ? '\u{1F4D0}' : '\u{1F331}';
@@ -3394,7 +3567,7 @@ function filesDiscardAndBrowse() {
 }
 
 function filesGoBack() {
-  switchTab(_filesPriorMode || 'soil');
+  switchTab(_filesPriorMode || 'plant');
 }
 
 // ── Files browser ─────────────────────────────────────────────────────
@@ -3670,7 +3843,7 @@ async function filesLoadAsBoundary(fname, dirHandle) {
     llPoly.addTo(boundaryLayer);
     map.fitBounds(llPoly.getBounds(),{padding:[16,16]});
     setStatus('Boundary loaded: '+fname,'');
-    switchTab(_filesPriorMode || 'soil');
+    switchTab(_filesPriorMode || 'plant');
   } catch(e) { setStatus('Failed: '+e.message,'err'); }
 }
 
@@ -5559,7 +5732,7 @@ function cycleLang(btn) {
   setLang(code);
 }
 
-window.addEventListener('load', ()=>{ init(); setLang('en'); switchTab('soil'); updateSbar(); initThemeBtn(); });
+window.addEventListener('load', ()=>{ init(); setLang('en'); switchTab('vec'); updateSbar(); initThemeBtn(); });
 
 // ── fixPolygonGeometry — QGIS "Fix Geometries / Structure" equivalent ──────
 // Approximates GEOSMakeValid(STRUCTURE): deduplicates vertices, fixes winding,
