@@ -68,7 +68,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   padding:7px 12px;font-size:11px;font-weight:600;color:var(--mid);cursor:pointer;
   font-family:inherit;transition:all .15s;text-align:left}
 .vt-pill:hover{border-color:var(--leaf);color:var(--canopy)}
-.vt-pill.sel{background:var(--leaf);border-color:var(--leaf);color:var(--forest)}
+.vt-pill.sel,.vt-pill.active{background:var(--leaf);border-color:var(--leaf);color:var(--forest)}
 #other-text-wrap{margin-top:8px;display:none}
 
 /* Notes */
@@ -118,6 +118,31 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   font-weight:700;color:#fff;cursor:pointer;font-family:inherit;transition:opacity .15s;
   display:flex;align-items:center;justify-content:center;gap:6px}
 .att-chiclet:active{opacity:.8}
+.att-chiclet:disabled,.att-chiclet[disabled]{opacity:.4;cursor:not-allowed}
+.att-leave-sub-btn{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;
+  background:var(--card);color:var(--ink);font-size:13px;text-align:left;cursor:pointer;transition:background .15s}
+.att-leave-sub-btn:hover{background:var(--mist)}
+.att-leave-sub-btn.sel{background:var(--amber);border-color:var(--amber);color:#000;font-weight:700}
+.att-leave-sub-btn:disabled{opacity:.38;cursor:not-allowed}
+.leave-sub-cutoff{font-size:10px;color:var(--dim);margin-left:6px}
+.att-gps-warn{background:rgba(255,165,0,.15);border:1px solid var(--amber);border-radius:8px;
+  padding:9px 12px;font-size:12px;color:var(--amber);margin-bottom:12px}
+/* Dashboard pagination */
+.dash-pagination{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.dash-pagination button{padding:5px 12px;border:1px solid var(--border);border-radius:6px;
+  background:var(--card);color:var(--ink);font-size:12px;cursor:pointer}
+.dash-pagination button:disabled{opacity:.35;cursor:not-allowed}
+.dash-pagination .page-info{font-size:11px;color:var(--dim)}
+.dash-nav-btn{padding:5px 12px;border:1px solid var(--border);border-radius:6px;
+  background:var(--card);color:var(--ink);font-size:12px;cursor:pointer}
+.dash-export-btn{padding:6px 14px;border:none;border-radius:6px;
+  background:var(--forest);color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+.dash-filters-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.dash-filters-row select,.dash-filters-row input[type=date]{
+  padding:6px 10px;border:1px solid var(--border);border-radius:7px;
+  background:var(--card);color:var(--ink);font-size:12px}
+.att-outbox-pending{background:rgba(255,165,0,.15);border:1px solid var(--amber);border-radius:10px;
+  padding:10px 14px;font-size:13px;color:var(--amber);text-align:center;margin-top:8px}
 #att-attended{background:#006600}
 #att-leave{background:#FF3300}
 #att-status{padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;
@@ -249,6 +274,21 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
       </div>
     </div>
 
+    <!-- Leave Today sub-type — shown only for Leave Today -->
+    <div id="att-leave-subtype-wrap" style="display:none;margin-bottom:14px">
+      <div class="field-label" style="margin-bottom:8px;font-size:11px">Select leave type:</div>
+      <div style="display:flex;flex-direction:column;gap:7px" id="att-leave-subtype-grid">
+        <button class="att-leave-sub-btn" data-subtype="Full Day" onclick="selectLeaveSubtype(this)">📅 Full Day <span class="leave-sub-cutoff">(until 09:59)</span></button>
+        <button class="att-leave-sub-btn" data-subtype="Morning Half" onclick="selectLeaveSubtype(this)">🌅 Morning Half <span class="leave-sub-cutoff">(until 11:59)</span></button>
+        <button class="att-leave-sub-btn" data-subtype="Afternoon Half" onclick="selectLeaveSubtype(this)">🌇 Afternoon Half <span class="leave-sub-cutoff">(until 14:59)</span></button>
+        <button class="att-leave-sub-btn" data-subtype="Late Leave" onclick="selectLeaveSubtype(this)">🌙 Late Leave <span class="leave-sub-cutoff">(until 19:59 — marks absent today)</span></button>
+      </div>
+      <div id="att-leave-allclosed" style="display:none;margin-top:10px;padding:10px;background:rgba(255,51,0,.1);border-radius:8px;font-size:12px;color:var(--red)">
+        ⚠️ All leave windows closed.
+        <button style="margin-top:8px;display:block;width:100%;padding:10px;background:var(--amber);color:#000;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer" onclick="forceFullDayLeave()">Mark as Full Day Leave (override)</button>
+      </div>
+    </div>
+
     <!-- Leave reasons — shown only for Leave modal -->
     <div id="att-reasons-wrap" style="display:none">
       <div class="att-reason-grid" id="att-reason-grid">
@@ -274,9 +314,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
   <!-- Attendance chiclets -->
   <div id="att-bar" style="display:none">
-    <button class="att-chiclet" id="att-attended" onclick="openAttModal('Attended')">✅ Attended</button>
-    <button class="att-chiclet" id="att-leave"    onclick="openAttModal('Leave')">🚫 Leave Today</button>
-    <button class="att-chiclet" id="att-advance"  onclick="openAttModal('Advance')" style="background:#993300;font-size:12px">📅 Leave Advance</button>
+    <button class="att-chiclet" id="att-attended" onclick="openAttModal('Attended')">✅ Submit Attendance</button>
+    <button class="att-chiclet" id="att-leave"    onclick="openAttModal('Leave')">🚫 Submit Leave Today</button>
+    <button class="att-chiclet" id="att-advance"  onclick="openAttModal('Advance')" style="background:#993300;font-size:12px">📅 Submit Advance Leave</button>
   </div>
   <div id="att-status" style="display:none"></div>
 
@@ -347,6 +387,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
       <button class="vt-pill" data-en="Damage Report" data-bn="ক্ষতির প্রতিবেদন" data-hi="क्षति रिपोर्ट" data-other="false" onclick="toggleVisitType(this)">Damage Report</button>
       <button class="vt-pill" data-en="Fire Report" data-bn="আগুনের প্রতিবেদন" data-hi="आग रिपोर्ट" data-other="false" onclick="toggleVisitType(this)">Fire Report</button>
       <button class="vt-pill" data-en="Flood Report" data-bn="বন্যার প্রতিবেদন" data-hi="बाढ़ रिपोर्ट" data-other="false" onclick="toggleVisitType(this)">Flood Report</button>
+      <button class="vt-pill" data-en="Off: Data Work" data-bn="অফিস: ডেটা কাজ" data-hi="ऑफिस: डेटा कार्य" data-other="false" onclick="toggleVisitType(this)">Off: Data Work</button>
+      <button class="vt-pill" data-en="Off: Meeting" data-bn="অফিস: মিটিং" data-hi="ऑफिस: मीटिंग" data-other="false" onclick="toggleVisitType(this)">Off: Meeting</button>
+      <button class="vt-pill" data-en="Off: Visitors" data-bn="অফিস: ভিজিটর" data-hi="ऑफिस: आगंतुक" data-other="false" onclick="toggleVisitType(this)">Off: Visitors</button>
       <button class="vt-pill" data-en="Other" data-bn="অন্যান্য" data-hi="अन्य" data-other="true" onclick="toggleVisitType(this)">Other</button>
     </div>
     <div id="other-text-wrap">
@@ -417,19 +460,33 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
     <!-- Charts -->
     <div class="dash-sec">
       <div class="dash-sec-title">Charts</div>
-      <div class="chart-selector">
-        <button class="chart-sel-btn active" onclick="showChart('daily',this)">Daily (30d)</button>
-        <button class="chart-sel-btn" onclick="showChart('weekly',this)">Weekly (12w)</button>
-        <button class="chart-sel-btn" onclick="showChart('monthly',this)">Monthly (12m)</button>
+      <div class="chart-selector" style="flex-wrap:wrap;gap:4px">
+        <button class="chart-sel-btn active" onclick="showChart('daily',this)">Today</button>
+        <button class="chart-sel-btn" onclick="showChart('weekly',this)">This Week</button>
+        <button class="chart-sel-btn" onclick="showChart('monthly',this)">This Month</button>
+        <button class="chart-sel-btn" onclick="showChart('yearly',this)">This Year</button>
         <button class="chart-sel-btn" onclick="showChart('types',this)">Visit Types</button>
-        <button class="chart-sel-btn" onclick="showChart('reporters',this)">By Reporter</button>
+      </div>
+      <div id="dash-nav-row" style="display:none;margin-top:8px;display:flex;align-items:center;gap:8px">
+        <button class="dash-nav-btn" onclick="dashNavPrev()">◀ Prev</button>
+        <span id="dash-nav-label" style="font-size:12px;color:var(--dim);flex:1;text-align:center"></span>
+        <button class="dash-nav-btn" id="dash-nav-next" onclick="dashNavNext()">Next ▶</button>
       </div>
       <div class="chart-wrap"><canvas id="dash-chart"></canvas></div>
     </div>
 
-    <!-- Recent log -->
+    <!-- Records log -->
     <div class="dash-sec">
-      <div class="dash-sec-title">Recent Submissions (50)</div>
+      <div class="dash-sec-title">Work Report Records</div>
+      <div class="dash-filters-row">
+        <select id="dash-person-filter" onchange="renderDashRecords()">
+          <option value="">All Reporters</option>
+        </select>
+        <input type="date" id="dash-rec-date1" min="2024-01-01" onchange="renderDashRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
+        <span style="font-size:12px;color:var(--dim)">to</span>
+        <input type="date" id="dash-rec-date2" min="2024-01-01" onchange="renderDashRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
+        <button class="dash-export-btn" onclick="exportDashXLSX()">⬇ Export XLSX</button>
+      </div>
       <div id="log-wrap" style="overflow-x:auto">
         <table class="log-table">
           <thead><tr>
@@ -439,6 +496,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
           <tbody id="log-body"></tbody>
         </table>
       </div>
+      <div class="dash-pagination" id="dash-pagination"></div>
     </div>
   </div>
 </div>
@@ -466,42 +524,66 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
       </div>
     </div>
 
-    <!-- Period filter -->
+    <!-- Period tabs -->
     <div class="dash-sec">
-      <div class="dash-sec-title">Filter</div>
-      <div class="chart-selector">
-        <button class="chart-sel-btn active" onclick="setAttPeriod('day',this)">Today</button>
-        <button class="chart-sel-btn" onclick="setAttPeriod('week',this)">This Week</button>
-        <button class="chart-sel-btn" onclick="setAttPeriod('month',this)">This Month</button>
-        <button class="chart-sel-btn" onclick="setAttPeriod('all',this)">All</button>
+      <div class="dash-sec-title">Period</div>
+      <div class="chart-selector" style="flex-wrap:wrap;gap:4px">
+        <button class="chart-sel-btn active" id="att-tab-today"   onclick="setAttPeriod('today',this)">Today</button>
+        <button class="chart-sel-btn"        id="att-tab-week"    onclick="setAttPeriod('week',this)">This Week</button>
+        <button class="chart-sel-btn"        id="att-tab-month"   onclick="setAttPeriod('month',this)">This Month</button>
+        <button class="chart-sel-btn"        id="att-tab-year"    onclick="setAttPeriod('year',this)">This Year</button>
+        <button class="chart-sel-btn"        id="att-tab-all"     onclick="setAttPeriod('all',this)">All</button>
+        <button class="chart-sel-btn"        id="att-tab-custom"  onclick="setAttPeriod('custom',this)">Custom</button>
+      </div>
+      <!-- Navigation row (prev/next) — shown for week/month/year -->
+      <div id="att-nav-row" style="display:none;margin-top:8px;display:flex;align-items:center;gap:8px">
+        <button class="dash-nav-btn" onclick="attNavPrev()">◀ Prev</button>
+        <span id="att-nav-label" style="font-size:12px;color:var(--dim);flex:1;text-align:center"></span>
+        <button class="dash-nav-btn" id="att-nav-next" onclick="attNavNext()">Next ▶</button>
+      </div>
+      <!-- Custom date range -->
+      <div id="att-custom-row" style="display:none;margin-top:8px;flex-wrap:wrap;gap:8px;align-items:center">
+        <input type="date" id="att-date1" min="2024-01-01" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
+        <span style="font-size:12px;color:var(--dim)">to</span>
+        <input type="date" id="att-date2" min="2024-01-01" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
+        <button class="dash-export-btn" style="background:var(--teal)" onclick="applyAttCustomRange()">Apply</button>
       </div>
     </div>
 
     <!-- Attendance chart -->
     <div class="dash-sec">
-      <div class="dash-sec-title">Daily Attendance (30d)</div>
+      <div class="dash-sec-title" id="att-chart-title">Attendance Chart</div>
       <div class="chart-wrap"><canvas id="att-chart"></canvas></div>
     </div>
 
-    <!-- Log table -->
+    <!-- Records: person filter + date range + export -->
     <div class="dash-sec">
-      <div class="dash-sec-title">Attendance Log</div>
+      <div class="dash-sec-title">Records</div>
+      <div class="dash-filters-row">
+        <select id="att-person-filter" onchange="renderAttRecords()">
+          <option value="">All Staff</option>
+        </select>
+        <input type="date" id="att-rec-date1" min="2024-01-01" onchange="renderAttRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
+        <span style="font-size:12px;color:var(--dim)">to</span>
+        <input type="date" id="att-rec-date2" min="2024-01-01" onchange="renderAttRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
+        <button class="dash-export-btn" onclick="exportAttXLSX()">⬇ Export XLSX</button>
+      </div>
       <div style="overflow-x:auto">
         <table class="log-table">
           <thead><tr>
-            <th>Date</th><th>Name</th><th>Email</th>
-            <th>Type</th><th>In</th><th>Out</th><th>Reasons</th><th>GPS</th>
+            <th>Date</th><th>Name</th><th>Type</th><th>In</th><th>Out</th><th>Leave Reason</th><th>GPS</th><th>Submitted</th>
           </tr></thead>
           <tbody id="att-log-body"></tbody>
         </table>
       </div>
+      <div class="dash-pagination" id="att-pagination"></div>
     </div>
   </div>
 </div>
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v16';
+const APP_VERSION    = 'DRT-v18';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -614,9 +696,9 @@ const STRINGS = {
 };
 
 const VT_LABELS = {
-  en: {"Pit Digging":"Pit Digging","Full Plantation":"Full Plantation","Gap Block Planting":"Gap Block Planting","Re-plantation":"Re-plantation","Sapling Supply":"Sapling Supply","Inputs Supply":"Inputs Supply","Fence Repair":"Fence Repair","Watering":"Watering","Weed Control":"Weed Control","Fertilization":"Fertilization","Pest Control":"Pest Control","Intercrop Check":"Intercrop Check","Plot Check":"Plot Check","Sapling Check":"Sapling Check","Mortality Check":"Mortality Check","Leakage":"Leakage","Soil Sampling":"Soil Sampling","Photo & Documentation":"Photo & Documentation","Beneficiary Call":"Beneficiary Call","Boundary Check":"Boundary Check","General Visit":"General Visit","Damage Report":"Damage Report","Fire Report":"Fire Report","Flood Report":"Flood Report","Other":"Other"},
-  bn: {"Pit Digging":"গর্ত খনন","Full Plantation":"পূর্ণ রোপণ","Gap Block Planting":"গ্যাপ ব্লক রোপণ","Re-plantation":"পুনরায় রোপণ","Sapling Supply":"চারা সরবরাহ","Inputs Supply":"উপকরণ সরবরাহ","Fence Repair":"বেড়া মেরামত","Watering":"জল দেওয়া","Weed Control":"আগাছা নিয়ন্ত্রণ","Fertilization":"সার প্রয়োগ","Pest Control":"কীটনাশক প্রয়োগ","Intercrop Check":"আন্তঃফসল পরীক্ষা","Plot Check":"প্লট পরীক্ষা","Sapling Check":"চারা পরীক্ষা","Mortality Check":"মৃত্যু পরীক্ষা","Leakage":"লিকেজ","Soil Sampling":"মাটি নমুনা","Photo & Documentation":"ছবি ও নথিভুক্তি","Beneficiary Call":"সুবিধাভোগী সাক্ষাৎ","Boundary Check":"সীমানা পরীক্ষা","General Visit":"সাধারণ পরিদর্শন","Damage Report":"ক্ষতির প্রতিবেদন","Fire Report":"আগুনের প্রতিবেদন","Flood Report":"বন্যার প্রতিবেদন","Other":"অন্যান্য"},
-  hi: {"Pit Digging":"गड्ढा खुदाई","Full Plantation":"पूर्ण रोपण","Gap Block Planting":"गैप ब्लॉक रोपण","Re-plantation":"पुनर्रोपण","Sapling Supply":"पौध आपूर्ति","Inputs Supply":"सामग्री आपूर्ति","Fence Repair":"बाड़ मरम्मत","Watering":"सिंचाई","Weed Control":"खरपतवार नियंत्रण","Fertilization":"उर्वरक प्रयोग","Pest Control":"कीट नियंत्रण","Intercrop Check":"अंतरफसल जांच","Plot Check":"प्लॉट जांच","Sapling Check":"पौध जांच","Mortality Check":"मृत्युदर जांच","Leakage":"लीकेज","Soil Sampling":"मिट्टी नमूना","Photo & Documentation":"फ़ोटो व दस्तावेज़ीकरण","Beneficiary Call":"लाभार्थी मुलाकात","Boundary Check":"सीमा जांच","General Visit":"सामान्य दौरा","Damage Report":"क्षति रिपोर्ट","Fire Report":"आग रिपोर्ट","Flood Report":"बाढ़ रिपोर्ट","Other":"अन्य"},
+  en: {"Pit Digging":"Pit Digging","Full Plantation":"Full Plantation","Gap Block Planting":"Gap Block Planting","Re-plantation":"Re-plantation","Sapling Supply":"Sapling Supply","Inputs Supply":"Inputs Supply","Fence Repair":"Fence Repair","Watering":"Watering","Weed Control":"Weed Control","Fertilization":"Fertilization","Pest Control":"Pest Control","Intercrop Check":"Intercrop Check","Plot Check":"Plot Check","Sapling Check":"Sapling Check","Mortality Check":"Mortality Check","Leakage":"Leakage","Soil Sampling":"Soil Sampling","Photo & Documentation":"Photo & Documentation","Beneficiary Call":"Beneficiary Call","Boundary Check":"Boundary Check","General Visit":"General Visit","Damage Report":"Damage Report","Fire Report":"Fire Report","Flood Report":"Flood Report","Off: Data Work":"Off: Data Work","Off: Meeting":"Off: Meeting","Off: Visitors":"Off: Visitors","Other":"Other"},
+  bn: {"Pit Digging":"গর্ত খনন","Full Plantation":"পূর্ণ রোপণ","Gap Block Planting":"গ্যাপ ব্লক রোপণ","Re-plantation":"পুনরায় রোপণ","Sapling Supply":"চারা সরবরাহ","Inputs Supply":"উপকরণ সরবরাহ","Fence Repair":"বেড়া মেরামত","Watering":"জল দেওয়া","Weed Control":"আগাছা নিয়ন্ত্রণ","Fertilization":"সার প্রয়োগ","Pest Control":"কীটনাশক প্রয়োগ","Intercrop Check":"আন্তঃফসল পরীক্ষা","Plot Check":"প্লট পরীক্ষা","Sapling Check":"চারা পরীক্ষা","Mortality Check":"মৃত্যু পরীক্ষা","Leakage":"লিকেজ","Soil Sampling":"মাটি নমুনা","Photo & Documentation":"ছবি ও নথিভুক্তি","Beneficiary Call":"সুবিধাভোগী সাক্ষাৎ","Boundary Check":"সীমানা পরীক্ষা","General Visit":"সাধারণ পরিদর্শন","Damage Report":"ক্ষতির প্রতিবেদন","Fire Report":"আগুনের প্রতিবেদন","Flood Report":"বন্যার প্রতিবেদন","Off: Data Work":"অফিস: ডেটা কাজ","Off: Meeting":"অফিস: মিটিং","Off: Visitors":"অফিস: ভিজিটর","Other":"অন্যান্য"},
+  hi: {"Pit Digging":"गड्ढा खुदाई","Full Plantation":"पूर्ण रोपण","Gap Block Planting":"गैप ब्लॉक रोपण","Re-plantation":"पुनर्रोपण","Sapling Supply":"पौध आपूर्ति","Inputs Supply":"सामग्री आपूर्ति","Fence Repair":"बाड़ मरम्मत","Watering":"सिंचाई","Weed Control":"खरपतवार नियंत्रण","Fertilization":"उर्वरक प्रयोग","Pest Control":"कीट नियंत्रण","Intercrop Check":"अंतरफसल जांच","Plot Check":"प्लॉट जांच","Sapling Check":"पौध जांच","Mortality Check":"मृत्युदर जांच","Leakage":"लीकेज","Soil Sampling":"मिट्टी नमूना","Photo & Documentation":"फ़ोटो व दस्तावेज़ीकरण","Beneficiary Call":"लाभार्थी मुलाकात","Boundary Check":"सीमा जांच","General Visit":"सामान्य दौरा","Damage Report":"क्षति रिपोर्ट","Fire Report":"आग रिपोर्ट","Flood Report":"बाढ़ रिपोर्ट","Off: Data Work":"ऑफिस: डेटा कार्य","Off: Meeting":"ऑफिस: मीटिंग","Off: Visitors":"ऑफिस: आगंतुक","Other":"अन्य"},
 };
 
 function S(key, ...args) {
@@ -718,15 +800,19 @@ function startGPS() {
 
 // ── Visit type pills ──────────────────────────────────────────────────────────
 function toggleVisitType(btn) {
-  btn.classList.toggle('sel');
-  const isOther = btn.dataset.other === 'true';
-  const anyOtherSel = document.querySelector('.vt-pill[data-other="true"].sel');
-  document.getElementById('other-text-wrap').style.display = anyOtherSel ? '' : 'none';
+  const selected = document.querySelectorAll('.vt-pill.active');
+  if (!btn.classList.contains('active') && selected.length >= 5) {
+    alert('Maximum 5 visit types can be selected.');
+    return;
+  }
+  btn.classList.toggle('active');
+  document.getElementById('other-text-wrap').style.display =
+    document.querySelector('.vt-pill[data-other="true"].active') ? '' : 'none';
   document.getElementById('vt-req').style.display = 'none';
 }
 
 function selectedVisitTypes() {
-  const pills = [...document.querySelectorAll('.vt-pill.sel')];
+  const pills = [...document.querySelectorAll('.vt-pill.active')];
   return pills.map(p => p.dataset.en);
 }
 
@@ -1044,10 +1130,11 @@ function gasGet(params) {
 function updateOutboxBadge() {
   const btn   = document.getElementById('outbox-btn');
   const badge = document.getElementById('outbox-badge');
-  if (outbox.length > 0) {
+  const total = outbox.length + attOutboxGet().length;
+  if (total > 0) {
     btn.style.display   = '';
     badge.style.display = '';
-    badge.textContent   = outbox.length;
+    badge.textContent   = total;
   } else {
     btn.style.display   = 'none';
     badge.style.display = 'none';
@@ -1079,6 +1166,8 @@ async function retryOutbox() {
   }
   outbox = remaining;
   localStorage.setItem('drt_outbox', JSON.stringify(outbox));
+  // Also retry attendance outbox
+  await retryAttOutbox();
   updateOutboxBadge();
   setStatus(outbox.length === 0 ? S('submit_ok') : S('submit_err'), outbox.length === 0 ? 'status-ok' : 'status-err');
 }
@@ -1090,7 +1179,7 @@ function resetForm() {
   document.getElementById('f-ben').value   = '';
   document.getElementById('f-notes').value = '';
   document.getElementById('f-other-text').value = '';
-  document.querySelectorAll('.vt-pill.sel').forEach(p => p.classList.remove('sel'));
+  document.querySelectorAll('.vt-pill.active,.vt-pill.sel').forEach(p => { p.classList.remove('sel'); p.classList.remove('active'); });
   document.getElementById('other-text-wrap').style.display = 'none';
   photos = [];
   renderPhotos();
@@ -1101,6 +1190,7 @@ function resetForm() {
 function attTodayKey() {
   return `att_submitted_${userEmail}_${new Date().toISOString().slice(0,10)}`;
 }
+function attOutboxKey() { return 'drt_att_outbox'; }
 
 function attTimeWindow() {
   const h = new Date().getHours();
@@ -1109,36 +1199,55 @@ function attTimeWindow() {
   return 'late';  // 12–23
 }
 
+// Leave-today sub-type cutoffs (inclusive hour)
+const LEAVE_SUBTYPES = [
+  { subtype:'Full Day',       cutoffH:9,  cutoffM:59, label:'Full Day',       emoji:'📅' },
+  { subtype:'Morning Half',   cutoffH:11, cutoffM:59, label:'Morning Half',   emoji:'🌅' },
+  { subtype:'Afternoon Half', cutoffH:14, cutoffM:59, label:'Afternoon Half', emoji:'🌇' },
+  { subtype:'Late Leave',     cutoffH:19, cutoffM:59, label:'Late Leave (marks absent today)', emoji:'🌙' },
+];
+
+let attSelectedLeaveSubtype = null;
+
 function initAttChiclets() {
+  // Check outbox for today's pending items
+  const attOutbox = JSON.parse(localStorage.getItem(attOutboxKey()) || '[]');
+  const today = new Date().toISOString().slice(0,10);
+  const todayPending = attOutbox.find(i => i.row.date === today && i.row.operator_email === userEmail);
+
   const stored = localStorage.getItem(attTodayKey());
   const bar    = document.getElementById('att-bar');
   const status = document.getElementById('att-status');
   bar.style.display    = 'none';
   status.style.display = 'none';
 
-  // Already submitted today
   if (stored) {
     try {
       const s = JSON.parse(stored);
       status.style.display = 'flex';
-      if (s.type === 'Attended') {
-        status.className   = 'att-ok';
-        status.textContent = `✅ Attended · ${s.in_time}`;
+      if (s.serverConfirmed) {
+        if (s.type === 'Attended') {
+          status.className   = 'att-ok';
+          status.textContent = `✅ Attending ${s.in_time} to ${s.out_time}`;
+        } else {
+          status.className   = 'att-leave';
+          status.textContent = `🚫 On Leave · ${s.leave_reasons || s.subtype || 'Leave'}`;
+        }
       } else {
-        status.className   = 'att-leave';
-        status.textContent = `🚫 Leave · ${s.leave_reasons || 'Leave'}`;
+        // Outbox pending
+        status.className = 'att-outbox-pending';
+        status.textContent = `⏳ Pending upload (saved ${s.saved_at || ''}) — tap 📤 to retry`;
       }
     } catch(e) {}
     return;
   }
 
-  const win    = attTimeWindow();
+  const win = attTimeWindow();
   if (win === 'blocked') {
     status.style.display = 'flex';
     status.className     = '';
     status.style.background = 'var(--mid)';
     status.textContent   = '🕐 Attendance opens at 07:00';
-    // Still show Leave Advance — illness has no timetable
     document.getElementById('att-advance').style.display = '';
     bar.style.display = 'flex';
     document.getElementById('att-attended').style.display = 'none';
@@ -1151,8 +1260,25 @@ function initAttChiclets() {
   }
 }
 
+function selectLeaveSubtype(btn) {
+  document.querySelectorAll('.att-leave-sub-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  attSelectedLeaveSubtype = btn.dataset.subtype;
+  // Show reasons after selecting sub-type
+  document.getElementById('att-reasons-wrap').style.display = '';
+  document.getElementById('att-modal-submit').disabled = false;
+}
+
+function forceFullDayLeave() {
+  attSelectedLeaveSubtype = 'Full Day (Override)';
+  document.getElementById('att-leave-allclosed').style.display = 'none';
+  document.getElementById('att-reasons-wrap').style.display = '';
+  document.getElementById('att-modal-submit').disabled = false;
+}
+
 function openAttModal(type) {
   attModalType = type;
+  attSelectedLeaveSubtype = null;
   const today   = new Date().toISOString().slice(0,10);
   const nowTime = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
   const win = attTimeWindow();
@@ -1166,20 +1292,23 @@ function openAttModal(type) {
     outTime = new Date(Date.now() + 8*60*60*1000).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
   }
 
-  const titles = { Attended:'✅ Mark Attendance', Leave:'🚫 Leave Today', Advance:'📅 Leave Advance' };
+  const titles = { Attended:'✅ Submit Attendance', Leave:'🚫 Submit Leave Today', Advance:'📅 Submit Advance Leave' };
   const subs   = { Attended:'Confirm you are present for work today.',
-                   Leave:'Select reason(s) for leave (up to 3).',
+                   Leave:'Select leave type, then reason(s).',
                    Advance:'Select start date, number of days, and reason(s).' };
   document.getElementById('att-modal-title').textContent = titles[type];
   document.getElementById('att-modal-sub').textContent   = subs[type];
+
+  // GPS warning
+  const gpsWarn = (gpsLat === null);
   document.getElementById('att-modal-info').innerHTML =
-    `<b>Reporter:</b> ${userName}<br><b>Date:</b> ${today}`
+    (gpsWarn ? `<div class="att-gps-warn">⚠️ No GPS fix — location will not be recorded. Please enable location permission.</div>` : '')
+    + `<b>Reporter:</b> ${userName}<br><b>Date:</b> ${today}`
     + (type !== 'Advance' ? `<br><b>In:</b> ${inTime}&ensp;·&ensp;<b>Out:</b> ${outTime}` : '')
-    + (win === 'late' && type === 'Attended' ? `<br><span style="font-size:10px;color:var(--amber)">⚑ Late check-in — recorded as standard shift</span>` : '');
+    + (win === 'late' && type === 'Attended' ? `<br><span style="font-size:10px;color:var(--amber)">⚑ Late check-in</span>` : '');
 
   // Show/hide advance fields
-  const advWrap = document.getElementById('att-advance-wrap');
-  advWrap.style.display = type === 'Advance' ? '' : 'none';
+  document.getElementById('att-advance-wrap').style.display = type === 'Advance' ? '' : 'none';
   if (type === 'Advance') {
     const tomorrow = new Date(Date.now() + 864e5).toISOString().slice(0,10);
     document.getElementById('att-adv-date').min   = tomorrow;
@@ -1188,8 +1317,26 @@ function openAttModal(type) {
     document.getElementById('att-adv-warning').style.display = 'none';
   }
 
-  const reasonsWrap = document.getElementById('att-reasons-wrap');
-  reasonsWrap.style.display = (type === 'Leave' || type === 'Advance') ? '' : 'none';
+  // Leave Today sub-types
+  const leaveSubWrap = document.getElementById('att-leave-subtype-wrap');
+  leaveSubWrap.style.display = type === 'Leave' ? '' : 'none';
+  if (type === 'Leave') {
+    const now = new Date();
+    const nowH = now.getHours(), nowM = now.getMinutes();
+    const btns = document.querySelectorAll('.att-leave-sub-btn');
+    let anyOpen = false;
+    LEAVE_SUBTYPES.forEach((ls, i) => {
+      const isOpen = nowH < ls.cutoffH || (nowH === ls.cutoffH && nowM <= ls.cutoffM);
+      btns[i].disabled = !isOpen;
+      btns[i].classList.remove('sel');
+      if (isOpen) anyOpen = true;
+    });
+    document.getElementById('att-leave-allclosed').style.display = anyOpen ? 'none' : '';
+    // hide reasons until sub-type chosen
+    document.getElementById('att-reasons-wrap').style.display = 'none';
+  } else {
+    document.getElementById('att-reasons-wrap').style.display = (type === 'Leave' || type === 'Advance') ? '' : 'none';
+  }
 
   // Reset reason pills
   document.querySelectorAll('.att-reason-pill').forEach(p => p.classList.remove('sel'));
@@ -1197,13 +1344,13 @@ function openAttModal(type) {
   document.getElementById('att-other-text').value = '';
 
   const submitBtn = document.getElementById('att-modal-submit');
-  submitBtn.textContent = type === 'Attended' ? 'Submit Today\'s Attendance'
+  submitBtn.textContent = type === 'Attended' ? 'Submit Attendance'
                         : type === 'Advance'  ? 'Submit Advance Leave'
                         : 'Submit Leave Today';
   submitBtn.className   = type === 'Attended' ? 'att-modal-btn attended' : 'att-modal-btn leave';
-  submitBtn.disabled    = false;
+  // For Leave: disable until sub-type chosen
+  submitBtn.disabled = (type === 'Leave');
 
-  // Days input watcher for warning
   if (type === 'Advance') {
     document.getElementById('att-adv-days').oninput = function() {
       const v = parseInt(this.value) || 1;
@@ -1218,6 +1365,7 @@ function openAttModal(type) {
 function closeAttModal() {
   document.getElementById('att-modal-bg').style.display = 'none';
   attModalType = null;
+  attSelectedLeaveSubtype = null;
 }
 
 function attModalBgClick(e) {
@@ -1226,12 +1374,41 @@ function attModalBgClick(e) {
 
 function toggleReason(btn) {
   const selected = document.querySelectorAll('.att-reason-pill.sel');
-  if (!btn.classList.contains('sel') && selected.length >= 3) return; // max 3
+  if (!btn.classList.contains('sel') && selected.length >= 3) return;
   btn.classList.toggle('sel');
   const anyOther = [...document.querySelectorAll('.att-reason-pill.sel')]
     .some(p => p.dataset.reason === 'Other');
   document.getElementById('att-other-wrap').style.display = anyOther ? '' : 'none';
   if (!anyOther) document.getElementById('att-other-text').value = '';
+}
+
+// ── Attendance outbox ─────────────────────────────────────────────────────────
+function attOutboxGet() { return JSON.parse(localStorage.getItem(attOutboxKey()) || '[]'); }
+function attOutboxSet(arr) { localStorage.setItem(attOutboxKey(), JSON.stringify(arr)); }
+
+async function retryAttOutbox() {
+  const items = attOutboxGet();
+  if (!items.length) return;
+  const remaining = [];
+  for (const item of items) {
+    try {
+      const resp = await gasGet({ action: 'submitAttendance', row: JSON.stringify(item.row) });
+      if (!resp.ok) throw new Error(resp.error);
+      // Server confirmed — update stored key if it's today's attendance
+      const today = new Date().toISOString().slice(0,10);
+      if (item.row.date === today && item.row.operator_email === userEmail) {
+        const stored = JSON.parse(localStorage.getItem(attTodayKey()) || '{}');
+        stored.serverConfirmed = true;
+        stored.submitted_ts = resp.submitted_ts || new Date().toISOString();
+        localStorage.setItem(attTodayKey(), JSON.stringify(stored));
+        initAttChiclets();
+      }
+    } catch(e) {
+      remaining.push(item);
+    }
+  }
+  attOutboxSet(remaining);
+  updateOutboxBadge();
 }
 
 async function submitAttendance() {
@@ -1244,7 +1421,6 @@ async function submitAttendance() {
   const win     = attTimeWindow();
   const project = localStorage.getItem('arr_project') || '';
 
-  // Collect leave reasons (used by Leave and Advance)
   let leaveReasons = '';
   if (attModalType === 'Leave' || attModalType === 'Advance') {
     const sel = [...document.querySelectorAll('.att-reason-pill.sel')].map(p => p.dataset.reason);
@@ -1253,21 +1429,22 @@ async function submitAttendance() {
     leaveReasons = sel.join(' | ');
   }
 
+  const savedAt = nowTime;
+
   try {
     if (attModalType === 'Advance') {
-      // Build one row per day
       const startDate = document.getElementById('att-adv-date').value;
       const numDays   = Math.min(3, Math.max(1, parseInt(document.getElementById('att-adv-days').value) || 1));
       if (!startDate) { btn.disabled = false; alert('Please select a start date.'); return; }
 
+      const rows = [];
       for (let i = 0; i < numDays; i++) {
         const d = new Date(startDate);
         d.setDate(d.getDate() + i);
-        const dateStr = d.toISOString().slice(0,10);
-        const row = {
+        rows.push({
           uuid:           crypto.randomUUID(),
           submitted_ts:   '',
-          date:           dateStr,
+          date:           d.toISOString().slice(0,10),
           operator_email: userEmail,
           operator_name:  userName,
           project,
@@ -1279,12 +1456,19 @@ async function submitAttendance() {
           gps_lng:        gpsLng !== null ? gpsLng.toFixed(6) : '',
           gps_accuracy_m: gpsAcc !== null ? gpsAcc.toFixed(1) : '',
           app_version:    APP_VERSION,
-        };
-        const resp = await gasGet({ action: 'submitAttendance', row: JSON.stringify(row) });
-        if (!resp.ok) throw new Error(resp.error || 'submitAttendance failed');
+        });
       }
+
+      // Write to outbox first
+      const attOutbox = attOutboxGet();
+      rows.forEach(row => attOutbox.push({ row, savedAt }));
+      attOutboxSet(attOutbox);
+      updateOutboxBadge();
       closeAttModal();
-      alert(`✅ Advance leave submitted for ${numDays} day${numDays > 1 ? 's' : ''} from ${startDate}.`);
+      alert(`⏳ Advance leave saved (${numDays} day${numDays > 1 ? 's' : ''} from ${startDate}) — will upload when connected.`);
+
+      // Attempt immediate upload
+      await retryAttOutbox();
 
     } else {
       // Today: Attended or Leave Today
@@ -1299,6 +1483,8 @@ async function submitAttendance() {
           .toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
       }
 
+      const leaveType = attModalType === 'Leave' ? (attSelectedLeaveSubtype || 'Full Day') : null;
+
       const row = {
         uuid:           crypto.randomUUID(),
         submitted_ts:   '',
@@ -1306,7 +1492,7 @@ async function submitAttendance() {
         operator_email: userEmail,
         operator_name:  userName,
         project,
-        type:           attModalType === 'Leave' ? 'Leave' : 'Attended',
+        type:           attModalType === 'Leave' ? `Leave (${leaveType})` : 'Attended',
         in_time:        inTime,
         out_time:       outTime,
         leave_reasons:  leaveReasons,
@@ -1316,28 +1502,76 @@ async function submitAttendance() {
         app_version:    APP_VERSION,
       };
 
-      const resp = await gasGet({ action: 'submitAttendance', row: JSON.stringify(row) });
-      if (!resp.ok) throw new Error(resp.error || 'submitAttendance failed');
+      // Auto-absent for Late Leave
+      const autoAbsentRow = (leaveType === 'Late Leave') ? {
+        uuid:           crypto.randomUUID(),
+        submitted_ts:   '',
+        date:           today,
+        operator_email: userEmail,
+        operator_name:  userName,
+        project,
+        type:           'Absent (Auto)',
+        in_time:        '00:00',
+        out_time:       '00:00',
+        leave_reasons:  'Auto-marked: Late Leave submitted',
+        gps_lat:        '',
+        gps_lng:        '',
+        gps_accuracy_m: '',
+        app_version:    APP_VERSION,
+      } : null;
 
-      // Guard: block re-submission from same device+login today
+      // Write to IDB-style localStorage outbox first
+      const attOutbox = attOutboxGet();
+      attOutbox.push({ row, savedAt });
+      if (autoAbsentRow) attOutbox.push({ row: autoAbsentRow, savedAt });
+      attOutboxSet(attOutbox);
+
+      // Set status as pending (outbox time)
       localStorage.setItem(attTodayKey(), JSON.stringify({
-        type: row.type, in_time: inTime, leave_reasons: leaveReasons, uuid: row.uuid
+        type: row.type, in_time: inTime, out_time: outTime,
+        leave_reasons: leaveReasons, subtype: leaveType,
+        uuid: row.uuid, saved_at: savedAt, serverConfirmed: false
       }));
       closeAttModal();
       initAttChiclets();
-    }
+      updateOutboxBadge();
 
+      // Attempt immediate server upload
+      try {
+        const resp = await gasGet({ action: 'submitAttendance', row: JSON.stringify(row) });
+        if (!resp.ok) throw new Error(resp.error);
+        if (autoAbsentRow) {
+          await gasGet({ action: 'submitAttendance', row: JSON.stringify(autoAbsentRow) });
+        }
+        // Clear from outbox
+        const ob = attOutboxGet().filter(i => i.row.uuid !== row.uuid && (!autoAbsentRow || i.row.uuid !== autoAbsentRow.uuid));
+        attOutboxSet(ob);
+        // Update status to server-confirmed
+        localStorage.setItem(attTodayKey(), JSON.stringify({
+          type: row.type, in_time: inTime, out_time: outTime,
+          leave_reasons: leaveReasons, subtype: leaveType,
+          uuid: row.uuid, saved_at: savedAt, serverConfirmed: true
+        }));
+        initAttChiclets();
+        updateOutboxBadge();
+      } catch(e) {
+        // Stay in outbox — banner already shows pending
+        console.warn('Att upload failed, stays in outbox:', e);
+      }
+    }
   } catch(e) {
     btn.disabled = false;
-    alert('Submission failed. Please try again.');
+    alert('Could not save. Please try again.');
   }
 }
 
 // ── Attendance dashboard ──────────────────────────────────────────────────────
+let attNavOffset = 0;   // weeks/months/years back from current
+
 async function openAttDashboard() {
   if (attDashUnlocked) { loadAttDashboard(); return; }
   if (!userEmail) return;
-  const ok = await checkDashAccess(userEmail);   // reuse existing manifest check
+  const ok = await checkDashAccess(userEmail);
   if (ok) {
     attDashUnlocked = true;
     document.getElementById('att-dash-locked').style.display  = 'none';
@@ -1359,78 +1593,140 @@ function loadAttDashboard() {
     delete window[cb];
     if (!data.ok) return;
     attRows = data.rows || [];
-    renderAttDashboard();
+    // Populate person dropdown
+    const names = [...new Set(attRows.map(r => r.operator_name).filter(Boolean))].sort();
+    const sel = document.getElementById('att-person-filter');
+    sel.innerHTML = '<option value="">All Staff</option>'
+      + names.map(n => `<option value="${n}">${n}</option>`).join('');
+    // KPIs
+    const today = new Date().toISOString().slice(0,10);
+    const weekAgo  = new Date(Date.now()-7*864e5).toISOString().slice(0,10);
+    const monthAgo = new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+    document.getElementById('att-kpi-today-present').textContent = attRows.filter(r=>String(r.date).slice(0,10)===today&&r.type&&r.type.startsWith('Attended')).length;
+    document.getElementById('att-kpi-today-leave').textContent   = attRows.filter(r=>String(r.date).slice(0,10)===today&&r.type&&r.type.startsWith('Leave')).length;
+    document.getElementById('att-kpi-week').textContent  = attRows.filter(r=>String(r.date).slice(0,10)>=weekAgo).length;
+    document.getElementById('att-kpi-month').textContent = attRows.filter(r=>String(r.date).slice(0,10)>=monthAgo).length;
+    document.getElementById('att-kpi-staff').textContent = new Set(attRows.map(r=>r.operator_email)).size;
+    // Init date range to today's period
+    setAttPeriod(attPeriod, document.getElementById('att-tab-' + attPeriod) || document.getElementById('att-tab-today'));
   };
   document.head.appendChild(s);
 }
 
 function setAttPeriod(period, btn) {
   attPeriod = period;
+  attNavOffset = 0;
   document.querySelectorAll('#att-screen .chart-sel-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
+  const navRow    = document.getElementById('att-nav-row');
+  const customRow = document.getElementById('att-custom-row');
+  navRow.style.display    = ['week','month','year'].includes(period) ? 'flex' : 'none';
+  customRow.style.display = period === 'custom' ? 'flex' : 'none';
+  if (period !== 'custom') renderAttDashboard();
+}
+
+function applyAttCustomRange() {
   renderAttDashboard();
 }
 
-function renderAttDashboard() {
-  const today    = new Date().toISOString().slice(0,10);
-  const weekAgo  = new Date(Date.now()-7*864e5).toISOString().slice(0,10);
-  const monthAgo = new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+function attNavPrev() { attNavOffset++; renderAttDashboard(); }
+function attNavNext() { if (attNavOffset > 0) { attNavOffset--; renderAttDashboard(); } }
 
-  const todayRows  = attRows.filter(r => String(r.date).slice(0,10) === today);
-  const weekRows   = attRows.filter(r => String(r.date).slice(0,10) >= weekAgo);
-  const monthRows  = attRows.filter(r => String(r.date).slice(0,10) >= monthAgo);
-  const uniqueStaff = new Set(attRows.map(r => r.operator_email)).size;
+function attPeriodRange() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = today.toISOString().slice(0,10);
+  let d1, d2, label;
 
-  document.getElementById('att-kpi-today-present').textContent = todayRows.filter(r=>r.type==='Attended').length;
-  document.getElementById('att-kpi-today-leave').textContent   = todayRows.filter(r=>r.type==='Leave').length;
-  document.getElementById('att-kpi-week').textContent          = weekRows.length;
-  document.getElementById('att-kpi-month').textContent         = monthRows.length;
-  document.getElementById('att-kpi-staff').textContent         = uniqueStaff;
-
-  // Filter rows for table
-  let filtered = attRows;
-  if (attPeriod === 'day')   filtered = todayRows;
-  if (attPeriod === 'week')  filtered = weekRows;
-  if (attPeriod === 'month') filtered = monthRows;
-  const sorted = [...filtered].sort((a,b) => String(b.date).localeCompare(String(a.date)));
-
-  document.getElementById('att-log-body').innerHTML = sorted.length
-    ? sorted.map(r => {
-        const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(4)}°N ${parseFloat(r.gps_lng).toFixed(4)}°E` : '—';
-        const badge = r.type === 'Attended'
-          ? '<span style="color:#006600;font-weight:700">✅ Attended</span>'
-          : '<span style="color:#FF3300;font-weight:700">🚫 Leave</span>';
-        return `<tr>
-          <td>${String(r.date).slice(0,10)}</td>
-          <td>${r.operator_name||'—'}</td>
-          <td style="font-size:10px">${r.operator_email||'—'}</td>
-          <td>${badge}</td>
-          <td style="white-space:nowrap">${r.in_time||'—'}</td>
-          <td style="white-space:nowrap">${r.out_time||'—'}</td>
-          <td style="font-size:10px">${r.leave_reasons||'—'}</td>
-          <td style="font-size:10px;white-space:nowrap">${gps}</td>
-        </tr>`;
-      }).join('')
-    : '<tr><td colspan="8" class="dash-empty">No attendance records</td></tr>';
-
-  // 30-day attendance chart
-  const days = [];
-  for (let i=29;i>=0;i--) {
-    const d = new Date(Date.now()-i*864e5).toISOString().slice(0,10);
-    days.push(d);
+  if (attPeriod === 'today') {
+    d1 = d2 = todayStr; label = 'Today';
+  } else if (attPeriod === 'week') {
+    const mon = new Date(today);
+    mon.setDate(today.getDate() - ((today.getDay()+6)%7) - attNavOffset*7);
+    const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+    d1 = mon.toISOString().slice(0,10);
+    d2 = sun.toISOString().slice(0,10);
+    label = `${d1} – ${d2}`;
+  } else if (attPeriod === 'month') {
+    const m = new Date(today.getFullYear(), today.getMonth() - attNavOffset, 1);
+    const mEnd = new Date(m.getFullYear(), m.getMonth()+1, 0);
+    d1 = m.toISOString().slice(0,10);
+    d2 = mEnd.toISOString().slice(0,10);
+    label = m.toLocaleString('en-IN',{month:'long',year:'numeric'});
+  } else if (attPeriod === 'year') {
+    const yr = today.getFullYear() - attNavOffset;
+    d1 = `${yr}-01-01`; d2 = `${yr}-12-31`;
+    label = String(yr);
+  } else if (attPeriod === 'custom') {
+    d1 = document.getElementById('att-date1').value || '2024-01-01';
+    d2 = document.getElementById('att-date2').value || todayStr;
+    label = `${d1} – ${d2}`;
+  } else { // all
+    d1 = '2024-01-01'; d2 = todayStr; label = 'All';
   }
-  const presentData = days.map(d => attRows.filter(r=>String(r.date).slice(0,10)===d&&r.type==='Attended').length);
-  const leaveData   = days.map(d => attRows.filter(r=>String(r.date).slice(0,10)===d&&r.type==='Leave').length);
-  const isDark      = document.documentElement.getAttribute('data-theme')==='dark';
-  const gridColor   = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
-  const labelColor  = isDark ? '#d8f3dc' : '#1b4332';
+  return { d1, d2, label };
+}
+
+let attRecPage = 0;
+const ATT_PAGE_SIZE = 25;
+
+function renderAttDashboard() {
+  const { d1, d2, label } = attPeriodRange();
+  // Nav label + next button state
+  const navLabel = document.getElementById('att-nav-label');
+  if (navLabel) navLabel.textContent = label;
+  const nextBtn = document.getElementById('att-nav-next');
+  if (nextBtn) nextBtn.disabled = attNavOffset === 0;
+
+  // Sync record date range inputs to period
+  const ri1 = document.getElementById('att-rec-date1');
+  const ri2 = document.getElementById('att-rec-date2');
+  if (ri1 && !ri1._userEdited) ri1.value = d1;
+  if (ri2 && !ri2._userEdited) ri2.value = d2;
+
+  renderAttChart(d1, d2, label);
+  attRecPage = 0;
+  renderAttRecords();
+}
+
+function renderAttChart(d1, d2, label) {
+  document.getElementById('att-chart-title').textContent = `Attendance — ${label}`;
+  const rangeRows = attRows.filter(r => { const d = String(r.date).slice(0,10); return d >= d1 && d <= d2; });
+
+  const isDark     = document.documentElement.getAttribute('data-theme')==='dark';
+  const gridColor  = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
+  const labelColor = isDark ? '#d8f3dc' : '#1b4332';
+
+  // Build day array for range
+  const days = [];
+  const cur = new Date(d1);
+  const end = new Date(d2);
+  while (cur <= end) { days.push(cur.toISOString().slice(0,10)); cur.setDate(cur.getDate()+1); }
+
+  // For Today: show hourly 07–20
+  let labels, presentData, leaveData;
+  if (attPeriod === 'today') {
+    labels = [];
+    for (let h=7; h<=20; h++) labels.push(`${String(h).padStart(2,'0')}:00`);
+    presentData = labels.map(h => rangeRows.filter(r => {
+      const t = (r.in_time||'').slice(0,2);
+      return r.type&&r.type.startsWith('Attended') && t === h.slice(0,2);
+    }).length);
+    leaveData = labels.map(h => rangeRows.filter(r => {
+      const t = (r.in_time||'').slice(0,2);
+      return r.type&&r.type.startsWith('Leave') && t === h.slice(0,2);
+    }).length);
+  } else {
+    labels      = days.map(d => d.slice(5));
+    presentData = days.map(d => rangeRows.filter(r=>String(r.date).slice(0,10)===d&&r.type&&r.type.startsWith('Attended')).length);
+    leaveData   = days.map(d => rangeRows.filter(r=>String(r.date).slice(0,10)===d&&r.type&&r.type.startsWith('Leave')).length);
+  }
 
   if (attChart) attChart.destroy();
   const ctx = document.getElementById('att-chart').getContext('2d');
   attChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: days.map(d=>d.slice(5)),
+      labels,
       datasets: [
         { label:'Attended', data:presentData, backgroundColor:'rgba(0,102,0,.75)', borderColor:'#006600', borderWidth:1, borderRadius:3 },
         { label:'Leave',    data:leaveData,   backgroundColor:'rgba(255,51,0,.65)', borderColor:'#FF3300', borderWidth:1, borderRadius:3 },
@@ -1445,6 +1741,95 @@ function renderAttDashboard() {
       }
     }
   });
+}
+
+function renderAttRecords() {
+  const person = document.getElementById('att-person-filter')?.value || '';
+  const d1 = document.getElementById('att-rec-date1')?.value || '2024-01-01';
+  const d2 = document.getElementById('att-rec-date2')?.value || new Date().toISOString().slice(0,10);
+  let filtered = attRows.filter(r => {
+    const d = String(r.date).slice(0,10);
+    return d >= d1 && d <= d2 && (!person || r.operator_name === person);
+  });
+  filtered.sort((a,b) => String(b.date).localeCompare(String(a.date)));
+
+  const total = filtered.length;
+  const pages = Math.max(1, Math.ceil(total / ATT_PAGE_SIZE));
+  if (attRecPage >= pages) attRecPage = pages - 1;
+  const slice = filtered.slice(attRecPage * ATT_PAGE_SIZE, (attRecPage+1) * ATT_PAGE_SIZE);
+
+  document.getElementById('att-log-body').innerHTML = slice.length
+    ? slice.map(r => {
+        const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(4)},${parseFloat(r.gps_lng).toFixed(4)}` : '—';
+        const typeStr = r.type || '—';
+        const badge = typeStr.startsWith('Attended')
+          ? `<span style="color:#006600;font-weight:700">✅ ${typeStr}</span>`
+          : `<span style="color:#FF3300;font-weight:700">🚫 ${typeStr}</span>`;
+        const sub = (r.submitted_ts||'').slice(0,16).replace('T',' ');
+        return `<tr>
+          <td>${String(r.date).slice(0,10)}</td>
+          <td>${r.operator_name||'—'}</td>
+          <td>${badge}</td>
+          <td style="white-space:nowrap">${r.in_time||'—'}</td>
+          <td style="white-space:nowrap">${r.out_time||'—'}</td>
+          <td style="font-size:10px">${r.leave_reasons||'—'}</td>
+          <td style="font-size:10px;white-space:nowrap">${gps}</td>
+          <td style="font-size:10px;white-space:nowrap">${sub}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="8" class="dash-empty">No attendance records</td></tr>';
+
+  // Pagination
+  const pag = document.getElementById('att-pagination');
+  pag.innerHTML = '';
+  if (pages > 1) {
+    const prev = document.createElement('button');
+    prev.textContent = '◀'; prev.disabled = attRecPage === 0;
+    prev.onclick = () => { attRecPage--; renderAttRecords(); };
+    pag.appendChild(prev);
+    const info = document.createElement('span');
+    info.className = 'page-info';
+    info.textContent = `Page ${attRecPage+1} of ${pages} (${total} records)`;
+    pag.appendChild(info);
+    const nxt = document.createElement('button');
+    nxt.textContent = '▶'; nxt.disabled = attRecPage >= pages-1;
+    nxt.onclick = () => { attRecPage++; renderAttRecords(); };
+    pag.appendChild(nxt);
+  }
+}
+
+function exportAttXLSX() {
+  const person = document.getElementById('att-person-filter')?.value || '';
+  const d1 = document.getElementById('att-rec-date1')?.value || '2024-01-01';
+  const d2 = document.getElementById('att-rec-date2')?.value || new Date().toISOString().slice(0,10);
+  let filtered = attRows.filter(r => {
+    const d = String(r.date).slice(0,10);
+    return d >= d1 && d <= d2 && (!person || r.operator_name === person);
+  });
+  filtered.sort((a,b) => String(b.date).localeCompare(String(a.date)));
+
+  const rows = [['Date','Name','Type','In Time','Out Time','Leave Reason','GPS','Submitted']];
+  filtered.forEach(r => {
+    const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(6)}, ${parseFloat(r.gps_lng).toFixed(6)}` : '';
+    rows.push([
+      String(r.date).slice(0,10),
+      r.operator_name||'',
+      r.type||'',
+      r.in_time||'',
+      r.out_time||'',
+      r.leave_reasons||'',
+      gps,
+      (r.submitted_ts||'').slice(0,16).replace('T',' '),
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+  const personSlug = person ? '_' + person.replace(/\s+/g,'') : '';
+  const now = new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
+  const location = localStorage.getItem('arr_project') || 'Project';
+  XLSX.writeFile(wb, `attendance_${attPeriod}${personSlug}_${location}_${d1}_${d2}_${now}.xlsx`);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -1553,42 +1938,117 @@ function renderDashboard() {
   });
   if (bounds.length) dashMap.fitBounds(bounds, {padding:[20,20]});
 
-  // Log table (last 50)
-  const recent = [...rows].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,50);
-  document.getElementById('log-body').innerHTML = recent.length
-    ? recent.map(r => {
+  // Populate person dropdown
+  const names = [...new Set(rows.map(r => r.operator_name||r.operator_email).filter(Boolean))].sort();
+  const psel = document.getElementById('dash-person-filter');
+  if (psel) {
+    psel.innerHTML = '<option value="">All Reporters</option>'
+      + names.map(n => `<option value="${n}">${n}</option>`).join('');
+  }
+  // Init date range to today
+  const tod = new Date().toISOString().slice(0,10);
+  const ri1 = document.getElementById('dash-rec-date1');
+  const ri2 = document.getElementById('dash-rec-date2');
+  if (ri1 && !ri1.value) ri1.value = tod;
+  if (ri2 && !ri2.value) ri2.value = tod;
+
+  dashRecPage = 0;
+  renderDashRecords();
+  showChart('daily', document.querySelector('#dash-screen .chart-sel-btn.active'));
+}
+
+let dashRecPage = 0;
+let dashNavOffset = 0;
+let dashChartPeriod = 'daily';
+const DASH_PAGE_SIZE = 25;
+
+function renderDashRecords() {
+  const rows = dashRows;
+  const person = document.getElementById('dash-person-filter')?.value || '';
+  const d1 = document.getElementById('dash-rec-date1')?.value || '2024-01-01';
+  const d2 = document.getElementById('dash-rec-date2')?.value || new Date().toISOString().slice(0,10);
+  let filtered = rows.filter(r => {
+    const d = (r.date||'').slice(0,10);
+    return d >= d1 && d <= d2 && (!person || (r.operator_name||r.operator_email) === person);
+  });
+  filtered.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const total = filtered.length;
+  const pages = Math.max(1, Math.ceil(total / DASH_PAGE_SIZE));
+  if (dashRecPage >= pages) dashRecPage = pages-1;
+  const slice = filtered.slice(dashRecPage*DASH_PAGE_SIZE, (dashRecPage+1)*DASH_PAGE_SIZE);
+
+  document.getElementById('log-body').innerHTML = slice.length
+    ? slice.map(r => {
         const types = safeParseTypes(r.visit_types);
         const ident = [r.lpc, r.dbc, r.beneficiary_name].filter(Boolean).join(' / ');
         const gps   = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(4)}°N ${parseFloat(r.gps_lng).toFixed(4)}°E` : '—';
-        let photoHtml = '<span class="photo-strip-none">—</span>';
-        try {
-          const pArr = JSON.parse(r.photos_json || '[]');
-          if (pArr.length) {
-            const thumbs = pArr.map((p, i) => {
-              const fileId = p.fileId || (p.url || '').match(/\/d\/([\w-]+)/)?.[1] || '';
-              const base   = fileId ? `https://lh3.googleusercontent.com/d/${fileId}` : '';
-              const label  = p.filename || `Photo ${i+1}`;
-              return base
-                ? `<a href="${base}" target="_blank" rel="noopener" title="${label}"><img src="${base}=s72" loading="lazy"></a>`
-                : `<span class="photo-strip-none" title="${label}">📷</span>`;
-            }).join('');
-            photoHtml = `<div class="photo-strip">${thumbs}</div>`;
-          }
-        } catch(e) {}
+        let photoCount = 0;
+        try { photoCount = JSON.parse(r.photos_json||'[]').length; } catch(e) {}
         return `<tr>
-          <td>${r.date}</td>
-          <td>${r.operator_name||r.operator_email}</td>
+          <td>${r.date||'—'}</td>
+          <td>${r.operator_name||r.operator_email||'—'}</td>
           <td>${ident||'—'}</td>
           <td>${types.map(t=>`<span class="vt-badge">${t}</span>`).join('')}</td>
           <td style="font-size:10px;white-space:nowrap">${gps}</td>
           <td>${(r.notes||'').slice(0,60)}${r.notes&&r.notes.length>60?'…':''}</td>
-          <td>${photoHtml}</td>
+          <td style="text-align:center">${photoCount > 0 ? `📷${photoCount}` : '—'}</td>
         </tr>`;
       }).join('')
-    : '<tr><td colspan="7" class="dash-empty">No submissions yet</td></tr>';
+    : '<tr><td colspan="7" class="dash-empty">No submissions</td></tr>';
 
-  // Default chart
-  showChart('daily', document.querySelector('.chart-sel-btn.active'));
+  const pag = document.getElementById('dash-pagination');
+  if (pag) {
+    pag.innerHTML = '';
+    if (pages > 1) {
+      const prev = document.createElement('button');
+      prev.textContent = '◀'; prev.disabled = dashRecPage === 0;
+      prev.onclick = () => { dashRecPage--; renderDashRecords(); };
+      pag.appendChild(prev);
+      const info = document.createElement('span');
+      info.className = 'page-info';
+      info.textContent = `Page ${dashRecPage+1} of ${pages} (${total} records)`;
+      pag.appendChild(info);
+      const nxt = document.createElement('button');
+      nxt.textContent = '▶'; nxt.disabled = dashRecPage >= pages-1;
+      nxt.onclick = () => { dashRecPage++; renderDashRecords(); };
+      pag.appendChild(nxt);
+    }
+  }
+}
+
+function exportDashXLSX() {
+  const person = document.getElementById('dash-person-filter')?.value || '';
+  const d1 = document.getElementById('dash-rec-date1')?.value || '2024-01-01';
+  const d2 = document.getElementById('dash-rec-date2')?.value || new Date().toISOString().slice(0,10);
+  let filtered = dashRows.filter(r => {
+    const d = (r.date||'').slice(0,10);
+    return d >= d1 && d <= d2 && (!person || (r.operator_name||r.operator_email) === person);
+  });
+  filtered.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const rows = [['Date','Reporter','District','LPC','DBC','Beneficiary','Visit Types','Notes','Photos','GPS','Submitted']];
+  filtered.forEach(r => {
+    let photoCount = 0;
+    try { photoCount = JSON.parse(r.photos_json||'[]').length; } catch(e) {}
+    const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(6)}, ${parseFloat(r.gps_lng).toFixed(6)}` : '';
+    rows.push([
+      (r.date||'').slice(0,10),
+      r.operator_name||r.operator_email||'',
+      r.district||'',
+      r.lpc||'', r.dbc||'', r.beneficiary_name||'',
+      safeParseTypes(r.visit_types).join(', '),
+      r.notes||'',
+      photoCount,
+      gps,
+      (r.submitted_ts||'').slice(0,16).replace('T',' '),
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'WorkReports');
+  const personSlug = person ? '_'+person.replace(/\s+/g,'') : '';
+  const now = new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
+  const location = localStorage.getItem('arr_project') || 'Project';
+  XLSX.writeFile(wb, `workreport_${dashChartPeriod}${personSlug}_${location}_${d1}_${d2}_${now}.xlsx`);
 }
 
 function safeParseTypes(raw) {
@@ -1602,101 +2062,94 @@ function safeParseTypes(raw) {
   }
 }
 
-// ── Charts ────────────────────────────────────────────────────────────────────
-let currentChartType = 'daily';
-
+// ── Work Dashboard Charts ─────────────────────────────────────────────────────
 function showChart(type, btn) {
-  currentChartType = type;
-  document.querySelectorAll('.chart-sel-btn').forEach(b=>b.classList.remove('active'));
+  dashChartPeriod = type;
+  dashNavOffset   = 0;
+  document.querySelectorAll('#dash-screen .chart-sel-btn').forEach(b=>b.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  renderChart(type);
+  const navRow = document.getElementById('dash-nav-row');
+  navRow.style.display = ['weekly','monthly','yearly'].includes(type) ? 'flex' : 'none';
+  renderDashChart();
 }
 
-function renderChart(type) {
-  const rows = dashRows;
-  let labels=[], data=[], label='';
+function dashNavPrev() { dashNavOffset++; renderDashChart(); }
+function dashNavNext() { if (dashNavOffset>0){dashNavOffset--;renderDashChart();} }
 
-  if (type === 'daily') {
-    // Last 30 days
-    const days = [];
-    for (let i=29;i>=0;i--) {
-      const d = new Date(Date.now()-i*864e5).toISOString().slice(0,10);
-      days.push(d);
-    }
-    labels = days.map(d=>d.slice(5));
-    data   = days.map(d=>rows.filter(r=>r.date===d).length);
-    label  = 'Reports per day';
-  } else if (type === 'weekly') {
-    // Last 12 weeks
-    const weeks = [];
-    for (let i=11;i>=0;i--) {
-      const end   = new Date(Date.now()-i*7*864e5);
-      const start = new Date(end-6*864e5);
-      weeks.push({start:start.toISOString().slice(0,10), end:end.toISOString().slice(0,10),
-                  label:`${start.toISOString().slice(5,10)}`});
-    }
-    labels = weeks.map(w=>w.label);
-    data   = weeks.map(w=>rows.filter(r=>r.date>=w.start&&r.date<=w.end).length);
-    label  = 'Reports per week';
-  } else if (type === 'monthly') {
-    // Last 12 months
-    const months = [];
-    for (let i=11;i>=0;i--) {
-      const d = new Date();
-      d.setMonth(d.getMonth()-i);
-      months.push(d.toISOString().slice(0,7));
-    }
-    labels = months.map(m=>m.slice(0,7));
-    data   = months.map(m=>rows.filter(r=>(r.date||'').startsWith(m)).length);
-    label  = 'Reports per month';
-  } else if (type === 'types') {
-    const counts = {};
-    rows.forEach(r => {
-      safeParseTypes(r.visit_types).forEach(t => { counts[t]=(counts[t]||0)+1; });
-    });
-    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-    labels = sorted.map(([k])=>k);
-    data   = sorted.map(([,v])=>v);
-    label  = 'By visit type';
-  } else if (type === 'reporters') {
-    const counts = {};
-    rows.forEach(r => {
-      const name = r.operator_name || r.operator_email;
-      counts[name]=(counts[name]||0)+1;
-    });
-    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,15);
-    labels = sorted.map(([k])=>k);
-    data   = sorted.map(([,v])=>v);
-    label  = 'Reports by reporter';
+function dashPeriodDates() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  let d1, d2, label;
+  if (dashChartPeriod === 'daily') {
+    d1 = d2 = today.toISOString().slice(0,10); label = 'Today';
+  } else if (dashChartPeriod === 'weekly') {
+    const mon = new Date(today);
+    mon.setDate(today.getDate() - ((today.getDay()+6)%7) - dashNavOffset*7);
+    const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+    d1 = mon.toISOString().slice(0,10); d2 = sun.toISOString().slice(0,10);
+    label = `${d1} – ${d2}`;
+  } else if (dashChartPeriod === 'monthly') {
+    const m = new Date(today.getFullYear(), today.getMonth()-dashNavOffset, 1);
+    const mEnd = new Date(m.getFullYear(), m.getMonth()+1, 0);
+    d1 = m.toISOString().slice(0,10); d2 = mEnd.toISOString().slice(0,10);
+    label = m.toLocaleString('en-IN',{month:'long',year:'numeric'});
+  } else if (dashChartPeriod === 'yearly') {
+    const yr = today.getFullYear()-dashNavOffset;
+    d1 = `${yr}-01-01`; d2 = `${yr}-12-31`; label = String(yr);
+  } else { // types
+    d1 = '2024-01-01'; d2 = today.toISOString().slice(0,10); label = 'All';
   }
+  return { d1, d2, label };
+}
 
+function renderDashChart() {
+  const rows = dashRows;
   const isDark = document.documentElement.getAttribute('data-theme')==='dark';
   const gridColor  = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
   const labelColor = isDark ? '#d8f3dc' : '#1b4332';
+  let labels=[], data=[], label='';
+
+  const navLabel = document.getElementById('dash-nav-label');
+  const nextBtn  = document.getElementById('dash-nav-next');
+
+  if (dashChartPeriod === 'types') {
+    const counts = {};
+    rows.forEach(r => safeParseTypes(r.visit_types).forEach(t=>{counts[t]=(counts[t]||0)+1;}));
+    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    labels = sorted.map(([k])=>k); data = sorted.map(([,v])=>v); label = 'All visit types';
+    if (navLabel) navLabel.textContent = '';
+  } else {
+    const { d1, d2, label: periodLabel } = dashPeriodDates();
+    if (navLabel) navLabel.textContent = periodLabel;
+    if (nextBtn)  nextBtn.disabled = dashNavOffset === 0;
+    label = `Reports — ${periodLabel}`;
+    // Sync records date range to chart period
+    const ri1 = document.getElementById('dash-rec-date1');
+    const ri2 = document.getElementById('dash-rec-date2');
+    if (ri1) ri1.value = d1;
+    if (ri2) ri2.value = d2;
+    dashRecPage = 0; renderDashRecords();
+
+    if (dashChartPeriod === 'daily') {
+      for (let h=7;h<=20;h++) labels.push(`${String(h).padStart(2,'0')}:00`);
+      data = labels.map(h => rows.filter(r=>(r.date||'').slice(0,10)===d1).length > 0 ?
+        rows.filter(r=>(r.date||'').slice(0,10)===d1&&(r.submitted_ts||'').slice(11,13)===h.slice(0,2)).length : 0);
+    } else {
+      const cur = new Date(d1); const end = new Date(d2); const days=[];
+      while(cur<=end){days.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
+      labels = days.map(d=>d.slice(5));
+      data   = days.map(d=>rows.filter(r=>(r.date||'').slice(0,10)===d).length);
+    }
+  }
 
   if (dashChart) dashChart.destroy();
   const ctx = document.getElementById('dash-chart').getContext('2d');
   dashChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets:[{
-        label,
-        data,
-        backgroundColor:'rgba(82,183,136,.7)',
-        borderColor:'#52b788',
-        borderWidth:1,
-        borderRadius:4,
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
+    type:'bar',
+    data:{ labels, datasets:[{ label, data, backgroundColor:'rgba(82,183,136,.7)', borderColor:'#52b788', borderWidth:1, borderRadius:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{ labels:{ color:labelColor, font:{size:11} } } },
-      scales:{
-        x:{ ticks:{ color:labelColor, font:{size:10}, maxRotation:45 }, grid:{ color:gridColor } },
-        y:{ ticks:{ color:labelColor, font:{size:10} }, grid:{ color:gridColor }, beginAtZero:true }
-      }
-    }
+      scales:{ x:{ ticks:{ color:labelColor, font:{size:10}, maxRotation:45 }, grid:{ color:gridColor } },
+               y:{ ticks:{ color:labelColor, font:{size:10} }, grid:{ color:gridColor }, beginAtZero:true } } }
   });
 }
 
@@ -1715,6 +2168,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<!-- SheetJS for XLSX export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <!-- piexifjs for EXIF preservation (same CDN as ARRMapper) -->
 <script src="https://cdn.jsdelivr.net/npm/piexifjs@1.0.6/piexif.js"></script>
 </body>
