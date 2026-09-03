@@ -1225,10 +1225,10 @@ function initAttChiclets() {
     try {
       const s = JSON.parse(stored);
       status.style.display = 'flex';
-      if (s.serverConfirmed) {
+      if (s.serverConfirmed || s.serverConfirmed === undefined) {
         if (s.type === 'Attended') {
           status.className   = 'att-ok';
-          status.textContent = `✅ Attending ${s.in_time} to ${s.out_time}`;
+          status.textContent = `✅ Attending ${s.in_time}${s.out_time ? ' to ' + s.out_time : ''}`;
         } else {
           status.className   = 'att-leave';
           status.textContent = `🚫 On Leave · ${s.leave_reasons || s.subtype || 'Leave'}`;
