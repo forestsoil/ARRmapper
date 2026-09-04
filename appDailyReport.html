@@ -583,7 +583,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v18';
+const APP_VERSION    = 'DRT-v21';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -778,6 +778,8 @@ function showApp(auth) {
   updateOutboxBadge();
   document.getElementById('tb-tabs').style.display = 'flex';
   initAttChiclets();
+  // Retry any pending outbox items (both work report and attendance) on load
+  setTimeout(() => { retryOutbox(); }, 3000);
 }
 
 // ── GPS ───────────────────────────────────────────────────────────────────────
@@ -1114,14 +1116,16 @@ async function gasPost(payload) {
 }
 
 // For GET requests use JSONP
-function gasGet(params) {
+function gasGet(params, timeoutMs = 25000) {
   return new Promise((res, rej) => {
     const cb   = 'drt_cb_' + Date.now();
     const qs   = Object.entries({ ...params, callback: cb }).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&');
     const s    = document.createElement('script');
+    const cleanup = () => { try{document.head.removeChild(s)}catch(e){} delete window[cb]; clearTimeout(timer); };
+    const timer = setTimeout(() => { cleanup(); rej(new Error('JSONP timeout')); }, timeoutMs);
     s.src      = GAS_URL + '?' + qs;
-    s.onerror  = () => { rej(new Error('JSONP failed')); try{document.head.removeChild(s)}catch(e){} };
-    window[cb] = data => { res(data); try{document.head.removeChild(s)}catch(e){} delete window[cb]; };
+    s.onerror  = () => { cleanup(); rej(new Error('JSONP failed')); };
+    window[cb] = data => { cleanup(); res(data); };
     document.head.appendChild(s);
   });
 }
@@ -1210,10 +1214,12 @@ const LEAVE_SUBTYPES = [
 let attSelectedLeaveSubtype = null;
 
 function initAttChiclets() {
-  // Check outbox for today's pending items
-  const attOutbox = JSON.parse(localStorage.getItem(attOutboxKey()) || '[]');
   const today = new Date().toISOString().slice(0,10);
-  const todayPending = attOutbox.find(i => i.row.date === today && i.row.operator_email === userEmail);
+  // Purge outbox items older than 7 days (submitted but never confirmed — stale)
+  const attOutbox = attOutboxGet();
+  const cutoff = new Date(Date.now() - 7*864e5).toISOString().slice(0,10);
+  const pruned = attOutbox.filter(i => (i.row.date || '') >= cutoff);
+  if (pruned.length !== attOutbox.length) attOutboxSet(pruned);
 
   const stored = localStorage.getItem(attTodayKey());
   const bar    = document.getElementById('att-bar');
@@ -1394,13 +1400,14 @@ async function retryAttOutbox() {
     try {
       const resp = await gasGet({ action: 'submitAttendance', row: JSON.stringify(item.row) });
       if (!resp.ok) throw new Error(resp.error);
-      // Server confirmed — update stored key if it's today's attendance
-      const today = new Date().toISOString().slice(0,10);
-      if (item.row.date === today && item.row.operator_email === userEmail) {
-        const stored = JSON.parse(localStorage.getItem(attTodayKey()) || '{}');
+      // Server confirmed — update stored key for any date matching this email
+      if (item.row.operator_email === userEmail) {
+        // Key is date-specific — try to update whichever date key matches
+        const dateKey = `att_submitted_${userEmail}_${item.row.date}`;
+        const stored = JSON.parse(localStorage.getItem(dateKey) || '{}');
         stored.serverConfirmed = true;
         stored.submitted_ts = resp.submitted_ts || new Date().toISOString();
-        localStorage.setItem(attTodayKey(), JSON.stringify(stored));
+        localStorage.setItem(dateKey, JSON.stringify(stored));
         initAttChiclets();
       }
     } catch(e) {
@@ -1806,26 +1813,82 @@ function exportAttXLSX() {
     const d = String(r.date).slice(0,10);
     return d >= d1 && d <= d2 && (!person || r.operator_name === person);
   });
-  filtered.sort((a,b) => String(b.date).localeCompare(String(a.date)));
 
-  const rows = [['Date','Name','Type','In Time','Out Time','Leave Reason','GPS','Submitted']];
+  // ── Register format ───────────────────────────────────────────────────────
+  // Columns: Staff Name | date1 | date2 | ...
+  // Values:  P / PL / P1 / P2 / Ab / blank
+  function attCode(type, submittedTs) {
+    if (!type) return '';
+    const t = type.toLowerCase();
+    if (t.includes('absent')) return 'Ab';
+    if (t.includes('morning half')) return 'P1';
+    if (t.includes('afternoon half')) return 'P2';
+    if (t.includes('leave')) return 'Ab';   // full day, late leave, advance, override
+    if (t.includes('attended')) {
+      // Distinguish P vs PL by submission hour
+      const hour = submittedTs ? parseInt((submittedTs + '').slice(11,13), 10) : 0;
+      return (hour >= 12) ? 'PL' : 'P';
+    }
+    return '';
+  }
+
+  // Build date list for range
+  const dates = [];
+  const cur = new Date(d1); const end = new Date(d2);
+  while (cur <= end) { dates.push(cur.toISOString().slice(0,10)); cur.setDate(cur.getDate()+1); }
+
+  // Unique staff (filtered by person if set)
+  const staffNames = [...new Set(filtered.map(r => r.operator_name || r.operator_email).filter(Boolean))].sort();
+
+  // Build lookup: name+date → code
+  const lookup = {};
   filtered.forEach(r => {
+    const key = (r.operator_name||r.operator_email||'') + '|' + String(r.date).slice(0,10);
+    // If multiple rows same person+date, prefer non-blank (e.g. Absent(Auto) row)
+    const existing = lookup[key];
+    const code = attCode(r.type, r.submitted_ts);
+    if (!existing || (code && !existing)) lookup[key] = code;
+  });
+
+  // Header row: Name + dates (dd/mm format)
+  const header = ['Staff Name', ...dates.map(d => {
+    const [y,m,dy] = d.split('-'); return `${dy}/${m}`;
+  })];
+  // Sub-header: blank + day-of-week
+  const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const subHeader = ['', ...dates.map(d => DOW[new Date(d).getDay()])];
+
+  const rows = [header, subHeader];
+  staffNames.forEach(name => {
+    const row = [name, ...dates.map(d => lookup[name + '|' + d] || '')];
+    rows.push(row);
+  });
+
+  // Legend row
+  rows.push([]);
+  rows.push(['Legend: P=Present (07-11:59), PL=Present Late (12-19:59), P1=Half-day Morning, P2=Half-day Afternoon, Ab=Absent/Leave']);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  // Style header (col widths)
+  ws['!cols'] = [{ wch: 22 }, ...dates.map(() => ({ wch: 6 }))];
+
+  // Second sheet: raw log
+  const rawHeader = ['Date','Name','Type','In Time','Out Time','Leave Reason','GPS','Submitted'];
+  const rawRows = [rawHeader];
+  filtered.sort((a,b) => String(b.date).localeCompare(String(a.date))).forEach(r => {
     const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(6)}, ${parseFloat(r.gps_lng).toFixed(6)}` : '';
-    rows.push([
-      String(r.date).slice(0,10),
-      r.operator_name||'',
-      r.type||'',
-      r.in_time||'',
-      r.out_time||'',
-      r.leave_reasons||'',
-      gps,
+    rawRows.push([
+      String(r.date).slice(0,10), r.operator_name||'', r.type||'',
+      r.in_time||'', r.out_time||'', r.leave_reasons||'', gps,
       (r.submitted_ts||'').slice(0,16).replace('T',' '),
     ]);
   });
+  const wsRaw = XLSX.utils.aoa_to_sheet(rawRows);
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+  XLSX.utils.book_append_sheet(wb, ws, 'Register');
+  XLSX.utils.book_append_sheet(wb, wsRaw, 'Raw Log');
+
   const personSlug = person ? '_' + person.replace(/\s+/g,'') : '';
   const now = new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
   const location = localStorage.getItem('arr_project') || 'Project';

@@ -1,0 +1,800 @@
+{
+  "_note": "Staff list for ARR Project Suite — looked up by Google login email at surveyor_name auto field. Update independently of schema. Keyed by email for O(1) lookup.",
+  "_version": "v2",
+  "_source": "staff_list_asha_app_v2.tsv",
+  "_lookup": "by email (case-insensitive). Fields used: legal_name (display), designation, district, affiliation, restricted_access.",
+  "staff": [
+    {
+      "legal_name": "Ajgar Ali",
+      "email": "ajgarashatslpl@gmail.com",
+      "district": "JPG",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Akshay Roy",
+      "email": "roya79298@gmail.com",
+      "district": "JPG",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Amit Paul",
+      "email": "amit@tomorrowsfoundation.org",
+      "district": "HO",
+      "designation": "QC/QA Lead",
+      "affiliation": "TF",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Apu Roy",
+      "email": "apuashatslpl@gmail.com",
+      "district": "JPG",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Rupesh Oraon",
+      "email": "arolinalakra332@gmail.com",
+      "district": "APDW",
+      "designation": "Driver",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Ashamanjon Barman",
+      "email": "ashamanjonbarman@gmail.com",
+      "district": "APDE",
+      "designation": "Nursery Lead",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Babita Chhetri",
+      "email": "babitachhetri531@gmail.com",
+      "district": "JPG",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Baldeo Sahu",
+      "email": "baldeoashatslpl@gmail.com",
+      "district": "JPG",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Bhairab Nath Bandyopadhyay",
+      "email": "bhairab@tomorrowsfoundation.org",
+      "district": "HO",
+      "designation": "Logistics Lead",
+      "affiliation": "TF",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Biky Lakra / Biki Oraon",
+      "email": "bikylakara5676@gmail.com",
+      "district": "JPG",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Bilash Oraon",
+      "email": "bilashoraon60@gmail.com",
+      "district": "APDW",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Bipati Roy",
+      "email": "roybipati71@gmail.com",
+      "district": "JPG",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Bipul Mahato",
+      "email": "bipulmahato78@gmail.com",
+      "district": "APDE",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Bishal Roy",
+      "email": "bishalkalibari@gmail.com",
+      "district": "JPG",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Biswajit Barman",
+      "email": "biswjitbarman29@gmail.com",
+      "district": "JPG",
+      "designation": "Driver",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Biswajit Das",
+      "email": "bdas1525@gmail.com",
+      "district": "APDE",
+      "designation": "CC Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Biswajit Roy",
+      "email": "roybiswajit735206@gmail.com",
+      "district": "JPG",
+      "designation": "Driver",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Biswajit Roy",
+      "email": "roybiswajitrupali2025@gmail.com",
+      "district": "JPG",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Chanchal Biswas",
+      "email": "chanchalbiswas7580@gmail.com",
+      "district": "APDE",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Debananda Oraon",
+      "email": "debanandoraon270@gmail.com",
+      "district": "APDE",
+      "designation": "",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Debajyoti Roy",
+      "email": "debajyotiroyashatslpl@gmail.com",
+      "district": "JPG",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Debi Majhi",
+      "email": "majhidebi769@gmail.com",
+      "district": "JPG",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Debranjan Banerjee",
+      "email": "debranjan@tomorrowsfoundation.org",
+      "district": "JPG",
+      "designation": "District Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Dipankar (Bhowmick) Roy",
+      "email": "bhowmickroy537@gmail.com",
+      "district": "JPG",
+      "designation": "Driver",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Dona Sen",
+      "email": "donasen8944@gmail.com",
+      "district": "APDE",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Gagan Biswakarma",
+      "email": "gaganbiswakarma14@gmail.com",
+      "district": "APDW",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Gayatri Majhi",
+      "email": "gayatrimajhi720@gmail.com",
+      "district": "JPG",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Goutam Dhar",
+      "email": "goutamashatslpl@gmail.com",
+      "district": "JPG",
+      "designation": "Cluster Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Goutam Munda",
+      "email": "goutammunda1311@gmail.com",
+      "district": "APDW",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Hritik Kerketta",
+      "email": "hritikkerketta777@gmail.com",
+      "district": "APDE",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Jaya Barman",
+      "email": "jayaashatslpl@gmail.com",
+      "district": "APDE",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Jewel Patowary",
+      "email": "jewelpatowary1514@gmail.com",
+      "district": "JPG",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Johnson Toppo",
+      "email": "jtoppo632@gmail.com",
+      "district": "APDE",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Kalyani Roy",
+      "email": "kroy72696@gmail.com",
+      "district": "JPG",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Kanai Biswas",
+      "email": "kanaibiswas6295@gmail.com",
+      "district": "APDE",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Kartik Barman",
+      "email": "kartikashatslpl@gmail.com",
+      "district": "APDE",
+      "designation": "Cluster Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Kazi Momenul Ahasan",
+      "email": "kazi@tomorrowsfoundation.in",
+      "district": "APDW",
+      "designation": "Soil Expert",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Kiran Oraon",
+      "email": "k46342260@gmail.com",
+      "district": "APDW",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Krishna Chhetri",
+      "email": "kc3109194@gmail.com",
+      "district": "JPG",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Laxmi Panna",
+      "email": "laxmipanna44@gmail.com",
+      "district": "JPG",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Mahadev Biswas / Sahadev Biswas",
+      "email": "mahadevbiswas78900@gmail.com",
+      "district": "APDE",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Manoj Roy",
+      "email": "mr2649715@gmail.com",
+      "district": "APDE",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Methuselah Baskey",
+      "email": "methuselahbaskey777@gmail.com",
+      "district": "APDE",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Muhammad Anisul",
+      "email": "mdanisul0855@gmail.com",
+      "district": "JPG",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Munit Kujur",
+      "email": "mrppkujur1112@gmail.com",
+      "district": "APDE",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Niraj Oraon",
+      "email": "nirajashatslps@gmail.com",
+      "district": "JPG",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Nirmalya Chatterjee",
+      "email": "nirmalya@tomorrowsfoundation.in",
+      "district": "HO",
+      "designation": "Carbon Science Lead",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Nur Islam",
+      "email": "ni6893946@gmail.com",
+      "district": "APDW",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Pampa Oraon",
+      "email": "pampao617@gmail.com",
+      "district": "APDE",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Pampi Mohanta Saha",
+      "email": "pampiashatslpl@gmail.com",
+      "district": "HO",
+      "designation": "Project Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Panchali Datta Biswas",
+      "email": "panchali@tomorrowsfoundation.in",
+      "district": "APDE",
+      "designation": "District Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Prachi Baskey",
+      "email": "prachi@tomorrowsfoundation.in",
+      "district": "APDE",
+      "designation": "Forestry Expert",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Pradip Banerjee",
+      "email": "pradip.banerjee@tomorrowsfoundation.in",
+      "district": "HO",
+      "designation": "Finance Lead 2",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Pranisha Chhetri",
+      "email": "pranishac588@gmail.com",
+      "district": "APDE",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Priya Kujur",
+      "email": "kujurpriya179@gmail.com",
+      "district": "APDW",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Puja Oraon",
+      "email": "oraonpuja663@gmail.com",
+      "district": "JPG",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Puja Sharma",
+      "email": "ps3353446@gmail.com",
+      "district": "APDE",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Rabiul Islam",
+      "email": "islamr20117@gmail.com",
+      "district": "APDE",
+      "designation": "Driver",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Rajesh Roy",
+      "email": "rajeshroy7994@gmail.com",
+      "district": "JPG",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Rajib Banerjee",
+      "email": "rajib@ashaproject.in",
+      "district": "KOL",
+      "designation": "Finance Lead 1",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Rakhi Biswas",
+      "email": "biswasrakhi35561@gmail.com",
+      "district": "APDE",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Rana Ganguly",
+      "email": "ranaganguly2717@gmail.com",
+      "district": "APDE",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Ranjan Biswas",
+      "email": "sikharanjan1983@gmail.com",
+      "district": "APDE",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Reshona Minj",
+      "email": "minjreshonaminj@gmail.com",
+      "district": "APDE",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Roshni Suba",
+      "email": "roshniashatslpl@gmail.com",
+      "district": "APDW",
+      "designation": "Cluster Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Sabnur Alam",
+      "email": "sabnur114@gmail.com",
+      "district": "JPG",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sadhuram Mandal",
+      "email": "sadhurammandal37@gmail.com",
+      "district": "APDW",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sahid Hussain",
+      "email": "hussainsahid8319@gmail.com",
+      "district": "JPG",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sakhi Oraon",
+      "email": "sakhioraon50@gmail.com",
+      "district": "APDW",
+      "designation": "Driver",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Salim Ali",
+      "email": "salimali80161@gmail.com",
+      "district": "JPG",
+      "designation": "CC Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Samani Barman",
+      "email": "samanibarman7@gmail.com",
+      "district": "APDE",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sanjay Munda",
+      "email": "sm2592108@gmail.com",
+      "district": "APDW",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sanjay Ray",
+      "email": "sanjayray7364063408@gmail.com",
+      "district": "APDW",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sanjit Rabha",
+      "email": "rabhaglory03@gmail.com",
+      "district": "APDW",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sarbananda Barman",
+      "email": "sarbanandaashatslpl@gmail.com",
+      "district": "CBH",
+      "designation": "Cluster Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Satyajit Bhowmick",
+      "email": "bmksatyajit5233@gmail.com",
+      "district": "APDE",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Satyajit Chakraborty",
+      "email": "satyajitchakraborty@tomorrowsfoundation.in",
+      "district": "JPG",
+      "designation": "GIS Lead",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Shanti Oraon",
+      "email": "shanti@tomorrowsfoundation.in",
+      "district": "APDW",
+      "designation": "District Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Shyam Bhagat",
+      "email": "bhagatshyam775@gmail.com",
+      "district": "APDW",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sriti Roy",
+      "email": "sritir08@gmail.com",
+      "district": "APDW",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Subba Deo / Deoman Subba",
+      "email": "subbadeo6@gmail.com",
+      "district": "APDE",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Subhash Rava",
+      "email": "ravasubhash3@gmail.com",
+      "district": "APDW",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sudip Barman",
+      "email": "s66559102@gmail.com",
+      "district": "APDW",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sujan Roy",
+      "email": "sujan161997@gmail.com",
+      "district": "JPG",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sujita Toppo",
+      "email": "sujitatoppo612@gmail.com",
+      "district": "APDW",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sukra Oraon",
+      "email": "sukraoraon910905@gmail.com",
+      "district": "JPG",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Suman Barman",
+      "email": "vidosuman6@gmail.com",
+      "district": "JPG",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sumitra Chhetri",
+      "email": "sumitrachhh048@gmail.com",
+      "district": "JPG",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Sushma Tirkey",
+      "email": "sushmatirkey602@gmail.com",
+      "district": "APDW",
+      "designation": "CC Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Suvojit Bose",
+      "email": "sboseashatslpl@gmail.com",
+      "district": "APDE",
+      "designation": "Cluster Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Suvojit Palit",
+      "email": "suvoashatslpl@gmail.com",
+      "district": "APDE",
+      "designation": "Cluster Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Swarup Ghosh",
+      "email": "swarup@tomorrowsfoundation.in",
+      "district": "HO",
+      "designation": "CEO",
+      "affiliation": "TF",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Tanu Munda",
+      "email": "tanumunda211@gmail.com",
+      "district": "JPG",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Tapan Roy",
+      "email": "tapanroy123ltp@gmail.com",
+      "district": "APDW",
+      "designation": "Plantation Field Assistant",
+      "affiliation": "Vendor",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Ujjwal Barman",
+      "email": "ujjwalashatslpl@gmail.com",
+      "district": "JPG",
+      "designation": "Cluster Coordinator",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Uma Oroan",
+      "email": "umaoroan@gmail.com",
+      "district": "APDW",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Urmila Barman",
+      "email": "urmilabarman319@gmail.com",
+      "district": "APDE",
+      "designation": "Climate Captain",
+      "affiliation": "TSLPL",
+      "restricted_access": false
+    },
+    {
+      "legal_name": "Vaswati Banerjee",
+      "email": "vaswati@tomorrowsfoundation.in",
+      "district": "HO",
+      "designation": "HR",
+      "affiliation": "TF",
+      "restricted_access": true
+    },
+    {
+      "legal_name": "Yogesh Gosai",
+      "email": "yogeshgosai495@gmail.com",
+      "district": "APDW",
+      "designation": "Field Executive",
+      "affiliation": "TSLPL",
+      "restricted_access": true
+    }
+  ]
+}
