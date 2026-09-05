@@ -1070,7 +1070,7 @@ function openModeCallout(anchorEl) {
     attachTip(plantBtn, 'tab_plant');
     const soilBtn = calloutOptBtn('\u{1F9EA}', APP_MODE === 'soil', () => switchTab('soil'));
     attachTip(soilBtn, 'tab_soil');
-    const vecBtn = calloutOptBtn('\u{1F4D0}', APP_MODE === 'vec', () => switchTab('vec'));
+    const vecBtn = calloutOptBtn('\u{1F4D0}', APP_MODE === 'vec', () => switchTab('soil'));
     attachTip(vecBtn, 'tab_vec');
     const filesBtn = calloutOptBtn('\u{1F4C1}', APP_MODE === 'files', () => switchTab('files'));
     attachTip(filesBtn, 'tab_files');
@@ -5725,7 +5725,7 @@ function cycleLang(btn) {
   setLang(code);
 }
 
-window.addEventListener('load', ()=>{ init(); setLang('en'); switchTab('vec'); updateSbar(); initThemeBtn(); });
+window.addEventListener('load', ()=>{ init(); setLang('en'); switchTab('plant'); updateSbar(); initThemeBtn(); });
 
 // ── fixPolygonGeometry — QGIS "Fix Geometries / Structure" equivalent ──────
 // Approximates GEOSMakeValid(STRUCTURE): deduplicates vertices, fixes winding,
