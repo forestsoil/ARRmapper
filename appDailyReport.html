@@ -7,7 +7,7 @@
 <script>
 (function(){const t=localStorage.getItem('arr_theme')||'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
 </script>
-<title>Daily Report v16</title>
+<title>Daily Report v24</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;padding-bottom:60px}
@@ -223,6 +223,39 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   #main-screen{padding:12px 10px}
   .vt-pill{font-size:10px;padding:6px 10px}
 }
+
+/* ── Work Report Detail Modal ── */
+#wr-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:300;
+  display:none;align-items:flex-end;justify-content:center}
+#wr-modal-bg.open{display:flex}
+#wr-modal{background:var(--card);border-radius:16px 16px 0 0;width:100%;max-width:560px;
+  max-height:90vh;overflow-y:auto;padding:18px 16px 32px}
+.wr-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.wr-modal-title{font-size:14px;font-weight:700;color:var(--ink)}
+.wr-modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--mid);
+  padding:2px 6px;border-radius:6px}
+.wr-modal-close:hover{background:var(--rule)}
+/* Photo carousel */
+.wr-carousel{position:relative;border-radius:10px;overflow:hidden;background:var(--bg);
+  margin-bottom:14px;min-height:60px}
+.wr-carousel-track{display:flex;transition:transform .25s ease}
+.wr-carousel-slide{flex-shrink:0;width:100%}
+.wr-carousel-slide img{width:100%;max-height:260px;object-fit:contain;display:block;background:#000}
+.wr-carousel-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.55);
+  border:none;color:#fff;font-size:20px;padding:6px 12px;cursor:pointer;border-radius:6px;z-index:2}
+.wr-carousel-btn:hover{background:rgba(0,0,0,.8)}
+.wr-car-prev{left:6px}
+.wr-car-next{right:6px}
+.wr-carousel-dots{display:flex;justify-content:center;gap:5px;margin-top:6px;flex-wrap:wrap}
+.wr-car-dot{width:7px;height:7px;border-radius:50%;background:var(--rule);cursor:pointer;border:none;padding:0}
+.wr-car-dot.active{background:var(--leaf)}
+.wr-carousel-count{text-align:center;font-size:10px;color:var(--mid);margin-top:4px}
+/* Detail grid */
+.wr-detail-grid{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:12px;margin-bottom:10px}
+.wr-dl{color:var(--mid);font-weight:600;font-size:11px;white-space:nowrap;padding-top:1px}
+.wr-dv{color:var(--ink);word-break:break-word}
+.wr-notes-block{background:var(--bg);border:1px solid var(--rule);border-radius:8px;
+  padding:9px 10px;font-size:12px;color:var(--ink);line-height:1.5;margin-top:4px;white-space:pre-wrap}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -479,8 +512,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
     <div class="dash-sec">
       <div class="dash-sec-title">Work Report Records</div>
       <div class="dash-filters-row">
-        <select id="dash-person-filter" onchange="renderDashRecords()">
-          <option value="">All Reporters</option>
+        <select id="dash-filter-field" onchange="populateStaffValueDropdown('dash-filter-field','dash-filter-value',renderDashRecords)" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
+          <option value="">All Staff</option>
+        </select>
+        <select id="dash-filter-value" disabled onchange="renderDashRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
+          <option value="">—</option>
         </select>
         <input type="date" id="dash-rec-date1" min="2024-01-01" onchange="renderDashRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
         <span style="font-size:12px;color:var(--dim)">to</span>
@@ -490,7 +526,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
       <div id="log-wrap" style="overflow-x:auto">
         <table class="log-table">
           <thead><tr>
-            <th>Date</th><th>Reporter</th><th>LPC/DBC</th>
+            <th>Date</th><th>Time</th><th>Reporter</th><th>LPC/DBC</th>
             <th>Visit Types</th><th>GPS</th><th>Notes</th><th>Photos</th>
           </tr></thead>
           <tbody id="log-body"></tbody>
@@ -560,8 +596,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
     <div class="dash-sec">
       <div class="dash-sec-title">Records</div>
       <div class="dash-filters-row">
-        <select id="att-person-filter" onchange="renderAttRecords()">
+        <select id="att-filter-field" onchange="populateStaffValueDropdown('att-filter-field','att-filter-value',renderAttRecords)" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
           <option value="">All Staff</option>
+        </select>
+        <select id="att-filter-value" disabled onchange="renderAttRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
+          <option value="">—</option>
         </select>
         <input type="date" id="att-rec-date1" min="2024-01-01" onchange="renderAttRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
         <span style="font-size:12px;color:var(--dim)">to</span>
@@ -583,10 +622,88 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v21';
+const APP_VERSION    = 'DRT-v24';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
+
+// ── Staff list ────────────────────────────────────────────────────────────────
+const STAFF_JSON_URL  = './staff_list_asha.json';
+const STAFF_CACHE_KEY = 'drt_staff_list_cache';
+let   STAFF_LIST      = [];
+
+const STAFF_FILTER_FIELDS = [
+  { label: 'Name',        key: 'name'        },
+  { label: 'District',    key: 'district'    },
+  { label: 'Designation', key: 'designation' },
+  { label: 'Affiliation', key: 'affiliation' },
+  { label: 'Cluster',     key: 'cluster'     },
+  { label: 'Supervisor',  key: 'supervisor'  },
+];
+
+async function loadStaffList() {
+  try {
+    const resp = await fetch(STAFF_JSON_URL);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    if (Array.isArray(data) && data.length) {
+      STAFF_LIST = data;
+      try { localStorage.setItem(STAFF_CACHE_KEY, JSON.stringify(data)); } catch(e) {}
+    }
+  } catch(e) {
+    try {
+      const cached = localStorage.getItem(STAFF_CACHE_KEY);
+      if (cached) STAFF_LIST = JSON.parse(cached);
+    } catch(e2) {}
+  }
+  rebuildStaffFieldDropdown('dash-filter-field', 'dash-filter-value', renderDashRecords);
+  rebuildStaffFieldDropdown('att-filter-field',  'att-filter-value',  renderAttRecords);
+}
+
+function staffEmailsForFilter(fieldKey, value) {
+  if (!fieldKey || !value) return null;
+  return new Set(STAFF_LIST.filter(s => s[fieldKey] === value).map(s => s.email));
+}
+
+function staffValuesFor(fieldKey) {
+  return [...new Set(STAFF_LIST.map(s => s[fieldKey]).filter(Boolean))].sort();
+}
+
+function resolvedName(email, rowName) {
+  const s = STAFF_LIST.find(s => s.email === email);
+  return s ? s.name : (rowName || email || '\u2014');
+}
+
+function rebuildStaffFieldDropdown(fieldSelId, valSelId, onChange) {
+  const fieldSel = document.getElementById(fieldSelId);
+  const valSel   = document.getElementById(valSelId);
+  if (!fieldSel || !valSel) return;
+  const prevField = fieldSel.value;
+  const prevVal   = valSel.value;
+  fieldSel.innerHTML = '<option value="">All Staff</option>'
+    + STAFF_FILTER_FIELDS.map(f => '<option value="' + f.key + '">' + f.label + '</option>').join('');
+  if (prevField) fieldSel.value = prevField;
+  populateStaffValueDropdown(fieldSelId, valSelId, onChange, prevVal);
+}
+
+function populateStaffValueDropdown(fieldSelId, valSelId, onChange, restoreVal) {
+  const fieldSel = document.getElementById(fieldSelId);
+  const valSel   = document.getElementById(valSelId);
+  if (!fieldSel || !valSel) return;
+  const fieldKey = fieldSel.value;
+  if (!fieldKey) {
+    valSel.innerHTML = '<option value="">\u2014</option>';
+    valSel.disabled  = true;
+    onChange();
+    return;
+  }
+  const vals = staffValuesFor(fieldKey);
+  valSel.innerHTML = '<option value="">All</option>'
+    + vals.map(v => '<option value="' + v + '">' + v + '</option>').join('');
+  valSel.disabled = false;
+  if (restoreVal && vals.includes(restoreVal)) valSel.value = restoreVal;
+  onChange();
+}
 const TARGET_W       = 1920;
 const TARGET_H       = 1080;
 const JPEG_QUALITY   = 0.80;
@@ -603,7 +720,7 @@ let attModalType = null;   // 'Attended' | 'Leave' | 'Advance'
 let attRows = [];
 let attChart = null;
 let attDashUnlocked = false;
-let attPeriod = 'day';
+let attPeriod = 'today';
 
 // ── Lang strings ──────────────────────────────────────────────────────────────
 const STRINGS = {
@@ -778,6 +895,7 @@ function showApp(auth) {
   updateOutboxBadge();
   document.getElementById('tb-tabs').style.display = 'flex';
   initAttChiclets();
+  loadStaffList();
   // Retry any pending outbox items (both work report and attendance) on load
   setTimeout(() => { retryOutbox(); }, 3000);
 }
@@ -1600,22 +1718,20 @@ function loadAttDashboard() {
     delete window[cb];
     if (!data.ok) return;
     attRows = data.rows || [];
-    // Populate person dropdown
-    const names = [...new Set(attRows.map(r => r.operator_name).filter(Boolean))].sort();
-    const sel = document.getElementById('att-person-filter');
-    sel.innerHTML = '<option value="">All Staff</option>'
-      + names.map(n => `<option value="${n}">${n}</option>`).join('');
+    // Normalise date fields once on load
+    attRows.forEach(r => { r._date = gasDateStr(r.date); });
     // KPIs
     const today = new Date().toISOString().slice(0,10);
     const weekAgo  = new Date(Date.now()-7*864e5).toISOString().slice(0,10);
     const monthAgo = new Date(Date.now()-30*864e5).toISOString().slice(0,10);
-    document.getElementById('att-kpi-today-present').textContent = attRows.filter(r=>String(r.date).slice(0,10)===today&&r.type&&r.type.startsWith('Attended')).length;
-    document.getElementById('att-kpi-today-leave').textContent   = attRows.filter(r=>String(r.date).slice(0,10)===today&&r.type&&r.type.startsWith('Leave')).length;
-    document.getElementById('att-kpi-week').textContent  = attRows.filter(r=>String(r.date).slice(0,10)>=weekAgo).length;
-    document.getElementById('att-kpi-month').textContent = attRows.filter(r=>String(r.date).slice(0,10)>=monthAgo).length;
+    document.getElementById('att-kpi-today-present').textContent = attRows.filter(r=>r._date===today&&r.type&&r.type.startsWith('Attended')).length;
+    document.getElementById('att-kpi-today-leave').textContent   = attRows.filter(r=>r._date===today&&r.type&&r.type.startsWith('Leave')).length;
+    document.getElementById('att-kpi-week').textContent  = attRows.filter(r=>r._date>=weekAgo).length;
+    document.getElementById('att-kpi-month').textContent = attRows.filter(r=>r._date>=monthAgo).length;
     document.getElementById('att-kpi-staff').textContent = new Set(attRows.map(r=>r.operator_email)).size;
-    // Init date range to today's period
-    setAttPeriod(attPeriod, document.getElementById('att-tab-' + attPeriod) || document.getElementById('att-tab-today'));
+    // Init to today tab — always reset
+    attPeriod = 'today';
+    setAttPeriod('today', document.getElementById('att-tab-today'));
   };
   document.head.appendChild(s);
 }
@@ -1697,7 +1813,7 @@ function renderAttDashboard() {
 
 function renderAttChart(d1, d2, label) {
   document.getElementById('att-chart-title').textContent = `Attendance — ${label}`;
-  const rangeRows = attRows.filter(r => { const d = String(r.date).slice(0,10); return d >= d1 && d <= d2; });
+  const rangeRows = attRows.filter(r => { const d = r._date || gasDateStr(r.date); return d >= d1 && d <= d2; });
 
   const isDark     = document.documentElement.getAttribute('data-theme')==='dark';
   const gridColor  = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
@@ -1724,8 +1840,8 @@ function renderAttChart(d1, d2, label) {
     }).length);
   } else {
     labels      = days.map(d => d.slice(5));
-    presentData = days.map(d => rangeRows.filter(r=>String(r.date).slice(0,10)===d&&r.type&&r.type.startsWith('Attended')).length);
-    leaveData   = days.map(d => rangeRows.filter(r=>String(r.date).slice(0,10)===d&&r.type&&r.type.startsWith('Leave')).length);
+    presentData = days.map(d => rangeRows.filter(r=>(r._date||gasDateStr(r.date))===d&&r.type&&r.type.startsWith('Attended')).length);
+    leaveData   = days.map(d => rangeRows.filter(r=>(r._date||gasDateStr(r.date))===d&&r.type&&r.type.startsWith('Leave')).length);
   }
 
   if (attChart) attChart.destroy();
@@ -1751,14 +1867,16 @@ function renderAttChart(d1, d2, label) {
 }
 
 function renderAttRecords() {
-  const person = document.getElementById('att-person-filter')?.value || '';
+  const fieldKey = document.getElementById('att-filter-field')?.value || '';
+  const fieldVal = document.getElementById('att-filter-value')?.value || '';
+  const emailSet = staffEmailsForFilter(fieldKey, fieldVal);
   const d1 = document.getElementById('att-rec-date1')?.value || '2024-01-01';
   const d2 = document.getElementById('att-rec-date2')?.value || new Date().toISOString().slice(0,10);
   let filtered = attRows.filter(r => {
-    const d = String(r.date).slice(0,10);
-    return d >= d1 && d <= d2 && (!person || r.operator_name === person);
+    const d = r._date || gasDateStr(r.date);
+    return d >= d1 && d <= d2 && (!emailSet || emailSet.has(r.operator_email));
   });
-  filtered.sort((a,b) => String(b.date).localeCompare(String(a.date)));
+  filtered.sort((a,b) => (b.submitted_ts||b._date||'').localeCompare(a.submitted_ts||a._date||''));
 
   const total = filtered.length;
   const pages = Math.max(1, Math.ceil(total / ATT_PAGE_SIZE));
@@ -1774,7 +1892,7 @@ function renderAttRecords() {
           : `<span style="color:#FF3300;font-weight:700">🚫 ${typeStr}</span>`;
         const sub = (r.submitted_ts||'').slice(0,16).replace('T',' ');
         return `<tr>
-          <td>${String(r.date).slice(0,10)}</td>
+          <td>${r._date || gasDateStr(r.date)}</td>
           <td>${r.operator_name||'—'}</td>
           <td>${badge}</td>
           <td style="white-space:nowrap">${r.in_time||'—'}</td>
@@ -1806,12 +1924,15 @@ function renderAttRecords() {
 }
 
 function exportAttXLSX() {
-  const person = document.getElementById('att-person-filter')?.value || '';
+  const fieldKey    = document.getElementById('att-filter-field')?.value || '';
+  const fieldVal    = document.getElementById('att-filter-value')?.value || '';
+  const emailSet    = staffEmailsForFilter(fieldKey, fieldVal);
+  const filterLabel = fieldVal ? fieldVal.replace(/\s+/g, '') : '';
   const d1 = document.getElementById('att-rec-date1')?.value || '2024-01-01';
   const d2 = document.getElementById('att-rec-date2')?.value || new Date().toISOString().slice(0,10);
   let filtered = attRows.filter(r => {
-    const d = String(r.date).slice(0,10);
-    return d >= d1 && d <= d2 && (!person || r.operator_name === person);
+    const d = r._date || gasDateStr(r.date);
+    return d >= d1 && d <= d2 && (!emailSet || emailSet.has(r.operator_email));
   });
 
   // ── Register format ───────────────────────────────────────────────────────
@@ -1843,7 +1964,7 @@ function exportAttXLSX() {
   // Build lookup: name+date → code
   const lookup = {};
   filtered.forEach(r => {
-    const key = (r.operator_name||r.operator_email||'') + '|' + String(r.date).slice(0,10);
+    const key = (r.operator_name||r.operator_email||'') + '|' + (r._date||gasDateStr(r.date));
     // If multiple rows same person+date, prefer non-blank (e.g. Absent(Auto) row)
     const existing = lookup[key];
     const code = attCode(r.type, r.submitted_ts);
@@ -1875,10 +1996,10 @@ function exportAttXLSX() {
   // Second sheet: raw log
   const rawHeader = ['Date','Name','Type','In Time','Out Time','Leave Reason','GPS','Submitted'];
   const rawRows = [rawHeader];
-  filtered.sort((a,b) => String(b.date).localeCompare(String(a.date))).forEach(r => {
+  filtered.sort((a,b) => (b.submitted_ts||b._date||'').localeCompare(a.submitted_ts||a._date||'')).forEach(r => {
     const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(6)}, ${parseFloat(r.gps_lng).toFixed(6)}` : '';
     rawRows.push([
-      String(r.date).slice(0,10), r.operator_name||'', r.type||'',
+      r._date||gasDateStr(r.date), r.operator_name||'', r.type||'',
       r.in_time||'', r.out_time||'', r.leave_reasons||'', gps,
       (r.submitted_ts||'').slice(0,16).replace('T',' '),
     ]);
@@ -1889,10 +2010,10 @@ function exportAttXLSX() {
   XLSX.utils.book_append_sheet(wb, ws, 'Register');
   XLSX.utils.book_append_sheet(wb, wsRaw, 'Raw Log');
 
-  const personSlug = person ? '_' + person.replace(/\s+/g,'') : '';
+  const filterSlug = filterLabel ? '_' + filterLabel : '';
   const now = new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
   const location = localStorage.getItem('arr_project') || 'Project';
-  XLSX.writeFile(wb, `attendance_${attPeriod}${personSlug}_${location}_${d1}_${d2}_${now}.xlsx`);
+  XLSX.writeFile(wb, `attendance_${attPeriod}${filterSlug}_${location}_${d1}_${d2}_${now}.xlsx`);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -1980,10 +2101,13 @@ function renderDashboard() {
   const weekAgo  = new Date(Date.now()-7*864e5).toISOString().slice(0,10);
   const monthAgo = new Date(Date.now()-30*864e5).toISOString().slice(0,10);
 
+  // Normalise date fields once on load
+  rows.forEach(r => { r._date = gasDateStr(r.date); r._subDate = gasDateStr(r.submitted_ts); });
+
   document.getElementById('kpi-total').textContent    = rows.length;
-  document.getElementById('kpi-today').textContent    = rows.filter(r=>r.date===today).length;
-  document.getElementById('kpi-week').textContent     = rows.filter(r=>r.date>=weekAgo).length;
-  document.getElementById('kpi-month').textContent    = rows.filter(r=>r.date>=monthAgo).length;
+  document.getElementById('kpi-today').textContent    = rows.filter(r=>r._date===today).length;
+  document.getElementById('kpi-week').textContent     = rows.filter(r=>r._date>=weekAgo).length;
+  document.getElementById('kpi-month').textContent    = rows.filter(r=>r._date>=monthAgo).length;
   const reporters = new Set(rows.map(r=>r.operator_email)).size;
   document.getElementById('kpi-reporters').textContent = reporters;
 
@@ -1995,25 +2119,17 @@ function renderDashboard() {
     if (!lat || !lng) return;
     const types = safeParseTypes(r.visit_types);
     L.circleMarker([lat,lng], {radius:6,color:'#52b788',fillColor:'#52b788',fillOpacity:.7,weight:1.5})
-      .bindPopup(`<b>${r.date}</b><br>${r.operator_name}<br>${types.join(', ')}<br>${r.lpc||r.dbc||r.beneficiary_name||''}`)
+      .bindPopup(`<b>${r._date}</b><br>${r.operator_name}<br>${types.join(', ')}<br>${r.lpc||r.dbc||r.beneficiary_name||''}`)
       .addTo(dashMarkers);
     bounds.push([lat,lng]);
   });
   if (bounds.length) dashMap.fitBounds(bounds, {padding:[20,20]});
 
-  // Populate person dropdown
-  const names = [...new Set(rows.map(r => r.operator_name||r.operator_email).filter(Boolean))].sort();
-  const psel = document.getElementById('dash-person-filter');
-  if (psel) {
-    psel.innerHTML = '<option value="">All Reporters</option>'
-      + names.map(n => `<option value="${n}">${n}</option>`).join('');
-  }
-  // Init date range to today
-  const tod = new Date().toISOString().slice(0,10);
+  // Always reset date range to today on (re)load
   const ri1 = document.getElementById('dash-rec-date1');
   const ri2 = document.getElementById('dash-rec-date2');
-  if (ri1 && !ri1.value) ri1.value = tod;
-  if (ri2 && !ri2.value) ri2.value = tod;
+  if (ri1) ri1.value = today;
+  if (ri2) ri2.value = today;
 
   dashRecPage = 0;
   renderDashRecords();
@@ -2027,37 +2143,54 @@ const DASH_PAGE_SIZE = 25;
 
 function renderDashRecords() {
   const rows = dashRows;
-  const person = document.getElementById('dash-person-filter')?.value || '';
+  const fieldKey = document.getElementById('dash-filter-field')?.value || '';
+  const fieldVal = document.getElementById('dash-filter-value')?.value || '';
+  const emailSet = staffEmailsForFilter(fieldKey, fieldVal);
   const d1 = document.getElementById('dash-rec-date1')?.value || '2024-01-01';
   const d2 = document.getElementById('dash-rec-date2')?.value || new Date().toISOString().slice(0,10);
   let filtered = rows.filter(r => {
-    const d = (r.date||'').slice(0,10);
-    return d >= d1 && d <= d2 && (!person || (r.operator_name||r.operator_email) === person);
+    const d = r._date || gasDateStr(r.date);
+    return d >= d1 && d <= d2 && (!emailSet || emailSet.has(r.operator_email));
   });
-  filtered.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  // Sort by submitted_ts descending (latest first)
+  filtered.sort((a,b) => (b.submitted_ts||b._date||'').localeCompare(a.submitted_ts||a._date||''));
   const total = filtered.length;
   const pages = Math.max(1, Math.ceil(total / DASH_PAGE_SIZE));
   if (dashRecPage >= pages) dashRecPage = pages-1;
   const slice = filtered.slice(dashRecPage*DASH_PAGE_SIZE, (dashRecPage+1)*DASH_PAGE_SIZE);
 
+  // Store current slice for modal lookup
+  window._dashSlice = filtered;
+
   document.getElementById('log-body').innerHTML = slice.length
-    ? slice.map(r => {
+    ? slice.map((r, i) => {
+        const globalIdx = dashRecPage * DASH_PAGE_SIZE + i;
         const types = safeParseTypes(r.visit_types);
         const ident = [r.lpc, r.dbc, r.beneficiary_name].filter(Boolean).join(' / ');
         const gps   = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(4)}°N ${parseFloat(r.gps_lng).toFixed(4)}°E` : '—';
         let photoCount = 0;
         try { photoCount = JSON.parse(r.photos_json||'[]').length; } catch(e) {}
-        return `<tr>
-          <td>${r.date||'—'}</td>
+        const subDate = r._date || gasDateStr(r.date);
+        // submitted_ts time portion in 24h
+        const subTime = (() => {
+          const ts = String(r.submitted_ts||'');
+          if (!ts) return '—';
+          // ISO: 2025-09-05T10:42:59.000Z or 2025-09-05 10:42:59
+          const m = ts.match(/[T ](\d{2}:\d{2})/);
+          return m ? m[1] : ts.slice(11,16) || '—';
+        })();
+        return `<tr style="cursor:pointer" onclick="openWrModal(${globalIdx})" title="Click to view details">
+          <td>${subDate||'—'}</td>
+          <td style="white-space:nowrap">${subTime}</td>
           <td>${r.operator_name||r.operator_email||'—'}</td>
           <td>${ident||'—'}</td>
           <td>${types.map(t=>`<span class="vt-badge">${t}</span>`).join('')}</td>
           <td style="font-size:10px;white-space:nowrap">${gps}</td>
-          <td>${(r.notes||'').slice(0,60)}${r.notes&&r.notes.length>60?'…':''}</td>
+          <td>${(r.notes||'').slice(0,50)}${r.notes&&r.notes.length>50?'…':''}</td>
           <td style="text-align:center">${photoCount > 0 ? `📷${photoCount}` : '—'}</td>
         </tr>`;
       }).join('')
-    : '<tr><td colspan="7" class="dash-empty">No submissions</td></tr>';
+    : '<tr><td colspan="8" class="dash-empty">No submissions</td></tr>';
 
   const pag = document.getElementById('dash-pagination');
   if (pag) {
@@ -2080,21 +2213,24 @@ function renderDashRecords() {
 }
 
 function exportDashXLSX() {
-  const person = document.getElementById('dash-person-filter')?.value || '';
+  const fieldKey    = document.getElementById('dash-filter-field')?.value || '';
+  const fieldVal    = document.getElementById('dash-filter-value')?.value || '';
+  const emailSet    = staffEmailsForFilter(fieldKey, fieldVal);
+  const filterLabel = fieldVal ? fieldVal.replace(/\s+/g, '') : '';
   const d1 = document.getElementById('dash-rec-date1')?.value || '2024-01-01';
   const d2 = document.getElementById('dash-rec-date2')?.value || new Date().toISOString().slice(0,10);
   let filtered = dashRows.filter(r => {
-    const d = (r.date||'').slice(0,10);
-    return d >= d1 && d <= d2 && (!person || (r.operator_name||r.operator_email) === person);
+    const d = r._date || gasDateStr(r.date);
+    return d >= d1 && d <= d2 && (!emailSet || emailSet.has(r.operator_email));
   });
-  filtered.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  filtered.sort((a,b)=>(b.submitted_ts||b._date||'').localeCompare(a.submitted_ts||a._date||''));
   const rows = [['Date','Reporter','District','LPC','DBC','Beneficiary','Visit Types','Notes','Photos','GPS','Submitted']];
   filtered.forEach(r => {
     let photoCount = 0;
     try { photoCount = JSON.parse(r.photos_json||'[]').length; } catch(e) {}
     const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(6)}, ${parseFloat(r.gps_lng).toFixed(6)}` : '';
     rows.push([
-      (r.date||'').slice(0,10),
+      r._date||gasDateStr(r.date),
       r.operator_name||r.operator_email||'',
       r.district||'',
       r.lpc||'', r.dbc||'', r.beneficiary_name||'',
@@ -2108,10 +2244,26 @@ function exportDashXLSX() {
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'WorkReports');
-  const personSlug = person ? '_'+person.replace(/\s+/g,'') : '';
+  const filterSlug = filterLabel ? '_' + filterLabel : '';
   const now = new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
   const location = localStorage.getItem('arr_project') || 'Project';
-  XLSX.writeFile(wb, `workreport_${dashChartPeriod}${personSlug}_${location}_${d1}_${d2}_${now}.xlsx`);
+  XLSX.writeFile(wb, `workreport_${dashChartPeriod}${filterSlug}_${location}_${d1}_${d2}_${now}.xlsx`);
+}
+
+// Normalise GAS date field — may come back as yyyy-mm-dd string, ISO timestamp,
+// or a Sheets serial number (days since 1899-12-30)
+function gasDateStr(val) {
+  if (!val && val !== 0) return '';
+  const s = String(val).trim();
+  // Already yyyy-mm-dd or ISO timestamp
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  // Sheets serial number (e.g. 46005)
+  const n = parseFloat(s);
+  if (!isNaN(n) && n > 30000 && n < 100000) {
+    const d = new Date(Date.UTC(1899,11,30) + n * 86400000);
+    return d.toISOString().slice(0,10);
+  }
+  return s.slice(0,10);
 }
 
 function safeParseTypes(raw) {
@@ -2194,13 +2346,13 @@ function renderDashChart() {
 
     if (dashChartPeriod === 'daily') {
       for (let h=7;h<=20;h++) labels.push(`${String(h).padStart(2,'0')}:00`);
-      data = labels.map(h => rows.filter(r=>(r.date||'').slice(0,10)===d1).length > 0 ?
-        rows.filter(r=>(r.date||'').slice(0,10)===d1&&(r.submitted_ts||'').slice(11,13)===h.slice(0,2)).length : 0);
+      data = labels.map(h =>
+        rows.filter(r=>(r._date||gasDateStr(r.date))===d1&&(r.submitted_ts||'').slice(11,13)===h.slice(0,2)).length);
     } else {
       const cur = new Date(d1); const end = new Date(d2); const days=[];
       while(cur<=end){days.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
       labels = days.map(d=>d.slice(5));
-      data   = days.map(d=>rows.filter(r=>(r.date||'').slice(0,10)===d).length);
+      data   = days.map(d=>rows.filter(r=>(r._date||gasDateStr(r.date))===d).length);
     }
   }
 
@@ -2216,6 +2368,113 @@ function renderDashChart() {
   });
 }
 
+// ── Work Report Detail Modal ──────────────────────────────────────────────────
+let _wrCarIdx = 0;
+let _wrPhotos = [];
+
+function openWrModal(idx) {
+  const r = (window._dashSlice || [])[idx];
+  if (!r) return;
+
+  // Parse photos
+  _wrPhotos = [];
+  try { _wrPhotos = JSON.parse(r.photos_json || '[]'); } catch(e) {}
+  _wrCarIdx = 0;
+
+  // Carousel
+  const carWrap = document.getElementById('wr-carousel-wrap');
+  const track   = document.getElementById('wr-car-track');
+  const dots    = document.getElementById('wr-car-dots');
+  const count   = document.getElementById('wr-car-count');
+  if (_wrPhotos.length) {
+    track.innerHTML = _wrPhotos.map(p =>
+      `<div class="wr-carousel-slide">
+        <img src="${p.url}" alt="${p.filename||''}"
+          onerror="this.src='';this.style.background='var(--bg)';this.style.minHeight='80px'">
+      </div>`
+    ).join('');
+    dots.innerHTML = _wrPhotos.map((_,i) =>
+      `<button class="wr-car-dot${i===0?' active':''}" onclick="wrCarGoTo(${i})"></button>`
+    ).join('');
+    wrCarUpdate();
+    carWrap.style.display = '';
+  } else {
+    carWrap.style.display = 'none';
+  }
+
+  // Detail grid
+  const subDate = r._date || gasDateStr(r.date);
+  const subTime = (() => {
+    const ts = String(r.submitted_ts||'');
+    const m = ts.match(/[T ](\d{2}:\d{2})/);
+    return m ? m[1] : (ts.slice(11,16)||'—');
+  })();
+  const types = safeParseTypes(r.visit_types);
+  const ident = [r.lpc, r.dbc, r.beneficiary_name].filter(Boolean).join(' / ');
+  const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(6)}°N  ${parseFloat(r.gps_lng).toFixed(6)}°E  ±${r.gps_accuracy_m||'?'}m` : '—';
+
+  const fields = [
+    ['Date',       subDate || '—'],
+    ['Submitted',  subTime],
+    ['Reporter',   r.operator_name || r.operator_email || '—'],
+    ['LPC',        r.lpc || '—'],
+    ['DBC',        r.dbc || '—'],
+    ['Beneficiary',r.beneficiary_name || '—'],
+    ['District',   r.district || '—'],
+    ['Visit Types',types.map(t=>`<span class="vt-badge">${t}</span>`).join(' ') || '—'],
+    ['GPS',        gps],
+    ['Photos',     _wrPhotos.length ? `${_wrPhotos.length} attached` : '—'],
+    ['App Version',r.app_version || '—'],
+  ];
+
+  document.getElementById('wr-detail-grid').innerHTML = fields.map(([l,v]) =>
+    `<span class="wr-dl">${l}</span><span class="wr-dv">${v}</span>`
+  ).join('');
+
+  const notesWrap = document.getElementById('wr-notes-wrap');
+  if (r.notes && r.notes.trim()) {
+    document.getElementById('wr-notes-val').textContent = r.notes.trim();
+    notesWrap.style.display = '';
+  } else {
+    notesWrap.style.display = 'none';
+  }
+
+  document.getElementById('wr-modal-bg').classList.add('open');
+}
+
+function closeWrModal() {
+  document.getElementById('wr-modal-bg').classList.remove('open');
+}
+
+function wrModalBgClick(e) {
+  if (e.target === document.getElementById('wr-modal-bg')) closeWrModal();
+}
+
+function wrCarUpdate() {
+  const track = document.getElementById('wr-car-track');
+  const n = _wrPhotos.length;
+  track.style.transform = `translateX(-${_wrCarIdx * 100}%)`;
+  document.querySelectorAll('.wr-car-dot').forEach((d,i) => d.classList.toggle('active', i===_wrCarIdx));
+  document.getElementById('wr-car-prev').style.display = _wrCarIdx === 0   ? 'none' : '';
+  document.getElementById('wr-car-next').style.display = _wrCarIdx === n-1 ? 'none' : '';
+  document.getElementById('wr-car-count').textContent  = n > 1 ? `${_wrCarIdx+1} / ${n}` : '';
+}
+
+function wrCarNav(dir) {
+  _wrCarIdx = Math.max(0, Math.min(_wrPhotos.length-1, _wrCarIdx + dir));
+  wrCarUpdate();
+}
+
+function wrCarGoTo(i) {
+  _wrCarIdx = i;
+  wrCarUpdate();
+}
+
+// Close on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeWrModal(); closeAttModal(); }
+});
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const storedLang = localStorage.getItem('arr_lang') || 'en';
@@ -2230,6 +2489,32 @@ document.addEventListener('DOMContentLoaded', () => {
   showApp(auth);
 });
 </script>
+
+<!-- WORK REPORT DETAIL MODAL -->
+<div id="wr-modal-bg" onclick="wrModalBgClick(event)">
+  <div id="wr-modal">
+    <div class="wr-modal-head">
+      <span class="wr-modal-title">📋 Work Report Detail</span>
+      <button class="wr-modal-close" onclick="closeWrModal()">✕</button>
+    </div>
+    <!-- Photo carousel -->
+    <div id="wr-carousel-wrap" style="display:none">
+      <div class="wr-carousel" id="wr-carousel">
+        <div class="wr-carousel-track" id="wr-car-track"></div>
+        <button class="wr-carousel-btn wr-car-prev" id="wr-car-prev" onclick="wrCarNav(-1)">‹</button>
+        <button class="wr-carousel-btn wr-car-next" id="wr-car-next" onclick="wrCarNav(1)">›</button>
+      </div>
+      <div class="wr-carousel-dots" id="wr-car-dots"></div>
+      <div class="wr-carousel-count" id="wr-car-count"></div>
+    </div>
+    <!-- Detail fields -->
+    <div class="wr-detail-grid" id="wr-detail-grid"></div>
+    <div id="wr-notes-wrap" style="display:none">
+      <div class="wr-dl" style="margin-bottom:4px">Notes</div>
+      <div class="wr-notes-block" id="wr-notes-val"></div>
+    </div>
+  </div>
+</div>
 
 <!-- SheetJS for XLSX export -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
