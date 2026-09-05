@@ -1060,25 +1060,7 @@ function openLangCallout(anchorEl) {
   });
 }
 
-function openModeCallout(anchorEl) {
-  openCallout(anchorEl, (box) => {
-    const title = document.createElement('div');
-    title.className = 'callout-title'; title.textContent = Lang.mode || 'Mode';
-    box.appendChild(title);
-    const row = document.createElement('div'); row.className = 'callout-row';
-    const plantBtn = calloutOptBtn('\u{1F331}', APP_MODE === 'plant', () => switchTab('vec'));
-    attachTip(plantBtn, 'tab_plant');
-    const soilBtn = calloutOptBtn('\u{1F9EA}', APP_MODE === 'soil', () => switchTab('vec'));
-    attachTip(soilBtn, 'tab_soil');
-    const vecBtn = calloutOptBtn('\u{1F4D0}', APP_MODE === 'vec', () => switchTab('vec'));
-    attachTip(vecBtn, 'tab_vec');
-    const filesBtn = calloutOptBtn('\u{1F4C1}', APP_MODE === 'files', () => switchTab('files'));
-    attachTip(filesBtn, 'tab_files');
-    // MRV button removed v68
-    row.appendChild(plantBtn); row.appendChild(soilBtn); row.appendChild(vecBtn); row.appendChild(filesBtn);
-    box.appendChild(row);
-  });
-}
+
 
 
 function updateBasemapIndicator() {

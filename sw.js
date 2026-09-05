@@ -1,4 +1,4 @@
-// ARR Project Suite — Service Worker v7
+// ARR Project Suite — Service Worker v8
 // Caching strategy:
 //   index.html              → network-first (always serve fresh launcher)
 //   appDashboard.html       → network-first (data-dependent, stale is misleading)
@@ -7,27 +7,29 @@
 //   CDN assets              → cache-first (immutable versioned URLs)
 //   Google APIs             → network-only (auth, Maps, Apps Script)
 
-const CACHE_NAME = 'arrm-shell-e26efb5';
+const CACHE_NAME = 'arrm-shell-c0fadcf';
 
 const SHELL_URLS = [
   '/ARRmapper/appVectorTool.html',
   '/ARRmapper/appPlantationMapper.html',
   '/ARRmapper/appSoilMapper.html',
   '/ARRmapper/appDailyReport.html',
-  '/ARRmapper/appSurveyManager.html',
   '/ARRmapper/appNurseryDashboard.html',
   '/ARRmapper/appHotspot.html',
   '/ARRmapper/arr-shared.css',
   '/ARRmapper/manifest.json',
   '/ARRmapper/logo.png',
   '/ARRmapper/logo2.png',
-  // Leaflet
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  // Leaflet (jsdelivr — matches all applets)
+  'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css',
+  'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
+  // Leaflet Draw (mapper trio)
+  'https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css',
+  'https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js',
   // Turf
   'https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js',
   // JSZip
-  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+  'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
   // Google Identity
   'https://accounts.google.com/gsi/client',
 ];
@@ -46,18 +48,18 @@ const NETWORK_FIRST_PATHS = [
   '/ARRmapper/',
   '/ARRmapper/appDashboard.html',
   '/ARRmapper/appCCBSDG.html',
-  '/ARRmapper/projDocumentation.html',
   '/ARRmapper/appMonitoringDashboard.html',
   '/ARRmapper/appSurveyManager.html',
+  '/ARRmapper/appInventory.html',
 ];
 
 // Stale-while-revalidate: offline-capable field tools
 const STALE_WHILE_REVALIDATE_PATHS = [
-  'appVectorTool.html',
-  'appPlantationMapper.html',
-  'appSoilMapper.html',
-  'appDailyReport.html',
-  'appNurseryDashboard.html',
+  '/ARRmapper/appVectorTool.html',
+  '/ARRmapper/appPlantationMapper.html',
+  '/ARRmapper/appSoilMapper.html',
+  '/ARRmapper/appDailyReport.html',
+  '/ARRmapper/appNurseryDashboard.html',
 ];
 
 // ── Install: pre-cache app shell ─────────────────────────────────────
@@ -110,7 +112,7 @@ self.addEventListener('fetch', event => {
   }
 
   // Stale-while-revalidate for offline-capable field applets
-  if (STALE_WHILE_REVALIDATE_PATHS.some(p => url.pathname.includes(p))) {
+  if (STALE_WHILE_REVALIDATE_PATHS.some(p => url.pathname === p || url.pathname.endsWith(p))) {
     event.respondWith(
       caches.open(CACHE_NAME).then(cache =>
         cache.match(event.request).then(cached => {
