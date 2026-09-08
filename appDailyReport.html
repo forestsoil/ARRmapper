@@ -7,7 +7,7 @@
 <script>
 (function(){const t=localStorage.getItem('arr_theme')||'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
 </script>
-<title>Daily Report v26</title>
+<title>Daily Report v28</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;padding-bottom:60px}
@@ -484,6 +484,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
         <div class="kpi-card"><div class="kpi-val" id="kpi-week">—</div><div class="kpi-lbl">This Week</div></div>
         <div class="kpi-card"><div class="kpi-val" id="kpi-month">—</div><div class="kpi-lbl">This Month</div></div>
         <div class="kpi-card"><div class="kpi-val" id="kpi-reporters">—</div><div class="kpi-lbl">Reporters</div></div>
+        <div class="kpi-card" id="kpi-redressal-card" onclick="openRedressalModal()"
+          style="cursor:pointer;border-color:var(--warn);background:rgba(249,115,22,.07)"
+          title="Click to view today's grievance log records">
+          <div class="kpi-val" id="kpi-redressal" style="color:var(--warn)">—</div>
+          <div class="kpi-lbl" style="color:var(--warn)">Redressal (Today)</div>
+        </div>
       </div>
     </div>
 
@@ -514,6 +520,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
     <!-- Records log -->
     <div class="dash-sec">
       <div class="dash-sec-title">Work Report Records</div>
+      <!-- Row 1: staff filter + date range + export buttons -->
       <div class="dash-filters-row">
         <select id="dash-filter-field" onchange="populateStaffValueDropdown('dash-filter-field','dash-filter-value',renderDashRecords)" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
           <option value="">All Staff</option>
@@ -524,7 +531,19 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
         <input type="date" id="dash-rec-date1" min="2024-01-01" onchange="renderDashRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
         <span style="font-size:12px;color:var(--dim)">to</span>
         <input type="date" id="dash-rec-date2" min="2024-01-01" onchange="renderDashRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
-        <button class="dash-export-btn" onclick="exportDashXLSX()">⬇ Export XLSX</button>
+        <button class="dash-export-btn" onclick="exportDashXLSX()">⇩ XLSX</button>
+        <button class="dash-export-btn" onclick="exportGrievanceXLSX()" style="background:#c2410c" title="Export Fence Repair · Watering · Damage Report · Flood Report · Fire Report">⇩ Grievance Log</button>
+      </div>
+      <!-- Row 2: visit-type filter export -->
+      <div class="dash-filters-row" style="margin-top:6px;align-items:center">
+        <span style="font-size:11px;color:var(--mid);white-space:nowrap">By visit type:</span>
+        <select id="dash-vt-filter" multiple size="1"
+          style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;
+          background:var(--card);color:var(--ink);font-size:12px;min-width:200px;max-width:340px"
+          title="Hold Ctrl/Cmd to select multiple">
+        </select>
+        <button class="dash-export-btn" onclick="exportByVisitTypeXLSX()">⇩ XLSX</button>
+        <span style="font-size:10px;color:var(--dim)">(uses same date range above; Ctrl/Cmd for multi-select)</span>
       </div>
       <div id="log-wrap" style="overflow-x:auto">
         <table class="log-table">
@@ -625,7 +644,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v26';
+const APP_VERSION    = 'DRT-v28';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -2138,6 +2157,8 @@ function renderDashboard() {
 
   dashRecPage = 0;
   renderDashRecords();
+  updateRedressalKPI();
+  populateVtFilterDropdown();
   showChart('daily', document.querySelector('#dash-screen .chart-sel-btn.active'));
 }
 
@@ -2247,6 +2268,169 @@ function exportDashXLSX() {
   const now = new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
   const location = localStorage.getItem('arr_project') || 'Project';
   XLSX.writeFile(wb, `workreport_${dashChartPeriod}${filterSlug}_${location}_${d1}_${d2}_${now}.xlsx`);
+}
+
+// ── Grievance / Redressal ─────────────────────────────────────────────────────
+const GRIEVANCE_TYPES = ['Fence Repair', 'Watering', 'Damage Report', 'Flood Report', 'Fire Report'];
+
+function isGrievanceRow(r) {
+  return safeParseTypes(r.visit_types).some(t => GRIEVANCE_TYPES.includes(t));
+}
+
+function updateRedressalKPI() {
+  const today = localToday();
+  const count = dashRows.filter(r => (r._date || gasDateStr(r.date)) === today && isGrievanceRow(r)).length;
+  document.getElementById('kpi-redressal').textContent = count;
+}
+
+function openRedressalModal() {
+  const today = localToday();
+  document.getElementById('redressal-modal-date').textContent = today;
+  const rows = dashRows.filter(r => (r._date || gasDateStr(r.date)) === today && isGrievanceRow(r));
+  rows.sort((a,b) => (b.submitted_ts||'').localeCompare(a.submitted_ts||''));
+  const tbody = document.getElementById('redressal-modal-body');
+  tbody.innerHTML = rows.length
+    ? rows.map(r => {
+        const types = safeParseTypes(r.visit_types).filter(t => GRIEVANCE_TYPES.includes(t));
+        const ident = [r.lpc, r.dbc, r.beneficiary_name].filter(Boolean).join(' / ');
+        return `<tr>
+          <td style="white-space:nowrap">${localTimeFromTs(r.submitted_ts)}</td>
+          <td>${r.operator_name || r.operator_email || '—'}</td>
+          <td>${ident || '—'}</td>
+          <td>${types.map(t => `<span class="vt-badge" style="background:rgba(249,115,22,.15);color:#9a3412">${t}</span>`).join(' ')}</td>
+          <td style="font-size:11px">${(r.notes || '').slice(0, 80)}${r.notes && r.notes.length > 80 ? '…' : ''}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="5" class="dash-empty">No grievance records for today</td></tr>';
+  const bg = document.getElementById('redressal-modal-bg');
+  bg.style.display = 'flex';
+}
+
+function closeRedressalModal() {
+  document.getElementById('redressal-modal-bg').style.display = 'none';
+}
+
+// Export all grievance types for the current date range (Work Report Records dates)
+function exportGrievanceXLSX() {
+  const d1 = document.getElementById('dash-rec-date1')?.value || '2024-01-01';
+  const d2 = document.getElementById('dash-rec-date2')?.value || localToday();
+  exportRedressalXLSX(d1, d2);
+}
+
+function exportRedressalXLSX(d1, d2) {
+  const filtered = dashRows.filter(r => {
+    const d = r._date || gasDateStr(r.date);
+    return d >= d1 && d <= d2 && isGrievanceRow(r);
+  });
+  filtered.sort((a,b) => (b.submitted_ts||b._date||'').localeCompare(a.submitted_ts||a._date||''));
+
+  const header = ['Date','Reporter','District','LPC','DBC','Beneficiary','Grievance Types','All Visit Types','Notes','GPS','Submitted'];
+  const rows = [header];
+  filtered.forEach(r => {
+    const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(6)}, ${parseFloat(r.gps_lng).toFixed(6)}` : '';
+    const allTypes = safeParseTypes(r.visit_types);
+    const grievTypes = allTypes.filter(t => GRIEVANCE_TYPES.includes(t)).join(', ');
+    rows.push([
+      r._date || gasDateStr(r.date),
+      r.operator_name || r.operator_email || '',
+      r.district || '',
+      r.lpc || '', r.dbc || '', r.beneficiary_name || '',
+      grievTypes,
+      allTypes.join(', '),
+      r.notes || '',
+      gps,
+      r.submitted_ts ? (localDateFromTs(r.submitted_ts) + ' ' + localTimeFromTs(r.submitted_ts)) : '',
+    ]);
+  });
+
+  // One sheet per grievance type
+  const wb = XLSX.utils.book_new();
+
+  // All combined sheet
+  const wsAll = XLSX.utils.aoa_to_sheet(rows);
+  wsAll['!cols'] = [8,20,10,10,10,18,28,36,32,24,16].map(w => ({wch:w}));
+  XLSX.utils.book_append_sheet(wb, wsAll, 'All Grievances');
+
+  // Per-type sheets
+  GRIEVANCE_TYPES.forEach(type => {
+    const typeRows = [header];
+    filtered.filter(r => safeParseTypes(r.visit_types).includes(type)).forEach(r => {
+      const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(6)}, ${parseFloat(r.gps_lng).toFixed(6)}` : '';
+      typeRows.push([
+        r._date || gasDateStr(r.date),
+        r.operator_name || r.operator_email || '',
+        r.district || '',
+        r.lpc || '', r.dbc || '', r.beneficiary_name || '',
+        type,
+        safeParseTypes(r.visit_types).join(', '),
+        r.notes || '',
+        gps,
+        r.submitted_ts ? (localDateFromTs(r.submitted_ts) + ' ' + localTimeFromTs(r.submitted_ts)) : '',
+      ]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(typeRows);
+    ws['!cols'] = [8,20,10,10,10,18,28,36,32,24,16].map(w => ({wch:w}));
+    // Sheet name max 31 chars
+    XLSX.utils.book_append_sheet(wb, ws, type.slice(0, 31));
+  });
+
+  const now = new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
+  XLSX.writeFile(wb, `GrievanceLogReport_${d1}_${d2}_${now}.xlsx`);
+}
+
+// Export by selected visit type(s), using current date range
+function exportByVisitTypeXLSX() {
+  const sel = document.getElementById('dash-vt-filter');
+  const selectedTypes = Array.from(sel.selectedOptions).map(o => o.value);
+  if (!selectedTypes.length) { alert('Select at least one visit type from the dropdown.'); return; }
+  const d1 = document.getElementById('dash-rec-date1')?.value || '2024-01-01';
+  const d2 = document.getElementById('dash-rec-date2')?.value || localToday();
+
+  const filtered = dashRows.filter(r => {
+    const d = r._date || gasDateStr(r.date);
+    if (d < d1 || d > d2) return false;
+    return safeParseTypes(r.visit_types).some(t => selectedTypes.includes(t));
+  });
+  filtered.sort((a,b) => (b.submitted_ts||b._date||'').localeCompare(a.submitted_ts||a._date||''));
+
+  const header = ['Date','Reporter','District','LPC','DBC','Beneficiary','Visit Types','Notes','GPS','Submitted'];
+  const rows = [header];
+  filtered.forEach(r => {
+    const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(6)}, ${parseFloat(r.gps_lng).toFixed(6)}` : '';
+    rows.push([
+      r._date || gasDateStr(r.date),
+      r.operator_name || r.operator_email || '',
+      r.district || '',
+      r.lpc || '', r.dbc || '', r.beneficiary_name || '',
+      safeParseTypes(r.visit_types).join(', '),
+      r.notes || '',
+      gps,
+      r.submitted_ts ? (localDateFromTs(r.submitted_ts) + ' ' + localTimeFromTs(r.submitted_ts)) : '',
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [8,20,10,10,10,18,36,32,24,16].map(w => ({wch:w}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'By Visit Type');
+  const typeSlug = selectedTypes.map(t => t.replace(/[^a-zA-Z0-9]/g,'')).join('-').slice(0, 40);
+  const now = new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
+  XLSX.writeFile(wb, `workreport_${typeSlug}_${d1}_${d2}_${now}.xlsx`);
+}
+
+// Populate the visit-type dropdown from all known types in dashRows (called after load)
+function populateVtFilterDropdown() {
+  const sel = document.getElementById('dash-vt-filter');
+  if (!sel) return;
+  // Collect all distinct types across all rows, sorted
+  const allTypes = [...new Set(dashRows.flatMap(r => safeParseTypes(r.visit_types)))].sort();
+  // Preserve selection
+  const prev = new Set(Array.from(sel.selectedOptions).map(o => o.value));
+  sel.innerHTML = allTypes.map(t =>
+    `<option value="${t}"${prev.has(t) ? ' selected' : ''}>${t}</option>`
+  ).join('');
+  // Make it a reasonable height — show up to 6 rows
+  sel.size = Math.min(6, Math.max(3, allTypes.length));
 }
 
 // Normalise GAS date field — may come back as yyyy-mm-dd string, ISO timestamp,
@@ -2493,7 +2677,7 @@ function wrCarGoTo(i) {
 
 // Close on Escape
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeWrModal(); closeAttModal(); }
+  if (e.key === 'Escape') { closeWrModal(); closeAttModal(); closeRedressalModal(); }
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -2510,6 +2694,39 @@ document.addEventListener('DOMContentLoaded', () => {
   showApp(auth);
 });
 </script>
+
+<!-- REDRESSAL MODAL -->
+<div id="redressal-modal-bg" onclick="if(event.target===this)closeRedressalModal()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:350;
+  align-items:flex-end;justify-content:center">
+  <div style="background:var(--card);border-radius:16px 16px 0 0;width:100%;max-width:640px;
+    max-height:85vh;display:flex;flex-direction:column;padding-bottom:20px">
+    <div style="display:flex;align-items:center;gap:10px;padding:16px 18px 12px;
+      border-bottom:1px solid var(--rule);flex-shrink:0">
+      <span style="font-size:15px;font-weight:700;color:var(--ink);flex:1">
+        ⚠️ Grievance Log — <span id="redressal-modal-date"></span>
+      </span>
+      <button onclick="closeRedressalModal()"
+        style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--mid);padding:2px 6px">✕</button>
+    </div>
+    <div style="padding:10px 18px 6px;font-size:11px;color:var(--mid);flex-shrink:0">
+      Fence Repair · Watering · Damage Report · Flood Report · Fire Report
+    </div>
+    <div style="overflow-y:auto;flex:1;padding:0 18px 10px">
+      <table class="log-table" style="width:100%">
+        <thead><tr>
+          <th>Time</th><th>Reporter</th><th>LPC/DBC</th><th>Type(s)</th><th>Notes</th>
+        </tr></thead>
+        <tbody id="redressal-modal-body"></tbody>
+      </table>
+    </div>
+    <div style="padding:12px 18px 0;flex-shrink:0">
+      <button onclick="exportRedressalXLSX(localToday(),localToday())"
+        style="padding:9px 18px;background:var(--forest);color:#fff;border:none;border-radius:8px;
+        font-size:12px;font-weight:700;cursor:pointer">⇩ Export Grievance Log XLSX</button>
+    </div>
+  </div>
+</div>
 
 <!-- WORK REPORT DETAIL MODAL -->
 <div id="wr-modal-bg" onclick="wrModalBgClick(event)">
