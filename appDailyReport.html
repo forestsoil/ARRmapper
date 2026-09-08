@@ -7,7 +7,7 @@
 <script>
 (function(){const t=localStorage.getItem('arr_theme')||'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
 </script>
-<title>Daily Report v24</title>
+<title>Daily Report v26</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;padding-bottom:60px}
@@ -423,6 +423,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
       <button class="vt-pill" data-en="Off: Data Work" data-bn="অফিস: ডেটা কাজ" data-hi="ऑफिस: डेटा कार्य" data-other="false" onclick="toggleVisitType(this)">Off: Data Work</button>
       <button class="vt-pill" data-en="Off: Meeting" data-bn="অফিস: মিটিং" data-hi="ऑफिस: मीटिंग" data-other="false" onclick="toggleVisitType(this)">Off: Meeting</button>
       <button class="vt-pill" data-en="Off: Visitors" data-bn="অফিস: ভিজিটর" data-hi="ऑफिस: आगंतुक" data-other="false" onclick="toggleVisitType(this)">Off: Visitors</button>
+      <button class="vt-pill" data-en="Land Survey" data-bn="ভূমি জরিপ" data-hi="भूमि सर्वेक्षण" data-other="false" onclick="toggleVisitType(this)">Land Survey</button>
+      <button class="vt-pill" data-en="FGD, PRA, KIS" data-bn="এফজিডি, পিআরএ, কেআইএস" data-hi="एफजीडी, पीआरए, केआईएस" data-other="false" onclick="toggleVisitType(this)">FGD, PRA, KIS</button>
+      <button class="vt-pill" data-en="GP, BDO, Member meeting" data-bn="জিপি, বিডিও, সদস্য সভা" data-hi="जीपी, बीडीओ, सदस्य बैठक" data-other="false" onclick="toggleVisitType(this)">GP, BDO, Member meeting</button>
       <button class="vt-pill" data-en="Other" data-bn="অন্যান্য" data-hi="अन्य" data-other="true" onclick="toggleVisitType(this)">Other</button>
     </div>
     <div id="other-text-wrap">
@@ -622,7 +625,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v24';
+const APP_VERSION    = 'DRT-v26';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -887,7 +890,7 @@ function showApp(auth) {
   userName  = auth.name || auth.email.split('@')[0];
   document.getElementById('main-screen').style.display = 'block';
   document.getElementById('af-user').textContent = userName;
-  document.getElementById('af-date').textContent = new Date().toISOString().slice(0,10);
+  document.getElementById('af-date').textContent = localToday();
   // Show user chip
   const chip = document.getElementById('user-chip');
   if (chip) { document.getElementById('user-chip-name').textContent = userName; chip.style.display = 'inline-flex'; }
@@ -1169,7 +1172,7 @@ async function submitReport() {
   const row = {
     row_id:           rowId(),
     submitted_ts:     '',   // server stamps
-    date:             new Date().toISOString().slice(0,10),
+    date:             localToday(),
     operator_email:   userEmail,
     operator_name:    userName,
     district:         '',   // derived server-side from LPC if needed
@@ -1305,12 +1308,12 @@ function resetForm() {
   document.getElementById('other-text-wrap').style.display = 'none';
   photos = [];
   renderPhotos();
-  document.getElementById('af-date').textContent = new Date().toISOString().slice(0,10);
+  document.getElementById('af-date').textContent = localToday();
 }
 
 // ── Attendance chiclets ───────────────────────────────────────────────────────
 function attTodayKey() {
-  return `att_submitted_${userEmail}_${new Date().toISOString().slice(0,10)}`;
+  return `att_submitted_${userEmail}_${localToday()}`;
 }
 function attOutboxKey() { return 'drt_att_outbox'; }
 
@@ -1332,7 +1335,7 @@ const LEAVE_SUBTYPES = [
 let attSelectedLeaveSubtype = null;
 
 function initAttChiclets() {
-  const today = new Date().toISOString().slice(0,10);
+  const today = localToday();
   // Purge outbox items older than 7 days (submitted but never confirmed — stale)
   const attOutbox = attOutboxGet();
   const cutoff = new Date(Date.now() - 7*864e5).toISOString().slice(0,10);
@@ -1403,7 +1406,7 @@ function forceFullDayLeave() {
 function openAttModal(type) {
   attModalType = type;
   attSelectedLeaveSubtype = null;
-  const today   = new Date().toISOString().slice(0,10);
+  const today   = localToday();
   const nowTime = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
   const win = attTimeWindow();
   let inTime, outTime;
@@ -1541,7 +1544,7 @@ async function submitAttendance() {
   const btn = document.getElementById('att-modal-submit');
   btn.disabled = true;
 
-  const today   = new Date().toISOString().slice(0,10);
+  const today   = localToday();
   const nowTime = new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit',hour12:false});
   const win     = attTimeWindow();
   const project = localStorage.getItem('arr_project') || '';
@@ -1721,9 +1724,10 @@ function loadAttDashboard() {
     // Normalise date fields once on load
     attRows.forEach(r => { r._date = gasDateStr(r.date); });
     // KPIs
-    const today = new Date().toISOString().slice(0,10);
-    const weekAgo  = new Date(Date.now()-7*864e5).toISOString().slice(0,10);
-    const monthAgo = new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+    const today = localToday();
+    const _wa=new Date(Date.now()-7*864e5),_ma=new Date(Date.now()-30*864e5);
+    const weekAgo  = _wa.getFullYear()+'-'+String(_wa.getMonth()+1).padStart(2,'0')+'-'+String(_wa.getDate()).padStart(2,'0');
+    const monthAgo = _ma.getFullYear()+'-'+String(_ma.getMonth()+1).padStart(2,'0')+'-'+String(_ma.getDate()).padStart(2,'0');
     document.getElementById('att-kpi-today-present').textContent = attRows.filter(r=>r._date===today&&r.type&&r.type.startsWith('Attended')).length;
     document.getElementById('att-kpi-today-leave').textContent   = attRows.filter(r=>r._date===today&&r.type&&r.type.startsWith('Leave')).length;
     document.getElementById('att-kpi-week').textContent  = attRows.filter(r=>r._date>=weekAgo).length;
@@ -1757,7 +1761,7 @@ function attNavNext() { if (attNavOffset > 0) { attNavOffset--; renderAttDashboa
 
 function attPeriodRange() {
   const today = new Date(); today.setHours(0,0,0,0);
-  const todayStr = today.toISOString().slice(0,10);
+  const todayStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
   let d1, d2, label;
 
   if (attPeriod === 'today') {
@@ -1766,14 +1770,14 @@ function attPeriodRange() {
     const mon = new Date(today);
     mon.setDate(today.getDate() - ((today.getDay()+6)%7) - attNavOffset*7);
     const sun = new Date(mon); sun.setDate(mon.getDate()+6);
-    d1 = mon.toISOString().slice(0,10);
-    d2 = sun.toISOString().slice(0,10);
+    d1 = mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');
+    d2 = sun.getFullYear()+'-'+String(sun.getMonth()+1).padStart(2,'0')+'-'+String(sun.getDate()).padStart(2,'0');
     label = `${d1} – ${d2}`;
   } else if (attPeriod === 'month') {
     const m = new Date(today.getFullYear(), today.getMonth() - attNavOffset, 1);
     const mEnd = new Date(m.getFullYear(), m.getMonth()+1, 0);
-    d1 = m.toISOString().slice(0,10);
-    d2 = mEnd.toISOString().slice(0,10);
+    d1 = m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0');
+    d2 = mEnd.getFullYear()+'-'+String(mEnd.getMonth()+1).padStart(2,'0')+'-'+String(mEnd.getDate()).padStart(2,'0');
     label = m.toLocaleString('en-IN',{month:'long',year:'numeric'});
   } else if (attPeriod === 'year') {
     const yr = today.getFullYear() - attNavOffset;
@@ -1871,7 +1875,7 @@ function renderAttRecords() {
   const fieldVal = document.getElementById('att-filter-value')?.value || '';
   const emailSet = staffEmailsForFilter(fieldKey, fieldVal);
   const d1 = document.getElementById('att-rec-date1')?.value || '2024-01-01';
-  const d2 = document.getElementById('att-rec-date2')?.value || new Date().toISOString().slice(0,10);
+  const d2 = document.getElementById('att-rec-date2')?.value || localToday();
   let filtered = attRows.filter(r => {
     const d = r._date || gasDateStr(r.date);
     return d >= d1 && d <= d2 && (!emailSet || emailSet.has(r.operator_email));
@@ -1890,7 +1894,7 @@ function renderAttRecords() {
         const badge = typeStr.startsWith('Attended')
           ? `<span style="color:#006600;font-weight:700">✅ ${typeStr}</span>`
           : `<span style="color:#FF3300;font-weight:700">🚫 ${typeStr}</span>`;
-        const sub = (r.submitted_ts||'').slice(0,16).replace('T',' ');
+        const sub = r.submitted_ts ? (localDateFromTs(r.submitted_ts) + ' ' + localTimeFromTs(r.submitted_ts)) : '—';
         return `<tr>
           <td>${r._date || gasDateStr(r.date)}</td>
           <td>${r.operator_name||'—'}</td>
@@ -1929,7 +1933,7 @@ function exportAttXLSX() {
   const emailSet    = staffEmailsForFilter(fieldKey, fieldVal);
   const filterLabel = fieldVal ? fieldVal.replace(/\s+/g, '') : '';
   const d1 = document.getElementById('att-rec-date1')?.value || '2024-01-01';
-  const d2 = document.getElementById('att-rec-date2')?.value || new Date().toISOString().slice(0,10);
+  const d2 = document.getElementById('att-rec-date2')?.value || localToday();
   let filtered = attRows.filter(r => {
     const d = r._date || gasDateStr(r.date);
     return d >= d1 && d <= d2 && (!emailSet || emailSet.has(r.operator_email));
@@ -1947,7 +1951,7 @@ function exportAttXLSX() {
     if (t.includes('leave')) return 'Ab';   // full day, late leave, advance, override
     if (t.includes('attended')) {
       // Distinguish P vs PL by submission hour
-      const hour = submittedTs ? parseInt((submittedTs + '').slice(11,13), 10) : 0;
+      const hour = submittedTs ? new Date(submittedTs).getHours() : 0;
       return (hour >= 12) ? 'PL' : 'P';
     }
     return '';
@@ -2001,7 +2005,7 @@ function exportAttXLSX() {
     rawRows.push([
       r._date||gasDateStr(r.date), r.operator_name||'', r.type||'',
       r.in_time||'', r.out_time||'', r.leave_reasons||'', gps,
-      (r.submitted_ts||'').slice(0,16).replace('T',' '),
+      r.submitted_ts ? (localDateFromTs(r.submitted_ts) + ' ' + localTimeFromTs(r.submitted_ts)) : '',
     ]);
   });
   const wsRaw = XLSX.utils.aoa_to_sheet(rawRows);
@@ -2097,12 +2101,13 @@ function loadDashboard() {
 
 function renderDashboard() {
   const rows = dashRows;
-  const today = new Date().toISOString().slice(0,10);
-  const weekAgo  = new Date(Date.now()-7*864e5).toISOString().slice(0,10);
-  const monthAgo = new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  const today = localToday();
+  const _wa2=new Date(Date.now()-7*864e5),_ma2=new Date(Date.now()-30*864e5);
+  const weekAgo  = _wa2.getFullYear()+'-'+String(_wa2.getMonth()+1).padStart(2,'0')+'-'+String(_wa2.getDate()).padStart(2,'0');
+  const monthAgo = _ma2.getFullYear()+'-'+String(_ma2.getMonth()+1).padStart(2,'0')+'-'+String(_ma2.getDate()).padStart(2,'0');
 
   // Normalise date fields once on load
-  rows.forEach(r => { r._date = gasDateStr(r.date); r._subDate = gasDateStr(r.submitted_ts); });
+  rows.forEach(r => { r._date = gasDateStr(r.date); r._subDate = localDateFromTs(r.submitted_ts); });
 
   document.getElementById('kpi-total').textContent    = rows.length;
   document.getElementById('kpi-today').textContent    = rows.filter(r=>r._date===today).length;
@@ -2147,7 +2152,7 @@ function renderDashRecords() {
   const fieldVal = document.getElementById('dash-filter-value')?.value || '';
   const emailSet = staffEmailsForFilter(fieldKey, fieldVal);
   const d1 = document.getElementById('dash-rec-date1')?.value || '2024-01-01';
-  const d2 = document.getElementById('dash-rec-date2')?.value || new Date().toISOString().slice(0,10);
+  const d2 = document.getElementById('dash-rec-date2')?.value || localToday();
   let filtered = rows.filter(r => {
     const d = r._date || gasDateStr(r.date);
     return d >= d1 && d <= d2 && (!emailSet || emailSet.has(r.operator_email));
@@ -2172,13 +2177,7 @@ function renderDashRecords() {
         try { photoCount = JSON.parse(r.photos_json||'[]').length; } catch(e) {}
         const subDate = r._date || gasDateStr(r.date);
         // submitted_ts time portion in 24h
-        const subTime = (() => {
-          const ts = String(r.submitted_ts||'');
-          if (!ts) return '—';
-          // ISO: 2025-09-05T10:42:59.000Z or 2025-09-05 10:42:59
-          const m = ts.match(/[T ](\d{2}:\d{2})/);
-          return m ? m[1] : ts.slice(11,16) || '—';
-        })();
+        const subTime = localTimeFromTs(r.submitted_ts);
         return `<tr style="cursor:pointer" onclick="openWrModal(${globalIdx})" title="Click to view details">
           <td>${subDate||'—'}</td>
           <td style="white-space:nowrap">${subTime}</td>
@@ -2218,7 +2217,7 @@ function exportDashXLSX() {
   const emailSet    = staffEmailsForFilter(fieldKey, fieldVal);
   const filterLabel = fieldVal ? fieldVal.replace(/\s+/g, '') : '';
   const d1 = document.getElementById('dash-rec-date1')?.value || '2024-01-01';
-  const d2 = document.getElementById('dash-rec-date2')?.value || new Date().toISOString().slice(0,10);
+  const d2 = document.getElementById('dash-rec-date2')?.value || localToday();
   let filtered = dashRows.filter(r => {
     const d = r._date || gasDateStr(r.date);
     return d >= d1 && d <= d2 && (!emailSet || emailSet.has(r.operator_email));
@@ -2238,7 +2237,7 @@ function exportDashXLSX() {
       r.notes||'',
       photoCount,
       gps,
-      (r.submitted_ts||'').slice(0,16).replace('T',' '),
+      r.submitted_ts ? (localDateFromTs(r.submitted_ts) + ' ' + localTimeFromTs(r.submitted_ts)) : '',
     ]);
   });
   const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -2252,12 +2251,38 @@ function exportDashXLSX() {
 
 // Normalise GAS date field — may come back as yyyy-mm-dd string, ISO timestamp,
 // or a Sheets serial number (days since 1899-12-30)
+// ── Local date/time helpers (device timezone, not UTC) ───────────────────────
+function localToday() {
+  const d = new Date();
+  return d.getFullYear() + '-'
+    + String(d.getMonth()+1).padStart(2,'0') + '-'
+    + String(d.getDate()).padStart(2,'0');
+}
+
+function localDateFromTs(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (isNaN(d)) return gasDateStr(ts);
+  return d.getFullYear() + '-'
+    + String(d.getMonth()+1).padStart(2,'0') + '-'
+    + String(d.getDate()).padStart(2,'0');
+}
+
+function localTimeFromTs(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  if (isNaN(d)) return '—';
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
 function gasDateStr(val) {
   if (!val && val !== 0) return '';
   const s = String(val).trim();
-  // Already yyyy-mm-dd or ISO timestamp
+  // ISO timestamp with T — parse via Date to get local date
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return localDateFromTs(s);
+  // Plain yyyy-mm-dd string — use as-is
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
-  // Sheets serial number (e.g. 46005)
+  // Sheets serial number (e.g. 46005) — treat as UTC date (no TZ offset for date-only serials)
   const n = parseFloat(s);
   if (!isNaN(n) && n > 30000 && n < 100000) {
     const d = new Date(Date.UTC(1899,11,30) + n * 86400000);
@@ -2295,23 +2320,23 @@ function dashPeriodDates() {
   const today = new Date(); today.setHours(0,0,0,0);
   let d1, d2, label;
   if (dashChartPeriod === 'daily') {
-    d1 = d2 = today.toISOString().slice(0,10); label = 'Today';
+    d1 = d2 = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0'); label = 'Today';
   } else if (dashChartPeriod === 'weekly') {
     const mon = new Date(today);
     mon.setDate(today.getDate() - ((today.getDay()+6)%7) - dashNavOffset*7);
     const sun = new Date(mon); sun.setDate(mon.getDate()+6);
-    d1 = mon.toISOString().slice(0,10); d2 = sun.toISOString().slice(0,10);
+    d1 = mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0'); d2 = sun.getFullYear()+'-'+String(sun.getMonth()+1).padStart(2,'0')+'-'+String(sun.getDate()).padStart(2,'0');
     label = `${d1} – ${d2}`;
   } else if (dashChartPeriod === 'monthly') {
     const m = new Date(today.getFullYear(), today.getMonth()-dashNavOffset, 1);
     const mEnd = new Date(m.getFullYear(), m.getMonth()+1, 0);
-    d1 = m.toISOString().slice(0,10); d2 = mEnd.toISOString().slice(0,10);
+    d1 = m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0'); d2 = mEnd.getFullYear()+'-'+String(mEnd.getMonth()+1).padStart(2,'0')+'-'+String(mEnd.getDate()).padStart(2,'0');
     label = m.toLocaleString('en-IN',{month:'long',year:'numeric'});
   } else if (dashChartPeriod === 'yearly') {
     const yr = today.getFullYear()-dashNavOffset;
     d1 = `${yr}-01-01`; d2 = `${yr}-12-31`; label = String(yr);
   } else { // types
-    d1 = '2024-01-01'; d2 = today.toISOString().slice(0,10); label = 'All';
+    d1 = '2024-01-01'; d2 = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0'); label = 'All';
   }
   return { d1, d2, label };
 }
@@ -2347,7 +2372,7 @@ function renderDashChart() {
     if (dashChartPeriod === 'daily') {
       for (let h=7;h<=20;h++) labels.push(`${String(h).padStart(2,'0')}:00`);
       data = labels.map(h =>
-        rows.filter(r=>(r._date||gasDateStr(r.date))===d1&&(r.submitted_ts||'').slice(11,13)===h.slice(0,2)).length);
+        rows.filter(r=>(r._date||gasDateStr(r.date))===d1&&localTimeFromTs(r.submitted_ts).slice(0,2)===h.slice(0,2)).length);
     } else {
       const cur = new Date(d1); const end = new Date(d2); const days=[];
       while(cur<=end){days.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
@@ -2404,11 +2429,7 @@ function openWrModal(idx) {
 
   // Detail grid
   const subDate = r._date || gasDateStr(r.date);
-  const subTime = (() => {
-    const ts = String(r.submitted_ts||'');
-    const m = ts.match(/[T ](\d{2}:\d{2})/);
-    return m ? m[1] : (ts.slice(11,16)||'—');
-  })();
+  const subTime = localTimeFromTs(r.submitted_ts);
   const types = safeParseTypes(r.visit_types);
   const ident = [r.lpc, r.dbc, r.beneficiary_name].filter(Boolean).join(' / ');
   const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(6)}°N  ${parseFloat(r.gps_lng).toFixed(6)}°E  ±${r.gps_accuracy_m||'?'}m` : '—';
