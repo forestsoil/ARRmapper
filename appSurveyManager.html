@@ -80,7 +80,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
 </script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<title>Survey Manager v39 — ARR</title>
+<title>Survey Manager v40 — ARR</title>
 <style>
 :root {
   /* ── Aliases mapping --c-* to shared tokens from arr-shared.css ── */
@@ -313,7 +313,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-size:15px;
     <button class="lang-btn" id="lang-btn" onclick="cycleLang()">EN</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
-    <span class="ver">v1 DEV35</span>
+    <span class="ver">v1 DEV36</span>
     <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
     <div id="user-chip">Loading…</div>
   </div>
@@ -378,6 +378,21 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-size:15px;
             <option value="">All blocks</option>
           </select>
           <button class="filter-clear" onclick="clearRecordFilters()">✕</button>
+        </div>
+        <div class="filter-row">
+          <span class="filter-label" style="white-space:nowrap">Date</span>
+          <input type="date" class="filter-sel" id="rf-date-from" onchange="updateRecordFilters()" style="flex:1;min-width:110px" title="From date">
+          <span style="font-size:11px;color:var(--c-muted);flex-shrink:0">–</span>
+          <input type="date" class="filter-sel" id="rf-date-to" onchange="updateRecordFilters()" style="flex:1;min-width:110px" title="To date">
+        </div>
+        <div class="filter-row">
+          <span class="filter-label" style="white-space:nowrap">Field</span>
+          <select class="filter-sel" id="rf-field-type" onchange="onFieldTypeChange()" style="flex:2;min-width:110px">
+            <option value="">— field —</option>
+          </select>
+          <select class="filter-sel" id="rf-field-value" onchange="updateRecordFilters()" style="flex:2;min-width:100px">
+            <option value="">— value —</option>
+          </select>
         </div>
         <div class="filter-row">
           <input type="text" class="filter-search" id="rec-search"
@@ -8682,7 +8697,7 @@ async function loadRecords() {
       statusEl.textContent = 'No submissions found for this form.'; return;
     }
 
-    _recData = data.records;
+    _recData = data.records.slice().reverse(); // latest first
     _allRecRows = _recData.slice();
     document.getElementById('rec-search').value = '';
 
@@ -8703,6 +8718,7 @@ async function loadRecords() {
     }
 
     renderRecordTable();
+    initRecordFilters();
     statusEl.textContent = _recData.length + ' records · ' + formId;
     exportBtn.style.display = 'inline-block';
   } catch(e) {
@@ -8746,9 +8762,12 @@ function renderRecordTable() {
 function exportRecordsXLSX() {
   if (!_recData.length || !window.XLSX) { toast('XLSX library not loaded', 'error'); return; }
   const formId = document.getElementById('rec-form-sel').value;
+  // Use filtered rows if any filter is active, else all records
+  const exportRows = _filteredRecData.length > 0 && _filteredRecData.length < _recData.length
+    ? _filteredRecData : _recData;
 
   // Build flat rows for XLSX (no HTML, raw values)
-  const rows = _recData.map(row => {
+  const rows = exportRows.map(row => {
     const out = {};
     _recCols.forEach(c => { out[c] = row[c] ?? ''; });
     return out;
@@ -8768,16 +8787,19 @@ function exportRecordsXLSX() {
   // Auto column widths (approx)
   ws['!cols'] = _recCols.map(c => ({
     wch: Math.min(40, Math.max(10, c.length + 2,
-      ..._recData.slice(0,20).map(r => String(r[c]||'').length)))
+      ...exportRows.slice(0,20).map(r => String(r[c]||'').length)))
   }));
 
   const wb   = XLSX.utils.book_new();
   const sheetName = formId.slice(0,31); // XLSX sheet name max 31 chars
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-  const filename = [S.project || 'survey', formId, new Date().toISOString().slice(0,10)].join('_') + '.xlsx';
+  const filtered = exportRows.length < _recData.length;
+  const filename = [S.project || 'survey', formId,
+    filtered ? ('filtered'+exportRows.length) : 'all',
+    new Date().toISOString().slice(0,10)].join('_') + '.xlsx';
   XLSX.writeFile(wb, filename);
-  toast('Downloaded: ' + filename, 'success');
+  toast('Downloaded: ' + filename + (filtered ? ` (${exportRows.length} filtered rows)` : ''), 'success');
 }
 
 
@@ -8841,13 +8863,43 @@ function initRecordFilters() {
   dsel.innerHTML = '<option value="">All districts</option>' +
     dists.map(d => `<option value="${d}">${d}</option>`).join('');
   dsel.value = dists.includes(cur) ? cur : '';
+
+  // Populate field-type dropdown from visible columns (skip internal/url/metadata)
+  const skipCols = new Set(['submission_id','timestamp_server','app_version','device_info',
+    'payload_sha256','audit_status','submitted_by']);
+  const fieldSel = document.getElementById('rf-field-type');
+  if (fieldSel) {
+    const candidateCols = _recCols.filter(c =>
+      !skipCols.has(c) && !c.endsWith('_url') && !isInternalCol(c) && !/_(\d+)$/.test(c));
+    fieldSel.innerHTML = '<option value="">— field —</option>' +
+      candidateCols.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+
   updateRecordFilters(); // refresh block dropdown
 }
 
+function onFieldTypeChange() {
+  const fieldType = document.getElementById('rf-field-type')?.value || '';
+  const valSel = document.getElementById('rf-field-value');
+  if (!valSel) return;
+  if (!fieldType) { valSel.innerHTML = '<option value="">— value —</option>'; updateRecordFilters(); return; }
+  // Build unique values for chosen field
+  const vals = [...new Set(_recData.map(r => String(r[fieldType] ?? '')).filter(v => v !== '' && v !== 'null' && v !== 'undefined'))].sort();
+  valSel.innerHTML = '<option value="">— value —</option>' +
+    vals.map(v => { const disp = v.length > 40 ? v.slice(0,40)+'…' : v; return `<option value="${v}">${disp}</option>`; }).join('');
+  updateRecordFilters();
+}
+
+let _filteredRecData = []; // currently visible rows (used by export)
+
 function updateRecordFilters() {
-  const distVal  = document.getElementById('rf-district')?.value || '';
-  const blockVal = document.getElementById('rf-block')?.value    || '';
-  const search   = (document.getElementById('rec-search')?.value || '').toLowerCase().trim();
+  const distVal   = document.getElementById('rf-district')?.value  || '';
+  const blockVal  = document.getElementById('rf-block')?.value     || '';
+  const dateFrom  = document.getElementById('rf-date-from')?.value || '';
+  const dateTo    = document.getElementById('rf-date-to')?.value   || '';
+  const fieldType = document.getElementById('rf-field-type')?.value  || '';
+  const fieldVal  = document.getElementById('rf-field-value')?.value || '';
+  const search    = (document.getElementById('rec-search')?.value || '').toLowerCase().trim();
 
   // Update block dropdown based on district
   const blockSel = document.getElementById('rf-block');
@@ -8863,8 +8915,13 @@ function updateRecordFilters() {
       blocks.map(b => `<option value="${b}">${b}</option>`).join('');
   }
 
+  // Parse date bounds (date-only comparison against ISO timestamp prefix)
+  const fromMs = dateFrom ? new Date(dateFrom).getTime() : 0;
+  const toMs   = dateTo   ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
+
   // Apply filters to table rows
   let shown = 0;
+  _filteredRecData = [];
   document.querySelectorAll('#rec-tbody tr').forEach((tr, i) => {
     const row = _recData[i];
     if (!row) return;
@@ -8873,19 +8930,38 @@ function updateRecordFilters() {
     const matchDist  = !distVal  || rDist  === distVal;
     const matchBlock = !blockVal || rBlock === blockVal;
     const matchSearch = !search  || tr.textContent.toLowerCase().includes(search);
-    const show = matchDist && matchBlock && matchSearch;
+
+    // Date filter — against timestamp_local or survey_date
+    let matchDate = true;
+    if (dateFrom || dateTo) {
+      const tsRaw = row.timestamp_local || row.survey_date || row.plantation_date || '';
+      const tsMs  = tsRaw ? new Date(tsRaw).getTime() : NaN;
+      matchDate = !isNaN(tsMs) && tsMs >= fromMs && tsMs <= toMs;
+    }
+
+    // Field/value filter
+    let matchField = true;
+    if (fieldType && fieldVal) {
+      const cellVal = String(row[fieldType] ?? '').toLowerCase();
+      matchField = cellVal.includes(fieldVal.toLowerCase());
+    } else if (fieldType && !fieldVal) {
+      matchField = true; // field selected but no value yet — show all
+    }
+
+    const show = matchDist && matchBlock && matchSearch && matchDate && matchField;
     tr.style.display = show ? '' : 'none';
-    if (show) shown++;
+    if (show) { shown++; _filteredRecData.push(row); }
   });
 
+  const anyFilter = distVal||blockVal||search||dateFrom||dateTo||(fieldType&&fieldVal);
   const cnt = document.getElementById('rec-status');
-  if (cnt) cnt.textContent = (distVal||blockVal||search)
+  if (cnt) cnt.textContent = anyFilter
     ? shown + ' of ' + _recData.length + ' records'
     : _recData.length + ' records';
 }
 
 function clearRecordFilters() {
-  ['rf-district','rf-block','rec-search'].forEach(id => {
+  ['rf-district','rf-block','rf-date-from','rf-date-to','rf-field-type','rf-field-value','rec-search'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -8895,6 +8971,7 @@ function clearRecordFilters() {
     blockSel.dataset.district = '';
   }
   document.querySelectorAll('#rec-tbody tr').forEach(tr => tr.style.display = '');
+  _filteredRecData = [];
   const cnt = document.getElementById('rec-status');
   if (cnt) cnt.textContent = _recData.length + ' records';
 }
