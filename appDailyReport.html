@@ -7,7 +7,7 @@
 <script>
 (function(){const t=localStorage.getItem('arr_theme')||'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
 </script>
-<title>Daily Report v28</title>
+<title>Daily Report v30</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;padding-bottom:60px}
@@ -219,7 +219,38 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 .photo-strip img:hover{opacity:.8}
 .photo-strip-none{color:var(--dim);font-size:10px}
 
-@media(max-width:480px){
+/* ── Visit-type checkbox dropdown ── */
+.vt-dropdown{position:relative;display:inline-block}
+.vt-dropdown-btn{padding:6px 10px;border:1px solid var(--border);border-radius:7px;
+  background:var(--card);color:var(--ink);font-size:12px;cursor:pointer;
+  font-family:inherit;display:flex;align-items:center;gap:6px;white-space:nowrap;
+  min-width:140px;justify-content:space-between}
+.vt-dropdown-btn:hover{border-color:var(--leaf)}
+.vt-dropdown-btn.has-sel{border-color:var(--leaf);background:rgba(82,183,136,.08);font-weight:600}
+.vt-dropdown-panel{position:absolute;top:calc(100% + 4px);left:0;z-index:500;
+  background:var(--card);border:1.5px solid var(--rule);border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.18);min-width:220px;max-height:320px;
+  overflow-y:auto;display:none;padding:6px 0}
+.vt-dropdown-panel.open{display:block}
+.vt-dd-search{width:calc(100% - 16px);margin:6px 8px;padding:6px 8px;
+  border:1px solid var(--rule);border-radius:6px;font-size:12px;
+  background:var(--bg);color:var(--ink);font-family:inherit;outline:none}
+.vt-dd-search:focus{border-color:var(--leaf)}
+.vt-dd-actions{display:flex;gap:6px;padding:4px 10px 6px;border-bottom:1px solid var(--rule);margin-bottom:2px}
+.vt-dd-action{background:none;border:none;font-size:10px;color:var(--canopy);cursor:pointer;
+  font-family:inherit;padding:2px 4px;border-radius:4px}
+.vt-dd-action:hover{background:rgba(82,183,136,.12)}
+.vt-dd-item{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;
+  font-size:12px;color:var(--ink);transition:background .1s}
+.vt-dd-item:hover{background:rgba(82,183,136,.08)}
+.vt-dd-item input[type=checkbox]{accent-color:var(--leaf);width:14px;height:14px;flex-shrink:0;cursor:pointer}
+.vt-dd-item label{cursor:pointer;flex:1}
+.vt-dd-sep{height:1px;background:var(--rule);margin:4px 0}
+
+/* Fix Leaflet controls appearing above modals */
+.leaflet-pane,.leaflet-top,.leaflet-bottom{z-index:10!important}
+.leaflet-control{z-index:10!important}
+
   #main-screen{padding:12px 10px}
   .vt-pill{font-size:10px;padding:6px 10px}
 }
@@ -520,30 +551,36 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
     <!-- Records log -->
     <div class="dash-sec">
       <div class="dash-sec-title">Work Report Records</div>
-      <!-- Row 1: staff filter + date range + export buttons -->
+      <!-- Filter row: staff + visit-type dropdown + date range + export buttons -->
       <div class="dash-filters-row">
-        <select id="dash-filter-field" onchange="populateStaffValueDropdown('dash-filter-field','dash-filter-value',renderDashRecords)" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
-          <option value="">All Staff</option>
-        </select>
-        <select id="dash-filter-value" disabled onchange="renderDashRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
-          <option value="">—</option>
-        </select>
+        <span id="dash-staff-filter-row" style="display:contents">
+          <select id="dash-filter-field" onchange="populateStaffValueDropdown('dash-filter-field','dash-filter-value',renderDashRecords)" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
+            <option value="">All Staff</option>
+          </select>
+          <select id="dash-filter-value" disabled onchange="renderDashRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
+            <option value="">—</option>
+          </select>
+        </span>
+        <!-- Visit-type checkbox dropdown -->
+        <div class="vt-dropdown" id="vt-dropdown">
+          <button class="vt-dropdown-btn" id="vt-dropdown-btn" onclick="toggleVtDropdown(event)">
+            <span id="vt-dropdown-label">All Visit Types</span>
+            <span>▾</span>
+          </button>
+          <div class="vt-dropdown-panel" id="vt-dropdown-panel">
+            <input class="vt-dd-search" id="vt-dd-search" type="text" placeholder="Search types…" oninput="filterVtDropdown()">
+            <div class="vt-dd-actions">
+              <button class="vt-dd-action" onclick="vtSelectAll()">Select all</button>
+              <button class="vt-dd-action" onclick="vtClearAll()">Clear</button>
+            </div>
+            <div id="vt-dd-list"></div>
+          </div>
+        </div>
         <input type="date" id="dash-rec-date1" min="2024-01-01" onchange="renderDashRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
         <span style="font-size:12px;color:var(--dim)">to</span>
         <input type="date" id="dash-rec-date2" min="2024-01-01" onchange="renderDashRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
         <button class="dash-export-btn" onclick="exportDashXLSX()">⇩ XLSX</button>
         <button class="dash-export-btn" onclick="exportGrievanceXLSX()" style="background:#c2410c" title="Export Fence Repair · Watering · Damage Report · Flood Report · Fire Report">⇩ Grievance Log</button>
-      </div>
-      <!-- Row 2: visit-type filter export -->
-      <div class="dash-filters-row" style="margin-top:6px;align-items:center">
-        <span style="font-size:11px;color:var(--mid);white-space:nowrap">By visit type:</span>
-        <select id="dash-vt-filter" multiple size="1"
-          style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;
-          background:var(--card);color:var(--ink);font-size:12px;min-width:200px;max-width:340px"
-          title="Hold Ctrl/Cmd to select multiple">
-        </select>
-        <button class="dash-export-btn" onclick="exportByVisitTypeXLSX()">⇩ XLSX</button>
-        <span style="font-size:10px;color:var(--dim)">(uses same date range above; Ctrl/Cmd for multi-select)</span>
       </div>
       <div id="log-wrap" style="overflow-x:auto">
         <table class="log-table">
@@ -644,7 +681,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v28';
+const APP_VERSION    = 'DRT-v30';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -2043,6 +2080,7 @@ function exportAttXLSX() {
 // ── inv_manifest auth ────────────────────────────────────────────────────────
 const INV_MANIFEST_URL = 'inv_manifest.json';
 let dashUnlocked = false;
+let dashFullAccess = false;  // true = manifest user (sees all); false = own rows only
 let dashRows = [];
 let dashChart = null;
 let dashMap = null;
@@ -2081,17 +2119,15 @@ function switchAppTab(tab) {
 async function openDashboard() {
   if (dashUnlocked) { loadDashboard(); return; }
   if (!userEmail) return;
-  const ok = await checkDashAccess(userEmail);
-  if (ok) {
-    dashUnlocked = true;
-    document.getElementById('dash-locked').style.display = 'none';
-    document.getElementById('dash-content').style.display = 'block';
-    initDashMap();
-    loadDashboard();
-  } else {
-    document.getElementById('dash-locked').style.display = 'flex';
-    document.getElementById('dash-content').style.display = 'none';
-  }
+  dashUnlocked = true;
+  dashFullAccess = await checkDashAccess(userEmail);
+  document.getElementById('dash-locked').style.display = 'none';
+  document.getElementById('dash-content').style.display = 'block';
+  // Show/hide staff filter row — own-data users can't filter by other staff
+  const staffFilterRow = document.getElementById('dash-staff-filter-row');
+  if (staffFilterRow) staffFilterRow.style.display = dashFullAccess ? '' : 'none';
+  initDashMap();
+  loadDashboard();
 }
 
 function initDashMap() {
@@ -2101,6 +2137,12 @@ function initDashMap() {
     attribution:'© OpenStreetMap', maxZoom:18
   }).addTo(dashMap);
   dashMarkers = L.layerGroup().addTo(dashMap);
+}
+
+// Returns rows the current user is allowed to see
+function effectiveDashRows() {
+  if (dashFullAccess) return dashRows;
+  return dashRows.filter(r => r.operator_email === userEmail);
 }
 
 function loadDashboard() {
@@ -2119,7 +2161,7 @@ function loadDashboard() {
 }
 
 function renderDashboard() {
-  const rows = dashRows;
+  const rows = effectiveDashRows();
   const today = localToday();
   const _wa2=new Date(Date.now()-7*864e5),_ma2=new Date(Date.now()-30*864e5);
   const weekAgo  = _wa2.getFullYear()+'-'+String(_wa2.getMonth()+1).padStart(2,'0')+'-'+String(_wa2.getDate()).padStart(2,'0');
@@ -2168,15 +2210,19 @@ let dashChartPeriod = 'daily';
 const DASH_PAGE_SIZE = 25;
 
 function renderDashRecords() {
-  const rows = dashRows;
+  const rows = effectiveDashRows();
   const fieldKey = document.getElementById('dash-filter-field')?.value || '';
   const fieldVal = document.getElementById('dash-filter-value')?.value || '';
   const emailSet = staffEmailsForFilter(fieldKey, fieldVal);
+  const vtFilter = getVtFilter();
   const d1 = document.getElementById('dash-rec-date1')?.value || '2024-01-01';
   const d2 = document.getElementById('dash-rec-date2')?.value || localToday();
   let filtered = rows.filter(r => {
     const d = r._date || gasDateStr(r.date);
-    return d >= d1 && d <= d2 && (!emailSet || emailSet.has(r.operator_email));
+    if (d < d1 || d > d2) return false;
+    if (emailSet && !emailSet.has(r.operator_email)) return false;
+    if (vtFilter && !safeParseTypes(r.visit_types).some(t => vtFilter.has(t))) return false;
+    return true;
   });
   // Sort by submitted_ts descending (latest first)
   filtered.sort((a,b) => (b.submitted_ts||b._date||'').localeCompare(a.submitted_ts||a._date||''));
@@ -2239,9 +2285,13 @@ function exportDashXLSX() {
   const filterLabel = fieldVal ? fieldVal.replace(/\s+/g, '') : '';
   const d1 = document.getElementById('dash-rec-date1')?.value || '2024-01-01';
   const d2 = document.getElementById('dash-rec-date2')?.value || localToday();
-  let filtered = dashRows.filter(r => {
+  const vtFilter = getVtFilter();
+  let filtered = effectiveDashRows().filter(r => {
     const d = r._date || gasDateStr(r.date);
-    return d >= d1 && d <= d2 && (!emailSet || emailSet.has(r.operator_email));
+    if (d < d1 || d > d2) return false;
+    if (emailSet && !emailSet.has(r.operator_email)) return false;
+    if (vtFilter && !safeParseTypes(r.visit_types).some(t => vtFilter.has(t))) return false;
+    return true;
   });
   filtered.sort((a,b)=>(b.submitted_ts||b._date||'').localeCompare(a.submitted_ts||a._date||''));
   const rows = [['Date','Reporter','District','LPC','DBC','Beneficiary','Visit Types','Notes','Photos','GPS','Submitted']];
@@ -2279,14 +2329,14 @@ function isGrievanceRow(r) {
 
 function updateRedressalKPI() {
   const today = localToday();
-  const count = dashRows.filter(r => (r._date || gasDateStr(r.date)) === today && isGrievanceRow(r)).length;
+  const count = effectiveDashRows().filter(r => (r._date || gasDateStr(r.date)) === today && isGrievanceRow(r)).length;
   document.getElementById('kpi-redressal').textContent = count;
 }
 
 function openRedressalModal() {
   const today = localToday();
   document.getElementById('redressal-modal-date').textContent = today;
-  const rows = dashRows.filter(r => (r._date || gasDateStr(r.date)) === today && isGrievanceRow(r));
+  const rows = effectiveDashRows().filter(r => (r._date || gasDateStr(r.date)) === today && isGrievanceRow(r));
   rows.sort((a,b) => (b.submitted_ts||'').localeCompare(a.submitted_ts||''));
   const tbody = document.getElementById('redressal-modal-body');
   tbody.innerHTML = rows.length
@@ -2318,7 +2368,7 @@ function exportGrievanceXLSX() {
 }
 
 function exportRedressalXLSX(d1, d2) {
-  const filtered = dashRows.filter(r => {
+  const filtered = effectiveDashRows().filter(r => {
     const d = r._date || gasDateStr(r.date);
     return d >= d1 && d <= d2 && isGrievanceRow(r);
   });
@@ -2378,60 +2428,86 @@ function exportRedressalXLSX(d1, d2) {
   XLSX.writeFile(wb, `GrievanceLogReport_${d1}_${d2}_${now}.xlsx`);
 }
 
-// Export by selected visit type(s), using current date range
-function exportByVisitTypeXLSX() {
-  const sel = document.getElementById('dash-vt-filter');
-  const selectedTypes = Array.from(sel.selectedOptions).map(o => o.value);
-  if (!selectedTypes.length) { alert('Select at least one visit type from the dropdown.'); return; }
-  const d1 = document.getElementById('dash-rec-date1')?.value || '2024-01-01';
-  const d2 = document.getElementById('dash-rec-date2')?.value || localToday();
+// ── Visit-type checkbox dropdown ──────────────────────────────────────────────
+let _vtAllTypes = [];      // all distinct types from loaded data
+let _vtSelected = new Set(); // currently checked types (empty = all)
 
-  const filtered = dashRows.filter(r => {
-    const d = r._date || gasDateStr(r.date);
-    if (d < d1 || d > d2) return false;
-    return safeParseTypes(r.visit_types).some(t => selectedTypes.includes(t));
-  });
-  filtered.sort((a,b) => (b.submitted_ts||b._date||'').localeCompare(a.submitted_ts||a._date||''));
-
-  const header = ['Date','Reporter','District','LPC','DBC','Beneficiary','Visit Types','Notes','GPS','Submitted'];
-  const rows = [header];
-  filtered.forEach(r => {
-    const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(6)}, ${parseFloat(r.gps_lng).toFixed(6)}` : '';
-    rows.push([
-      r._date || gasDateStr(r.date),
-      r.operator_name || r.operator_email || '',
-      r.district || '',
-      r.lpc || '', r.dbc || '', r.beneficiary_name || '',
-      safeParseTypes(r.visit_types).join(', '),
-      r.notes || '',
-      gps,
-      r.submitted_ts ? (localDateFromTs(r.submitted_ts) + ' ' + localTimeFromTs(r.submitted_ts)) : '',
-    ]);
-  });
-
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [8,20,10,10,10,18,36,32,24,16].map(w => ({wch:w}));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'By Visit Type');
-  const typeSlug = selectedTypes.map(t => t.replace(/[^a-zA-Z0-9]/g,'')).join('-').slice(0, 40);
-  const now = new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
-  XLSX.writeFile(wb, `workreport_${typeSlug}_${d1}_${d2}_${now}.xlsx`);
+function toggleVtDropdown(e) {
+  e.stopPropagation();
+  document.getElementById('vt-dropdown-panel').classList.toggle('open');
 }
 
-// Populate the visit-type dropdown from all known types in dashRows (called after load)
+// Close on outside click
+document.addEventListener('click', e => {
+  const panel = document.getElementById('vt-dropdown-panel');
+  if (panel && !document.getElementById('vt-dropdown').contains(e.target)) {
+    panel.classList.remove('open');
+  }
+});
+
+function vtGetSelected() {
+  // Returns Set of checked types from DOM (source of truth)
+  const items = document.querySelectorAll('#vt-dd-list input[type=checkbox]');
+  const sel = new Set();
+  items.forEach(cb => { if (cb.checked) sel.add(cb.value); });
+  return sel;
+}
+
+function vtUpdateLabel() {
+  _vtSelected = vtGetSelected();
+  const btn = document.getElementById('vt-dropdown-btn');
+  const lbl = document.getElementById('vt-dropdown-label');
+  if (_vtSelected.size === 0 || _vtSelected.size === _vtAllTypes.length) {
+    lbl.textContent = 'All Visit Types';
+    btn.classList.remove('has-sel');
+  } else {
+    lbl.textContent = _vtSelected.size + ' type' + (_vtSelected.size > 1 ? 's' : '') + ' selected';
+    btn.classList.add('has-sel');
+  }
+  renderDashRecords();
+}
+
+function filterVtDropdown() {
+  const q = (document.getElementById('vt-dd-search')?.value || '').toLowerCase();
+  document.querySelectorAll('.vt-dd-item').forEach(item => {
+    item.style.display = item.dataset.type.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+function vtSelectAll() {
+  document.querySelectorAll('#vt-dd-list input[type=checkbox]').forEach(cb => cb.checked = true);
+  vtUpdateLabel();
+}
+
+function vtClearAll() {
+  document.querySelectorAll('#vt-dd-list input[type=checkbox]').forEach(cb => cb.checked = false);
+  vtUpdateLabel();
+}
+
 function populateVtFilterDropdown() {
-  const sel = document.getElementById('dash-vt-filter');
-  if (!sel) return;
-  // Collect all distinct types across all rows, sorted
-  const allTypes = [...new Set(dashRows.flatMap(r => safeParseTypes(r.visit_types)))].sort();
-  // Preserve selection
-  const prev = new Set(Array.from(sel.selectedOptions).map(o => o.value));
-  sel.innerHTML = allTypes.map(t =>
-    `<option value="${t}"${prev.has(t) ? ' selected' : ''}>${t}</option>`
+  _vtAllTypes = [...new Set(effectiveDashRows().flatMap(r => safeParseTypes(r.visit_types)))].sort();
+  const list = document.getElementById('vt-dd-list');
+  if (!list) return;
+  list.innerHTML = _vtAllTypes.map(t =>
+    `<label class="vt-dd-item" data-type="${t}">
+      <input type="checkbox" value="${t}" onchange="vtUpdateLabel()">
+      <span>${t}</span>
+    </label>`
   ).join('');
-  // Make it a reasonable height — show up to 6 rows
-  sel.size = Math.min(6, Math.max(3, allTypes.length));
+  // Reset selection and label
+  _vtSelected = new Set();
+  document.getElementById('vt-dropdown-label').textContent = 'All Visit Types';
+  document.getElementById('vt-dropdown-btn').classList.remove('has-sel');
 }
+
+function getVtFilter() {
+  // Returns Set of selected types, or null if all/none (= no filter)
+  const sel = vtGetSelected();
+  if (sel.size === 0 || sel.size === _vtAllTypes.length) return null;
+  return sel;
+}
+
+// Remove old standalone exportByVisitTypeXLSX — XLSX now uses combined filter via exportDashXLSX
 
 // Normalise GAS date field — may come back as yyyy-mm-dd string, ISO timestamp,
 // or a Sheets serial number (days since 1899-12-30)
@@ -2526,7 +2602,7 @@ function dashPeriodDates() {
 }
 
 function renderDashChart() {
-  const rows = dashRows;
+  const rows = effectiveDashRows();
   const isDark = document.documentElement.getAttribute('data-theme')==='dark';
   const gridColor  = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)';
   const labelColor = isDark ? '#d8f3dc' : '#1b4332';
