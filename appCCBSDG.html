@@ -170,10 +170,13 @@ display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weigh
   color:var(--ink);font-size:12px;padding:6px 9px;font-family:var(--font);width:100%}
 .form-input:focus{outline:none;border-color:var(--teal)}
 .form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tag-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
-.tag-btn{background:var(--surface);border:1.5px solid var(--border);border-radius:6px;
-  color:var(--mid);font-size:11px;padding:4px 10px;cursor:pointer;transition:all .12s}
-.tag-btn.sel{background:#be185d;border-color:#be185d;color:#fff}
+.tag-l1{font-size:12px;font-weight:700;padding:7px 18px;border-radius:20px;border:2px solid var(--border);background:var(--surface);color:var(--mid);cursor:pointer;transition:all .15s}
+.tag-l1.sel{color:#fff;border-color:transparent}
+.tag-l1[data-l1="flora"].sel{background:var(--green)}
+.tag-l1[data-l1="fauna"].sel{background:#d97706}
+.tag-l2{font-size:10px;font-weight:600;padding:4px 10px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface);color:var(--mid);cursor:pointer;transition:all .15s}
+.tag-l2.sel{color:#fff;border-color:transparent;background:#be185d}
+.tag-l2[data-excl="nature"].sel{background:#059669}
 .photo-preview{width:100%;max-height:160px;object-fit:cover;border-radius:6px;margin-top:4px;display:none}
 .coord-row{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--dim);flex-wrap:wrap}
 .coord-pill{background:var(--surface);border:1px solid var(--border);border-radius:4px;
@@ -1527,16 +1530,15 @@ function invPage(dir) {
 
 function quickSubmitInvasive(name, sci, tag) {
   closeInvasivesModal();
+  openSubmitModal();
   document.getElementById('s-species').value = name;
   document.getElementById('s-sci').value = sci;
-  document.querySelectorAll('.tag-btn').forEach(b=>{
-    if(b.dataset.tag===tag){b.classList.add('sel');_submitTag=tag;}
-  });
-  openSubmitModal();
+  setTag(tag || 'invasive');
 }
 
 // ── Submit modal ──────────────────────────────────────────────────────
-let _submitTag=null,_browserCoord=null,_exifCoord=null,_photoBase64=null,_photoBlob=null;
+let _submitTag=null,_browserCoord=null,_exifCoord=null,_photoBase64=null,_photoBlob=null,_exifTs=null;
+let _tagL1=null,_tagL2=[];
 
 function openSubmitModal() {
   document.getElementById('submit-modal').classList.add('open');
@@ -1564,13 +1566,13 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSubmitModal();}
 
 function resetSubmitForm() {
   _submitTag=null;_browserCoord=null;_exifCoord=null;_photoBase64=null;_photoBlob=null;_exifTs=null;
+  _resetTags();
   ['s-species','s-sci','s-notes','s-name','s-lat','s-lon'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   document.getElementById('s-photo-preview').style.display='none';
   document.getElementById('s-browser-coord').textContent='getting…';
   document.getElementById('s-exif-coord').textContent='—';
-  document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('sel'));
   document.getElementById('s-status').textContent='';
 }
 
@@ -1588,7 +1590,6 @@ function getBrowserGPS() {
 }
 
 
-let _exifTs = null; // EXIF capture datetime string for filename
 
 async function handleSubmitPhoto(input) {
   const file=input.files[0];if(!file)return;
@@ -1631,12 +1632,88 @@ async function handleSubmitPhoto(input) {
 }
 
 
-const TAG_CATEGORY={bird:'fauna',mammal:'fauna',reptile:'fauna',fish:'fauna',insect:'fauna',
-  'native tree':'flora','recruitment':'flora',invasive:'invasive',incident:'incident'};
+// ── Two-level tag chiclets ────────────────────────────────────────────
+let _tagL1 = null;   // 'flora' | 'fauna'
+let _tagL2 = [];     // array of selected L2 tag strings
 
-function setTag(btn) {
-  document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('sel'));
-  btn.classList.add('sel');_submitTag=btn.dataset.tag;
+function selectL1(btn) {
+  const val = btn.dataset.l1;
+  if (_tagL1 === val) {
+    // deselect
+    btn.classList.remove('sel');
+    _tagL1 = null;
+  } else {
+    document.querySelectorAll('.tag-l1').forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel');
+    _tagL1 = val;
+  }
+  // reset L2
+  _tagL2 = [];
+  document.querySelectorAll('.tag-l2').forEach(b => b.classList.remove('sel'));
+  document.getElementById('l2-flora').style.display = _tagL1==='flora' ? 'flex' : 'none';
+  document.getElementById('l2-fauna').style.display = _tagL1==='fauna' ? 'flex' : 'none';
+  _updateTagSummary();
+}
+
+function selectL2(btn) {
+  const tag  = btn.dataset.tag;
+  const excl = btn.dataset.excl;
+  // mutual exclusion within same excl group
+  if (excl) {
+    document.querySelectorAll(`.tag-l2[data-excl="${excl}"]`).forEach(b => {
+      b.classList.remove('sel');
+      _tagL2 = _tagL2.filter(t => t !== b.dataset.tag);
+    });
+  }
+  if (btn.classList.contains('sel')) {
+    btn.classList.remove('sel');
+    _tagL2 = _tagL2.filter(t => t !== tag);
+  } else {
+    btn.classList.add('sel');
+    if (!_tagL2.includes(tag)) _tagL2.push(tag);
+  }
+  _updateTagSummary();
+}
+
+function _updateTagSummary() {
+  const el = document.getElementById('tag-summary');
+  if (!el) return;
+  if (!_tagL1) { el.textContent = ''; return; }
+  const parts = [_tagL1, ..._tagL2];
+  el.textContent = parts.join(' · ');
+  // Sync _submitTag for filename/legacy compat
+  _submitTag = parts.join(':');
+}
+
+function _resetTags() {
+  _tagL1 = null; _tagL2 = [];
+  document.querySelectorAll('.tag-l1,.tag-l2').forEach(b => b.classList.remove('sel'));
+  document.getElementById('l2-flora').style.display = 'none';
+  document.getElementById('l2-fauna').style.display = 'none';
+  const el = document.getElementById('tag-summary');
+  if (el) el.textContent = '';
+  _submitTag = null;
+}
+
+// Legacy setTag — used by quickSubmitInvasive; maps old single tag to new L1/L2
+function setTag(tagStr) {
+  const floraTypes = ['invasive','recruitment','tree','grass','herb','shrub','climber','cultivated','native tree','native grass','native climber'];
+  const faunaTypes = ['mammal','bird','reptile','amphibian','fish','insect','spider','snail'];
+  _resetTags();
+  let l1 = 'fauna', l2tags = [];
+  if (floraTypes.some(t => tagStr.includes(t))) { l1 = 'flora'; }
+  if (tagStr.includes('invasive')) l2tags.push('invasive');
+  if (tagStr.includes('recruitment')) l2tags.push('recruitment');
+  if (tagStr.includes('native')) l2tags.push('native');
+  faunaTypes.forEach(t => { if (tagStr.includes(t)) l2tags.push(t); });
+  // Apply L1
+  const l1btn = document.querySelector(`.tag-l1[data-l1="${l1}"]`);
+  if (l1btn) selectL1(l1btn);
+  // Apply L2
+  l2tags.forEach(t => {
+    const b = document.querySelector(`#l2-${l1} .tag-l2[data-tag="${t}"]`);
+    if (b && !b.classList.contains('sel')) selectL2(b);
+  });
 }
 
 function populateSubmitDistrict() {
@@ -1674,9 +1751,10 @@ async function submitSighting() {
   if(!species){status.textContent='⚠️ Species/description required';status.style.color='var(--rose)';return;}
   if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ No GPS — submitting without location';status.style.color='var(--amber)';}
   btn.disabled=true;btn.textContent='Submitting…';
-  const category=TAG_CATEGORY[_submitTag]||'fauna';
+  const category = _tagL1 || 'fauna';
+  const tagStr   = _tagL2.length ? _tagL2.join(',') : '';
   const ts=_exifTs || new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
-  const fname=_photoBase64?`CCB_${(document.getElementById('s-lpc').value)||'noLPC'}_${_submitTag||'sighting'}_${ts}.jpg`:null;
+  const fname=_photoBase64?`CCB_${(document.getElementById('s-lpc').value)||'noLPC'}_${tagStr||'sighting'}_${ts}.jpg`:null;
   const payload={
     action:'ccb_sighting',
     data:{
@@ -1684,7 +1762,7 @@ async function submitSighting() {
       submitter:(arrAuthGet()?.email || document.getElementById('s-name').value.trim() || 'unknown'),
       date:document.getElementById('s-date').value,
       species,sci:document.getElementById('s-sci').value.trim(),
-      tag:_submitTag||'',category,
+      tag:tagStr, category,
       lat_used:lat,lon_used:lon,
       lat_browser:_browserCoord?.lat||'',lon_browser:_browserCoord?.lon||'',
       lat_exif:_exifCoord?.lat||'',lon_exif:_exifCoord?.lon||'',
@@ -1799,22 +1877,42 @@ async function submitSighting() {
         </div>
       </div>
       <div class="form-row">
-        <label class="form-label">Tag</label>
-        <div class="tag-grid" id="s-tag-grid">
-          <button class="tag-btn" data-tag="bird"       onclick="setTag(this)">🦅 Bird</button>
-          <button class="tag-btn" data-tag="mammal"     onclick="setTag(this)">🐾 Mammal</button>
-          <button class="tag-btn" data-tag="reptile"    onclick="setTag(this)">🦎 Reptile</button>
-          <button class="tag-btn" data-tag="fish"       onclick="setTag(this)">🐟 Fish</button>
-          <button class="tag-btn" data-tag="insect"     onclick="setTag(this)">🦋 Insect</button>
-          <button class="tag-btn" data-tag="native tree" onclick="setTag(this)">🌳 Native tree</button>
-          <button class="tag-btn" data-tag="recruitment" onclick="setTag(this)">🌱 Recruitment</button>
-          <button class="tag-btn" data-tag="invasive"  onclick="setTag(this)">⚠️ Invasive</button>
-          <button class="tag-btn" data-tag="incident"  onclick="setTag(this)">🐄 Wildlife incident</button>
+        <label class="form-label">Category &amp; Tags</label>
+        <!-- L1: Flora / Fauna -->
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button class="tag-l1" data-l1="flora" onclick="selectL1(this)">🌿 Flora</button>
+          <button class="tag-l1" data-l1="fauna" onclick="selectL1(this)">🦅 Fauna</button>
         </div>
+        <!-- L2 Flora -->
+        <div id="l2-flora" style="display:none;flex-wrap:wrap;gap:5px;margin-bottom:4px">
+          <button class="tag-l2" data-excl="nature" data-tag="native"   onclick="selectL2(this)">🟢 Native</button>
+          <button class="tag-l2" data-excl="nature" data-tag="invasive" onclick="selectL2(this)">⚠️ Invasive</button>
+          <button class="tag-l2" data-tag="recruitment"  onclick="selectL2(this)">🌱 Recruitment</button>
+          <button class="tag-l2" data-tag="tree"         onclick="selectL2(this)">🌳 Tree</button>
+          <button class="tag-l2" data-tag="grass"        onclick="selectL2(this)">🌾 Grass</button>
+          <button class="tag-l2" data-tag="herb"         onclick="selectL2(this)">🌿 Herb</button>
+          <button class="tag-l2" data-tag="shrub"        onclick="selectL2(this)">🪴 Shrub</button>
+          <button class="tag-l2" data-tag="climber"      onclick="selectL2(this)">🌀 Climber/Creeper</button>
+          <button class="tag-l2" data-tag="cultivated"   onclick="selectL2(this)">🍃 Cultivated</button>
+        </div>
+        <!-- L2 Fauna -->
+        <div id="l2-fauna" style="display:none;flex-wrap:wrap;gap:5px;margin-bottom:4px">
+          <button class="tag-l2" data-excl="nature" data-tag="native"   onclick="selectL2(this)">🟢 Native</button>
+          <button class="tag-l2" data-excl="nature" data-tag="invasive" onclick="selectL2(this)">⚠️ Invasive</button>
+          <button class="tag-l2" data-tag="mammal"    onclick="selectL2(this)">🐾 Mammal</button>
+          <button class="tag-l2" data-tag="bird"      onclick="selectL2(this)">🦅 Bird</button>
+          <button class="tag-l2" data-tag="reptile"   onclick="selectL2(this)">🦎 Reptile</button>
+          <button class="tag-l2" data-tag="amphibian" onclick="selectL2(this)">🐸 Amphibian</button>
+          <button class="tag-l2" data-tag="fish"      onclick="selectL2(this)">🐟 Fish</button>
+          <button class="tag-l2" data-tag="insect"    onclick="selectL2(this)">🦋 Insect</button>
+          <button class="tag-l2" data-tag="spider"    onclick="selectL2(this)">🕷 Spider</button>
+          <button class="tag-l2" data-tag="snail"     onclick="selectL2(this)">🐌 Snail</button>
+        </div>
+        <div id="tag-summary" style="font-size:10px;color:var(--mid);min-height:14px"></div>
       </div>
       <div class="form-row">
         <label class="form-label">Species / "What is this?"</label>
-        <input class="form-input" id="s-species" type="text" placeholder="AI will suggest from photo"/>
+        <input class="form-input" id="s-species" type="text" placeholder="Common name / vernacular name"/>
       </div>
       <div class="form-row">
         <label class="form-label">Scientific name (optional)</label>
