@@ -7,7 +7,7 @@
 <script>
 (function(){const t=localStorage.getItem('arr_theme')||'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
 </script>
-<title>Daily Report v31</title>
+<title>Daily Report v32</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;padding-bottom:60px}
@@ -585,16 +585,22 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
         <button class="dash-export-btn" onclick="exportDashXLSX()">⇩ XLSX</button>
         <button class="dash-export-btn" onclick="exportGrievanceXLSX()" style="background:#c2410c" title="Export Fence Repair · Apply: Water · Report: Damage · Report: Flood · Report: Fire">⇩ Grievance Log</button>
       </div>
-      <div id="log-wrap" style="overflow-x:auto">
-        <table class="log-table">
+      <div id="log-wrap" style="overflow-x:auto;overflow-y:auto;max-height:calc(10 * 42px + 40px);border:1px solid var(--rule);border-radius:8px">
+        <table class="log-table" style="min-width:700px">
           <thead><tr>
-            <th>Date</th><th>Time</th><th>Reporter</th><th>LPC/DBC</th>
-            <th>Visit Types</th><th>GPS</th><th>Notes</th><th>Photos</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Date</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Time</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Reporter</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">LPC/DBC</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Visit Types</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">GPS</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Notes</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Photos</th>
           </tr></thead>
           <tbody id="log-body"></tbody>
         </table>
       </div>
-      <div class="dash-pagination" id="dash-pagination"></div>
+      <div id="dash-rec-count" style="font-size:11px;color:var(--mid);margin-top:6px;text-align:right"></div>
     </div>
   </div>
 </div>
@@ -669,22 +675,29 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
         <input type="date" id="att-rec-date2" min="2024-01-01" onchange="renderAttRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
         <button class="dash-export-btn" onclick="exportAttXLSX()">⬇ Export XLSX</button>
       </div>
-      <div style="overflow-x:auto">
+      <div style="overflow-x:auto;overflow-y:auto;max-height:calc(10 * 42px + 40px);border:1px solid var(--rule);border-radius:8px">
         <table class="log-table">
           <thead><tr>
-            <th>Date</th><th>Name</th><th>Type</th><th>In</th><th>Out</th><th>Leave Reason</th><th>GPS</th><th>Submitted</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Date</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Name</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Type</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">In</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Out</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Leave Reason</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">GPS</th>
+            <th style="position:sticky;top:0;z-index:2;background:var(--card)">Submitted</th>
           </tr></thead>
           <tbody id="att-log-body"></tbody>
         </table>
       </div>
-      <div class="dash-pagination" id="att-pagination"></div>
+      <div id="att-rec-count" style="font-size:11px;color:var(--mid);margin-top:6px;text-align:right"></div>
     </div>
   </div>
 </div>
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v31';
+const APP_VERSION    = 'DRT-v32';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -1852,9 +1865,6 @@ function attPeriodRange() {
   return { d1, d2, label };
 }
 
-let attRecPage = 0;
-const ATT_PAGE_SIZE = 25;
-
 function renderAttDashboard() {
   const { d1, d2, label } = attPeriodRange();
   // Nav label + next button state
@@ -1870,7 +1880,6 @@ function renderAttDashboard() {
   if (ri2 && !ri2._userEdited) ri2.value = d2;
 
   renderAttChart(d1, d2, label);
-  attRecPage = 0;
   renderAttRecords();
 }
 
@@ -1941,13 +1950,8 @@ function renderAttRecords() {
   });
   filtered.sort((a,b) => (b.submitted_ts||b._date||'').localeCompare(a.submitted_ts||a._date||''));
 
-  const total = filtered.length;
-  const pages = Math.max(1, Math.ceil(total / ATT_PAGE_SIZE));
-  if (attRecPage >= pages) attRecPage = pages - 1;
-  const slice = filtered.slice(attRecPage * ATT_PAGE_SIZE, (attRecPage+1) * ATT_PAGE_SIZE);
-
-  document.getElementById('att-log-body').innerHTML = slice.length
-    ? slice.map(r => {
+  document.getElementById('att-log-body').innerHTML = filtered.length
+    ? filtered.map(r => {
         const gps = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(4)},${parseFloat(r.gps_lng).toFixed(4)}` : '—';
         const typeStr = r.type || '—';
         const badge = typeStr.startsWith('Attended')
@@ -1967,23 +1971,8 @@ function renderAttRecords() {
       }).join('')
     : '<tr><td colspan="8" class="dash-empty">No attendance records</td></tr>';
 
-  // Pagination
-  const pag = document.getElementById('att-pagination');
-  pag.innerHTML = '';
-  if (pages > 1) {
-    const prev = document.createElement('button');
-    prev.textContent = '◀'; prev.disabled = attRecPage === 0;
-    prev.onclick = () => { attRecPage--; renderAttRecords(); };
-    pag.appendChild(prev);
-    const info = document.createElement('span');
-    info.className = 'page-info';
-    info.textContent = `Page ${attRecPage+1} of ${pages} (${total} records)`;
-    pag.appendChild(info);
-    const nxt = document.createElement('button');
-    nxt.textContent = '▶'; nxt.disabled = attRecPage >= pages-1;
-    nxt.onclick = () => { attRecPage++; renderAttRecords(); };
-    pag.appendChild(nxt);
-  }
+  const countEl = document.getElementById('att-rec-count');
+  if (countEl) countEl.textContent = filtered.length ? `${filtered.length} record${filtered.length>1?'s':''}` : '';
 }
 
 function exportAttXLSX() {
@@ -2200,17 +2189,14 @@ function renderDashboard() {
   if (ri1) ri1.value = today;
   if (ri2) ri2.value = today;
 
-  dashRecPage = 0;
   renderDashRecords();
   updateRedressalKPI();
   populateVtFilterDropdown();
   showChart('daily', document.querySelector('#dash-screen .chart-sel-btn.active'));
 }
 
-let dashRecPage = 0;
 let dashNavOffset = 0;
 let dashChartPeriod = 'daily';
-const DASH_PAGE_SIZE = 25;
 
 function renderDashRecords() {
   const rows = effectiveDashRows();
@@ -2227,28 +2213,21 @@ function renderDashRecords() {
     if (vtFilter && !safeParseTypes(r.visit_types).some(t => vtFilter.has(t))) return false;
     return true;
   });
-  // Sort by submitted_ts descending (latest first)
   filtered.sort((a,b) => (b.submitted_ts||b._date||'').localeCompare(a.submitted_ts||a._date||''));
-  const total = filtered.length;
-  const pages = Math.max(1, Math.ceil(total / DASH_PAGE_SIZE));
-  if (dashRecPage >= pages) dashRecPage = pages-1;
-  const slice = filtered.slice(dashRecPage*DASH_PAGE_SIZE, (dashRecPage+1)*DASH_PAGE_SIZE);
 
-  // Store current slice for modal lookup
+  // Store for modal lookup
   window._dashSlice = filtered;
 
-  document.getElementById('log-body').innerHTML = slice.length
-    ? slice.map((r, i) => {
-        const globalIdx = dashRecPage * DASH_PAGE_SIZE + i;
+  document.getElementById('log-body').innerHTML = filtered.length
+    ? filtered.map((r, i) => {
         const types = safeParseTypes(r.visit_types);
         const ident = [r.lpc, r.dbc, r.beneficiary_name].filter(Boolean).join(' / ');
         const gps   = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(4)}°N ${parseFloat(r.gps_lng).toFixed(4)}°E` : '—';
         let photoCount = 0;
         try { photoCount = JSON.parse(r.photos_json||'[]').length; } catch(e) {}
         const subDate = r._date || gasDateStr(r.date);
-        // submitted_ts time portion in 24h
         const subTime = localTimeFromTs(r.submitted_ts);
-        return `<tr style="cursor:pointer" onclick="openWrModal(${globalIdx})" title="Click to view details">
+        return `<tr style="cursor:pointer" onclick="openWrModal(${i})" title="Click to view details">
           <td>${subDate||'—'}</td>
           <td style="white-space:nowrap">${subTime}</td>
           <td>${r.operator_name||r.operator_email||'—'}</td>
@@ -2261,24 +2240,8 @@ function renderDashRecords() {
       }).join('')
     : '<tr><td colspan="8" class="dash-empty">No submissions</td></tr>';
 
-  const pag = document.getElementById('dash-pagination');
-  if (pag) {
-    pag.innerHTML = '';
-    if (pages > 1) {
-      const prev = document.createElement('button');
-      prev.textContent = '◀'; prev.disabled = dashRecPage === 0;
-      prev.onclick = () => { dashRecPage--; renderDashRecords(); };
-      pag.appendChild(prev);
-      const info = document.createElement('span');
-      info.className = 'page-info';
-      info.textContent = `Page ${dashRecPage+1} of ${pages} (${total} records)`;
-      pag.appendChild(info);
-      const nxt = document.createElement('button');
-      nxt.textContent = '▶'; nxt.disabled = dashRecPage >= pages-1;
-      nxt.onclick = () => { dashRecPage++; renderDashRecords(); };
-      pag.appendChild(nxt);
-    }
-  }
+  const countEl = document.getElementById('dash-rec-count');
+  if (countEl) countEl.textContent = filtered.length ? `${filtered.length} record${filtered.length>1?'s':''}` : '';
 }
 
 function exportDashXLSX() {
@@ -2630,7 +2593,7 @@ function renderDashChart() {
     const ri2 = document.getElementById('dash-rec-date2');
     if (ri1) ri1.value = d1;
     if (ri2) ri2.value = d2;
-    dashRecPage = 0; renderDashRecords();
+    renderDashRecords();
 
     if (dashChartPeriod === 'daily') {
       for (let h=7;h<=20;h++) labels.push(`${String(h).padStart(2,'0')}:00`);
@@ -2723,11 +2686,11 @@ function openWrModal(idx) {
     notesWrap.style.display = 'none';
   }
 
-  document.getElementById('wr-modal-bg').classList.add('open');
+  document.getElementById('wr-modal-bg').style.display = 'flex';
 }
 
 function closeWrModal() {
-  document.getElementById('wr-modal-bg').classList.remove('open');
+  document.getElementById('wr-modal-bg').style.display = 'none';
 }
 
 function wrModalBgClick(e) {
@@ -2808,7 +2771,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <!-- WORK REPORT DETAIL MODAL -->
-<div id="wr-modal-bg" onclick="wrModalBgClick(event)">
+<div id="wr-modal-bg" style="display:none" onclick="wrModalBgClick(event)">
   <div id="wr-modal">
     <div class="wr-modal-head">
       <span class="wr-modal-title">📋 Work Report Detail</span>
