@@ -6,510 +6,7 @@
 <title>CCB &amp; SDG Dashboard v28 · Asha 1</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.cjs"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js">
-
-// ── Bibliography / BibTeX ─────────────────────────────────────────────
-let _refs = [];
-let _refSort = 'year';
-
-function renderRefs() {
-  const list = document.getElementById('ref-list');
-  const count = document.getElementById('ref-count');
-  if (!list) return;
-  const sorted = [..._refs].sort((a,b)=>{
-    if (_refSort==='year') return (b.year||'0').localeCompare(a.year||'0');
-    return (a.author||'').localeCompare(b.author||'');
-  });
-  list.innerHTML = sorted.map((r,i) => {
-    const venue = r.journal ? `<em>${r.journal}</em>${r.volume?' '+r.volume:''}${r.number?'('+r.number+')':''}${r.pages?', '+r.pages:'.'}` :
-      (r.publisher||'');
-    const doi = r.doi ? ` <a href="https://doi.org/${r.doi}" target="_blank" class="pop-link">DOI</a>` : '';
-    return `<div class="ref-item">
-      <button class="ref-del" onclick="deleteRef('${r.key}')" title="Remove">✕</button>
-      <strong>${r.author} (${r.year})</strong> — ${r.title}. ${venue}${doi}
-    </div>`;
-  }).join('');
-  if (count) count.textContent = _refs.length + ' reference' + (_refs.length!==1?'s':'');
-  document.querySelectorAll('.ref-sort-btn').forEach(b=>
-    b.classList.toggle('active', b.dataset.sort===_refSort));
-}
-
-function sortRefs(by) { _refSort=by; renderRefs(); }
-
-// ── Bibliography Drive sync ───────────────────────────────────────────
-async function loadBibFromDrive() {
-  if (!CCB_CONFIG.scriptUrl) return;
-  const status = document.getElementById('bib-status');
-  if (status) { status.textContent = '☁️ Loading bibliography…'; status.style.color='var(--teal)'; }
-  try {
-    const url = CCB_CONFIG.scriptUrl +
-      '?action=getFile&folder=Bibliography&filename=asha_arr_bibliography.bib';
-    const res  = await fetch(url);
-    const data = await res.json();
-    if (data.success && data.content) {
-      const entries = parseBibTeXString(data.content);
-      // Merge — don't overwrite local additions
-      let added = 0;
-      entries.forEach(e => { if (!_refs.find(r=>r.key===e.key)) { _refs.push(e); added++; } });
-      renderRefs();
-      if (status) {
-        status.textContent = `☁️ Loaded ${entries.length} refs from Drive (${added} new)`;
-        setTimeout(()=>{ if(status) status.textContent=''; }, 3000);
-      }
-    } else if (status) {
-      status.textContent = ''; // not found yet — that's ok
-    }
-  } catch(e) {
-    if (status) { status.textContent = ''; } // silent fail
-  }
-}
-
-async function saveBibToDrive() {
-  if (!CCB_CONFIG.scriptUrl) return;
-  const status = document.getElementById('bib-status');
-  const bibtex = _refs.map(r => {
-    const type = r.journal ? 'article' : (r.publisher ? 'book' : 'misc');
-    const fields = Object.entries({
-      author:r.author, title:r.title, journal:r.journal||r.booktitle,
-      year:r.year, volume:r.volume, number:r.number,
-      pages:r.pages, publisher:r.publisher, doi:r.doi
-    }).filter(([,v])=>v).map(([k,v])=>`  ${k} = {${v}}`).join(',\n');
-    return `@${type}{${r.key},\n${fields}\n}`;
-  }).join('\n\n');
-  try {
-    await fetch(CCB_CONFIG.scriptUrl, {
-      method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify({action:'putFile', folder:'Bibliography',
-        filename:'asha_arr_bibliography.bib', content:bibtex})
-    });
-    if (status) {
-      status.textContent = '☁️ Saved to Drive'; status.style.color='var(--teal)';
-      setTimeout(()=>{ if(status) status.textContent=''; }, 2000);
-    }
-  } catch(e) {}
-}
-
-
-function deleteRef(key) {
-  _refs = _refs.filter(r=>r.key!==key);
-  renderRefs();
-  saveBibToDrive();
-}
-
-// ── BibTeX parser ─────────────────────────────────────────────────────
-function parseBibTeXString(text) {
-  const entries = [];
-  const entryRe = /@(\w+)\s*\{\s*([^,]+),([^@]*)\}/gs;
-  let m;
-  while ((m = entryRe.exec(text)) !== null) {
-    const type = m[1].toLowerCase();
-    const key  = m[2].trim();
-    const body = m[3];
-    const fields = {};
-    const fieldRe = /(\w+)\s*=\s*[{"]([\s\S]*?)[}"],?\s*(?=\w+\s*=|$)/g;
-    let fm;
-    while ((fm = fieldRe.exec(body)) !== null) {
-      fields[fm[1].toLowerCase()] = fm[2].replace(/\s+/g,' ').trim();
-    }
-    // Also try simpler {value} or "value" without nested braces
-    const simpleRe = /(\w+)\s*=\s*\{([^{}]*)\}/g;
-    while ((fm = simpleRe.exec(body)) !== null) {
-      if (!fields[fm[1].toLowerCase()]) fields[fm[1].toLowerCase()] = fm[2].trim();
-    }
-    entries.push({key, type, ...fields,
-      author: fields.author||fields.editor||'',
-      year:   fields.year||'',
-      title:  fields.title||'',
-      journal:fields.journal||fields.booktitle||'',
-      volume: fields.volume||'', number:fields.number||'',
-      pages:  fields.pages||'', publisher:fields.publisher||'',
-      doi:    fields.doi||'',
-    });
-  }
-  return entries;
-}
-
-function parseBibTeX() {
-  const text = document.getElementById('bibtex-input').value.trim();
-  const status = document.getElementById('bib-status');
-  if (!text) { status.textContent='Paste a BibTeX entry first'; return; }
-  const entries = parseBibTeXString(text);
-  if (!entries.length) { status.textContent='⚠️ No valid BibTeX entries found'; status.style.color='var(--rose)'; return; }
-  let added=0;
-  entries.forEach(e=>{
-    if (!_refs.find(r=>r.key===e.key)) { _refs.push(e); added++; }
-  });
-  document.getElementById('bibtex-input').value='';
-  status.textContent=`✓ Added ${added} reference${added!==1?'s':''}`; status.style.color='var(--teal)';
-  renderRefs();
-  saveBibToDrive();
-  setTimeout(()=>{ status.textContent=''; }, 3000);
-}
-
-function loadBibFile(input) {
-  const file=input.files[0]; if(!file) return;
-  const status=document.getElementById('bib-status');
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const entries=parseBibTeXString(e.target.result);
-    let added=0;
-    entries.forEach(en=>{if(!_refs.find(r=>r.key===en.key)){_refs.push(en);added++;}});
-    status.textContent=`✓ Imported ${added} of ${entries.length} references from file`;
-    status.style.color='var(--teal)';
-    renderRefs();
-    saveBibToDrive();
-    input.value='';
-  };
-  reader.readAsText(file);
-}
-
-function exportBibTeX() {
-  const bibtex = _refs.map(r=>{
-    const type = r.journal ? 'article' : (r.publisher ? 'book' : 'misc');
-    const fields = Object.entries({
-      author:r.author, title:r.title, journal:r.journal, booktitle:r.booktitle,
-      year:r.year, volume:r.volume, number:r.number, pages:r.pages,
-      publisher:r.publisher, doi:r.doi
-    }).filter(([,v])=>v).map(([k,v])=>`  ${k} = {${v}}`).join(',\n');
-    return `@${type}{${r.key},\n${fields}\n}`;
-  }).join('\n\n');
-  const blob=new Blob([bibtex],{type:'text/plain'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download='asha_arr_bibliography.bib';
-  a.click(); URL.revokeObjectURL(url);
-}
-
-
-// ── Load sightings from Sheet ─────────────────────────────────────────
-async function loadSightingsFromSheet() {
-  if (!CCB_CONFIG.scriptUrl) return;
-  try {
-    const res  = await fetch(CCB_CONFIG.scriptUrl + '?action=getSightings');
-    const data = await res.json();
-    if (!data.success || !data.rows) return;
-    const sheetSightings = data.rows
-      .filter(r => r.type === 'sighting' && r.species)
-      .map(r => ({
-        date:         r.date         || '',
-        species:      r.species      || '',
-        category:     r.category     || 'fauna',
-        lat:          parseFloat(r.lat_used) || NaN,
-        lon:          parseFloat(r.lon_used) || NaN,
-        lpc:          r.lpc          || '',
-        notes:        r.notes        || '',
-        recorder:     r.submitter    || '',
-        photo_url:    r.photo_url    || '',
-        district:     r.district     || '',
-        block:        r.block        || '',
-        coord_source: r.coord_source || '',
-        ai_species:   r.ai_species   || '',
-        notable:      r.notable      || false,
-      }));
-    // Merge — avoid duplicates by date+species+recorder
-    sheetSightings.forEach(s => {
-      const exists = bioSightings.find(b =>
-        b.date===s.date && b.species===s.species && b.recorder===s.recorder);
-      if (!exists) bioSightings.push(s);
-    });
-    updateBioKPIs();
-    renderRecentSightings();
-    if (bioMap) populateBioFilters();
-    renderBioMap();
-  } catch(e) {
-    console.warn('loadSightingsFromSheet failed:', e);
-  }
-}
-
-
-const INV_PER_PAGE = 4;  // 4 per page, 3 pages
-let _invPageIdx = 0;
-const _invTotalPages = 3; // 12 species, 3 pages of 4
-
-function openInvasivesModal() {
-  _invPageIdx = 0;
-  renderInvasivesPages();
-  document.getElementById('invasives-modal').classList.add('open');
-}
-function closeInvasivesModal() {
-  document.getElementById('invasives-modal').classList.remove('open');
-}
-document.addEventListener('keydown', e => {
-  if (e.key==='Escape') { closeInvasivesModal(); closeSubmitModal(); closeSightingDetail(); }
-});
-
-function renderInvasivesPages() {
-  const container = document.getElementById('invasives-pages');
-  const dots = document.getElementById('inv-dots');
-  // Set width
-  const boxW = document.getElementById('invasives-box')?.offsetWidth || 520;
-  container.style.width = (boxW * _invTotalPages) + 'px';
-  // Render pages
-  container.innerHTML = '';
-  for (let p=0; p<_invTotalPages; p++) {
-    const page = document.createElement('div');
-    page.className = 'inv-page';
-    const bW = document.getElementById('invasives-box')?.offsetWidth || 520;
-    page.style.width = bW + 'px';
-    page.style.maxWidth = '95vw';
-    page.style.flexShrink = '0';
-    const items = INVASIVES.slice(p*INV_PER_PAGE, (p+1)*INV_PER_PAGE);
-    items.forEach(inv => {
-      const card = document.createElement('div');
-      card.className = 'inv-card';
-      card.innerHTML = `
-        ${inv.img ? `<img class="inv-card-photo" src="${inv.img}" alt="${inv.name}"
-          onerror="this.style.background='#1e3a52';this.style.minHeight='140px'"/>` : '<div class="inv-card-photo"></div>'}
-        <div class="inv-card-body">
-          <div class="inv-card-name">${inv.name}</div>
-          <div class="inv-card-sci">${inv.sci}</div>
-          <span class="inv-card-threat threat-${inv.threat}">
-            ${inv.threat==='high'?'⚠️ High threat':'🟡 Medium threat'}
-          </span>
-          <div class="inv-card-tip">${inv.tip}</div>
-          <div class="inv-card-submit" onclick="quickSubmitInvasive('${inv.name}','${inv.sci}','${inv.tag}')">
-            + Submit sighting →
-          </div>
-        </div>`;
-      page.appendChild(card);
-    });
-    container.appendChild(page);
-  }
-  // Dots
-  dots.innerHTML = '';
-  for (let i=0;i<_invTotalPages;i++) {
-    const dot = document.createElement('div');
-    dot.className = 'inv-dot' + (i===_invPageIdx?' active':'');
-    dot.onclick = () => { _invPageIdx=i; updateInvasivesPage(); };
-    dots.appendChild(dot);
-  }
-  updateInvasivesPage();
-}
-
-function updateInvasivesPage() {
-  const container = document.getElementById('invasives-pages');
-  // Get actual rendered width
-  const pageW = document.getElementById('invasives-box')?.offsetWidth || 520;
-  container.style.transform = `translateX(-${_invPageIdx * pageW}px)`;
-  document.querySelectorAll('.inv-dot').forEach((d,i)=>
-    d.classList.toggle('active', i===_invPageIdx));
-  document.getElementById('inv-prev').disabled = _invPageIdx===0;
-  document.getElementById('inv-next').disabled = _invPageIdx===_invTotalPages-1;
-}
-
-function invPage(dir) {
-  _invPageIdx = Math.max(0, Math.min(_invTotalPages-1, _invPageIdx+dir));
-  updateInvasivesPage();
-}
-
-function quickSubmitInvasive(name, sci, tag) {
-  closeInvasivesModal();
-  document.getElementById('s-species').value = name;
-  document.getElementById('s-sci').value = sci;
-  document.querySelectorAll('.tag-btn').forEach(b=>{
-    if(b.dataset.tag===tag){b.classList.add('sel');_submitTag=tag;}
-  });
-  openSubmitModal();
-}
-
-// ── Submit modal ──────────────────────────────────────────────────────
-let _submitTag=null,_browserCoord=null,_exifCoord=null,_photoBase64=null,_photoBlob=null;
-
-function openSubmitModal() {
-  document.getElementById('submit-modal').classList.add('open');
-  document.getElementById('s-date').value=new Date().toISOString().slice(0,10);
-  document.getElementById('s-status').textContent='';
-  getBrowserGPS();
-  populateSubmitDistrict();
-}
-function closeSubmitModal() {
-  document.getElementById('submit-modal').classList.remove('open');
-  resetSubmitForm();
-}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSubmitModal();});
-
-function resetSubmitForm() {
-  _submitTag=null;_browserCoord=null;_exifCoord=null;_photoBase64=null;_photoBlob=null;
-  ['s-species','s-sci','s-notes','s-name','s-lat','s-lon'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.value='';
-  });
-  document.getElementById('s-photo-preview').style.display='none';
-  document.getElementById('s-ai-result').style.display='none';
-  document.getElementById('s-browser-coord').textContent='getting…';
-  document.getElementById('s-exif-coord').textContent='—';
-  document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('sel'));
-  document.getElementById('s-status').textContent='';
-}
-
-function getBrowserGPS() {
-  if(!navigator.geolocation)return;
-  navigator.geolocation.getCurrentPosition(pos=>{
-    _browserCoord={lat:pos.coords.latitude,lon:pos.coords.longitude};
-    document.getElementById('s-browser-coord').textContent=
-      _browserCoord.lat.toFixed(5)+', '+_browserCoord.lon.toFixed(5);
-    if(!_exifCoord){
-      document.getElementById('s-lat').value=_browserCoord.lat.toFixed(6);
-      document.getElementById('s-lon').value=_browserCoord.lon.toFixed(6);
-    }
-  },()=>{document.getElementById('s-browser-coord').textContent='unavailable';});
-}
-
-
-async function handleSubmitPhoto(input) {
-  const file=input.files[0];if(!file)return;
-  input.value='';
-  _photoBlob=file;
-  const url=URL.createObjectURL(file);
-  const prev=document.getElementById('s-photo-preview');
-  prev.src=url;prev.style.display='block';
-  // EXIF GPS via exifr
-  try {
-    const gps = typeof exifr !== 'undefined' ? await exifr.gps(file) : null;
-    if(gps&&gps.latitude&&gps.longitude){
-      _exifCoord={lat:gps.latitude,lon:gps.longitude};
-      document.getElementById('s-exif-coord').textContent=gps.latitude.toFixed(5)+', '+gps.longitude.toFixed(5);
-      document.getElementById('s-lat').value=gps.latitude.toFixed(6);
-      document.getElementById('s-lon').value=gps.longitude.toFixed(6);
-    } else {
-      document.getElementById('s-exif-coord').textContent='no GPS in photo';
-    }
-  } catch(e){ document.getElementById('s-exif-coord').textContent='EXIF unavailable'; }
-  const reader=new FileReader();
-  reader.onload=async e=>{_photoBase64=e.target.result.split(',')[1];await callVisionAPI(_photoBase64);};
-  reader.readAsDataURL(file);
-}
-
-async function callVisionAPI(base64) {
-  const status=document.getElementById('s-status');
-  status.textContent='🔍 Identifying species…';status.style.color='var(--teal)';
-  try{
-    const res=await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${CCB_CONFIG.visionApiKey}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({requests:[{image:{content:base64},
-        features:[{type:'LABEL_DETECTION',maxResults:10},{type:'WEB_DETECTION',maxResults:5}]}]})
-    });
-    const data=await res.json();
-    const resp=data.responses?.[0];
-    const webEntities=resp?.webDetection?.webEntities||[];
-    const bestEntity=webEntities.find(e=>e.score>0.5&&e.description)||webEntities[0];
-    const labels=resp?.labelAnnotations||[];
-    const labelDesc=labels.map(l=>l.description.toLowerCase());
-    let category='fauna',tag=null;
-    if(labelDesc.some(l=>['bird','avian','raptor','songbird'].some(x=>l.includes(x)))){category='fauna';tag='bird';}
-    else if(labelDesc.some(l=>['mammal','wildlife'].some(x=>l.includes(x)))){category='fauna';tag='mammal';}
-    else if(labelDesc.some(l=>['reptile','snake','lizard'].some(x=>l.includes(x)))){category='fauna';tag='reptile';}
-    else if(labelDesc.some(l=>['fish','aquatic'].some(x=>l.includes(x)))){category='fauna';tag='fish';}
-    else if(labelDesc.some(l=>['insect','butterfly','moth'].some(x=>l.includes(x)))){category='fauna';tag='insect';}
-    else if(labelDesc.some(l=>['invasive','lantana','mikania','chromolaena'].some(x=>l.includes(x)))){category='invasive';tag='invasive';}
-    else if(labelDesc.some(l=>['plant','tree','flower','shrub','vegetation'].some(x=>l.includes(x)))){category='flora';tag='native tree';}
-    const notable=labels.some(l=>['endangered','threatened','protected'].includes(l.description.toLowerCase()));
-    const confidence=bestEntity?.score?Math.round(bestEntity.score*100)+'%':
-      (labels[0]?.score?Math.round(labels[0].score*100)+'%':'—');
-    const spName=bestEntity?.description||labels[0]?.description||'—';
-    const sciName=webEntities.find(e=>e.description?.match(/^[A-Z][a-z]+ [a-z]+$/))?.description||'';
-    document.getElementById('s-ai-species').textContent=spName;
-    document.getElementById('s-ai-sci').textContent=sciName;
-    document.getElementById('s-ai-cat').textContent=category;
-    document.getElementById('s-ai-conf').textContent=confidence;
-    document.getElementById('s-ai-notable').textContent=notable?'⚠️ Notable species':'';
-    document.getElementById('s-ai-result').style.display='block';
-    if(!document.getElementById('s-species').value)document.getElementById('s-species').value=spName;
-    if(!document.getElementById('s-sci').value)document.getElementById('s-sci').value=sciName;
-    if(tag){document.querySelectorAll('.tag-btn').forEach(b=>{
-      if(b.dataset.tag===tag){b.classList.add('sel');_submitTag=tag;}
-    });}
-    status.textContent='✓ Species identified';status.style.color='var(--green)';
-  }catch(e){status.textContent='Vision API error — fill manually';status.style.color='var(--rose)';}
-}
-
-const TAG_CATEGORY={bird:'fauna',mammal:'fauna',reptile:'fauna',fish:'fauna',insect:'fauna',
-  'native tree':'flora','recruitment':'flora',invasive:'invasive',incident:'incident'};
-
-function setTag(btn) {
-  document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('sel'));
-  btn.classList.add('sel');_submitTag=btn.dataset.tag;
-}
-
-function populateSubmitDistrict() {
-  const sel=document.getElementById('s-district');
-  if(sel.options.length>1)return;
-  const dists=[...new Set(plantationData.map(f=>f.properties.DISTRICT).filter(Boolean))].sort();
-  dists.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
-}
-function filterSubmitBlock() {
-  const dist=document.getElementById('s-district').value;
-  const sel=document.getElementById('s-block');
-  sel.innerHTML='<option value="">— all blocks —</option>';
-  [...new Set(plantationData.filter(f=>!dist||f.properties.DISTRICT===dist)
-    .map(f=>f.properties.BLOCK).filter(Boolean))].sort()
-    .forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;sel.appendChild(o);});
-  filterSubmitLPC();
-}
-function filterSubmitLPC() {
-  const dist=document.getElementById('s-district').value;
-  const block=document.getElementById('s-block').value;
-  const sel=document.getElementById('s-lpc');
-  sel.innerHTML='<option value="">— select LPC —</option>';
-  plantationData.filter(f=>(!dist||f.properties.DISTRICT===dist)&&(!block||f.properties.BLOCK===block))
-    .sort((a,b)=>a.properties.LPC-b.properties.LPC)
-    .forEach(f=>{const p=f.properties;const o=document.createElement('option');
-      o.value=p.LPC;o.textContent=(p.LPC+' — '+(p.BENNAMES||'')).slice(0,60);sel.appendChild(o);});
-}
-
-async function submitSighting() {
-  const btn=document.getElementById('s-submit-btn');
-  const status=document.getElementById('s-status');
-  const species=document.getElementById('s-species').value.trim();
-  const lat=parseFloat(document.getElementById('s-lat').value);
-  const lon=parseFloat(document.getElementById('s-lon').value);
-  if(!species){status.textContent='⚠️ Species/description required';status.style.color='var(--rose)';return;}
-  if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ No GPS — submitting without location';status.style.color='var(--amber)';}
-  btn.disabled=true;btn.textContent='Submitting…';
-  const category=TAG_CATEGORY[_submitTag]||'fauna';
-  const ts=new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
-  const fname=_photoBase64?`CCB_${(document.getElementById('s-lpc').value)||'noLPC'}_${_submitTag||'sighting'}_${ts}.jpg`:null;
-  const payload={
-    action:'ccb_sighting',
-    data:{
-      timestamp:new Date().toISOString(),
-      submitter:(arrAuthGet()?.email || document.getElementById('s-name').value.trim() || 'unknown'),
-      date:document.getElementById('s-date').value,
-      species,sci:document.getElementById('s-sci').value.trim(),
-      tag:_submitTag||'',category,
-      lat_used:lat,lon_used:lon,
-      lat_browser:_browserCoord?.lat||'',lon_browser:_browserCoord?.lon||'',
-      lat_exif:_exifCoord?.lat||'',lon_exif:_exifCoord?.lon||'',
-      coord_source:_exifCoord?'EXIF':(_browserCoord?'GPS':'manual'),
-      lpc:document.getElementById('s-lpc').value,
-      district:document.getElementById('s-district').value,
-      block:document.getElementById('s-block').value,
-      notes:document.getElementById('s-notes').value.trim(),
-      ai_species:document.getElementById('s-ai-species').textContent,
-      notable:document.getElementById('s-ai-notable').textContent.includes('Notable'),
-    },
-    fileData:_photoBase64||null,
-    filename:fname,
-    mimeType:'image/jpeg',
-  };
-  if(CCB_CONFIG.scriptUrl){
-    try{await fetch(CCB_CONFIG.scriptUrl,{method:'POST',mode:'no-cors',
-      headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify(payload)});}catch(e){}
-  }
-  const rec=payload.data;
-  bioSightings.push({date:rec.date,species:rec.species,category:rec.category,
-    lat,lon,lpc:rec.lpc,notes:rec.notes,recorder:rec.submitter,
-    photo_url:_photoBase64?('pending_'+fname):'',
-    district:rec.district||'',block:rec.block||'',
-    coord_source:rec.coord_source||'',ai_species:rec.ai_species||'',notable:rec.notable||false});
-  updateBioKPIs();renderRecentSightings();if(bioMap)renderBioMap();
-  status.textContent='✅ Submitted'+(CCB_CONFIG.scriptUrl?'':' (local only — set scriptUrl to save to Sheet)');
-  status.style.color='var(--green)';
-  btn.disabled=false;btn.textContent='Submit & Save';
-  setTimeout(()=>closeSubmitModal(),1800);
-}
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="arr-shared.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -576,7 +73,7 @@ html,body{height:100%;background:var(--bg);color:var(--ink);transition:backgroun
 .map-wrap{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .map-wrap h3{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
   color:var(--mid);padding:10px 12px 0}
-#bio-map,#sdg-map{height:340px}
+#bio-map,#sdg-map{height:min(340px,40vh)}
 #bio-map .leaflet-popup-content-wrapper,#sdg-map .leaflet-popup-content-wrapper{
   background:var(--card);border:1px solid var(--border);color:var(--ink);border-radius:6px}
 #bio-map .leaflet-popup-tip,#sdg-map .leaflet-popup-tip{background:var(--card)}
@@ -854,10 +351,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
     </div>
     <div class="sb-nav">
       <div class="sb-section-lbl">Biodiversity (CCB)</div>
-      <button class="sb-btn active" onclick="showPanel('bio-overview')">🌿 Overview</button>
-      <button class="sb-btn" onclick="showPanel('bio-sightings')">📍 Sightings map</button>
-      <button class="sb-btn" onclick="showPanel('bio-recruitment')">🌱 Natural recruitment</button>
-      <button class="sb-btn" onclick="showPanel('bio-wildlife')">🐾 Wildlife events</button>
+      <button class="sb-btn active" onclick="showPanel('bio-sightings')">📍 Sightings map</button>
       <button class="sb-btn" onclick="showPanel('bio-refs')">📖 Bibliography</button>
       <div class="sb-divider"></div>
       <div class="sb-section-lbl">Social &amp; SDGs</div>
@@ -874,7 +368,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
   <!-- Main content -->
   <div id="main">
     <div id="topbar">
-      <span class="title" id="panel-title">Biodiversity Overview</span>
+      <span class="title" id="panel-title">Sightings Map</span>
       <span class="spacer"></span>
       <button class="tb-theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
       <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
@@ -882,72 +376,12 @@ function arrAuthRenderChip(containerId, onSignOut) {
     </div>
     <div id="content">
 
-      <!-- BIO OVERVIEW -->
-      <div class="panel active" id="panel-bio-overview">
-        <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:6px">
-          <span id="sightings-load-status" style="font-size:10px;color:var(--teal)"></span>
-          <button onclick="loadSightingsFromSheet()" style="background:var(--surface);border:1px solid var(--border);
-            border-radius:5px;color:var(--teal);font-size:10px;padding:4px 10px;cursor:pointer">
-            🔄 Refresh sightings
-          </button>
-        </div>
-        <div class="kpi-row">
-          <div class="kpi-card">
-            <span class="kpi-v" style="color:var(--green)" id="kpi-species">—</span>
-            <span class="kpi-l">Species sighted</span>
-            <span class="kpi-sub">fauna + flora</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-v" style="color:var(--teal)" id="kpi-sightings">—</span>
-            <span class="kpi-l">Total sightings</span>
-            <span class="kpi-sub">all records</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-v" style="color:var(--amber)" id="kpi-recruitment">—</span>
-            <span class="kpi-l">Natural recruits</span>
-            <span class="kpi-sub">tree seedlings</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-v" style="color:var(--rose)" id="kpi-incidents">—</span>
-            <span class="kpi-l">Wildlife incidents</span>
-            <span class="kpi-sub">fence damage etc.</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-v" style="color:var(--violet)" id="kpi-invasive">—</span>
-            <span class="kpi-l">Invasive plots</span>
-            <span class="kpi-sub">prevalence flagged</span>
-          </div>
-        </div>
-
-        <div class="sec-card">
-          <h3>Sighting categories</h3>
-          <div id="bio-cat-bars" class="pbar-wrap">
-            <div style="font-size:10px;color:var(--dim)">No sighting data loaded yet. Upload records to populate.</div>
-          </div>
-        </div>
-
-        <div class="sec-card">
-          <h3>Recent sightings</h3>
-          <div style="overflow-x:auto">
-            <table class="data-table">
-              <thead><tr>
-                <th>Date</th><th>Species</th><th>Category</th>
-                <th>LPC</th><th>Location</th><th>Recorder</th><th>Notes</th>
-              </tr></thead>
-              <tbody id="bio-recent-tbody">
-                <tr><td colspan="7" style="color:var(--dim);text-align:center;padding:20px">
-                  No records yet — upload sighting data or add via ARRMapper field notes</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
       <!-- BIO SIGHTINGS MAP -->
-      <div class="panel" id="panel-bio-sightings">
+      <div class="panel active" id="panel-bio-sightings">
         <div class="map-wrap">
           <h3>Biodiversity sightings map</h3>
-          <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid rgba(255,255,255,.1);position:relative;z-index:10">
+          <!-- Filters -->
+          <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border);position:relative;z-index:10">
             <select id="f-district" onchange="populateBioFilters();filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
               <option value="">All districts</option>
             </select>
@@ -955,96 +389,42 @@ function arrAuthRenderChip(containerId, onSignOut) {
               <option value="">All blocks</option>
             </select>
             <select id="f-sighting-type" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
-              <option value="">All sighting types</option>
+              <option value="">All types</option>
               <option value="fauna">🦅 Fauna</option>
               <option value="flora">🌿 Flora</option>
               <option value="invasive">⚠️ Invasive</option>
               <option value="recruitment">🌱 Recruitment</option>
-              <option value="incident">🐾 Wildlife incident</option>
+              <option value="incident">🐾 Incident</option>
             </select>
             <select id="f-species-bio" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
               <option value="">All species</option>
             </select>
-            <input type="text" id="f-bio-search" oninput="filterBioMap()" placeholder="Search…" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border);width:90px">
+            <select id="f-recorder-bio" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
+              <option value="">All reporters</option>
+            </select>
+            <input type="date" id="f-date-from" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
+            <input type="date" id="f-date-to" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
+            <input type="text" id="f-bio-search" oninput="filterBioMap()" placeholder="Search…" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border);width:80px">
             <button onclick="clearBioFilters()" style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--border);color:var(--ink);border:none;cursor:pointer">✕</button>
           </div>
-          <div style="padding:8px 12px;display:flex;gap:10px;flex-wrap:wrap;font-size:10px">
+          <div style="padding:6px 12px;display:flex;gap:10px;flex-wrap:wrap;font-size:10px;border-bottom:1px solid var(--border)">
             <label><input type="checkbox" id="f-fauna" checked onchange="filterBioMap()"> 🦅 Fauna</label>
             <label><input type="checkbox" id="f-flora" checked onchange="filterBioMap()"> 🌿 Flora</label>
             <label><input type="checkbox" id="f-invasive" checked onchange="filterBioMap()"> ⚠️ Invasive</label>
             <label><input type="checkbox" id="f-recruit" checked onchange="filterBioMap()"> 🌱 Recruitment</label>
-            <label><input type="checkbox" id="f-incident" checked onchange="filterBioMap()"> 🐾 Wildlife incident</label>
+            <label><input type="checkbox" id="f-incident" checked onchange="filterBioMap()"> 🐾 Incident</label>
+            <span id="f-match-count" style="margin-left:auto;color:var(--dim);font-size:9px;align-self:center"></span>
           </div>
+          <!-- Map -->
           <div id="bio-map"></div>
-        </div>
-        <div class="sec-card">
-          <h3>Batch import: geo-tagged photos or CSV</h3>
-          <div class="upload-zone" onclick="document.getElementById('bio-photo-input').click()">
-            📷
-            <p>Drop multiple geo-tagged photos or a CSV to batch-import sightings<br>
-              <span style="font-size:9px">EXIF lat/lon extracted automatically · CSV: date,species,category,lat,lon,lpc,notes</span>
-            </p>
-          </div>
-          <input type="file" id="bio-photo-input" accept="image/*,.csv" multiple style="display:none"
-            onchange="handleBioUpload(this)"/>
-        </div>
-      </div>
-
-      <!-- BIO NATURAL RECRUITMENT -->
-      <div class="panel" id="panel-bio-recruitment">
-        <div class="sec-card">
-          <h3>Natural tree recruitment records</h3>
-          <p style="font-size:11px;color:var(--dim);margin-bottom:12px">
-            Naturally recruited seedlings (non-planted) observed during MRV walk-along visits.
-            Records timestamped, georeferenced, and species-identified where possible.
-          </p>
-          <div style="overflow-x:auto">
-            <table class="data-table">
+          <!-- Scrollable sightings list -->
+          <div style="border-top:1px solid var(--border);overflow-y:auto;max-height:220px">
+            <table class="data-table" style="font-size:10px">
               <thead><tr>
-                <th>Date</th><th>Species / morphotype</th><th>Count</th>
-                <th>LPC</th><th>Height class</th><th>Recorder</th>
+                <th>Date</th><th>Species</th><th>Type</th><th>LPC</th><th>Reporter</th><th>Notes</th>
               </tr></thead>
-              <tbody id="recruit-tbody">
-                <tr><td colspan="6" style="color:var(--dim);text-align:center;padding:20px">
-                  No recruitment records yet</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="kpi-row">
-          <div class="kpi-card">
-            <span class="kpi-v" style="color:var(--green)" id="kpi-recruit-sp">—</span>
-            <span class="kpi-l">Recruited species</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-v" style="color:var(--teal)" id="kpi-recruit-plots">—</span>
-            <span class="kpi-l">Plots with recruits</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-v" style="color:var(--amber)" id="kpi-recruit-total">—</span>
-            <span class="kpi-l">Total recruits</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- BIO WILDLIFE EVENTS -->
-      <div class="panel" id="panel-bio-wildlife">
-        <div class="sec-card">
-          <h3>Wildlife events &amp; fence damage log</h3>
-          <p style="font-size:11px;color:var(--dim);margin-bottom:12px">
-            Includes fence breaches, grazing incursions, crop damage, elephant / wild boar
-            sightings affecting plots — sourced from ARRMapper MRV walk-along records and
-            Survey Manager climate event forms.
-          </p>
-          <div style="overflow-x:auto">
-            <table class="data-table">
-              <thead><tr>
-                <th>Date</th><th>Event type</th><th>Species</th>
-                <th>LPC</th><th>Damage</th><th>Reported by</th><th>Action taken</th>
-              </tr></thead>
-              <tbody id="wildlife-tbody">
-                <tr><td colspan="7" style="color:var(--dim);text-align:center;padding:20px">
-                  No wildlife event records yet</td></tr>
+              <tbody id="map-sightings-tbody">
+                <tr><td colspan="6" style="color:var(--dim);text-align:center;padding:12px">No records</td></tr>
               </tbody>
             </table>
           </div>
@@ -1292,11 +672,10 @@ let bioMap, bioMapLayer;
 
 // ── Panel switching ────────────────────────────────────────────────────
 const PANEL_TITLES = {
-  'bio-overview':'Biodiversity Overview','bio-sightings':'Sightings Map',
-  'bio-recruitment':'Natural Recruitment','bio-wildlife':'Wildlife Events',
-  'bio-refs':'Bibliography','sdg-overview':'SDG Indicators',
-  'sdg-labour':'Labour Equity','sdg-fpic':'FPIC & Events',
-  'sdg-diversity':'Plantation Diversity','data-upload':'Data Upload',
+  'bio-sightings':'Sightings Map','bio-refs':'Bibliography',
+  'sdg-overview':'SDG Indicators','sdg-labour':'Labour Equity',
+  'sdg-fpic':'FPIC & Events','sdg-diversity':'Plantation Diversity',
+  'data-upload':'Data Upload',
 };
 function showPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -1502,10 +881,12 @@ function populateBioFilters() {
   const districts = [...new Set(bioSightings.map(s=>s.district).filter(Boolean))].sort();
   const blocks    = [...new Set(bioSightings.map(s=>s.block||s.block_circle).filter(Boolean))].sort();
   const species   = [...new Set(bioSightings.map(s=>s.species).filter(Boolean))].sort();
+  const recorders = [...new Set(bioSightings.map(s=>s.recorder).filter(Boolean))].sort();
 
   const dsel = document.getElementById('f-district');
   const bsel = document.getElementById('f-block');
   const ssel = document.getElementById('f-species-bio');
+  const rsel = document.getElementById('f-recorder-bio');
 
   if (dsel) {
     const dv = dsel.value;
@@ -1515,7 +896,6 @@ function populateBioFilters() {
   }
   if (bsel) {
     const bv = bsel.value;
-    // Filter blocks by selected district
     const fDist = dsel?.value || '';
     const filtBlocks = fDist
       ? [...new Set(bioSightings.filter(s=>s.district===fDist).map(s=>s.block||s.block_circle).filter(Boolean))].sort()
@@ -1530,10 +910,16 @@ function populateBioFilters() {
       species.map(s=>`<option value="${s}">${s}</option>`).join('');
     ssel.value = sv;
   }
+  if (rsel) {
+    const rv = rsel.value;
+    rsel.innerHTML = '<option value="">All reporters</option>' +
+      recorders.map(r=>`<option value="${r}">${r}</option>`).join('');
+    rsel.value = rv;
+  }
 }
 
 function clearBioFilters() {
-  ['f-district','f-block','f-sighting-type','f-species-bio','f-bio-search'].forEach(id => {
+  ['f-district','f-block','f-sighting-type','f-species-bio','f-recorder-bio','f-date-from','f-date-to','f-bio-search'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -1554,31 +940,86 @@ function renderBioMap() {
     recruitment:document.getElementById('f-recruit')?.checked,
     incident:   document.getElementById('f-incident')?.checked,
   };
-  const fDist   = document.getElementById('f-district')?.value      || '';
-  const fBlock  = document.getElementById('f-block')?.value          || '';
-  const fType   = document.getElementById('f-sighting-type')?.value  || '';
-  const fSpp    = document.getElementById('f-species-bio')?.value    || '';
-  const fSearch = (document.getElementById('f-bio-search')?.value    || '').toLowerCase();
+  const fDist     = document.getElementById('f-district')?.value     || '';
+  const fBlock    = document.getElementById('f-block')?.value         || '';
+  const fType     = document.getElementById('f-sighting-type')?.value || '';
+  const fSpp      = document.getElementById('f-species-bio')?.value   || '';
+  const fRec      = document.getElementById('f-recorder-bio')?.value  || '';
+  const fFrom     = document.getElementById('f-date-from')?.value     || '';
+  const fTo       = document.getElementById('f-date-to')?.value       || '';
+  const fSearch   = (document.getElementById('f-bio-search')?.value   || '').toLowerCase();
 
-  // When sighting type dropdown used, override checkboxes
   const effectiveShow = fType ? { [fType]: true } : show;
 
-  bioSightings
+  const filtered = bioSightings
     .filter(s => effectiveShow[s.category])
     .filter(s => !fDist   || s.district === fDist)
     .filter(s => !fBlock  || (s.block||s.block_circle) === fBlock)
     .filter(s => !fSpp    || s.species  === fSpp)
+    .filter(s => !fRec    || s.recorder === fRec)
+    .filter(s => !fFrom   || (s.date||'') >= fFrom)
+    .filter(s => !fTo     || (s.date||'') <= fTo)
     .filter(s => !fSearch || JSON.stringify(s).toLowerCase().includes(fSearch))
-    .forEach(s=>{
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  filtered.forEach(s=>{
+    if (isNaN(s.lat)||isNaN(s.lon)) return;
     L.circleMarker([s.lat,s.lon],{
       radius:7, color:'#fff', weight:1.5,
       fillColor: CAT_COLORS[s.category]||'#aaa', fillOpacity:0.9
     }).bindPopup(`<b>${CAT_ICONS[s.category]||''} ${s.species}</b><br>
-      ${s.category} · ${s.date}<br>LPC: ${s.lpc||'—'}<br>${s.notes||''}`
+      ${s.category} · ${s.date}<br>LPC: ${s.lpc||'—'}<br>${s.recorder||''}<br>${s.notes||''}`
     ).addTo(bioMapLayer);
   });
+
+  // Update match count
+  const countEl = document.getElementById('f-match-count');
+  if (countEl) countEl.textContent = filtered.length + ' record' + (filtered.length!==1?'s':'');
+
+  // Render in-panel table (10 rows, scrollable container)
+  const tbody = document.getElementById('map-sightings-tbody');
+  if (tbody) {
+    tbody.innerHTML = filtered.slice(0,10).map((s,i)=>`
+      <tr class="sighting-row" onclick="openSightingDetail_filtered(${i})" title="View detail">
+        <td>${s.date||'—'}</td>
+        <td>${s.species||'—'}</td>
+        <td><span class="tag-pill" style="background:${CAT_COLORS[s.category]||'#666'};color:#fff">
+          ${CAT_ICONS[s.category]||''} ${s.category}</span></td>
+        <td>${s.lpc||'—'}</td>
+        <td>${s.recorder||'—'}</td>
+        <td>${s.notes||'—'}</td>
+      </tr>`).join('') ||
+      `<tr><td colspan="6" style="color:var(--dim);text-align:center;padding:12px">No matching records</td></tr>`;
+    window._mapFilteredSightings = filtered;
+  }
 }
 function filterBioMap() { renderBioMap(); }
+
+function openSightingDetail_filtered(i) {
+  const s = (window._mapFilteredSightings||[])[i];
+  if (!s) return;
+  // Reuse the existing detail modal — find index in bioSightings
+  const idx = (window._recentSightingsRef||[]).indexOf(s);
+  if (idx >= 0) { openSightingDetail(idx); return; }
+  // Fallback: populate modal directly
+  document.getElementById('sd-date').textContent     = s.date     || '—';
+  document.getElementById('sd-species').textContent  = s.species  || '—';
+  document.getElementById('sd-category').textContent = (CAT_ICONS[s.category]||'') + ' ' + (s.category||'—');
+  document.getElementById('sd-lpc').textContent      = s.lpc      || '—';
+  document.getElementById('sd-recorder').textContent = s.recorder  || '—';
+  document.getElementById('sd-district').textContent = s.district  || '—';
+  document.getElementById('sd-block').textContent    = s.block     || '—';
+  document.getElementById('sd-coord').textContent    = isNaN(s.lat)?'—':s.lat.toFixed(5)+', '+s.lon.toFixed(5);
+  document.getElementById('sd-coord-src').textContent= s.coord_source || '—';
+  document.getElementById('sd-ai').textContent       = s.ai_species || '—';
+  document.getElementById('sd-notable').textContent  = s.notable ? '⭐ Yes' : 'No';
+  document.getElementById('sd-notes').textContent    = s.notes    || '—';
+  const photoWrap = document.getElementById('sd-photo-wrap');
+  const photoImg  = document.getElementById('sd-photo');
+  if (s.photo_url) { photoImg.src=s.photo_url; photoWrap.style.display='block'; }
+  else { photoWrap.style.display='none'; }
+  document.getElementById('sighting-detail-modal').classList.add('open');
+}
 
 // ── CSV loader ─────────────────────────────────────────────────────────
 function loadBioCSV(input) {
@@ -1589,16 +1030,24 @@ function loadBioCSV(input) {
     const hdr = lines[0].split(',').map(h=>h.trim().toLowerCase());
     const idx = h => hdr.indexOf(h);
     const newRecs = lines.slice(1).map(line => {
-      const c = line.split(',');
+      // Respect quoted fields containing commas
+      const c = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g)
+                 ?.map(v=>v.replace(/^"|"$/g,'').trim()) || line.split(',').map(v=>v.trim());
+      const g = k => { const i=idx(k); return i>=0 ? (c[i]||'') : ''; };
       return {
-        date: c[idx('date')]?.trim(),
-        species: c[idx('species')]?.trim(),
-        category: (c[idx('category')]?.trim()||'fauna').toLowerCase(),
-        lat: parseFloat(c[idx('lat')]),
-        lon: parseFloat(c[idx('lon')]),
-        lpc: c[idx('lpc')]?.trim(),
-        notes: c[idx('notes')]?.trim(),
-        recorder: c[idx('recorder')]?.trim(),
+        date:         g('date'),
+        species:      g('species'),
+        category:     (g('category')||'fauna').toLowerCase(),
+        lat:          parseFloat(g('lat')),
+        lon:          parseFloat(g('lon')),
+        lpc:          g('lpc'),
+        notes:        g('notes'),
+        recorder:     g('recorder'),
+        district:     g('district'),
+        block:        g('block'),
+        coord_source: g('coord_source'),
+        ai_species:   g('ai_species'),
+        notable:      g('notable')==='true' || g('notable')==='1',
       };
     }).filter(r=>!isNaN(r.lat)&&!isNaN(r.lon));
     bioSightings = [...bioSightings, ...newRecs];
@@ -1613,67 +1062,14 @@ function loadBioCSV(input) {
   reader.readAsText(file);
 }
 
-function updateBioKPIs() {
-  document.getElementById('kpi-species').textContent =
-    new Set(bioSightings.map(s=>s.species)).size;
-  document.getElementById('kpi-sightings').textContent = bioSightings.length;
-  document.getElementById('kpi-recruitment').textContent =
-    bioSightings.filter(s=>s.category==='recruitment').length;
-  document.getElementById('kpi-incidents').textContent =
-    bioSightings.filter(s=>s.category==='incident').length;
-  document.getElementById('kpi-invasive').textContent =
-    new Set(bioSightings.filter(s=>s.category==='invasive').map(s=>s.lpc)).size;
-
-  const cats = {};
-  bioSightings.forEach(s=>{ cats[s.category]=(cats[s.category]||0)+1; });
-  const maxC = Math.max(1,...Object.values(cats));
-  document.getElementById('bio-cat-bars').innerHTML = Object.entries(cats)
-    .sort(([,a],[,b])=>b-a)
-    .map(([cat,n])=>pbarHtml(CAT_ICONS[cat]+' '+cat, n, maxC, CAT_COLORS[cat]||'#aaa')).join('');
-}
-
-function renderRecentSightings() {
-  const tbody = document.getElementById('bio-recent-tbody');
-  const recent = [...bioSightings].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,20);
-  // Store sorted refs for click lookup
-  window._recentSightingsRef = recent;
-  tbody.innerHTML = recent.map((s,i)=>`<tr class="sighting-row" onclick="openSightingDetail(${i})" title="Click to view details">
-    <td>${s.date||'—'}</td>
-    <td>${s.species||'—'}</td>
-    <td><span class="tag-pill" style="background:${CAT_COLORS[s.category]||'#666'};color:#fff">
-      ${CAT_ICONS[s.category]||''} ${s.category}</span></td>
-    <td>${s.lpc||'—'}</td>
-    <td>${isNaN(s.lat)?'—':s.lat.toFixed(4)+', '+s.lon.toFixed(4)}</td>
-    <td>${s.recorder||'—'}</td>
-    <td>${s.notes||'—'}</td>
-  </tr>`).join('') || `<tr><td colspan="7" style="color:var(--dim);text-align:center;padding:20px">No records</td></tr>`;
-}
+function updateBioKPIs() {}
+function renderRecentSightings() {}
 
 function openSightingDetail(i) {
-  const s = (window._recentSightingsRef||[])[i];
+  // _recentSightingsRef no longer populated; delegate to filtered list
+  const s = (window._mapFilteredSightings||[])[i];
   if (!s) return;
-  const m = document.getElementById('sighting-detail-modal');
-  document.getElementById('sd-date').textContent     = s.date     || '—';
-  document.getElementById('sd-species').textContent  = s.species  || '—';
-  document.getElementById('sd-category').textContent = (CAT_ICONS[s.category]||'') + ' ' + (s.category||'—');
-  document.getElementById('sd-lpc').textContent      = s.lpc      || '—';
-  document.getElementById('sd-recorder').textContent = s.recorder  || '—';
-  document.getElementById('sd-district').textContent = s.district  || '—';
-  document.getElementById('sd-block').textContent    = s.block     || '—';
-  document.getElementById('sd-coord').textContent    = isNaN(s.lat) ? '—' : s.lat.toFixed(5)+', '+s.lon.toFixed(5);
-  document.getElementById('sd-coord-src').textContent= s.coord_source || '—';
-  document.getElementById('sd-ai').textContent       = s.ai_species || '—';
-  document.getElementById('sd-notable').textContent  = s.notable ? '⭐ Yes' : 'No';
-  document.getElementById('sd-notes').textContent    = s.notes    || '—';
-  const photoWrap = document.getElementById('sd-photo-wrap');
-  const photoImg  = document.getElementById('sd-photo');
-  if (s.photo_url) {
-    photoImg.src = s.photo_url;
-    photoWrap.style.display = 'block';
-  } else {
-    photoWrap.style.display = 'none';
-  }
-  m.classList.add('open');
+  openSightingDetail_filtered(i);
 }
 
 function closeSightingDetail() {
@@ -1717,6 +1113,7 @@ window.addEventListener('load', () => {
   loadBibFromDrive();
   loadSightingsFromSheet();
   arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
+  initBioMap();
 });
 
 
@@ -1950,6 +1347,7 @@ async function loadSightingsFromSheet() {
     });
     updateBioKPIs();
     renderRecentSightings();
+    populateBioFilters();
     if (bioMap) renderBioMap();
   } catch(e) {
     console.warn('loadSightingsFromSheet failed:', e);
@@ -2108,6 +1506,17 @@ function openSubmitModal() {
   document.getElementById('submit-modal').classList.add('open');
   document.getElementById('s-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('s-status').textContent='';
+  // Pre-fill name from auth; hide field if logged in
+  const auth = arrAuthGet();
+  const nameEl = document.getElementById('s-name');
+  const nameRow = document.getElementById('s-name-row');
+  if(auth) {
+    if(nameEl) nameEl.value = auth.name || auth.email;
+    if(nameRow) nameRow.style.display='none';
+  } else {
+    if(nameEl) nameEl.value='';
+    if(nameRow) nameRow.style.display='';
+  }
   getBrowserGPS();
   populateSubmitDistrict();
 }
@@ -2118,7 +1527,7 @@ function closeSubmitModal() {
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSubmitModal();});
 
 function resetSubmitForm() {
-  _submitTag=null;_browserCoord=null;_exifCoord=null;_photoBase64=null;_photoBlob=null;
+  _submitTag=null;_browserCoord=null;_exifCoord=null;_photoBase64=null;_photoBlob=null;_exifTs=null;
   ['s-species','s-sci','s-notes','s-name','s-lat','s-lon'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
@@ -2144,16 +1553,22 @@ function getBrowserGPS() {
 }
 
 
+let _exifTs = null; // EXIF capture datetime string for filename
+
 async function handleSubmitPhoto(input) {
   const file=input.files[0];if(!file)return;
   input.value='';
   _photoBlob=file;
+  _exifTs=null;
   const url=URL.createObjectURL(file);
   const prev=document.getElementById('s-photo-preview');
   prev.src=url;prev.style.display='block';
-  // EXIF GPS via exifr
+  // EXIF GPS + capture timestamp via exifr
   try {
-    const gps = typeof exifr !== 'undefined' ? await exifr.gps(file) : null;
+    const exifData = typeof exifr !== 'undefined'
+      ? await exifr.parse(file, ['GPSLatitude','GPSLongitude','DateTimeOriginal','CreateDate'])
+      : null;
+    const gps = exifData?.GPSLatitude ? await exifr.gps(file) : null;
     if(gps&&gps.latitude&&gps.longitude){
       _exifCoord={lat:gps.latitude,lon:gps.longitude};
       document.getElementById('s-exif-coord').textContent=gps.latitude.toFixed(5)+', '+gps.longitude.toFixed(5);
@@ -2161,6 +1576,18 @@ async function handleSubmitPhoto(input) {
       document.getElementById('s-lon').value=gps.longitude.toFixed(6);
     } else {
       document.getElementById('s-exif-coord').textContent='no GPS in photo';
+    }
+    const exifDt = exifData?.DateTimeOriginal || exifData?.CreateDate;
+    if(exifDt){
+      const d = exifDt instanceof Date ? exifDt : new Date(exifDt);
+      if(!isNaN(d)){
+        const iso = d.toISOString().slice(0,10);
+        _exifTs = d.toISOString().replace(/[:.]/g,'').slice(0,15);
+        document.getElementById('s-date').value = iso;
+        const coordEl = document.getElementById('s-exif-coord');
+        const existing = coordEl.textContent;
+        coordEl.textContent = (existing && existing!=='no GPS in photo' ? existing+' · ' : '')+'📅 '+iso;
+      }
     }
   } catch(e){ document.getElementById('s-exif-coord').textContent='EXIF unavailable'; }
   const reader=new FileReader();
@@ -2255,7 +1682,7 @@ async function submitSighting() {
   if(isNaN(lat)||isNaN(lon)){status.textContent='⚠️ No GPS — submitting without location';status.style.color='var(--amber)';}
   btn.disabled=true;btn.textContent='Submitting…';
   const category=TAG_CATEGORY[_submitTag]||'fauna';
-  const ts=new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
+  const ts=_exifTs || new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
   const fname=_photoBase64?`CCB_${(document.getElementById('s-lpc').value)||'noLPC'}_${_submitTag||'sighting'}_${ts}.jpg`:null;
   const payload={
     action:'ccb_sighting',
@@ -2431,9 +1858,7 @@ async function submitSighting() {
         </select>
       </div>
       <div class="form-row-2">
-        <div class="form-row">
-          <label class="form-label">Your name</label>
-          <input class="form-input" id="s-name" type="text" placeholder="Field staff name"/>
+        <div class="form-row" id="s-name-row">
         </div>
         <div class="form-row">
           <label class="form-label">Date</label>
