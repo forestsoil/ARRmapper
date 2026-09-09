@@ -80,7 +80,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
 </script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<title>Survey Manager v40 — ARR</title>
+<title>Survey Manager v41 — ARR</title>
 <style>
 :root {
   /* ── Aliases mapping --c-* to shared tokens from arr-shared.css ── */
@@ -299,9 +299,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-size:15px;
 .filter-count{font-size:11px;color:var(--c-muted);margin-left:auto;white-space:nowrap}
 .filter-clear{font-size:11px;padding:4px 8px;background:var(--c-bg);border:1px solid var(--c-border);border-radius:6px;color:var(--c-muted);cursor:pointer}
 .filter-clear:hover{color:var(--c-danger);border-color:var(--c-danger)}
-/* Records viewer search ─────────────────────────────────────── */
-.rec-search-bar{display:flex;gap:6px;margin-bottom:8px;align-items:center}
-.rec-search-inp{font-family:var(--font);font-size:12px;padding:6px 10px;border:1px solid var(--c-border);border-radius:6px;background:var(--c-input-bg);color:var(--c-text);flex:1}
+
 </style>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 </head>
@@ -313,7 +311,7 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-size:15px;
     <button class="lang-btn" id="lang-btn" onclick="cycleLang()">EN</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
     <span id="queue-badge">0</span>
-    <span class="ver">v1 DEV36</span>
+    <span class="ver">v1 DEV37</span>
     <a href="./index.html" class="arr-chip" style="text-decoration:none">🏠 Suite</a>
     <div id="user-chip">Loading…</div>
   </div>
@@ -366,33 +364,20 @@ html,body{height:100%;background:var(--c-bg);color:var(--c-text);font-size:15px;
         </select>
         <button id="rec-export-btn" onclick="exportRecordsXLSX()" style="display:none;font-size:11px;padding:5px 10px;background:var(--c-accent2);border:none;border-radius:var(--radius);color:#fff;font-weight:600;cursor:pointer">⬇ XLSX</button>
       </div>
-      <div class="rec-search-bar" style="display:none"><!-- replaced --></div>
+
       <!-- Records filter bar -->
       <div class="filter-bar" id="rec-filter-bar" style="margin-bottom:8px">
         <div class="filter-row">
-          <span class="filter-label">Filter</span>
-          <select class="filter-sel" id="rf-district" onchange="updateRecordFilters()">
-            <option value="">All districts</option>
+          <select class="filter-sel" id="rf-field-type" onchange="onFieldTypeChange()" style="flex:2;min-width:120px" title="Filter by field">
+            <option value="">— field —</option>
           </select>
-          <select class="filter-sel" id="rf-block" onchange="updateRecordFilters()">
-            <option value="">All blocks</option>
+          <select class="filter-sel" id="rf-field-value" onchange="updateRecordFilters()" style="flex:2;min-width:100px" title="Field value">
+            <option value="">— value —</option>
           </select>
-          <button class="filter-clear" onclick="clearRecordFilters()">✕</button>
-        </div>
-        <div class="filter-row">
-          <span class="filter-label" style="white-space:nowrap">Date</span>
           <input type="date" class="filter-sel" id="rf-date-from" onchange="updateRecordFilters()" style="flex:1;min-width:110px" title="From date">
           <span style="font-size:11px;color:var(--c-muted);flex-shrink:0">–</span>
           <input type="date" class="filter-sel" id="rf-date-to" onchange="updateRecordFilters()" style="flex:1;min-width:110px" title="To date">
-        </div>
-        <div class="filter-row">
-          <span class="filter-label" style="white-space:nowrap">Field</span>
-          <select class="filter-sel" id="rf-field-type" onchange="onFieldTypeChange()" style="flex:2;min-width:110px">
-            <option value="">— field —</option>
-          </select>
-          <select class="filter-sel" id="rf-field-value" onchange="updateRecordFilters()" style="flex:2;min-width:100px">
-            <option value="">— value —</option>
-          </select>
+          <button class="filter-clear" onclick="clearRecordFilters()" title="Clear all filters">✕</button>
         </div>
         <div class="filter-row">
           <input type="text" class="filter-search" id="rec-search"
@@ -443,9 +428,9 @@ const APP_CONFIG = {
 // ═══════════════════════════════════════════════════════
 const SCHEMA = {
   "meta": {
-    "version": "1.0.0",
+    "version": "v7",
     "app": "appSurveyManager",
-    "generated": "2026-07-25",
+    "generated": "2026-09-09",
     "land_units": {
       "wb_bigha_sqm": 1337.805,
       "arunachal_pura_sqm": 5351.22,
@@ -2391,14 +2376,19 @@ const SCHEMA = {
               "type": "file",
               "accept": ".kml,.kmz,.geojson",
               "field_role": "plantation_map",
-              "hint": "Export from Vector Tool"
+              "required": false,
+              "hint": "Export from Vector Tool (optional)"
             },
             {
               "id": "gps_photo",
               "label": "GPS / Timestamped Land Photo",
               "type": "file",
-              "accept": "image/*",
-              "field_role": "gps_photo"
+              "accept": "image/*,.pdf",
+              "field_role": "gps_photo",
+              "required": false,
+              "multiple": true,
+              "max_files": 20,
+              "hint": "Optional — timestamped photos of the land parcel"
             },
             {
               "id": "land_document",
@@ -2406,7 +2396,10 @@ const SCHEMA = {
               "type": "file",
               "accept": "image/*,.pdf",
               "field_role": "document",
-              "hint": "Multiple pages: combine as JPG or PDF",
+              "required": true,
+              "multiple": true,
+              "max_files": 20,
+              "hint": "JPG or PDF — up to 20 files (pages, photos of document)",
               "links_to": "DBC"
             }
           ]
@@ -6912,157 +6905,113 @@ function mkFileField(f) {
 
   const isPhoto    = f.field_role === 'gps_photo' || f.field_role === 'location_photo' ||
                      f.field_role === 'plot_photo' || f.field_role === 'tree_photo';
-  const isDoc      = f.field_role === 'document';
   const isPlantMap = f.field_role === 'plantation_map';
+  const maxFiles   = f.max_files || (f.multiple ? 20 : 1);
 
   // ── Plantation map special handler ──
   if (isPlantMap) {
     const season = isPlantingSeason();
-
     const arrBtn = document.createElement('button');
     arrBtn.type='button'; arrBtn.className='file-btn arrmap';
     arrBtn.innerHTML = '🗺 ' + t('app.open_vector', 'Open Vector Tool');
-
     const opfsBtn = document.createElement('button');
     opfsBtn.type='button'; opfsBtn.className='file-btn opfs';
     opfsBtn.innerHTML = '📂 ' + t('app.pick_opfs','Pick from in-browser cache');
-
     const fileBtn = document.createElement('button');
     fileBtn.type='button'; fileBtn.className='file-btn';
     fileBtn.innerHTML = '📎 ' + t('app.file_picker','File picker');
-
     const fi = document.createElement('input');
-    fi.type='file'; fi.style.display='none';
-    fi.accept='.kml,.kmz,.geojson,image/*';
-
-    const opfsList = document.createElement('div');
-    opfsList.className = 'opfs-picker';
-
-    const warnBox = document.createElement('div');
-    warnBox.className = 'override-warn';
-    warnBox.style.display = 'none';
-
-    const btnRow = document.createElement('div');
-    btnRow.className = 'file-btns';
-    btnRow.appendChild(arrBtn);
-
-    const btnRow2 = document.createElement('div');
-    btnRow2.className = 'file-btns';
-    btnRow2.appendChild(opfsBtn); btnRow2.appendChild(fileBtn);
-
-    // ARRmapper launch
+    fi.type='file'; fi.style.display='none'; fi.accept='.kml,.kmz,.geojson,image/*';
+    const opfsList = document.createElement('div'); opfsList.className = 'opfs-picker';
+    const warnBox  = document.createElement('div'); warnBox.className = 'override-warn'; warnBox.style.display = 'none';
+    const btnRow  = document.createElement('div'); btnRow.className='file-btns'; btnRow.appendChild(arrBtn);
+    const btnRow2 = document.createElement('div'); btnRow2.className='file-btns'; btnRow2.appendChild(opfsBtn); btnRow2.appendChild(fileBtn);
     arrBtn.onclick = () => {
       window.open(ARRMAP_URL, '_blank');
-      // Poll OPFS on return
       const onReturn = async () => {
         if (document.visibilityState === 'visible') {
           document.removeEventListener('visibilitychange', onReturn);
           await new Promise(r => setTimeout(r, 800));
           const files = await opfsBrowseLP();
-          if (files.length) {
-            toast('Vector Tool file detected — review below', 'success');
-            renderOpfsList(files, opfsList, prev, f);
-            opfsList.classList.add('open');
-          }
+          if (files.length) { toast('Vector Tool file detected — review below', 'success'); renderOpfsList(files, opfsList, prev, f); opfsList.classList.add('open'); }
         }
       };
       document.addEventListener('visibilitychange', onReturn);
     };
-
-    // OPFS picker
     opfsBtn.onclick = async () => {
       const files = await opfsBrowseLP();
       if (!files.length) { toast('No PlantationMapper files found in OPFS', 'warn'); return; }
-      renderOpfsList(files, opfsList, prev, f);
-      opfsList.classList.toggle('open');
+      renderOpfsList(files, opfsList, prev, f); opfsList.classList.toggle('open');
     };
-
-    // File picker override
     if (season) {
       fileBtn.onclick = () => {
         warnBox.style.display = 'block';
         warnBox.innerHTML = `<strong>⚠ Planting season active</strong> — Vector Tool map is required for audit.<br>
           <div class="override-confirm">
             <button onclick="this.closest('.override-warn').style.display='none'">Cancel</button>
-            <button onclick="this.closest('.override-warn').style.display='none'; document.getElementById('fi_${f.id}').click()">
-              Override — map will be added later
-            </button>
+            <button onclick="this.closest('.override-warn').style.display='none'; document.getElementById('fi_${f.id}').click()">Override — map will be added later</button>
           </div>`;
       };
-    } else {
-      fileBtn.onclick = () => fi.click();
-    }
-
+    } else { fileBtn.onclick = () => fi.click(); }
     fi.id = 'fi_'+f.id;
-    fi.onchange = () => {
-      Array.from(fi.files).forEach(file => addFileChip(file, file, f.id, prev, false, false));
-      fi.value = '';
-    };
-
-    wrap.appendChild(btnRow); wrap.appendChild(btnRow2);
-    wrap.appendChild(warnBox); wrap.appendChild(fi);
-    wrap.appendChild(opfsList); wrap.appendChild(prev);
+    fi.onchange = () => { Array.from(fi.files).forEach(file => addFileChip(file, file, f.id, prev, false, false)); fi.value = ''; };
+    wrap.appendChild(btnRow); wrap.appendChild(btnRow2); wrap.appendChild(warnBox); wrap.appendChild(fi); wrap.appendChild(opfsList); wrap.appendChild(prev);
     return wrap;
   }
 
-  // ── Camera + gallery buttons for photo/doc fields ──
-  const hasCamera = isPhoto || isDoc;
+  // ── Unified handler for all photo / document / file fields ──
+  // Accepts: camera, gallery/file-picker — both honour accept string from schema
+  // For image-only roles: apply EXIF + overlay processing; for mixed (doc, gps_photo): pass through raw
+  const acceptStr = f.accept || 'image/*';
+  const processAsPhoto = isPhoto && !acceptStr.includes('.pdf') && !acceptStr.includes('application/pdf');
 
-  if (hasCamera) {
-    const btnRow = document.createElement('div'); btnRow.className='file-btns';
+  const btnRow = document.createElement('div'); btnRow.className='file-btns';
 
-    const camBtn = document.createElement('button');
-    camBtn.type='button'; camBtn.className='file-btn primary';
-    camBtn.innerHTML = t('app.take_photo','📷 Take Photo');
+  // Camera button (images only — hidden for pure-document roles that include PDF)
+  const camBtn = document.createElement('button');
+  camBtn.type='button'; camBtn.className='file-btn primary';
+  camBtn.innerHTML = t('app.take_photo','📷 Take Photo');
 
-    const galBtn = document.createElement('button');
-    galBtn.type='button'; galBtn.className='file-btn';
-    galBtn.innerHTML = t('app.gallery','🖼 Gallery');
+  // Gallery / Files button (respects accept — shows both images and PDF)
+  const galBtn = document.createElement('button');
+  galBtn.type='button'; galBtn.className='file-btn';
+  galBtn.innerHTML = t('app.gallery','🖼 Gallery / Files');
 
-    const fiCam = document.createElement('input');
-    fiCam.type='file'; fiCam.accept='image/*'; fiCam.capture='environment'; fiCam.style.display='none';
+  const fiCam = document.createElement('input');
+  fiCam.type='file'; fiCam.accept='image/*'; fiCam.capture='environment'; fiCam.style.display='none'; fiCam.multiple=true;
 
-    const fiGal = document.createElement('input');
-    fiGal.type='file'; fiGal.accept='image/*'; fiGal.style.display='none';
-    if (f.multiple) { fiCam.multiple=true; fiGal.multiple=true; }
+  const fiGal = document.createElement('input');
+  fiGal.type='file'; fiGal.accept=acceptStr; fiGal.style.display='none'; fiGal.multiple=true;
 
-    camBtn.onclick = () => fiCam.click();
-    galBtn.onclick = () => fiGal.click();
+  camBtn.onclick = () => fiCam.click();
+  galBtn.onclick = () => fiGal.click();
 
-    const handlePhotos = async (files, fromCamera) => {
-      const max = f.max_files || (f.multiple ? 10 : 1);
-      const toProcess = Array.from(files).slice(0, max - S.files[f.id].length);
-      for (const file of toProcess) {
-        const processed = await processPhoto(file, isPhoto, !fromCamera);
-        addFileChip(file, processed, f.id, prev, isPhoto, !fromCamera);
-      }
-    };
-
-    fiCam.onchange = async () => { await handlePhotos(fiCam.files, true);  fiCam.value=''; };
-    fiGal.onchange = async () => { await handlePhotos(fiGal.files, false); fiGal.value=''; };
-
-    btnRow.appendChild(camBtn); btnRow.appendChild(galBtn);
-    wrap.appendChild(btnRow); wrap.appendChild(fiCam); wrap.appendChild(fiGal);
-
-  } else {
-    // Generic file zone for non-photo fields (audio, KML, etc.)
-    const zone = document.createElement('div'); zone.className='file-zone';
-    zone.innerHTML=`<div class="fz-icon">📎</div><div class="fz-label">${f.multiple?'Tap to add files':'Tap to upload'}</div>`;
-    const fi = document.createElement('input'); fi.type='file'; fi.style.display='none';
-    if (f.accept) fi.accept=f.accept;
-    if (f.multiple) fi.multiple=true;
-    zone.onclick=()=>fi.click();
-    fi.onchange=()=>{
-      const max=f.max_files||(f.multiple?10:1);
-      Array.from(fi.files).slice(0,max-S.files[f.id].length).forEach(file=>{
+  const handleFiles = async (files, fromCamera) => {
+    const remaining = maxFiles - S.files[f.id].length;
+    if (remaining <= 0) { toast(`Max ${maxFiles} files already attached`, 'warn'); return; }
+    const toProcess = Array.from(files).slice(0, remaining);
+    for (const file of toProcess) {
+      if (processAsPhoto && fromCamera) {
+        // Apply EXIF + overlay for camera shots from pure photo fields
+        const processed = await processPhoto(file, true, false);
+        addFileChip(file, processed, f.id, prev, true, false);
+      } else if (processAsPhoto) {
+        // Gallery photo — EXIF write, no overlay burn
+        const processed = await processPhoto(file, false, true);
+        addFileChip(file, processed, f.id, prev, false, true);
+      } else {
+        // Documents (PDF + image mix), or any non-photo role — pass raw
         addFileChip(file, file, f.id, prev, false, false);
-      });
-      fi.value='';
-    };
-    wrap.appendChild(zone); wrap.appendChild(fi);
-  }
+      }
+    }
+    if (Array.from(files).length > remaining) toast(`Only ${remaining} more file(s) accepted (max ${maxFiles})`, 'warn');
+  };
 
-  wrap.appendChild(prev);
+  fiCam.onchange = async () => { await handleFiles(fiCam.files, true);  fiCam.value=''; };
+  fiGal.onchange = async () => { await handleFiles(fiGal.files, false); fiGal.value=''; };
+
+  btnRow.appendChild(camBtn); btnRow.appendChild(galBtn);
+  wrap.appendChild(btnRow); wrap.appendChild(fiCam); wrap.appendChild(fiGal); wrap.appendChild(prev);
   return wrap;
 }
 
@@ -7190,18 +7139,48 @@ function validateForm() {
       if (!f.required) return;
       if (f.projects && !f.projects.includes(S.project)) return;
       if (f.show_if && !evalCond(f.show_if)) return;
-      if (f.type==='auto') return;
+      // Auto-filled fields: skip (they're read-only)
+      if (f.type==='auto' || f.type==='state_display' || f.type==='dbc_autogenerate' ||
+          f.type==='auto_from_lpc' || f.type==='auto_from_cluster' || f.type==='auto_season') return;
+
+      const fieldLabel = lbl(f.label, f.id);
+
+      // File fields — check S.files
+      if (f.type==='file') {
+        const fileArr = S.files[f.id] || [];
+        if (!fileArr.length) { ok=false; errs.push(fieldLabel + ' (file required)'); }
+        return;
+      }
+
+      // Land area fields — check the sqm value stored in S.values
+      if (f.type==='land_area') {
+        const v = _v(f.id);
+        const sqm = typeof v === 'object' ? (v?.sqm || 0) : parseFloat(v) || 0;
+        if (!sqm || sqm <= 0) { ok=false; errs.push(fieldLabel); }
+        return;
+      }
+
+      // Standard value fields
       const v = _v(f.id);
-      const empty = v===undefined||v===null||v===''||(Array.isArray(v)&&!v.length);
-      if (empty) { ok=false; errs.push(lbl(f.label,f.id)); }
+      const empty = v===undefined || v===null || v==='' || (Array.isArray(v) && !v.length);
+      if (empty) { ok=false; errs.push(fieldLabel); }
     });
   });
+
+  // Biomass identity constraint: at least one of beneficiary_names or dbc_ids required
+  if (S.formId === 'biomass_plot' || S.formId === 'biomass_tree') {
+    const hasBen = (S.values.beneficiary_names||'').trim().length > 0;
+    const hasDBC = (S.values.dbc_ids||'').trim().length > 0;
+    if (!hasBen && !hasDBC) { ok=false; errs.push('Beneficiary Name or DBC Code (at least one required)'); }
+  }
+
   // Grievance: require at least one of lpc_id, dbc_id, beneficiary_name
   if (S.formId === 'grievance' && S.values.grievance_stage === 'registration') {
     if (!S.values.lpc_id && !S.values.dbc_id && !S.values.beneficiary_name) {
       ok = false; errs.push('LPC / DBC / Beneficiary Name (at least one required)');
     }
   }
+
   return { ok, errs };
 }
 
@@ -7231,6 +7210,84 @@ function flattenValues(vals) {
 }
 
 // ═══════════════════════════════════════════════════════
+// DUPLICATE DETECTION (device-local, baseline only)
+// ═══════════════════════════════════════════════════════
+const DUP_CACHE_KEY = 'arr_dup_cache';
+const DUP_CACHE_MAX = 200;
+const DUP_TTL_DAYS  = 90;
+
+// Fields used for fingerprint — excludes GPS, UUID, timestamp
+const DUP_FINGERPRINT_FIELDS = [
+  'district_code','block_circle_code','gp_name','village_name',
+  'entity_name','signatory_name','mobile','aadhaar_number',
+  'stakeholder_type','land_plantation_sqm'
+];
+
+async function dupFingerprintBaseline(vals) {
+  const str = DUP_FINGERPRINT_FIELDS.map(k => {
+    const v = vals[k];
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'object' && v.sqm !== undefined) return String(Math.round(v.sqm));
+    return String(v).toLowerCase().trim();
+  }).join('|');
+  return await sha256(str);
+}
+
+function dupCacheRead() {
+  try {
+    const raw = localStorage.getItem(DUP_CACHE_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    const cutoff = Date.now() - DUP_TTL_DAYS * 86400000;
+    return arr.filter(e => e.ts > cutoff);
+  } catch(e) { return []; }
+}
+
+function dupCacheWrite(entry) {
+  try {
+    let arr = dupCacheRead();
+    arr.unshift(entry);
+    if (arr.length > DUP_CACHE_MAX) arr = arr.slice(0, DUP_CACHE_MAX);
+    localStorage.setItem(DUP_CACHE_KEY, JSON.stringify(arr));
+  } catch(e) { /* storage full — ignore */ }
+}
+
+function dupCacheFind(fingerprint) {
+  return dupCacheRead().find(e => e.fp === fingerprint) || null;
+}
+
+// Show a modal-style duplicate warning; resolves with {proceed, note}
+function dupWarnModal(existing) {
+  return new Promise(res => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--c-card);border:2px solid var(--c-warn);border-radius:12px;padding:20px;max-width:420px;width:100%;font-size:13px;display:flex;flex-direction:column;gap:12px';
+    const dt = new Date(existing.ts).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
+    box.innerHTML = `
+      <div style="font-size:15px;font-weight:700;color:var(--c-warn)">⚠ Possible Duplicate</div>
+      <div>A very similar baseline record was submitted from this device on <strong>${dt}</strong>
+           (ID: <code style="font-size:11px">${existing.id.slice(0,12)}…</code>).<br>
+           Key identity fields match. Are you sure this is a different beneficiary?</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:11px;font-weight:600;color:var(--c-muted)">Add a note to distinguish this record (will be added to Remarks)</label>
+        <textarea id="dup-note" rows="2" style="font-family:var(--font);font-size:13px;padding:8px;border:1px solid var(--c-border);border-radius:7px;background:var(--c-input-bg);color:var(--c-text);resize:vertical" placeholder="e.g. Different plot on same land, brother of previous beneficiary…"></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="dup-cancel" style="flex:1;padding:10px;border:1px solid var(--c-border);border-radius:7px;background:var(--c-bg);color:var(--c-text);cursor:pointer;font-family:var(--font)">Cancel</button>
+        <button id="dup-proceed" style="flex:1;padding:10px;border:none;border-radius:7px;background:var(--c-warn);color:#000;font-weight:700;cursor:pointer;font-family:var(--font)">Submit Anyway</button>
+      </div>`;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    document.getElementById('dup-cancel').onclick  = () => { overlay.remove(); res({proceed:false, note:''}); };
+    document.getElementById('dup-proceed').onclick = () => {
+      const note = document.getElementById('dup-note').value.trim();
+      overlay.remove(); res({proceed:true, note});
+    };
+  });
+}
+
+// ═══════════════════════════════════════════════════════
 // DRAFT SAVE
 // ═══════════════════════════════════════════════════════
 async function saveDraft() {
@@ -7246,23 +7303,30 @@ async function saveDraft() {
 // SUBMIT FORM
 // ═══════════════════════════════════════════════════════
 async function submitForm() {
-  // Extra validation for biomass forms — at least one of beneficiary_names or dbc_ids required
-  if (S.formId === 'biomass_plot' || S.formId === 'biomass_tree') {
-    const hasBen = (S.values.beneficiary_names||'').trim().length > 0;
-    const hasDBC = (S.values.dbc_ids||'').trim().length > 0;
-    if (!hasBen && !hasDBC) {
-      toast('Fill at least one: Beneficiary Name(s) or DBC Code(s)', 'error', 5000);
-      // Highlight both fields
-      ['f_beneficiary_names','f_dbc_ids'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { el.classList.add('err'); setTimeout(()=>el.classList.remove('err'), 3000); }
-      });
-      return;
-    }
+  const { ok, errs } = validateForm();
+  if (!ok) {
+    const msg = errs.length === 1
+      ? 'Required: ' + errs[0]
+      : `${errs.length} required fields missing: ` + errs.slice(0,2).join(', ') + (errs.length > 2 ? ' …' : '');
+    toast(msg, 'error', 6000);
+    return;
   }
 
-  const { ok, errs } = validateForm();
-  if (!ok) { toast('Required: ' + errs.slice(0,3).join(', '), 'error', 5000); return; }
+  // Duplicate detection for baseline form (device-local)
+  if (S.formId === 'baseline') {
+    const fp = await dupFingerprintBaseline(S.values);
+    const existing = dupCacheFind(fp);
+    if (existing) {
+      const { proceed, note } = await dupWarnModal(existing);
+      if (!proceed) return;
+      if (note) {
+        const cur = (S.values.remarks || '').trim();
+        S.values.remarks = cur ? cur + '\n[Dup note] ' + note : '[Dup note] ' + note;
+        const remEl = document.getElementById('f_remarks');
+        if (remEl) remEl.value = S.values.remarks;
+      }
+    }
+  }
 
   const btn = document.getElementById('btn-submit');
   btn.disabled=true; btn.textContent='Preparing…';
@@ -7306,6 +7370,10 @@ async function submitForm() {
         if (json.ok) {
           rowOk = true;
           if (json.dbc) showDBCResult(json.dbc);
+          // Write dup fingerprint to local cache
+          dupFingerprintBaseline(S.values).then(fp =>
+            dupCacheWrite({ fp, id: S.submissionId, ts: Date.now(), project: S.project })
+          );
         }
       } else {
         // no-cors for all other forms
@@ -7321,6 +7389,11 @@ async function submitForm() {
   if (!rowOk) {
     await idbPut(IDB_QUEUE, submission);
     await updateQueueBadge();
+  }
+  // Write dup fingerprint for baseline even when offline (queued)
+  if (isBaseline) {
+    const fp = await dupFingerprintBaseline(S.values);
+    dupCacheWrite({ fp, id: S.submissionId, ts: Date.now(), project: S.project });
   }
 
   // 2. Upload files (user-attached + OPFS KML if selected)
@@ -8698,7 +8771,7 @@ async function loadRecords() {
     }
 
     _recData = data.records.slice().reverse(); // latest first
-    _allRecRows = _recData.slice();
+    _filteredRecData = [];
     document.getElementById('rec-search').value = '';
 
     const viewCols = buildFormViewCols(formId);
@@ -8727,30 +8800,33 @@ async function loadRecords() {
   }
 }
 
-function renderRecordTable() {
+function renderRecordTable(rows) {
+  rows = rows || _recData;
   const thead = document.getElementById('rec-thead');
   const tbody = document.getElementById('rec-tbody');
 
-  // Header
-  thead.innerHTML = '<tr>' + _recCols.map(c =>
-    `<th style="padding:6px 8px;text-align:left;white-space:nowrap;font-size:10px;font-weight:700;
+  // Header — friendly name (from I18N) as display, raw col id as title tooltip
+  thead.innerHTML = '<tr>' + _recCols.map(c => {
+    const friendly = t('f.'+c, null) || t('s.'+c, null);
+    const display  = friendly || c.replace(/_/g,' ');
+    return `<th title="${c}" style="padding:6px 8px;text-align:left;white-space:nowrap;font-size:10px;font-weight:700;
       border-bottom:2px solid var(--c-border);letter-spacing:.04em;text-transform:uppercase;
-      background:var(--c-surface)">${c}</th>`
-  ).join('') + '</tr>';
+      background:var(--c-surface)">${display}</th>`;
+  }).join('') + '</tr>';
 
   // Rows
-  tbody.innerHTML = _recData.map((row, ri) => {
+  tbody.innerHTML = rows.map((row, ri) => {
     const bg = ri % 2 === 0 ? '' : 'background:var(--c-bg)';
     return '<tr style="' + bg + '">' + _recCols.map(c => {
       let val = row[c] ?? '';
-      // Drive URL columns — render as link
       if (typeof val === 'string' && val.startsWith('https://lh3.googleusercontent.com')) {
         val = `<a href="${val}" target="_blank" style="color:var(--c-accent);font-size:10px">📷 View</a>`;
       } else if (typeof val === 'string' && val.startsWith('https://')) {
         val = `<a href="${val}" target="_blank" style="color:var(--c-accent);font-size:10px">🔗 Link</a>`;
       } else {
-        // Truncate long text
-        const s = String(val);
+        // Show human-readable label for admin codes
+        const resolved = adminCodeLabel(c, String(val));
+        const s = resolved || String(val);
         val = s.length > 60 ? `<span title="${s.replace(/"/g,'&quot;')}">${s.slice(0,60)}…</span>` : s;
       }
       return `<td style="padding:5px 8px;border-bottom:1px solid var(--c-border);
@@ -8762,9 +8838,13 @@ function renderRecordTable() {
 function exportRecordsXLSX() {
   if (!_recData.length || !window.XLSX) { toast('XLSX library not loaded', 'error'); return; }
   const formId = document.getElementById('rec-form-sel').value;
-  // Use filtered rows if any filter is active, else all records
-  const exportRows = _filteredRecData.length > 0 && _filteredRecData.length < _recData.length
-    ? _filteredRecData : _recData;
+  const isFiltered = _filteredRecData.length > 0 || !!(
+    document.getElementById('rf-field-value')?.value ||
+    document.getElementById('rf-date-from')?.value ||
+    document.getElementById('rf-date-to')?.value ||
+    document.getElementById('rec-search')?.value
+  );
+  const exportRows = isFiltered ? _filteredRecData : _recData;
 
   // Build flat rows for XLSX (no HTML, raw values)
   const rows = exportRows.map(row => {
@@ -8851,18 +8931,9 @@ async function fetchAndExportXLSX(formId, formName) {
 let _filterFeatures = null;
 let _filterDistMap  = {}; // distCode → Set of blockCodes
 
-// ── Record viewer filter (district/block cascade + search) ───────────
+// ── Record viewer filter initialisation ───────────────
 function initRecordFilters() {
-  // Populate district dropdown from actual loaded records
   if (!_recData.length) return;
-  const distField = r => r.district_code || r.district || r.f?.district_code || '';
-  const dists = [...new Set(_recData.map(distField).filter(Boolean))].sort();
-  const dsel = document.getElementById('rf-district');
-  if (!dsel) return;
-  const cur = dsel.value;
-  dsel.innerHTML = '<option value="">All districts</option>' +
-    dists.map(d => `<option value="${d}">${d}</option>`).join('');
-  dsel.value = dists.includes(cur) ? cur : '';
 
   // Populate field-type dropdown from visible columns (skip internal/url/metadata)
   const skipCols = new Set(['submission_id','timestamp_server','app_version','device_info',
@@ -8871,11 +8942,14 @@ function initRecordFilters() {
   if (fieldSel) {
     const candidateCols = _recCols.filter(c =>
       !skipCols.has(c) && !c.endsWith('_url') && !isInternalCol(c) && !/_(\d+)$/.test(c));
+    // Use friendly display name (from I18N) where available
     fieldSel.innerHTML = '<option value="">— field —</option>' +
-      candidateCols.map(c => `<option value="${c}">${c}</option>`).join('');
+      candidateCols.map(c => {
+        const friendly = t('f.'+c, null) || t('s.'+c, null) || c;
+        const label = friendly !== c ? `${friendly} (${c})` : c;
+        return `<option value="${c}">${label}</option>`;
+      }).join('');
   }
-
-  updateRecordFilters(); // refresh block dropdown
 }
 
 function onFieldTypeChange() {
@@ -8883,95 +8957,91 @@ function onFieldTypeChange() {
   const valSel = document.getElementById('rf-field-value');
   if (!valSel) return;
   if (!fieldType) { valSel.innerHTML = '<option value="">— value —</option>'; updateRecordFilters(); return; }
-  // Build unique values for chosen field
-  const vals = [...new Set(_recData.map(r => String(r[fieldType] ?? '')).filter(v => v !== '' && v !== 'null' && v !== 'undefined'))].sort();
+  // Build unique raw values, then display with human-readable labels for admin codes
+  const rawVals = [...new Set(_recData.map(r => String(r[fieldType] ?? ''))
+    .filter(v => v !== '' && v !== 'null' && v !== 'undefined'))].sort();
   valSel.innerHTML = '<option value="">— value —</option>' +
-    vals.map(v => { const disp = v.length > 40 ? v.slice(0,40)+'…' : v; return `<option value="${v}">${disp}</option>`; }).join('');
+    rawVals.map(v => {
+      const disp = adminCodeLabel(fieldType, v);
+      const label = disp.length > 50 ? disp.slice(0,50)+'…' : disp;
+      return `<option value="${v}">${label}</option>`;
+    }).join('');
   updateRecordFilters();
 }
 
 let _filteredRecData = []; // currently visible rows (used by export)
 
+// Resolve a raw admin code to a human-readable label using SCHEMA
+function adminCodeLabel(colId, rawVal) {
+  if (!rawVal || !S.project) return rawVal;
+  const hier = SCHEMA.admin_hierarchy?.[S.project];
+  if (!hier) return rawVal;
+  if (colId === 'district_code' || colId === 'district') {
+    const d = hier.districts?.[rawVal];
+    return d ? `${d.label} (${rawVal})` : rawVal;
+  }
+  if (colId === 'block_circle_code' || colId === 'block_circle' || colId === 'block') {
+    for (const [, dist] of Object.entries(hier.districts || {})) {
+      const l2 = dist.blocks || dist.circles || {};
+      if (l2[rawVal]) return `${l2[rawVal]} (${rawVal})`;
+    }
+  }
+  return rawVal;
+}
+
 function updateRecordFilters() {
-  const distVal   = document.getElementById('rf-district')?.value  || '';
-  const blockVal  = document.getElementById('rf-block')?.value     || '';
   const dateFrom  = document.getElementById('rf-date-from')?.value || '';
   const dateTo    = document.getElementById('rf-date-to')?.value   || '';
   const fieldType = document.getElementById('rf-field-type')?.value  || '';
   const fieldVal  = document.getElementById('rf-field-value')?.value || '';
   const search    = (document.getElementById('rec-search')?.value || '').toLowerCase().trim();
 
-  // Update block dropdown based on district
-  const blockSel = document.getElementById('rf-block');
-  if (blockSel && distVal !== blockSel.dataset.district) {
-    blockSel.dataset.district = distVal;
-    const blocks = distVal
-      ? [...new Set(_recData
-          .filter(r => (r.district_code||r.district||'') === distVal)
-          .map(r => r.block_circle_code || r.block_circle || r.block || '')
-          .filter(Boolean))].sort()
-      : [];
-    blockSel.innerHTML = '<option value="">All blocks</option>' +
-      blocks.map(b => `<option value="${b}">${b}</option>`).join('');
-  }
-
-  // Parse date bounds (date-only comparison against ISO timestamp prefix)
   const fromMs = dateFrom ? new Date(dateFrom).getTime() : 0;
   const toMs   = dateTo   ? new Date(dateTo + 'T23:59:59').getTime() : Infinity;
 
-  // Apply filters to table rows
-  let shown = 0;
-  _filteredRecData = [];
-  document.querySelectorAll('#rec-tbody tr').forEach((tr, i) => {
-    const row = _recData[i];
-    if (!row) return;
-    const rDist  = row.district_code || row.district || '';
-    const rBlock = row.block_circle_code || row.block_circle_name || row.block_circle || row.block || '';
-    const matchDist  = !distVal  || rDist  === distVal;
-    const matchBlock = !blockVal || rBlock === blockVal;
-    const matchSearch = !search  || tr.textContent.toLowerCase().includes(search);
-
-    // Date filter — against timestamp_local or survey_date
-    let matchDate = true;
+  // Filter _recData → _filteredRecData, then re-render
+  _filteredRecData = _recData.filter(row => {
+    // Date filter
     if (dateFrom || dateTo) {
       const tsRaw = row.timestamp_local || row.survey_date || row.plantation_date || '';
       const tsMs  = tsRaw ? new Date(tsRaw).getTime() : NaN;
-      matchDate = !isNaN(tsMs) && tsMs >= fromMs && tsMs <= toMs;
+      if (isNaN(tsMs) || tsMs < fromMs || tsMs > toMs) return false;
     }
-
     // Field/value filter
-    let matchField = true;
     if (fieldType && fieldVal) {
       const cellVal = String(row[fieldType] ?? '').toLowerCase();
-      matchField = cellVal.includes(fieldVal.toLowerCase());
-    } else if (fieldType && !fieldVal) {
-      matchField = true; // field selected but no value yet — show all
+      if (!cellVal.includes(fieldVal.toLowerCase())) return false;
     }
-
-    const show = matchDist && matchBlock && matchSearch && matchDate && matchField;
-    tr.style.display = show ? '' : 'none';
-    if (show) { shown++; _filteredRecData.push(row); }
+    // Text search — against all column values concatenated
+    if (search) {
+      const rowText = Object.values(row).join(' ').toLowerCase();
+      if (!rowText.includes(search)) return false;
+    }
+    return true;
   });
 
-  const anyFilter = distVal||blockVal||search||dateFrom||dateTo||(fieldType&&fieldVal);
+  const anyFilter = search || dateFrom || dateTo || (fieldType && fieldVal);
+  renderRecordTable(anyFilter ? _filteredRecData : _recData);
+
   const cnt = document.getElementById('rec-status');
-  if (cnt) cnt.textContent = anyFilter
-    ? shown + ' of ' + _recData.length + ' records'
-    : _recData.length + ' records';
+  if (cnt) {
+    const shown = anyFilter ? _filteredRecData.length : _recData.length;
+    cnt.textContent = anyFilter
+      ? shown + ' of ' + _recData.length + ' records'
+      : _recData.length + ' records';
+  }
 }
 
 function clearRecordFilters() {
-  ['rf-district','rf-block','rf-date-from','rf-date-to','rf-field-type','rf-field-value','rec-search'].forEach(id => {
+  ['rf-date-from','rf-date-to','rf-field-type','rf-field-value','rec-search'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  const blockSel = document.getElementById('rf-block');
-  if (blockSel) {
-    blockSel.innerHTML = '<option value="">All blocks</option>';
-    blockSel.dataset.district = '';
-  }
-  document.querySelectorAll('#rec-tbody tr').forEach(tr => tr.style.display = '');
+  // Reset value dropdown
+  const valSel = document.getElementById('rf-field-value');
+  if (valSel) valSel.innerHTML = '<option value="">— value —</option>';
   _filteredRecData = [];
+  renderRecordTable(_recData);
   const cnt = document.getElementById('rec-status');
   if (cnt) cnt.textContent = _recData.length + ' records';
 }
@@ -8980,8 +9050,6 @@ function clearRecordFilters() {
 // RECORDS TABLE SEARCH
 // ═══════════════════════════════════════════════════════════════
 
-let _allRecRows = []; // cache for search filtering
 
-// filterRecordTable replaced by updateRecordFilters
 
 </script>
