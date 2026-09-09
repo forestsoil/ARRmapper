@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CCB &amp; SDG Dashboard v43</title>
+<title>CCB &amp; SDG Dashboard v41</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.cjs"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -892,7 +892,11 @@ const CAT_ICONS = {fauna:'🦅',flora:'🌿',invasive:'⚠️',recruitment:'🌱
 function populateBioFilters() {
   const districts = [...new Set(bioSightings.map(s=>s.district).filter(Boolean))].sort();
   const blocks    = [...new Set(bioSightings.map(s=>s.block||s.block_circle).filter(Boolean))].sort();
-  const species   = [...new Set(bioSightings.map(s=>s.species).filter(Boolean))].sort();
+  const species   = [...new Map(bioSightings
+    .map(s => s.sci?.trim() || s.species?.trim())
+    .filter(Boolean)
+    .map(s => [s.toLowerCase(), s])  // dedupe case-insensitively, keep original case
+  ).values()].sort();
   const recorders = [...new Set(bioSightings.map(s=>s.recorder).filter(Boolean))].sort();
 
   const dsel = document.getElementById('f-district');
@@ -919,7 +923,7 @@ function populateBioFilters() {
   if (ssel) {
     const sv = ssel.value;
     ssel.innerHTML = '<option value="">All species</option>' +
-      species.map(s=>`<option value="${s}">${s}</option>`).join('');
+      species.map(s=>`<option value="${s.toLowerCase()}">${s}</option>`).join('');
     ssel.value = sv;
   }
   if (rsel) {
@@ -974,7 +978,7 @@ function renderBioMap() {
     .filter(typeFilter)
     .filter(s => !fDist   || s.district === fDist)
     .filter(s => !fBlock  || (s.block||s.block_circle) === fBlock)
-    .filter(s => !fSpp    || s.species === fSpp)
+    .filter(s => !fSpp    || (s.sci?.trim()||s.species?.trim()||'').toLowerCase() === fSpp)
     .filter(s => !fRec    || s.recorder === fRec)
     .filter(s => !fFrom   || (s.date||'') >= fFrom)
     .filter(s => !fTo     || (s.date||'') <= fTo)
@@ -1023,16 +1027,16 @@ function updateDiversityBadges(filtered) {
   const nativeFl   = filtered.filter(s => s.category==='flora'  && !hasTag(s,'invasive'));
   const nativeFa   = filtered.filter(s => s.category==='fauna'  && !hasTag(s,'invasive'));
 
-  const floraS   = new Set(nativeFl.map(s=>s.sci||s.species).filter(Boolean)).size;
-  const faunaS   = new Set(nativeFa.map(s=>s.sci||s.species).filter(Boolean)).size;
-  const invS     = new Set(invasive.map(s=>s.sci||s.species).filter(Boolean)).size;
+  const floraS   = new Set(nativeFl.map(s=>(s.sci?.trim()||s.species?.trim()||"").toLowerCase()).filter(Boolean)).size;
+  const faunaS   = new Set(nativeFa.map(s=>(s.sci?.trim()||s.species?.trim()||"").toLowerCase()).filter(Boolean)).size;
+  const invS     = new Set(invasive.map(s=>(s.sci?.trim()||s.species?.trim()||"").toLowerCase()).filter(Boolean)).size;
   const invPlots = new Set(invasive.map(s=>s.lpc).filter(Boolean)).size;
-  const recrS    = new Set(recruit.map(s=>s.sci||s.species).filter(Boolean)).size;
+  const recrS    = new Set(recruit.map(s=>(s.sci?.trim()||s.species?.trim()||"").toLowerCase()).filter(Boolean)).size;
 
   // Shannon H' on native flora + fauna only (excludes invasive, cultivated)
   const forH = [...nativeFl, ...nativeFa];
   const spCounts = {};
-  forH.forEach(s => { const k=s.sci||s.species||'unknown'; spCounts[k]=(spCounts[k]||0)+1; });
+  forH.forEach(s => { const k=(s.sci?.trim()||s.species?.trim()||'unknown').toLowerCase(); spCounts[k]=(spCounts[k]||0)+1; });
   const N = forH.length;
   const H = N > 0
     ? -Object.values(spCounts).reduce((a,n)=>{ const p=n/N; return a+p*Math.log(p); },0)

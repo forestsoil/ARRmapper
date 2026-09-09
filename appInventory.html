@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>appInventory v8 – Project Asha</title>
+<title>appInventory v9 – Project Asha</title>
 <!-- proj4js for CRS reprojection -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 <!-- shpjs for shapefile zip parsing -->
@@ -368,9 +368,9 @@
         <label>Category</label>
         <select id="r_category" onchange="populateItems('r')">
           <option value="">— Select Category —</option>
-          <option value="fencing_all">Fencing (2024–present)</option>
-          <option value="fencing_2025">Fencing (2025 only)</option>
-          <option value="fencing_2024">Fencing (2024 only)</option>
+          <option value="fencing_legacy">Legacy Fencing</option>
+          <option value="fencing_running">Running Fencing</option>
+          <option value="fencing_topa">Topa Fencing</option>
           <option value="fencing_solar">Jhatka-Solar Fence</option>
           <option value="plantation">Plantation</option>
           <option value="nursery">Nursery</option>
@@ -394,7 +394,26 @@
     </div>
     <div class="form-row">
       <div><label>Voucher / Challan No.</label><input type="text" id="r_voucher" placeholder="Optional" /></div>
-      <div><label>Received At (Location)</label><input type="text" id="r_location" placeholder="Store / godown / field" /></div>
+      <div>
+        <label>Received At (Location)</label>
+        <select id="r_location" style="margin-bottom:4px;">
+          <option value="">— Select Location —</option>
+          <optgroup label="Godowns">
+            <option value="Godown – JPG Nagrakata">Godown – JPG Nagrakata</option>
+            <option value="Godown – APDW Madhu TG">Godown – APDW Madhu TG</option>
+            <option value="Godown – APDE Salsalabari">Godown – APDE Salsalabari</option>
+          </optgroup>
+          <optgroup label="TF Nurseries">
+            <option value="Nursery – APDW Salsalabari">Nursery – APDW Salsalabari</option>
+            <option value="Nursery – JPG Grassmore">Nursery – JPG Grassmore</option>
+          </optgroup>
+          <option value="Other (see remarks)">Other (see remarks)</option>
+        </select>
+        <div style="font-size:11px;color:var(--text2);margin-top:3px;" id="r_gps_row">
+          <span id="r_gps_txt">📍 GPS: acquiring…</span>
+        </div>
+        <input type="hidden" id="r_gps" />
+      </div>
     </div>
     <div class="form-row full">
       <div><label>Remarks</label><textarea id="r_remarks" placeholder="Condition, notes..."></textarea></div>
@@ -436,9 +455,9 @@
         <label>Category</label>
         <select id="d_category" onchange="populateItems('d')">
           <option value="">— Select Category —</option>
-          <option value="fencing_all">Fencing (2024–present)</option>
-          <option value="fencing_2025">Fencing (2025 only)</option>
-          <option value="fencing_2024">Fencing (2024 only)</option>
+          <option value="fencing_legacy">Legacy Fencing</option>
+          <option value="fencing_running">Running Fencing</option>
+          <option value="fencing_topa">Topa Fencing</option>
           <option value="fencing_solar">Jhatka-Solar Fence</option>
           <option value="plantation">Plantation</option>
           <option value="nursery">Nursery</option>
@@ -461,6 +480,26 @@
       <div><label>Issued To (Person)</label><input type="text" id="d_issuedTo" placeholder="Field staff / supervisor" /></div>
     </div>
     <div class="form-row">
+      <div>
+        <label>Dispatched From (Location)</label>
+        <select id="d_location" style="margin-bottom:4px;">
+          <option value="">— Select Location —</option>
+          <optgroup label="Godowns">
+            <option value="Godown – JPG Nagrakata">Godown – JPG Nagrakata</option>
+            <option value="Godown – APDW Madhu TG">Godown – APDW Madhu TG</option>
+            <option value="Godown – APDE Salsalabari">Godown – APDE Salsalabari</option>
+          </optgroup>
+          <optgroup label="TF Nurseries">
+            <option value="Nursery – APDW Salsalabari">Nursery – APDW Salsalabari</option>
+            <option value="Nursery – JPG Grassmore">Nursery – JPG Grassmore</option>
+          </optgroup>
+          <option value="Other (see remarks)">Other (see remarks)</option>
+        </select>
+        <div style="font-size:11px;color:var(--text2);margin-top:3px;" id="d_gps_row">
+          <span id="d_gps_txt">📍 GPS: acquiring…</span>
+        </div>
+        <input type="hidden" id="d_gps" />
+      </div>
       <div><label>Work Area / Compartment</label><input type="text" id="d_workarea" placeholder="Parcel / compartment ref." /></div>
       <div>
         <label>Purpose</label>
@@ -629,38 +668,56 @@ const CRS_BY_PROJECT = { Asha1:"UTM45N", Asha2:"UTM45N", Banani:"UTM45N", Arun:"
 // ITEM DATA
 // ════════════════════════════════════════════════════
 const FERTILIZERS = [
-  "Vermicompost","Bone Meal","Neem Cake","Mancozeb (Anti-fungal)","Dry Cow Dung"
+  "Vermicompost","Bone Meal","Neem Cake","Fungicide Mancozeb 45","Lime",
+  "Bio Sar 1 Growth Stimulant","Bio Sar 2 Root Hormone","Neem Oil 1500 ppm",
+  "Dry Cow Dung"
 ];
 const NURSERY_SPECIFIC = [
-  "Green Shade Net","Black Seedling Polybag 9\"×7\"","Black Seedling Polybag 4\"×6\""
+  "Soil","Cow Dung","Vermicompost","Neem Oil","Neem Cake","Bone Meal",
+  "Insecticide (specify name in remarks)",
+  "Green Shade Net","Bamboo Poles",
+  "Tarpaulin",
+  "Sapling Polybag 9\"×7\"","Sapling Polybag 4\"×6\"",
+  "Sutli (Thread)","Dori (Rope)",
+  "Seeds – Ougeinia oojeinensis (Tita Sal)","Seeds – Shorea robusta (Sal)","Seeds – Terminalia bellirica (Bahera)","Seeds – Terminalia chebula (Haritaki)","Seeds – Phyllanthus emblica (Amla)","Seeds – Bombax ceiba (Simul)","Seeds – Pterocarpus marsupium (Bijasal)","Seeds – Dalbergia sissoo (Sisso)","Seeds – Cassia fistula (Bandar Lathi)","Seeds – Michelia champaca (Champa)","Seeds – Artocarpus lakoocha (Dewa)","Seeds – Lagerstroemia speciosa (Jarul)",
+  "Roots/Stumps – Teak (Tectona grandis)","Roots/Stumps – Gamar (Gmelina arborea)"
 ];
 
 const ITEMS = {
-  fencing_all:[
-    "Bamboo pole 1.22m–1.52m (4'–5')",
-    "Nylon Net (Tortoise brand or equiv.)",
-    "GI Wire Gauge 12 (Fencing Guide)",
-    "MS Wire Gauge 16 – Guna tar (Tying)",
-    "Topa Bamboo stick 1.5m (bata/kathi)",
-    "Topa Net"
-  ],
-  fencing_2025:["Live Fence Pole"],
-  fencing_2024:[
+  fencing_legacy:[
+    "Bamboo Pole 1.22m–1.52m (4'–5')",
+    "Live Hedge Pole",
     "Iron Angle Pole","Cement","Sand","Stone Chips",
-    "MS Barbed Wire – Kanta tar (Fencing)"
+    "MS Barbed Wire – Kanta tar"
+  ],
+  fencing_running:[
+    "Nylon Net Running Than",
+    "Bamboo Pole 1.22m–1.52m (4'–5')",
+    "Live Hedge Pole",
+    "GI 12mm Wire",
+    "MS Guna Tar",
+    "GI Nail"
+  ],
+  fencing_topa:[
+    "Topa Net (Stitched)",
+    "Topa Kathi – Bamboo",
+    "Bamboo Pole 1.22m–1.52m (4'–5')",
+    "GI 12mm Wire",
+    "MS Guna Tar",
+    "GI Nail"
   ],
   fencing_solar:[
     "Conductor Wire","Energizer (Jhatka) Machine","Rubber Isolators",
     "Wire Springs","Tubular Battery","Solar Panel","Battery Charger"
   ],
   plantation: [...FERTILIZERS],
-  nursery:    [...FERTILIZERS, ...NURSERY_SPECIFIC]
+  nursery:    [...NURSERY_SPECIFIC]
 };
 
 const CAT_LABELS = {
-  fencing_all:"Fencing (2024–present)", fencing_2025:"Fencing (2025 only)",
-  fencing_2024:"Fencing (2024 only)",   fencing_solar:"Jhatka-Solar Fence",
-  plantation:"Plantation",              nursery:"Nursery"
+  fencing_legacy:"Legacy Fencing",     fencing_running:"Running Fencing",
+  fencing_topa:"Topa Fencing",         fencing_solar:"Jhatka-Solar Fence",
+  plantation:"Plantation",             nursery:"Nursery"
 };
 
 // ════════════════════════════════════════════════════
@@ -679,21 +736,26 @@ const LABOUR_RATES = [
 ];
 
 const INVENTORY_ITEMS = [
-  {id:"i1", group:"Fertilizer",        name:"Vermicompost",                   billingUnit:"quintal (100 kg)"},
-  {id:"i2", group:"Fertilizer",        name:"Neem Cake",                      billingUnit:"quintal (100 kg)"},
-  {id:"i3", group:"Fertilizer",        name:"Bone Meal",                      billingUnit:"quintal (100 kg)"},
-  {id:"i4", group:"Fertilizer",        name:"Lime",                           billingUnit:"quintal (100 kg)"},
-  {id:"i5", group:"Fertilizer",        name:"Fungicide for Root Treatment",   billingUnit:"quintal (100 kg)"},
-  {id:"i6", group:"Fertilizer",        name:"Neem Oil",                       billingUnit:"L"},
-  {id:"i7", group:"Fertilizer",        name:"Growth Stimulant",               billingUnit:"L"},
-  {id:"i8", group:"Fertilizer",        name:"Biosar-2 (Root Hormone)",        billingUnit:"L"},
-  {id:"i9", group:"Fencing Materials", name:"Bamboo Pole",                    billingUnit:"per piece"},
-  {id:"i10",group:"Fencing Materials", name:"Bamboo Stick (bata)",            billingUnit:"per piece"},
-  {id:"i11",group:"Fencing Materials", name:"Nylon Net",                      billingUnit:"per piece"},
-  {id:"i12",group:"Fencing Materials", name:"Topa Net",                       billingUnit:"per piece"},
-  {id:"i13",group:"Fencing Materials", name:"GI Wire for hanging (12 gauge)", billingUnit:"MT (metric ton)"},
-  {id:"i14",group:"Fencing Materials", name:"GI Nail",                        billingUnit:"MT (metric ton)"},
-  {id:"i15",group:"Fencing Materials", name:"GI Wire for Binding – Guna tar", billingUnit:"MT (metric ton)"},
+  {id:"i1", group:"Fertilizer / Inputs", name:"Vermicompost",              billingUnit:"quintal (100 kg)"},
+  {id:"i2", group:"Fertilizer / Inputs", name:"Bone Meal",                 billingUnit:"quintal (100 kg)"},
+  {id:"i3", group:"Fertilizer / Inputs", name:"Neem Cake",                 billingUnit:"quintal (100 kg)"},
+  {id:"i4", group:"Fertilizer / Inputs", name:"Fungicide Mancozeb 45",     billingUnit:"quintal (100 kg)"},
+  {id:"i5", group:"Fertilizer / Inputs", name:"Lime",                      billingUnit:"quintal (100 kg)"},
+  {id:"i6", group:"Fertilizer / Inputs", name:"Bio Sar 1 Growth Stimulant",billingUnit:"L"},
+  {id:"i7", group:"Fertilizer / Inputs", name:"Bio Sar 2 Root Hormone",    billingUnit:"L"},
+  {id:"i8", group:"Fertilizer / Inputs", name:"Neem Oil 1500 ppm",         billingUnit:"L"},
+  {id:"i9", group:"Running Fencing",     name:"Nylon Net Running Than",     billingUnit:"roll"},
+  {id:"i10",group:"Running Fencing",     name:"Bamboo Pole 1.22m–1.52m",   billingUnit:"per piece"},
+  {id:"i11",group:"Running Fencing",     name:"Live Hedge Pole",            billingUnit:"per piece"},
+  {id:"i12",group:"Running Fencing",     name:"GI 12mm Wire",               billingUnit:"MT (metric ton)"},
+  {id:"i13",group:"Running Fencing",     name:"MS Guna Tar",                billingUnit:"MT (metric ton)"},
+  {id:"i14",group:"Running Fencing",     name:"GI Nail",                    billingUnit:"MT (metric ton)"},
+  {id:"i15",group:"Topa Fencing",        name:"Topa Net (Stitched)",        billingUnit:"per piece"},
+  {id:"i16",group:"Topa Fencing",        name:"Topa Kathi – Bamboo",        billingUnit:"per piece"},
+  {id:"i17",group:"Topa Fencing",        name:"Bamboo Pole 1.22m–1.52m",   billingUnit:"per piece"},
+  {id:"i18",group:"Topa Fencing",        name:"GI 12mm Wire",               billingUnit:"MT (metric ton)"},
+  {id:"i19",group:"Topa Fencing",        name:"MS Guna Tar",                billingUnit:"MT (metric ton)"},
+  {id:"i20",group:"Topa Fencing",        name:"GI Nail",                    billingUnit:"MT (metric ton)"},
 ];
 
 // ════════════════════════════════════════════════════
@@ -825,6 +887,7 @@ function applyLogin() {
   document.getElementById("byReceive").textContent  = currentUser;
   document.getElementById("byDispatch").textContent = currentUser;
   document.getElementById("densityInput").placeholder = DENSITY[currentProject] || 550;
+  startGPSWatch();
 }
 
 async function sha256(str) {
@@ -917,8 +980,11 @@ function submitForm(type) {
   if (type==="receive") {
     record.supplier=document.getElementById("r_supplier").value.trim();
     record.voucher =document.getElementById("r_voucher").value.trim();
-    record.location=document.getElementById("r_location").value.trim();
+    record.location=document.getElementById("r_location").value;
+    record.gps     =document.getElementById("r_gps").value;
   } else {
+    record.location =document.getElementById("d_location").value;
+    record.gps      =document.getElementById("d_gps").value;
     record.issued_to=document.getElementById("d_issuedTo").value.trim();
     record.workarea =document.getElementById("d_workarea").value.trim();
     record.purpose  =document.getElementById("d_purpose").value;
@@ -943,9 +1009,39 @@ function resetForm(p,type) {
     const el=document.getElementById(p+f); if(!el) return;
     el.tagName==="SELECT"?(el.selectedIndex=0):(el.value="");
   });
-  if(type==="receive") ["r_supplier","r_voucher","r_location"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
-  else ["d_issuedTo","d_workarea"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
+  if(type==="receive") {
+    ["r_supplier","r_voucher"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
+    const rl=document.getElementById("r_location");if(rl)rl.selectedIndex=0;
+  } else {
+    ["d_issuedTo","d_workarea"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
+    const dl=document.getElementById("d_location");if(dl)dl.selectedIndex=0;
+  }
   populateItems(p);
+}
+
+function startGPSWatch() {
+  if (!navigator.geolocation) {
+    ["r_gps_txt","d_gps_txt"].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent="📍 GPS not supported"; });
+    return;
+  }
+  navigator.geolocation.watchPosition(
+    pos => {
+      const lat=pos.coords.latitude.toFixed(6);
+      const lon=pos.coords.longitude.toFixed(6);
+      const acc=Math.round(pos.coords.accuracy);
+      const val=lat+","+lon+" (±"+acc+"m)";
+      const label="📍 "+val;
+      ["r","d"].forEach(p=>{
+        const hid=document.getElementById(p+"_gps"); if(hid) hid.value=val;
+        const txt=document.getElementById(p+"_gps_txt"); if(txt) txt.textContent=label;
+      });
+    },
+    err => {
+      const label="📍 GPS: "+err.message;
+      ["r_gps_txt","d_gps_txt"].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent=label; });
+    },
+    {enableHighAccuracy:true,maximumAge:10000}
+  );
 }
 
 // ════════════════════════════════════════════════════
