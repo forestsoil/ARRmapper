@@ -88,7 +88,8 @@ html,body{height:100%;background:var(--bg);color:var(--ink);transition:backgroun
   border-bottom:1px solid var(--border);text-align:left;position:sticky;top:0}
 .data-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--ink)}
 .data-table tr:hover td{background:rgba(0,0,0,.03)}
-.tag-pill{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:600}
+.div-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;cursor:default;letter-spacing:.02em}
+display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:600}
 
 /* ── Section card ── */
 .sec-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px}
@@ -174,10 +175,6 @@ html,body{height:100%;background:var(--bg);color:var(--ink);transition:backgroun
   color:var(--mid);font-size:11px;padding:4px 10px;cursor:pointer;transition:all .12s}
 .tag-btn.sel{background:#be185d;border-color:#be185d;color:#fff}
 .photo-preview{width:100%;max-height:160px;object-fit:cover;border-radius:6px;margin-top:4px;display:none}
-.ai-result{background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.2);
-  border-radius:6px;padding:8px 10px;font-size:11px;color:var(--teal);display:none}
-.ai-result .ai-sp{font-size:13px;font-weight:700;color:var(--ink)}
-.ai-result .ai-sci{font-style:italic;color:var(--mid);font-size:10px}
 .coord-row{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--dim);flex-wrap:wrap}
 .coord-pill{background:var(--surface);border:1px solid var(--border);border-radius:4px;
   padding:2px 7px;font-size:9px;font-family:monospace}
@@ -415,13 +412,21 @@ function arrAuthRenderChip(containerId, onSignOut) {
             <label><input type="checkbox" id="f-incident" checked onchange="filterBioMap()"> 🐾 Incident</label>
             <span id="f-match-count" style="margin-left:auto;color:var(--dim);font-size:9px;align-self:center"></span>
           </div>
+          <!-- Diversity badges -->
+          <div id="div-badges" style="padding:5px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border);background:var(--surface)">
+            <span id="badge-flora"  class="div-badge" style="background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)">🌿 Flora —</span>
+            <span id="badge-fauna"  class="div-badge" style="background:rgba(251,191,36,.12);color:#b45309;border:1px solid rgba(251,191,36,.35)">🦅 Fauna —</span>
+            <span id="badge-inv"    class="div-badge" style="background:rgba(239,68,68,.1);color:var(--rose);border:1px solid rgba(239,68,68,.25)">⚠️ Invasives —</span>
+            <span id="badge-recr"   class="div-badge" style="background:rgba(45,212,191,.1);color:var(--teal);border:1px solid rgba(45,212,191,.25)">🌱 Recruits —</span>
+            <span id="badge-shannon" class="div-badge" style="background:var(--card);color:var(--mid);border:1px solid var(--border)" title="Shannon diversity index — indicative only. Opportunistic records; uncontrolled survey effort. Do not cite as verified MRV output.">📊 H′ —</span>
+          </div>
           <!-- Map -->
           <div id="bio-map"></div>
           <!-- Scrollable sightings list -->
           <div style="border-top:1px solid var(--border);overflow-y:auto;max-height:380px">
             <table class="data-table" style="font-size:10px">
               <thead><tr>
-                <th>Date</th><th>Species</th><th>Type</th><th>LPC</th><th>Reporter</th><th>Notes</th>
+                <th>Date</th><th>Species</th><th><em>Scientific</em></th><th>Type</th><th>LPC</th><th>Reporter</th><th>Notes</th>
               </tr></thead>
               <tbody id="map-sightings-tbody">
                 <tr><td colspan="6" style="color:var(--dim);text-align:center;padding:12px">No records</td></tr>
@@ -638,7 +643,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
 // ── Config ────────────────────────────────────────────────────────────
 const CCB_CONFIG = {
-  visionApiKey: 'AIzaSyA0yiR28GzzeNoaWxtLNgrF14Q8L3XzZIk',
   scriptUrl: 'https://script.google.com/macros/s/AKfycbwLfbyg-C2CgYi7cfxjBZrGaYrKkuD2I1SQXIBecqyfWVdtJkWQVG9Sb1F7s45i1u5R/exec',
 };
 
@@ -983,6 +987,7 @@ function renderBioMap() {
       <tr class="sighting-row" onclick="openSightingDetail_filtered(${i})" title="View detail">
         <td>${s.date||'—'}</td>
         <td>${s.species||'—'}</td>
+        <td style="font-style:italic;color:var(--mid)">${s.sci||'—'}</td>
         <td><span class="tag-pill" style="background:${CAT_COLORS[s.category]||'#666'};color:#fff">
           ${CAT_ICONS[s.category]||''} ${s.category}</span></td>
         <td>${s.lpc||'—'}</td>
@@ -992,7 +997,38 @@ function renderBioMap() {
       `<tr><td colspan="6" style="color:var(--dim);text-align:center;padding:12px">No matching records</td></tr>`;
     window._mapFilteredSightings = filtered;
   }
+  updateDiversityBadges(filtered);
 }
+function updateDiversityBadges(filtered) {
+  const flora     = filtered.filter(s=>s.category==='flora');
+  const fauna     = filtered.filter(s=>s.category==='fauna');
+  const inv       = filtered.filter(s=>s.category==='invasive');
+  const recr      = filtered.filter(s=>s.category==='recruitment');
+
+  const floraS    = new Set(flora.map(s=>s.species||s.sci)).size;
+  const faunaS    = new Set(fauna.map(s=>s.species||s.sci)).size;
+  const invS      = new Set(inv.map(s=>s.species||s.sci)).size;
+  const invPlots  = new Set(inv.map(s=>s.lpc).filter(Boolean)).size;
+  const recrS     = new Set(recr.map(s=>s.species||s.sci)).size;
+
+  // Shannon H' over all species in filtered set (fauna + flora only — not invasive/incident)
+  const forH = [...flora, ...fauna, ...recr];
+  const spCounts = {};
+  forH.forEach(s=>{ const k=s.species||s.sci||'unknown'; spCounts[k]=(spCounts[k]||0)+1; });
+  const N = forH.length;
+  const H = N > 0
+    ? -Object.values(spCounts).reduce((acc,n)=>{ const p=n/N; return acc+p*Math.log(p); }, 0)
+    : 0;
+
+  document.getElementById('badge-flora').textContent   = `🌿 Flora  S=${floraS}`;
+  document.getElementById('badge-fauna').textContent   = `🦅 Fauna  S=${faunaS}`;
+  document.getElementById('badge-inv').textContent     = invS
+    ? `⚠️ Invasives  ${invS} spp · ${invPlots} plots`
+    : `⚠️ Invasives  none`;
+  document.getElementById('badge-recr').textContent    = `🌱 Recruits  S=${recrS}`;
+  document.getElementById('badge-shannon').textContent = N > 0 ? `📊 H′=${H.toFixed(2)}*` : `📊 H′ —`;
+}
+
 function filterBioMap() { renderBioMap(); }
 
 function openSightingDetail_filtered(i) {
@@ -1004,6 +1040,7 @@ function openSightingDetail_filtered(i) {
   // Fallback: populate modal directly
   document.getElementById('sd-date').textContent     = s.date     || '—';
   document.getElementById('sd-species').textContent  = s.species  || '—';
+  document.getElementById('sd-sci').textContent      = s.sci      || '—';
   document.getElementById('sd-category').textContent = (CAT_ICONS[s.category]||'') + ' ' + (s.category||'—');
   document.getElementById('sd-lpc').textContent      = s.lpc      || '—';
   document.getElementById('sd-recorder').textContent = s.recorder  || '—';
@@ -1011,7 +1048,6 @@ function openSightingDetail_filtered(i) {
   document.getElementById('sd-block').textContent    = s.block     || '—';
   document.getElementById('sd-coord').textContent    = isNaN(s.lat)?'—':s.lat.toFixed(5)+', '+s.lon.toFixed(5);
   document.getElementById('sd-coord-src').textContent= s.coord_source || '—';
-  document.getElementById('sd-ai').textContent       = s.ai_species || '—';
   document.getElementById('sd-notable').textContent  = s.notable ? '⭐ Yes' : 'No';
   document.getElementById('sd-notes').textContent    = s.notes    || '—';
   const photoWrap = document.getElementById('sd-photo-wrap');
@@ -1037,6 +1073,7 @@ function loadBioCSV(input) {
       return {
         date:         g('date'),
         species:      g('species'),
+        sci:          g('sci'),
         category:     (g('category')||'fauna').toLowerCase(),
         lat:          parseFloat(g('lat')),
         lon:          parseFloat(g('lon')),
@@ -1046,7 +1083,6 @@ function loadBioCSV(input) {
         district:     g('district'),
         block:        g('block'),
         coord_source: g('coord_source'),
-        ai_species:   g('ai_species'),
         notable:      g('notable')==='true' || g('notable')==='1',
       };
     }).filter(r=>!isNaN(r.lat)&&!isNaN(r.lon));
@@ -1326,6 +1362,7 @@ async function loadSightingsFromSheet() {
       .map(r => ({
         date:         r.date         || '',
         species:      r.species      || '',
+        sci:          r.sci           || '',
         category:     r.category     || 'fauna',
         lat:          parseFloat(r.lat_used) || NaN,
         lon:          parseFloat(r.lon_used) || NaN,
@@ -1336,7 +1373,6 @@ async function loadSightingsFromSheet() {
         district:     r.district     || '',
         block:        r.block        || '',
         coord_source: r.coord_source || '',
-        ai_species:   r.ai_species   || '',
         notable:      r.notable      || false,
       }));
     // Merge — avoid duplicates by date+species+recorder
@@ -1532,7 +1568,6 @@ function resetSubmitForm() {
     const el=document.getElementById(id);if(el)el.value='';
   });
   document.getElementById('s-photo-preview').style.display='none';
-  document.getElementById('s-ai-result').style.display='none';
   document.getElementById('s-browser-coord').textContent='getting…';
   document.getElementById('s-exif-coord').textContent='—';
   document.querySelectorAll('.tag-btn').forEach(b=>b.classList.remove('sel'));
@@ -1591,52 +1626,10 @@ async function handleSubmitPhoto(input) {
     }
   } catch(e){ document.getElementById('s-exif-coord').textContent='EXIF unavailable'; }
   const reader=new FileReader();
-  reader.onload=async e=>{_photoBase64=e.target.result.split(',')[1];await callVisionAPI(_photoBase64);};
+  reader.onload=e=>{_photoBase64=e.target.result.split(',')[1];};
   reader.readAsDataURL(file);
 }
 
-async function callVisionAPI(base64) {
-  const status=document.getElementById('s-status');
-  status.textContent='🔍 Identifying species…';status.style.color='var(--teal)';
-  try{
-    const res=await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${CCB_CONFIG.visionApiKey}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({requests:[{image:{content:base64},
-        features:[{type:'LABEL_DETECTION',maxResults:10},{type:'WEB_DETECTION',maxResults:5}]}]})
-    });
-    const data=await res.json();
-    const resp=data.responses?.[0];
-    const webEntities=resp?.webDetection?.webEntities||[];
-    const bestEntity=webEntities.find(e=>e.score>0.5&&e.description)||webEntities[0];
-    const labels=resp?.labelAnnotations||[];
-    const labelDesc=labels.map(l=>l.description.toLowerCase());
-    let category='fauna',tag=null;
-    if(labelDesc.some(l=>['bird','avian','raptor','songbird'].some(x=>l.includes(x)))){category='fauna';tag='bird';}
-    else if(labelDesc.some(l=>['mammal','wildlife'].some(x=>l.includes(x)))){category='fauna';tag='mammal';}
-    else if(labelDesc.some(l=>['reptile','snake','lizard'].some(x=>l.includes(x)))){category='fauna';tag='reptile';}
-    else if(labelDesc.some(l=>['fish','aquatic'].some(x=>l.includes(x)))){category='fauna';tag='fish';}
-    else if(labelDesc.some(l=>['insect','butterfly','moth'].some(x=>l.includes(x)))){category='fauna';tag='insect';}
-    else if(labelDesc.some(l=>['invasive','lantana','mikania','chromolaena'].some(x=>l.includes(x)))){category='invasive';tag='invasive';}
-    else if(labelDesc.some(l=>['plant','tree','flower','shrub','vegetation'].some(x=>l.includes(x)))){category='flora';tag='native tree';}
-    const notable=labels.some(l=>['endangered','threatened','protected'].includes(l.description.toLowerCase()));
-    const confidence=bestEntity?.score?Math.round(bestEntity.score*100)+'%':
-      (labels[0]?.score?Math.round(labels[0].score*100)+'%':'—');
-    const spName=bestEntity?.description||labels[0]?.description||'—';
-    const sciName=webEntities.find(e=>e.description?.match(/^[A-Z][a-z]+ [a-z]+$/))?.description||'';
-    document.getElementById('s-ai-species').textContent=spName;
-    document.getElementById('s-ai-sci').textContent=sciName;
-    document.getElementById('s-ai-cat').textContent=category;
-    document.getElementById('s-ai-conf').textContent=confidence;
-    document.getElementById('s-ai-notable').textContent=notable?'⚠️ Notable species':'';
-    document.getElementById('s-ai-result').style.display='block';
-    if(!document.getElementById('s-species').value)document.getElementById('s-species').value=spName;
-    if(!document.getElementById('s-sci').value)document.getElementById('s-sci').value=sciName;
-    if(tag){document.querySelectorAll('.tag-btn').forEach(b=>{
-      if(b.dataset.tag===tag){b.classList.add('sel');_submitTag=tag;}
-    });}
-    status.textContent='✓ Species identified';status.style.color='var(--green)';
-  }catch(e){status.textContent='Vision API error — fill manually';status.style.color='var(--rose)';}
-}
 
 const TAG_CATEGORY={bird:'fauna',mammal:'fauna',reptile:'fauna',fish:'fauna',insect:'fauna',
   'native tree':'flora','recruitment':'flora',invasive:'invasive',incident:'incident'};
@@ -1700,8 +1693,7 @@ async function submitSighting() {
       district:document.getElementById('s-district').value,
       block:document.getElementById('s-block').value,
       notes:document.getElementById('s-notes').value.trim(),
-      ai_species:document.getElementById('s-ai-species').textContent,
-      notable:document.getElementById('s-ai-notable').textContent.includes('Notable'),
+      notable: false,
     },
     fileData:_photoBase64||null,
     filename:fname,
@@ -1717,7 +1709,7 @@ async function submitSighting() {
     lat,lon,lpc:rec.lpc,notes:rec.notes,recorder:rec.submitter,
     photo_url:_photoBase64?('pending_'+fname):'',
     district:rec.district||'',block:rec.block||'',
-    coord_source:rec.coord_source||'',ai_species:rec.ai_species||'',notable:rec.notable||false});
+    coord_source:rec.coord_source||'',sci:rec.sci||'',notable:false});
   updateBioKPIs();renderRecentSightings();if(bioMap)renderBioMap();
   status.textContent='✅ Submitted'+(CCB_CONFIG.scriptUrl?'':' (local only — set scriptUrl to save to Sheet)');
   status.style.color='var(--green)';
@@ -1740,15 +1732,14 @@ async function submitSighting() {
       <div class="sd-grid">
         <span class="sd-label">Date</span><span id="sd-date" class="sd-val"></span>
         <span class="sd-label">Species</span><span id="sd-species" class="sd-val"></span>
+        <span class="sd-label">Scientific</span><span id="sd-sci" class="sd-val" style="font-style:italic"></span>
         <span class="sd-label">Category</span><span id="sd-category" class="sd-val"></span>
         <span class="sd-label">Plot (LPC)</span><span id="sd-lpc" class="sd-val"></span>
         <span class="sd-label">Recorder</span><span id="sd-recorder" class="sd-val"></span>
         <span class="sd-label">District</span><span id="sd-district" class="sd-val"></span>
         <span class="sd-label">Block</span><span id="sd-block" class="sd-val"></span>
         <span class="sd-label">Coordinates</span><span id="sd-coord" class="sd-val"></span>
-        <span class="sd-label">Coord source</span><span id="sd-coord-src" class="sd-val"></span>
-        <span class="sd-label">AI ID</span><span id="sd-ai" class="sd-val"></span>
-        <span class="sd-label">Notable</span><span id="sd-notable" class="sd-val"></span>
+        <span class="sd-label">Coord source</span><span id="sd-coord-src" class="sd-val"></span>        <span class="sd-label">Notable</span><span id="sd-notable" class="sd-val"></span>
       </div>
       <div style="margin-top:10px">
         <span class="sd-label">Notes</span>
@@ -1788,14 +1779,6 @@ async function submitSighting() {
         <input type="file" id="s-photo-gallery" accept="image/*"
           style="display:none" onchange="handleSubmitPhoto(this)"/>
         <img id="s-photo-preview" class="photo-preview"/>
-        <div id="s-ai-result" class="ai-result">
-          <div class="ai-sp" id="s-ai-species">—</div>
-          <div class="ai-sci" id="s-ai-sci"></div>
-          <div style="margin-top:4px;font-size:9px;color:var(--dim)">
-            <span id="s-ai-cat"></span> · confidence: <span id="s-ai-conf"></span>
-            · <span id="s-ai-notable"></span>
-          </div>
-        </div>
       </div>
       <div class="form-row">
         <label class="form-label">Coordinates</label>
@@ -1835,7 +1818,7 @@ async function submitSighting() {
       </div>
       <div class="form-row">
         <label class="form-label">Scientific name (optional)</label>
-        <input class="form-input" id="s-sci" type="text" placeholder="Auto-filled from AI"/>
+        <input class="form-input" id="s-sci" type="text" placeholder="Scientific name (optional)"/>
       </div>
       <div class="form-row-2">
         <div class="form-row">
