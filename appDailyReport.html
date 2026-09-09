@@ -7,7 +7,7 @@
 <script>
 (function(){const t=localStorage.getItem('arr_theme')||'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
 </script>
-<title>Daily Report v30</title>
+<title>Daily Report v31</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;padding-bottom:60px}
@@ -257,9 +257,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 /* ── Work Report Detail Modal ── */
 #wr-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:300;
-  display:none;align-items:flex-end;justify-content:center}
+  display:none;align-items:center;justify-content:center}
 #wr-modal-bg.open{display:flex}
-#wr-modal{background:var(--card);border-radius:16px 16px 0 0;width:100%;max-width:560px;
+#wr-modal{background:var(--card);border-radius:16px;width:calc(100% - 32px);max-width:560px;
   max-height:90vh;overflow-y:auto;padding:18px 16px 32px}
 .wr-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .wr-modal-title{font-size:14px;font-weight:700;color:var(--ink)}
@@ -427,36 +427,39 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
   <div class="sec">
     <div class="sec-title" data-i18n="sec_visit">Visit Type <span style="font-weight:400;text-transform:none;font-size:9px">(select all that apply)</span></div>
     <div class="vt-grid" id="vt-grid">
-      <button class="vt-pill" data-en="Pit Digging" data-bn="গর্ত খনন" data-hi="गड्ढा खुदाई" data-other="false" onclick="toggleVisitType(this)">Pit Digging</button>
-      <button class="vt-pill" data-en="Full Plantation" data-bn="পূর্ণ রোপণ" data-hi="पूर्ण रोपण" data-other="false" onclick="toggleVisitType(this)">Full Plantation</button>
-      <button class="vt-pill" data-en="Gap Block Planting" data-bn="গ্যাপ ব্লক রোপণ" data-hi="गैप ब्लॉक रोपण" data-other="false" onclick="toggleVisitType(this)">Gap Block Planting</button>
-      <button class="vt-pill" data-en="Re-plantation" data-bn="পুনরায় রোপণ" data-hi="पुनर्रोपण" data-other="false" onclick="toggleVisitType(this)">Re-plantation</button>
-      <button class="vt-pill" data-en="Sapling Supply" data-bn="চারা সরবরাহ" data-hi="पौध आपूर्ति" data-other="false" onclick="toggleVisitType(this)">Sapling Supply</button>
-      <button class="vt-pill" data-en="Inputs Supply" data-bn="উপকরণ সরবরাহ" data-hi="सामग्री आपूर्ति" data-other="false" onclick="toggleVisitType(this)">Inputs Supply</button>
+            <button class="vt-pill" data-en="Dig Pits" data-bn="গর্ত খনন" data-hi="गड्ढा खुदाई" data-other="false" onclick="toggleVisitType(this)">Dig Pits</button>
+      <button class="vt-pill" data-en="Planting: Full" data-bn="পূর্ণ রোপণ" data-hi="पूर्ण रोपण" data-other="false" onclick="toggleVisitType(this)">Planting: Full</button>
+      <button class="vt-pill" data-en="Planting: Gaps" data-bn="গ্যাপ রোপণ" data-hi="गैप रोपण" data-other="false" onclick="toggleVisitType(this)">Planting: Gaps</button>
+      <button class="vt-pill" data-en="Planting: Re-do" data-bn="পুনরায় রোপণ" data-hi="पुनर्रोपण" data-other="false" onclick="toggleVisitType(this)">Planting: Re-do</button>
+      <button class="vt-pill" data-en="Supply: Sapling" data-bn="চারা সরবরাহ" data-hi="पौध आपूर्ति" data-other="false" onclick="toggleVisitType(this)">Supply: Sapling</button>
+      <button class="vt-pill" data-en="Supply: Inputs" data-bn="উপকরণ সরবরাহ" data-hi="सामग्री आपूर्ति" data-other="false" onclick="toggleVisitType(this)">Supply: Inputs</button>
       <button class="vt-pill" data-en="Fence Repair" data-bn="বেড়া মেরামত" data-hi="बाड़ मरम्मत" data-other="false" onclick="toggleVisitType(this)">Fence Repair</button>
-      <button class="vt-pill" data-en="Watering" data-bn="জল দেওয়া" data-hi="सिंचाई" data-other="false" onclick="toggleVisitType(this)">Watering</button>
-      <button class="vt-pill" data-en="Weed Control" data-bn="আগাছা নিয়ন্ত্রণ" data-hi="खरपतवार नियंत्रण" data-other="false" onclick="toggleVisitType(this)">Weed Control</button>
-      <button class="vt-pill" data-en="Fertilization" data-bn="সার প্রয়োগ" data-hi="उर्वरक प्रयोग" data-other="false" onclick="toggleVisitType(this)">Fertilization</button>
-      <button class="vt-pill" data-en="Pest Control" data-bn="কীটনাশক প্রয়োগ" data-hi="कीट नियंत्रण" data-other="false" onclick="toggleVisitType(this)">Pest Control</button>
-      <button class="vt-pill" data-en="Intercrop Check" data-bn="আন্তঃফসল পরীক্ষা" data-hi="अंतरफसल जांच" data-other="false" onclick="toggleVisitType(this)">Intercrop Check</button>
-      <button class="vt-pill" data-en="Plot Check" data-bn="প্লট পরীক্ষা" data-hi="प्लॉट जांच" data-other="false" onclick="toggleVisitType(this)">Plot Check</button>
-      <button class="vt-pill" data-en="Sapling Check" data-bn="চারা পরীক্ষা" data-hi="पौध जांच" data-other="false" onclick="toggleVisitType(this)">Sapling Check</button>
-      <button class="vt-pill" data-en="Mortality Check" data-bn="মৃত্যু পরীক্ষা" data-hi="मृत्युदर जांच" data-other="false" onclick="toggleVisitType(this)">Mortality Check</button>
-      <button class="vt-pill" data-en="Leakage" data-bn="লিকেজ" data-hi="लीकेज" data-other="false" onclick="toggleVisitType(this)">Leakage</button>
-      <button class="vt-pill" data-en="Soil Sampling" data-bn="মাটি নমুনা" data-hi="मिट्टी नमूना" data-other="false" onclick="toggleVisitType(this)">Soil Sampling</button>
-      <button class="vt-pill" data-en="Photo & Documentation" data-bn="ছবি ও নথিভুক্তি" data-hi="फ़ोटो व दस्तावेज़ीकरण" data-other="false" onclick="toggleVisitType(this)">Photo & Documentation</button>
-      <button class="vt-pill" data-en="Beneficiary Call" data-bn="সুবিধাভোগী সাক্ষাৎ" data-hi="लाभार्थी मुलाकात" data-other="false" onclick="toggleVisitType(this)">Beneficiary Call</button>
-      <button class="vt-pill" data-en="Boundary Check" data-bn="সীমানা পরীক্ষা" data-hi="सीमा जांच" data-other="false" onclick="toggleVisitType(this)">Boundary Check</button>
+      <button class="vt-pill" data-en="Apply: Water" data-bn="জল দেওয়া" data-hi="सिंचाई" data-other="false" onclick="toggleVisitType(this)">Apply: Water</button>
+      <button class="vt-pill" data-en="Control: Weed" data-bn="আগাছা নিয়ন্ত্রণ" data-hi="खरपतवार नियंत्रण" data-other="false" onclick="toggleVisitType(this)">Control: Weed</button>
+      <button class="vt-pill" data-en="Apply: Fertilizer" data-bn="সার প্রয়োগ" data-hi="उर्वरक प्रयोग" data-other="false" onclick="toggleVisitType(this)">Apply: Fertilizer</button>
+      <button class="vt-pill" data-en="Apply: Pest" data-bn="কীটনাশক প্রয়োগ" data-hi="कीट नियंत्रण" data-other="false" onclick="toggleVisitType(this)">Apply: Pest</button>
+      <button class="vt-pill" data-en="Check: Intercrop" data-bn="আন্তঃফসল পরীক্ষা" data-hi="अंतरफसल जांच" data-other="false" onclick="toggleVisitType(this)">Check: Intercrop</button>
+      <button class="vt-pill" data-en="Check: Plot" data-bn="প্লট পরীক্ষা" data-hi="प्लॉट जांच" data-other="false" onclick="toggleVisitType(this)">Check: Plot</button>
+      <button class="vt-pill" data-en="Check: Sapling" data-bn="চারা পরীক্ষা" data-hi="पौध जांच" data-other="false" onclick="toggleVisitType(this)">Check: Sapling</button>
+      <button class="vt-pill" data-en="Check: Mortality" data-bn="মৃত্যু পরীক্ষা" data-hi="मृत्युदर जांच" data-other="false" onclick="toggleVisitType(this)">Check: Mortality</button>
+      <button class="vt-pill" data-en="Check: Leakage" data-bn="লিকেজ পরীক্ষা" data-hi="रिसाव जांच" data-other="false" onclick="toggleVisitType(this)">Check: Leakage</button>
+      <button class="vt-pill" data-en="Sample: Soil" data-bn="মাটি নমুনা" data-hi="मिट्टी नमूना" data-other="false" onclick="toggleVisitType(this)">Sample: Soil</button>
+      <button class="vt-pill" data-en="Sample: Biomass" data-bn="বায়োমাস নমুনা" data-hi="बायोमास नमूना" data-other="false" onclick="toggleVisitType(this)">Sample: Biomass</button>
+      <button class="vt-pill" data-en="Photo &amp; Documentation" data-bn="ছবি ও নথিভুক্তি" data-hi="फ़ोटो व दस्तावेज़ीकरण" data-other="false" onclick="toggleVisitType(this)">Photo &amp; Documentation</button>
+      <button class="vt-pill" data-en="Meet: Beneficiary" data-bn="সুবিধাভোগী সাক্ষাৎ" data-hi="लाभार्थी मुलाकात" data-other="false" onclick="toggleVisitType(this)">Meet: Beneficiary</button>
+      <button class="vt-pill" data-en="Check: Boundary" data-bn="সীমানা পরীক্ষা" data-hi="सीमा जांच" data-other="false" onclick="toggleVisitType(this)">Check: Boundary</button>
       <button class="vt-pill" data-en="General Visit" data-bn="সাধারণ পরিদর্শন" data-hi="सामान्य दौरा" data-other="false" onclick="toggleVisitType(this)">General Visit</button>
-      <button class="vt-pill" data-en="Damage Report" data-bn="ক্ষতির প্রতিবেদন" data-hi="क्षति रिपोर्ट" data-other="false" onclick="toggleVisitType(this)">Damage Report</button>
-      <button class="vt-pill" data-en="Fire Report" data-bn="আগুনের প্রতিবেদন" data-hi="आग रिपोर्ट" data-other="false" onclick="toggleVisitType(this)">Fire Report</button>
-      <button class="vt-pill" data-en="Flood Report" data-bn="বন্যার প্রতিবেদন" data-hi="बाढ़ रिपोर्ट" data-other="false" onclick="toggleVisitType(this)">Flood Report</button>
+      <button class="vt-pill" data-en="Report: Damage" data-bn="ক্ষতির প্রতিবেদন" data-hi="क्षति रिपोर्ट" data-other="false" onclick="toggleVisitType(this)">Report: Damage</button>
+      <button class="vt-pill" data-en="Report: Fire" data-bn="আগুনের প্রতিবেদন" data-hi="आग रिपोर्ट" data-other="false" onclick="toggleVisitType(this)">Report: Fire</button>
+      <button class="vt-pill" data-en="Report: Flood" data-bn="বন্যার প্রতিবেদন" data-hi="बाढ़ रिपोर्ट" data-other="false" onclick="toggleVisitType(this)">Report: Flood</button>
       <button class="vt-pill" data-en="Off: Data Work" data-bn="অফিস: ডেটা কাজ" data-hi="ऑफिस: डेटा कार्य" data-other="false" onclick="toggleVisitType(this)">Off: Data Work</button>
       <button class="vt-pill" data-en="Off: Meeting" data-bn="অফিস: মিটিং" data-hi="ऑफिस: मीटिंग" data-other="false" onclick="toggleVisitType(this)">Off: Meeting</button>
       <button class="vt-pill" data-en="Off: Visitors" data-bn="অফিস: ভিজিটর" data-hi="ऑफिस: आगंतुक" data-other="false" onclick="toggleVisitType(this)">Off: Visitors</button>
-      <button class="vt-pill" data-en="Land Survey" data-bn="ভূমি জরিপ" data-hi="भूमि सर्वेक्षण" data-other="false" onclick="toggleVisitType(this)">Land Survey</button>
-      <button class="vt-pill" data-en="FGD, PRA, KIS" data-bn="এফজিডি, পিআরএ, কেআইএস" data-hi="एफजीडी, पीआरए, केआईएस" data-other="false" onclick="toggleVisitType(this)">FGD, PRA, KIS</button>
-      <button class="vt-pill" data-en="GP, BDO, Member meeting" data-bn="জিপি, বিডিও, সদস্য সভা" data-hi="जीपी, बीडीओ, सदस्य बैठक" data-other="false" onclick="toggleVisitType(this)">GP, BDO, Member meeting</button>
+      <button class="vt-pill" data-en="Land: Survey" data-bn="ভূমি জরিপ" data-hi="भूमि सर्वेक्षण" data-other="false" onclick="toggleVisitType(this)">Land: Survey</button>
+      <button class="vt-pill" data-en="Land: Agreement" data-bn="জমি চুক্তি" data-hi="भूमि समझौता" data-other="false" onclick="toggleVisitType(this)">Land: Agreement</button>
+      <button class="vt-pill" data-en="Land: Mapping" data-bn="জমি ম্যাপিং" data-hi="भूमि मानचित्रण" data-other="false" onclick="toggleVisitType(this)">Land: Mapping</button>
+      <button class="vt-pill" data-en="Meet: FGD, PRA, KIS" data-bn="এফজিডি, পিআরএ, কেআইএস" data-hi="एफजीडी, पीआरए, केआईएस" data-other="false" onclick="toggleVisitType(this)">Meet: FGD, PRA, KIS</button>
+      <button class="vt-pill" data-en="Meet: GP, BDO, Member, TG" data-bn="জিপি, বিডিও, সদস্য সভা" data-hi="जीपी, बीडीओ, सदस्य बैठक" data-other="false" onclick="toggleVisitType(this)">Meet: GP, BDO, Member, TG</button>
       <button class="vt-pill" data-en="Other" data-bn="অন্যান্য" data-hi="अन्य" data-other="true" onclick="toggleVisitType(this)">Other</button>
     </div>
     <div id="other-text-wrap">
@@ -580,7 +583,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
         <span style="font-size:12px;color:var(--dim)">to</span>
         <input type="date" id="dash-rec-date2" min="2024-01-01" onchange="renderDashRecords()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-size:12px">
         <button class="dash-export-btn" onclick="exportDashXLSX()">⇩ XLSX</button>
-        <button class="dash-export-btn" onclick="exportGrievanceXLSX()" style="background:#c2410c" title="Export Fence Repair · Watering · Damage Report · Flood Report · Fire Report">⇩ Grievance Log</button>
+        <button class="dash-export-btn" onclick="exportGrievanceXLSX()" style="background:#c2410c" title="Export Fence Repair · Apply: Water · Report: Damage · Report: Flood · Report: Fire">⇩ Grievance Log</button>
       </div>
       <div id="log-wrap" style="overflow-x:auto">
         <table class="log-table">
@@ -681,7 +684,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v30';
+const APP_VERSION    = 'DRT-v31';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -872,9 +875,9 @@ const STRINGS = {
 };
 
 const VT_LABELS = {
-  en: {"Pit Digging":"Pit Digging","Full Plantation":"Full Plantation","Gap Block Planting":"Gap Block Planting","Re-plantation":"Re-plantation","Sapling Supply":"Sapling Supply","Inputs Supply":"Inputs Supply","Fence Repair":"Fence Repair","Watering":"Watering","Weed Control":"Weed Control","Fertilization":"Fertilization","Pest Control":"Pest Control","Intercrop Check":"Intercrop Check","Plot Check":"Plot Check","Sapling Check":"Sapling Check","Mortality Check":"Mortality Check","Leakage":"Leakage","Soil Sampling":"Soil Sampling","Photo & Documentation":"Photo & Documentation","Beneficiary Call":"Beneficiary Call","Boundary Check":"Boundary Check","General Visit":"General Visit","Damage Report":"Damage Report","Fire Report":"Fire Report","Flood Report":"Flood Report","Off: Data Work":"Off: Data Work","Off: Meeting":"Off: Meeting","Off: Visitors":"Off: Visitors","Other":"Other"},
-  bn: {"Pit Digging":"গর্ত খনন","Full Plantation":"পূর্ণ রোপণ","Gap Block Planting":"গ্যাপ ব্লক রোপণ","Re-plantation":"পুনরায় রোপণ","Sapling Supply":"চারা সরবরাহ","Inputs Supply":"উপকরণ সরবরাহ","Fence Repair":"বেড়া মেরামত","Watering":"জল দেওয়া","Weed Control":"আগাছা নিয়ন্ত্রণ","Fertilization":"সার প্রয়োগ","Pest Control":"কীটনাশক প্রয়োগ","Intercrop Check":"আন্তঃফসল পরীক্ষা","Plot Check":"প্লট পরীক্ষা","Sapling Check":"চারা পরীক্ষা","Mortality Check":"মৃত্যু পরীক্ষা","Leakage":"লিকেজ","Soil Sampling":"মাটি নমুনা","Photo & Documentation":"ছবি ও নথিভুক্তি","Beneficiary Call":"সুবিধাভোগী সাক্ষাৎ","Boundary Check":"সীমানা পরীক্ষা","General Visit":"সাধারণ পরিদর্শন","Damage Report":"ক্ষতির প্রতিবেদন","Fire Report":"আগুনের প্রতিবেদন","Flood Report":"বন্যার প্রতিবেদন","Off: Data Work":"অফিস: ডেটা কাজ","Off: Meeting":"অফিস: মিটিং","Off: Visitors":"অফিস: ভিজিটর","Other":"অন্যান্য"},
-  hi: {"Pit Digging":"गड्ढा खुदाई","Full Plantation":"पूर्ण रोपण","Gap Block Planting":"गैप ब्लॉक रोपण","Re-plantation":"पुनर्रोपण","Sapling Supply":"पौध आपूर्ति","Inputs Supply":"सामग्री आपूर्ति","Fence Repair":"बाड़ मरम्मत","Watering":"सिंचाई","Weed Control":"खरपतवार नियंत्रण","Fertilization":"उर्वरक प्रयोग","Pest Control":"कीट नियंत्रण","Intercrop Check":"अंतरफसल जांच","Plot Check":"प्लॉट जांच","Sapling Check":"पौध जांच","Mortality Check":"मृत्युदर जांच","Leakage":"लीकेज","Soil Sampling":"मिट्टी नमूना","Photo & Documentation":"फ़ोटो व दस्तावेज़ीकरण","Beneficiary Call":"लाभार्थी मुलाकात","Boundary Check":"सीमा जांच","General Visit":"सामान्य दौरा","Damage Report":"क्षति रिपोर्ट","Fire Report":"आग रिपोर्ट","Flood Report":"बाढ़ रिपोर्ट","Off: Data Work":"ऑफिस: डेटा कार्य","Off: Meeting":"ऑफिस: मीटिंग","Off: Visitors":"ऑफिस: आगंतुक","Other":"अन्य"},
+  en: {"Dig Pits":"Dig Pits","Planting: Full":"Planting: Full","Planting: Gaps":"Planting: Gaps","Planting: Re-do":"Planting: Re-do","Supply: Sapling":"Supply: Sapling","Supply: Inputs":"Supply: Inputs","Fence Repair":"Fence Repair","Apply: Water":"Apply: Water","Control: Weed":"Control: Weed","Apply: Fertilizer":"Apply: Fertilizer","Apply: Pest":"Apply: Pest","Check: Intercrop":"Check: Intercrop","Check: Plot":"Check: Plot","Check: Sapling":"Check: Sapling","Check: Mortality":"Check: Mortality","Check: Leakage":"Check: Leakage","Sample: Soil":"Sample: Soil","Sample: Biomass":"Sample: Biomass","Photo & Documentation":"Photo & Documentation","Meet: Beneficiary":"Meet: Beneficiary","Check: Boundary":"Check: Boundary","General Visit":"General Visit","Report: Damage":"Report: Damage","Report: Fire":"Report: Fire","Report: Flood":"Report: Flood","Off: Data Work":"Off: Data Work","Off: Meeting":"Off: Meeting","Off: Visitors":"Off: Visitors","Land: Survey":"Land: Survey","Land: Agreement":"Land: Agreement","Land: Mapping":"Land: Mapping","Meet: FGD, PRA, KIS":"Meet: FGD, PRA, KIS","Meet: GP, BDO, Member, TG":"Meet: GP, BDO, Member, TG","Other":"Other"},
+  bn: {"Dig Pits":"গর্ত খনন","Planting: Full":"পূর্ণ রোপণ","Planting: Gaps":"গ্যাপ রোপণ","Planting: Re-do":"পুনরায় রোপণ","Supply: Sapling":"চারা সরবরাহ","Supply: Inputs":"উপকরণ সরবরাহ","Fence Repair":"বেড়া মেরামত","Apply: Water":"জল দেওয়া","Control: Weed":"আগাছা নিয়ন্ত্রণ","Apply: Fertilizer":"সার প্রয়োগ","Apply: Pest":"কীটনাশক প্রয়োগ","Check: Intercrop":"আন্তঃফসল পরীক্ষা","Check: Plot":"প্লট পরীক্ষা","Check: Sapling":"চারা পরীক্ষা","Check: Mortality":"মৃত্যু পরীক্ষা","Check: Leakage":"লিকেজ পরীক্ষা","Sample: Soil":"মাটি নমুনা","Sample: Biomass":"বায়োমাস নমুনা","Photo & Documentation":"ছবি ও নথিভুক্তি","Meet: Beneficiary":"সুবিধাভোগী সাক্ষাৎ","Check: Boundary":"সীমানা পরীক্ষা","General Visit":"সাধারণ পরিদর্শন","Report: Damage":"ক্ষতির প্রতিবেদন","Report: Fire":"আগুনের প্রতিবেদন","Report: Flood":"বন্যার প্রতিবেদন","Off: Data Work":"অফিস: ডেটা কাজ","Off: Meeting":"অফিস: মিটিং","Off: Visitors":"অফিস: ভিজিটর","Land: Survey":"ভূমি জরিপ","Land: Agreement":"জমি চুক্তি","Land: Mapping":"জমি ম্যাপিং","Meet: FGD, PRA, KIS":"এফজিডি, পিআরএ, কেআইএস","Meet: GP, BDO, Member, TG":"জিপি, বিডিও, সদস্য সভা","Other":"অন্যান্য"},
+  hi: {"Dig Pits":"गड्ढा खुदाई","Planting: Full":"पूर्ण रोपण","Planting: Gaps":"गैप रोपण","Planting: Re-do":"पुनर्रोपण","Supply: Sapling":"पौध आपूर्ति","Supply: Inputs":"सामग्री आपूर्ति","Fence Repair":"बाड़ मरम्मत","Apply: Water":"सिंचाई","Control: Weed":"खरपतवार नियंत्रण","Apply: Fertilizer":"उर्वरक प्रयोग","Apply: Pest":"कीट नियंत्रण","Check: Intercrop":"अंतरफसल जांच","Check: Plot":"प्लॉट जांच","Check: Sapling":"पौध जांच","Check: Mortality":"मृत्युदर जांच","Check: Leakage":"रिसाव जांच","Sample: Soil":"मिट्टी नमूना","Sample: Biomass":"बायोमास नमूना","Photo & Documentation":"फ़ोटो व दस्तावेज़ीकरण","Meet: Beneficiary":"लाभार्थी मुलाकात","Check: Boundary":"सीमा जांच","General Visit":"सामान्य दौरा","Report: Damage":"क्षति रिपोर्ट","Report: Fire":"आग रिपोर्ट","Report: Flood":"बाढ़ रिपोर्ट","Off: Data Work":"ऑफिस: डेटा कार्य","Off: Meeting":"ऑफिस: मीटिंग","Off: Visitors":"ऑफिस: आगंतुक","Land: Survey":"भूमि सर्वेक्षण","Land: Agreement":"भूमि समझौता","Land: Mapping":"भूमि मानचित्रण","Meet: FGD, PRA, KIS":"एफजीडी, पीआरए, केआईएस","Meet: GP, BDO, Member, TG":"जीपी, बीडीओ, सदस्य बैठक","Other":"अन्य"},
 };
 
 function S(key, ...args) {
@@ -2321,7 +2324,7 @@ function exportDashXLSX() {
 }
 
 // ── Grievance / Redressal ─────────────────────────────────────────────────────
-const GRIEVANCE_TYPES = ['Fence Repair', 'Watering', 'Damage Report', 'Flood Report', 'Fire Report'];
+const GRIEVANCE_TYPES = ['Fence Repair', 'Apply: Water', 'Report: Damage', 'Report: Flood', 'Report: Fire'];
 
 function isGrievanceRow(r) {
   return safeParseTypes(r.visit_types).some(t => GRIEVANCE_TYPES.includes(t));
@@ -2774,8 +2777,8 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- REDRESSAL MODAL -->
 <div id="redressal-modal-bg" onclick="if(event.target===this)closeRedressalModal()"
   style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:350;
-  align-items:flex-end;justify-content:center">
-  <div style="background:var(--card);border-radius:16px 16px 0 0;width:100%;max-width:640px;
+  align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:16px;width:calc(100% - 32px);max-width:640px;
     max-height:85vh;display:flex;flex-direction:column;padding-bottom:20px">
     <div style="display:flex;align-items:center;gap:10px;padding:16px 18px 12px;
       border-bottom:1px solid var(--rule);flex-shrink:0">
@@ -2786,7 +2789,7 @@ document.addEventListener('DOMContentLoaded', () => {
         style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--mid);padding:2px 6px">✕</button>
     </div>
     <div style="padding:10px 18px 6px;font-size:11px;color:var(--mid);flex-shrink:0">
-      Fence Repair · Watering · Damage Report · Flood Report · Fire Report
+      Fence Repair · Apply: Water · Report: Damage · Report: Flood · Report: Fire
     </div>
     <div style="overflow-y:auto;flex:1;padding:0 18px 10px">
       <table class="log-table" style="width:100%">
