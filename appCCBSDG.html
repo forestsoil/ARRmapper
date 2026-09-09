@@ -390,11 +390,31 @@ function arrAuthRenderChip(containerId, onSignOut) {
             </select>
             <select id="f-sighting-type" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
               <option value="">All types</option>
-              <option value="fauna">🦅 Fauna</option>
-              <option value="flora">🌿 Flora</option>
-              <option value="invasive">⚠️ Invasive</option>
-              <option value="recruitment">🌱 Recruitment</option>
-              <option value="native">🟢 Native</option>
+              <optgroup label="L1">
+                <option value="fauna">🦅 Fauna</option>
+                <option value="flora">🌿 Flora</option>
+              </optgroup>
+              <optgroup label="L2 — Flora">
+                <option value="native">🟢 Native</option>
+                <option value="invasive">⚠️ Invasive</option>
+                <option value="recruitment">🌱 Recruitment</option>
+                <option value="tree">🌳 Tree</option>
+                <option value="grass">🌾 Grass</option>
+                <option value="herb">🌿 Herb</option>
+                <option value="shrub">🪴 Shrub</option>
+                <option value="climber">🌀 Climber</option>
+                <option value="cultivated">🍃 Cultivated</option>
+              </optgroup>
+              <optgroup label="L2 — Fauna">
+                <option value="mammal">🐾 Mammal</option>
+                <option value="bird">🦅 Bird</option>
+                <option value="reptile">🦎 Reptile</option>
+                <option value="amphibian">🐸 Amphibian</option>
+                <option value="fish">🐟 Fish</option>
+                <option value="insect">🦋 Insect</option>
+                <option value="spider">🕷 Spider</option>
+                <option value="snail">🐌 Snail</option>
+              </optgroup>
             </select>
             <select id="f-species-bio" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
               <option value="">All species</option>
@@ -406,6 +426,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
             <input type="date" id="f-date-to" onchange="filterBioMap()" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border)">
             <input type="text" id="f-bio-search" oninput="filterBioMap()" placeholder="Search…" style="font-size:10px;padding:3px 6px;border-radius:4px;background:var(--card);color:var(--ink);border:1px solid var(--border);width:80px">
             <button onclick="clearBioFilters()" style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--border);color:var(--ink);border:none;cursor:pointer">✕</button>
+            <span id="sightings-load-status" style="font-size:9px;margin-left:4px"></span>
           </div>
           <!-- Diversity badges -->
           <div id="div-badges" style="padding:5px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border);background:var(--surface)">
@@ -1205,10 +1226,15 @@ async function loadBibFromDrive() {
     const url = CCB_CONFIG.scriptUrl +
       '?action=getFile&folder=Bibliography&filename=asha_arr_bibliography.bib';
     const res  = await fetch(url);
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch(e) {
+      if (status) { status.textContent = '❌ Bib: bad JSON — ' + text.slice(0,80); status.style.color='var(--rose)'; }
+      return;
+    }
     if (data.success && data.content) {
       const entries = parseBibTeXString(data.content);
-      // Merge — don't overwrite local additions
       let added = 0;
       entries.forEach(e => { if (!_refs.find(r=>r.key===e.key)) { _refs.push(e); added++; } });
       renderRefs();
@@ -1217,10 +1243,12 @@ async function loadBibFromDrive() {
         setTimeout(()=>{ if(status) status.textContent=''; }, 3000);
       }
     } else if (status) {
-      status.textContent = ''; // not found yet — that's ok
+      status.textContent = '⚠️ Bib: ' + (data.error || 'file not found');
+      status.style.color = 'var(--rose)';
+      setTimeout(()=>{ if(status) status.textContent=''; }, 4000);
     }
   } catch(e) {
-    if (status) { status.textContent = ''; } // silent fail
+    if (status) { status.textContent = '❌ Bib: ' + e.message; status.style.color='var(--rose)'; }
   }
 }
 
@@ -1344,16 +1372,22 @@ function exportBibTeX() {
 // ── Load sightings from Sheet ─────────────────────────────────────────
 async function loadSightingsFromSheet() {
   if (!CCB_CONFIG.scriptUrl) return;
+  const statusEl = document.getElementById('sightings-load-status');
+  if (statusEl) { statusEl.textContent = '⏳ Loading…'; statusEl.style.color='var(--teal)'; }
   try {
     const res  = await fetch(CCB_CONFIG.scriptUrl + '?action=getSightings');
     const data = await res.json();
-    if (!data.success || !data.rows) return;
+    if (!data.success || !data.rows) {
+      if (statusEl) { statusEl.textContent = '⚠️ Sheet: ' + (data.error||'no rows returned'); statusEl.style.color='var(--rose)'; }
+      return;
+    }
     const sheetSightings = data.rows
       .filter(r => r.type === 'sighting' && r.species)
       .map(r => ({
         date:         r.date         || '',
         species:      r.species      || '',
         sci:          r.sci           || '',
+        tag:          r.tag           || '',
         category:     r.category     || 'fauna',
         lat:          parseFloat(r.lat_used) || NaN,
         lon:          parseFloat(r.lon_used) || NaN,
@@ -1373,9 +1407,11 @@ async function loadSightingsFromSheet() {
       if (!exists) bioSightings.push(s);
     });
     populateBioFilters();
+    if (statusEl) { statusEl.textContent = `✅ ${bioSightings.length} records`; setTimeout(()=>{ if(statusEl) statusEl.textContent=''; }, 3000); }
     if (bioMap) renderBioMap();
   } catch(e) {
     console.warn('loadSightingsFromSheet failed:', e);
+    if (statusEl) { statusEl.textContent = '❌ ' + e.message; statusEl.style.color='var(--rose)'; }
   }
 }
 
