@@ -9,6 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="arr-shared.css">
+<script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.cjs"></script>
 <script>
 // ── Theme: run before paint to prevent flash ──────────────────────────
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
@@ -6574,102 +6575,53 @@ function isPlantingSeason() {
   return m >= PLANTING_SEASON_START && m <= PLANTING_SEASON_END;
 }
 
-// Convert any image blob to JPEG canvas blob
-// Max megapixels for all photos — 3MP/80% JPEG
-const MAX_MP = 3;
+// ── Image resize + timestamp/GPS/reporter burn ────────────────────────
+const TARGET_W     = 1920;
+const TARGET_H     = 1080;
 const JPEG_QUALITY = 0.80;
 
-async function toJpegBlob(blob) {
-  return new Promise((res, rej) => {
-    const img = new Image();
-    const url = URL.createObjectURL(blob);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const mp = (img.naturalWidth * img.naturalHeight) / 1_000_000;
-      const scale = mp > MAX_MP ? Math.sqrt(MAX_MP / mp) : 1;
-      const w = Math.round(img.naturalWidth  * scale);
-      const h = Math.round(img.naturalHeight * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      canvas.toBlob(b => b ? res(b) : rej('toBlob failed'), 'image/jpeg', JPEG_QUALITY);
-    };
-    img.onerror = rej;
-    img.src = url;
-  });
+function fileToDataUrl(file) {
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsDataURL(file); });
 }
-
-// Build overlay text lines
-function overlayLines() {
-  const lat = S.values._gps_lat, lng = S.values._gps_lng;
-  const ts  = new Date().toLocaleString('en-IN', { timeZone:'Asia/Kolkata',
-    year:'numeric', month:'2-digit', day:'2-digit',
-    hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
-  const coords = lat != null
-    ? `${lat>=0?'+':''}${lat.toFixed(6)}, ${lng>=0?'+':''}${lng.toFixed(6)}`
-    : 'GPS unavailable';
-  const place = [S.values.district_code, S.values.block_circle_code, S.values.gp_name]
-    .filter(Boolean).join(' / ') || 'Location not set';
-  return [coords, ts + ' IST', place, S.submissionId || ''];
+function blobToDataUrl(blob) {
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsDataURL(blob); });
 }
-
-// Burn overlay onto JPEG blob
-async function burnOverlay(blob, opaque) {
-  const img = new Image();
-  const url = URL.createObjectURL(blob);
-  return new Promise((res, rej) => {
-    img.onload = () => {
-      // Force landscape
-      let w = img.naturalWidth, h = img.naturalHeight;
-      if (h > w) { [w, h] = [h, w]; } // rotate if portrait
-
-      const canvas  = document.createElement('canvas');
-      canvas.width  = w; canvas.height = h;
-      const ctx     = canvas.getContext('2d');
-
-      // Draw image (rotate if needed)
-      if (img.naturalHeight > img.naturalWidth) {
-        ctx.save();
-        ctx.translate(w/2, h/2);
-        ctx.rotate(Math.PI/2);
-        ctx.drawImage(img, -img.naturalWidth/2, -img.naturalHeight/2);
-        ctx.restore();
-      } else {
-        ctx.drawImage(img, 0, 0);
-      }
-      URL.revokeObjectURL(url);
-
-      // Overlay box: bottom-right corner, 1/4 width × 1/3 height
-      const boxW  = Math.round(w / 4);
-      const boxH  = Math.round(h / 3);
-      const boxX  = w - boxW;
-      const boxY  = h - boxH;
-      const lines = overlayLines();
-      const fsize = Math.max(9, Math.round(boxH / (lines.length + 2)));
-
-      // Black opaque base (covers existing watermarks)
-      ctx.fillStyle = 'rgba(0,0,0,1)';
-      ctx.fillRect(boxX, boxY, boxW, boxH);
-
-      // Semi-transparent overlay on top (if camera capture)
-      if (!opaque) {
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
-        ctx.fillRect(boxX, boxY, boxW, boxH);
-      }
-
-      // Text
-      ctx.fillStyle = '#ffffff';
-      ctx.font      = `${fsize}px monospace`;
-      ctx.textBaseline = 'top';
-      lines.forEach((line, i) => {
-        ctx.fillText(line, boxX + 6, boxY + 8 + i * (fsize + 3), boxW - 12);
-      });
-
-      canvas.toBlob(b => b ? res(b) : rej('toBlob failed'), 'image/jpeg', JPEG_QUALITY);
-    };
-    img.onerror = rej;
-    img.src = url;
-  });
+function loadImage(file) {
+  return new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const img=new Image(); img.onload=()=>{URL.revokeObjectURL(url);res(img);}; img.onerror=rej; img.src=url; });
+}
+async function resizeAndBurn(file, lat, lng, captureTs) {
+  const img = await loadImage(file);
+  const isPortrait = img.naturalHeight > img.naturalWidth;
+  const tW = isPortrait ? TARGET_H : TARGET_W;
+  const tH = isPortrait ? TARGET_W : TARGET_H;
+  const scale = Math.min(tW/img.naturalWidth, tH/img.naturalHeight, 1);
+  const cW = Math.round(img.naturalWidth*scale);
+  const cH = Math.round(img.naturalHeight*scale);
+  const canvas = document.createElement('canvas');
+  canvas.width=cW; canvas.height=cH;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, cW, cH);
+  // Burn: GPS · reporter · timestamp
+  const auth    = arrAuthGet();
+  const reporter= auth ? (auth.name||auth.email) : 'unknown';
+  const ts      = captureTs || new Date().toISOString().slice(0,19).replace('T',' ');
+  const latStr  = (lat!==null&&lat!==undefined&&lng!==null&&lng!==undefined)
+    ? `${lat.toFixed(5)}°N  ${lng.toFixed(5)}°E` : 'GPS N/A';
+  const lines   = [latStr, reporter, ts];
+  const maxW    = cW*0.25;
+  const fSize   = Math.max(10, Math.min(Math.round(cH*0.022), 18));
+  ctx.font      = `bold ${fSize}px monospace`;
+  const lineH   = fSize+3, padX=6, padY=5;
+  const textW   = Math.min(maxW, Math.max(...lines.map(l=>ctx.measureText(l).width))+padX*2);
+  const boxH    = lines.length*lineH+padY*2;
+  const bx      = cW-textW-6, by=cH-boxH-6;
+  ctx.fillStyle = 'rgba(0,0,0,0.62)';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx,by,textW,boxH,4); else ctx.rect(bx,by,textW,boxH);
+  ctx.fill();
+  ctx.fillStyle='#ffffff'; ctx.font=`bold ${fSize}px monospace`; ctx.textAlign='left';
+  lines.forEach((line,i)=>ctx.fillText(line, bx+padX, by+padY+fSize+i*lineH, textW-padX*2));
+  return new Promise(res=>canvas.toBlob(res,'image/jpeg',JPEG_QUALITY));
 }
 
 // Write EXIF metadata into JPEG blob
@@ -6730,16 +6682,59 @@ async function writeExif(blob) {
   });
 }
 
-// Full image processing pipeline
-async function processPhoto(file, withOverlay, opaque) {
-  let blob = file;
-  // Convert to JPEG if needed
-  if (blob.type !== 'image/jpeg') blob = await toJpegBlob(blob);
-  // Burn overlay if requested
-  if (withOverlay) blob = await burnOverlay(blob, opaque);
-  // Write EXIF
-  blob = await writeExif(blob);
-  return blob;
+// Full image processing pipeline — uses resizeAndBurn for all photo fields
+async function processPhoto(file, withOverlay /*, opaque param retained for call-site compat */) {
+  let exifLat = null, exifLng = null, captureTs = null;
+  // Extract EXIF GPS + timestamp
+  try {
+    if (typeof exifr !== 'undefined') {
+      const exifData = await exifr.parse(file, ['GPSLatitude','GPSLongitude','DateTimeOriginal','CreateDate']);
+      const gps = exifData?.GPSLatitude ? await exifr.gps(file) : null;
+      if (gps?.latitude && gps?.longitude) {
+        exifLat = gps.latitude; exifLng = gps.longitude;
+      }
+      // Fall back to app GPS state if EXIF has none
+      if (exifLat === null && S.values._gps_lat != null) {
+        exifLat = S.values._gps_lat; exifLng = S.values._gps_lng;
+      }
+      const exifDt = exifData?.DateTimeOriginal || exifData?.CreateDate;
+      if (exifDt) {
+        const d = exifDt instanceof Date ? exifDt : new Date(exifDt);
+        if (!isNaN(d)) captureTs = d.toISOString().slice(0,19).replace('T',' ');
+      }
+    } else if (S.values._gps_lat != null) {
+      exifLat = S.values._gps_lat; exifLng = S.values._gps_lng;
+    }
+  } catch(e) {
+    // EXIF parse failed — fall back to app GPS
+    if (S.values._gps_lat != null) { exifLat = S.values._gps_lat; exifLng = S.values._gps_lng; }
+  }
+
+  if (withOverlay) {
+    try {
+      const burned = await resizeAndBurn(file, exifLat, exifLng, captureTs);
+      // Also write EXIF metadata into the burned blob
+      return await writeExif(burned);
+    } catch(e) {
+      // Burn failed — return original silently
+      return file;
+    }
+  }
+  // Gallery path: resize to target dimensions (no burn), write EXIF
+  try {
+    const img = await loadImage(file);
+    const isPortrait = img.naturalHeight > img.naturalWidth;
+    const tW = isPortrait ? TARGET_H : TARGET_W;
+    const tH = isPortrait ? TARGET_W : TARGET_H;
+    const scale = Math.min(tW/img.naturalWidth, tH/img.naturalHeight, 1);
+    const cW = Math.round(img.naturalWidth*scale);
+    const cH = Math.round(img.naturalHeight*scale);
+    const canvas = document.createElement('canvas');
+    canvas.width=cW; canvas.height=cH;
+    canvas.getContext('2d').drawImage(img, 0, 0, cW, cH);
+    const resized = await new Promise(res=>canvas.toBlob(res,'image/jpeg',JPEG_QUALITY));
+    return await writeExif(resized);
+  } catch(e) { return file; }
 }
 
 // OPFS PlantationMapper file picker
