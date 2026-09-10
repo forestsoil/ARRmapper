@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Documentation v10 · ARR Projects</title>
+<title>Documentation v14 · ARR Projects</title>
 <link rel="stylesheet" href="arr-shared.css">
 <style>
 .proj-tabs{display:none}
@@ -147,10 +147,18 @@ footer a:hover{color:var(--canopy)}
 }
 </style>
 
-<!-- Report generation libraries -->
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<!-- pdfmake — portrait reports and 16:9 landscape slide decks -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script>
+// pdfmake 0.2.7 CDN spreads createPdf onto window directly.
+// vfs_fonts.min.js needs window.pdfMake.vfs — shim it.
+window.pdfMake = window.pdfMake || {};
+window.pdfMake.createPdf = window.createPdf;
+// vfs_fonts.js will set pdfMake.vfs — if it already ran, pull it:
+if (!window.pdfMake.vfs && window.vfs_fonts_data) window.pdfMake.vfs = window.vfs_fonts_data;
+</script>
 
 <script>
 // ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
@@ -253,24 +261,24 @@ function arrAuthRenderChip(containerId, onSignOut) {
         <div class="card-header-icon">📊</div>
         <div>
           <div class="card-header-title">Generate Field Reports</div>
-          <div class="card-header-sub">Work reports &amp; attendance — download as DOCX or PPTX</div>
+          <div class="card-header-sub">Work reports &amp; attendance — download as PDF</div>
         </div>
       </div>
       <div class="rep-btn-row">
         <button class="rep-btn" onclick="genReport('weekly','asha1',this)" title="Mon–Fri, current week">
           <span class="rep-btn-icon">📄</span>
           <span class="rep-btn-label">Weekly Report</span>
-          <span class="rep-btn-sub">Mon–Fri · DOCX · 6–8 pages</span>
+          <span class="rep-btn-sub">Mon–Fri · PDF portrait · 6–8 pages</span>
         </button>
         <button class="rep-btn" onclick="genReport('monthly','asha1',this)" title="01–last day of current month">
           <span class="rep-btn-icon">📑</span>
           <span class="rep-btn-label">Monthly Report</span>
-          <span class="rep-btn-sub">Full calendar month · DOCX · 8–20 pages</span>
+          <span class="rep-btn-sub">Full calendar month · PDF portrait · 8–20 pages</span>
         </button>
-        <button class="rep-btn" onclick="genReport('ppt','asha1',this)" title="Prior Fri–Thu · PPTX for EcoAct meeting">
+        <button class="rep-btn" onclick="genReport('ppt','asha1',this)" title="Prior Fri–Thu · PDF 16:9 landscape for EcoAct meeting">
           <span class="rep-btn-icon">📊</span>
           <span class="rep-btn-label">EcoAct Slide Deck</span>
-          <span class="rep-btn-sub">Prior Fri–Thu · PPTX · ~18–20 slides</span>
+          <span class="rep-btn-sub">Prior Fri–Thu · PDF 16:9 landscape · ~12 slides</span>
         </button>
       </div>
       <div class="rep-status" id="rep-status-asha1"></div>
@@ -454,24 +462,24 @@ function arrAuthRenderChip(containerId, onSignOut) {
         <div class="card-header-icon">📊</div>
         <div>
           <div class="card-header-title">Generate Field Reports</div>
-          <div class="card-header-sub">Work reports &amp; attendance — download as DOCX or PPTX</div>
+          <div class="card-header-sub">Work reports &amp; attendance — download as PDF</div>
         </div>
       </div>
       <div class="rep-btn-row">
         <button class="rep-btn" onclick="genReport('weekly','asha2',this)">
           <span class="rep-btn-icon">📄</span>
           <span class="rep-btn-label">Weekly Report</span>
-          <span class="rep-btn-sub">Mon–Fri · DOCX · 6–8 pages</span>
+          <span class="rep-btn-sub">Mon–Fri · PDF portrait · 6–8 pages</span>
         </button>
         <button class="rep-btn" onclick="genReport('monthly','asha2',this)">
           <span class="rep-btn-icon">📑</span>
           <span class="rep-btn-label">Monthly Report</span>
-          <span class="rep-btn-sub">Full calendar month · DOCX · 8–20 pages</span>
+          <span class="rep-btn-sub">Full calendar month · PDF portrait · 8–20 pages</span>
         </button>
         <button class="rep-btn" onclick="genReport('ppt','asha2',this)">
           <span class="rep-btn-icon">📊</span>
           <span class="rep-btn-label">EcoAct Slide Deck</span>
-          <span class="rep-btn-sub">Prior Fri–Thu · PPTX · ~18–20 slides</span>
+          <span class="rep-btn-sub">Prior Fri–Thu · PDF 16:9 landscape · ~12 slides</span>
         </button>
       </div>
       <div class="rep-status" id="rep-status-asha2"></div>
@@ -562,24 +570,24 @@ function arrAuthRenderChip(containerId, onSignOut) {
         <div class="card-header-icon">📊</div>
         <div>
           <div class="card-header-title">Generate Field Reports</div>
-          <div class="card-header-sub">Work reports &amp; attendance — download as DOCX or PPTX</div>
+          <div class="card-header-sub">Work reports &amp; attendance — download as PDF</div>
         </div>
       </div>
       <div class="rep-btn-row">
         <button class="rep-btn" onclick="genReport('weekly','arun',this)">
           <span class="rep-btn-icon">📄</span>
           <span class="rep-btn-label">Weekly Report</span>
-          <span class="rep-btn-sub">Mon–Fri · DOCX · 6–8 pages</span>
+          <span class="rep-btn-sub">Mon–Fri · PDF portrait · 6–8 pages</span>
         </button>
         <button class="rep-btn" onclick="genReport('monthly','arun',this)">
           <span class="rep-btn-icon">📑</span>
           <span class="rep-btn-label">Monthly Report</span>
-          <span class="rep-btn-sub">Full calendar month · DOCX · 8–20 pages</span>
+          <span class="rep-btn-sub">Full calendar month · PDF portrait · 8–20 pages</span>
         </button>
         <button class="rep-btn" onclick="genReport('ppt','arun',this)">
           <span class="rep-btn-icon">📊</span>
           <span class="rep-btn-label">EcoAct Slide Deck</span>
-          <span class="rep-btn-sub">Prior Fri–Thu · PPTX · ~18–20 slides</span>
+          <span class="rep-btn-sub">Prior Fri–Thu · PDF 16:9 landscape · ~12 slides</span>
         </button>
       </div>
       <div class="rep-status" id="rep-status-arun"></div>
@@ -670,24 +678,24 @@ function arrAuthRenderChip(containerId, onSignOut) {
         <div class="card-header-icon">📊</div>
         <div>
           <div class="card-header-title">Generate Field Reports</div>
-          <div class="card-header-sub">Work reports &amp; attendance — download as DOCX or PPTX</div>
+          <div class="card-header-sub">Work reports &amp; attendance — download as PDF</div>
         </div>
       </div>
       <div class="rep-btn-row">
         <button class="rep-btn" onclick="genReport('weekly','banani',this)">
           <span class="rep-btn-icon">📄</span>
           <span class="rep-btn-label">Weekly Report</span>
-          <span class="rep-btn-sub">Mon–Fri · DOCX · 6–8 pages</span>
+          <span class="rep-btn-sub">Mon–Fri · PDF portrait · 6–8 pages</span>
         </button>
         <button class="rep-btn" onclick="genReport('monthly','banani',this)">
           <span class="rep-btn-icon">📑</span>
           <span class="rep-btn-label">Monthly Report</span>
-          <span class="rep-btn-sub">Full calendar month · DOCX · 8–20 pages</span>
+          <span class="rep-btn-sub">Full calendar month · PDF portrait · 8–20 pages</span>
         </button>
         <button class="rep-btn" onclick="genReport('ppt','banani',this)">
           <span class="rep-btn-icon">📊</span>
           <span class="rep-btn-label">EcoAct Slide Deck</span>
-          <span class="rep-btn-sub">Prior Fri–Thu · PPTX · ~18–20 slides</span>
+          <span class="rep-btn-sub">Prior Fri–Thu · PDF 16:9 landscape · ~12 slides</span>
         </button>
       </div>
       <div class="rep-status" id="rep-status-banani"></div>
@@ -784,10 +792,15 @@ function arrAuthRenderChip(containerId, onSignOut) {
 // ── Config ────────────────────────────────────────────────────────────────────
 const REP_GAS_URL = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';
 
-// TODO: set to appSurveyManager GAS /exec URL to enable Baseline KPIs on slide 8
-// When set, genReport() will fetch Baseline rows and expose them as window._baselineRows
-// Leave as empty string to show the placeholder panel instead.
-const SURVEY_GAS_URL = '';  // e.g. 'https://script.google.com/macros/s/XXXX/exec'
+// appSurveyManager GAS /exec URLs — one per project workbook
+const SURVEY_GAS_URLS = {
+  asha1:  'https://script.google.com/macros/s/AKfycbxB-VNuUJza-Ahqq6HoSq5sWEKJi7-7Emoxnaq7RaSl8KeEHtdalzlAX674DJpxcVpG/exec',
+  asha2:  'https://script.google.com/macros/s/AKfycbzoa218pBufF7SvjEhx1Cp2TBUl8fl5daRRKAuCqBAoKFSIIcjueKg0Q9jqcSjBtZcX1Q/exec',
+  arun:   'https://script.google.com/macros/s/AKfycbyHgeC91bIc71lk4RzjazBQ2t_Lh_tbiF-6BgopFzUJ88SPUL_mnbNk1DAS0NwL6vccEA/exec',
+  banani: 'https://script.google.com/macros/s/AKfycbxZGOEwfqscUiZbTiIj1Nnz988e4VRjgLCykmRx-804Ak8IuswsxL-f45sf5VgBS-rR/exec',
+};
+// Land area: Baseline stores sqm, display as ha
+const SQM_TO_HA = 1 / 10000;
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 function isoDate(d) {
@@ -947,47 +960,79 @@ function disablePanelBtns(proj, disabled) {
   card.querySelectorAll('.rep-btn').forEach(b=>b.disabled=disabled);
 }
 
+// ── pdfmake init ─────────────────────────────────────────────────────────────
+// vfs_fonts.min.js sets pdfMake.vfs; pdfmake.min.js spreads createPdf onto window.
+// Ensure the shim is in place after both scripts load.
+function getPdfMake() {
+  if (!window.pdfMake) window.pdfMake = {};
+  if (!window.pdfMake.createPdf) window.pdfMake.createPdf = window.createPdf;
+  return window.pdfMake;
+}
+
+// ── pdfmake: save PDF blob ────────────────────────────────────────────────────
+function pdfSave(dd, filename) {
+  return new Promise((resolve, reject) => {
+    const pm = getPdfMake();
+    const doc = pm.createPdf(dd);
+    doc.getBuffer((buf) => {
+      try {
+        saveAs(new Blob([buf], { type: 'application/pdf' }), filename);
+        resolve();
+      } catch(e) { reject(e); }
+    });
+  });
+}
+
+// ── Shared pdfmake style tokens ───────────────────────────────────────────────
+const C = {
+  forest:  '1B4332',
+  leaf:    '52B788',
+  mint:    'D8F3DC',
+  amber:   'F59E0B',
+  red:     'DC2626',
+  green:   '006600',
+  dark:    '111827',
+  mid:     '6B7280',
+  pale:    'F0FDF4',
+  rule:    'E5E7EB',
+  white:   'FFFFFF',
+};
+
 // ── Main entry point ──────────────────────────────────────────────────────────
 async function genReport(mode, proj, btn) {
   disablePanelBtns(proj, true);
   setRepStatus(proj, '⏳ Fetching data from server…');
   try {
-    // Fetch work reports and attendance in parallel; baseline if URL configured
+    const surveyUrl = SURVEY_GAS_URLS[proj];
     const fetches = [
       gasGet({ action:'getRows' }),
       gasGet({ action:'getAttendance' }),
+      gasGet({ action:'getRecords', form_id:'baseline' },   30000, surveyUrl),
+      gasGet({ action:'getRecords', form_id:'plantation' }, 30000, surveyUrl),
     ];
-    if (SURVEY_GAS_URL) fetches.push(gasGet({ action:'getRows' }, 30000, SURVEY_GAS_URL));
+    const [wrData, attData, baselineData, plantationData] = await Promise.all(fetches);
+    if (!wrData.ok)  throw new Error('Work reports fetch failed: ' + (wrData.error||''));
+    if (!attData.ok) throw new Error('Attendance fetch failed: '  + (attData.error||''));
 
-    const results = await Promise.all(fetches);
-    const [wrData, attData] = results;
-    const baselineData = results[2] || null;
+    const wrRows  = (wrData.rows   || []).map(r=>({...r, _date:repDateStr(r.date||r.submitted_ts)}));
+    const attRows = (attData.rows  || []).map(r=>({...r, _date:repDateStr(r.date||r.submitted_ts)}));
+    const bRows   = (baselineData  && baselineData.ok)   ? (baselineData.records   || []) : [];
+    const pRows   = (plantationData && plantationData.ok) ? (plantationData.records || []) : [];
 
-    if (!wrData.ok) throw new Error('Work reports fetch failed: ' + (wrData.error||'unknown'));
-    if (!attData.ok) throw new Error('Attendance fetch failed: '  + (attData.error||'unknown'));
-
-    const wrRows  = (wrData.rows  || []).map(r=>({...r, _date:repDateStr(r.date||r.submitted_ts)}));
-    const attRows = (attData.rows || []).map(r=>({...r, _date:repDateStr(r.date||r.submitted_ts)}));
-
-    setRepStatus(proj, '⏳ Building document…');
+    setRepStatus(proj, '⏳ Building PDF…');
 
     let range;
-    if (mode==='weekly')  range = weekRange();
+    if (mode==='weekly')       range = weekRange();
     else if (mode==='monthly') range = monthRange();
-    else range = pptWeekRange();
+    else                       range = pptWeekRange();
 
-    const wrFiltered  = filterByRange(wrRows,  range.d1, range.d2);
-    const attFiltered = filterByRange(attRows, range.d1, range.d2);
+    const wrF  = filterByRange(wrRows,  range.d1, range.d2);
+    const attF = filterByRange(attRows, range.d1, range.d2);
 
-    // Expose baseline rows globally for slide 8 in buildPPTX
-    window._baselineRows = (baselineData && baselineData.ok) ? (baselineData.rows || []) : [];
+    if (mode==='ppt') await buildSlidesPDF(proj, range, wrF, attF, bRows, pRows);
+    else              await buildReportPDF(proj, mode, range, wrF, attF, bRows, pRows);
 
-    if (mode==='ppt') {
-      await buildPPTX(proj, range, wrFiltered, attFiltered);
-    } else {
-      await buildDOCX(proj, mode, range, wrFiltered, attFiltered);
-    }
-    setRepStatus(proj, '✓ Download ready', 'ok');
+    setRepStatus(proj, '✓ PDF downloaded', 'ok');
   } catch(e) {
     console.error(e);
     setRepStatus(proj, '✗ ' + e.message, 'err');
@@ -997,756 +1042,543 @@ async function genReport(mode, proj, btn) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  DOCX BUILDER
+//  PORTRAIT REPORT PDF  (A4, weekly / monthly)
 // ═══════════════════════════════════════════════════════════════════════
-async function buildDOCX(proj, mode, range, wrRows, attRows) {
-  const { Document, Paragraph, TextRun, Table, TableRow, TableCell,
-          HeadingLevel, AlignmentType, WidthType, BorderStyle,
-          PageBreak, ShadingType, PageOrientation, Packer } = docx;
-
-  const projLabel = { asha1:'Asha 1', asha2:'Asha 2', arun:'Arun', banani:'Banani' }[proj] || proj;
+async function buildReportPDF(proj, mode, range, wrRows, attRows, bRows, pRows) {
+  const projLabel = { asha1:'Asha 1', asha2:'Asha 2', arun:'Arun', banani:'Banani' }[proj]||proj;
   const modeLabel = mode==='weekly' ? 'Weekly Field Report' : 'Monthly Field Report';
-  const generated = new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'});
+  const generated = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
 
-  // ── Palette ──────────────────────────────────────────────────────────
-  const COL_FOREST = '1B4332'; // dark green
-  const COL_LEAF   = '52B788'; // mid green
-  const COL_AMBER  = 'F59E0B';
-  const COL_RULE   = 'D1D5DB'; // light border
-  const COL_BG     = 'F0FDF4'; // very pale green
+  // Aggregates
+  const att      = attSummary(attRows, range.d1, range.d2);
+  const vtF      = vtFreq(wrRows);
+  const topRep   = topReporters(wrRows, 10);
+  const grievR   = grievanceRows(wrRows);
+  const days     = dayTotals(wrRows, range.d1, range.d2);
+  const peakDay  = days.reduce((m,d)=>d.count>m.count?d:m, {date:'—',count:0});
+  const totEnrol = bRows.length;
+  const totPropHa= bRows.reduce((a,r)=>a+(parseFloat(r.land_plantation_sqm)||0)*SQM_TO_HA,0);
+  const plantHa  = pRows.filter(r=>{const d=repDateStr(r.plantation_date||r.timestamp_server||'');return d>=range.d1&&d<=range.d2;}).reduce((a,r)=>a+(parseFloat(r.area_ha)||0),0);
 
-  // ── Style helpers ────────────────────────────────────────────────────
-  const h1 = (text) => new Paragraph({
-    heading: HeadingLevel.HEADING_1,
-    children: [new TextRun({ text, color: COL_FOREST, size: 28, bold: true })],
-    spacing: { before: 320, after: 160 },
+  // Helpers
+  const hdr = (text, level=1) => ({
+    text, fontSize: level===1?14:12, bold:true, color:C.forest,
+    margin:[0, level===1?16:12, 0, 6],
   });
+  const rule = () => ({ canvas:[{type:'line',x1:0,y1:0,x2:495,y2:0,lineWidth:0.5,lineColor:C.rule}], margin:[0,4,0,8] });
+  const kv = (label, val) => ({ columns:[{text:label+':',bold:true,width:160,fontSize:10},{text:String(val??'—'),fontSize:10,width:'*'}], margin:[0,2,0,2] });
 
-  const h2 = (text) => new Paragraph({
-    heading: HeadingLevel.HEADING_2,
-    children: [new TextRun({ text, color: COL_LEAF, size: 24, bold: true })],
-    spacing: { before: 260, after: 120 },
-  });
-
-  const body = (text, opts={}) => new Paragraph({
-    children: [new TextRun({ text, size: 21, ...opts })],
-    spacing: { before: 60, after: 60 },
-  });
-
-  const kv = (label, val) => new Paragraph({
-    children: [
-      new TextRun({ text: label + ': ', bold: true, size: 21 }),
-      new TextRun({ text: String(val ?? '—'), size: 21 }),
-    ],
-    spacing: { before: 60, after: 60 },
-  });
-
-  const pageBreak = () => new Paragraph({ children: [new PageBreak()] });
-
-  const rule = () => new Paragraph({
-    border: { bottom: { color: COL_RULE, style: BorderStyle.SINGLE, size: 6 } },
-    spacing: { before: 160, after: 160 },
-    children: [],
-  });
-
-  // ── Table helpers ────────────────────────────────────────────────────
-  const cellOpts = (text, { bold=false, shade=false, color='', align=AlignmentType.LEFT }={}) =>
-    new TableCell({
-      shading: shade ? { fill: 'E9F5EE', type: ShadingType.CLEAR } : undefined,
-      children: [new Paragraph({
-        alignment: align,
-        children: [new TextRun({ text: String(text??''), bold, size: 18,
-          color: color||'000000' })],
-        spacing: { before: 40, after: 40 },
-      })],
-      width: { size: 0, type: WidthType.AUTO },
-      margins: { top: 60, bottom: 60, left: 80, right: 80 },
-    });
-
-  const twoColTable = (rows, hdr=null) => {
-    const tableRows = [];
-    if (hdr) {
-      tableRows.push(new TableRow({ children: hdr.map(h=>cellOpts(h,{bold:true,shade:true})) }));
-    }
-    rows.forEach(([a,b]) => tableRows.push(new TableRow({
-      children:[cellOpts(a,{bold:true}), cellOpts(b)],
-    })));
-    return new Table({
-      columnWidths: [3500, 5500],
-      rows: tableRows,
-      width: { size: 9000, type: WidthType.DXA },
-    });
+  const tableLayout = {
+    hLineWidth: (i,n) => i===0||i===1||i===n.table.body.length ? 1 : 0.5,
+    vLineWidth: () => 0,
+    hLineColor: (i) => i===0||i===1 ? C.forest : C.rule,
+    fillColor:  (i) => i===0 ? C.forest : (i%2===0 ? C.pale : C.white),
   };
+  const thStyle = { bold:true, color:C.white, fontSize:9, fillColor:C.forest };
+  const tdStyle = { fontSize:9 };
 
-  const vtTable = (vtFreqArr) => {
-    const rows = [new TableRow({ children:[
-      cellOpts('Visit Type',{bold:true,shade:true}), cellOpts('Count',{bold:true,shade:true,align:AlignmentType.CENTER}),
-    ]})];
-    vtFreqArr.slice(0,20).forEach(([t,n]) => rows.push(new TableRow({
-      children:[cellOpts(t), cellOpts(n,{align:AlignmentType.CENTER})],
-    })));
-    return new Table({
-      columnWidths:[6000,3000],
-      rows,
-      width:{size:9000,type:WidthType.DXA},
+  function vtTable() {
+    const body = [[
+      Object.assign({text:'Visit Type'}, thStyle),
+      Object.assign({text:'Count', alignment:'right'}, thStyle),
+    ]];
+    vtF.forEach(([t,n]) => body.push([
+      {text:t, ...tdStyle},
+      {text:String(n), alignment:'right', ...tdStyle},
+    ]));
+    return { table:{ widths:['*',50], body }, layout:tableLayout, margin:[0,0,0,12] };
+  }
+
+  function wrLogTable() {
+    const body = [[
+      Object.assign({text:'Date'}, thStyle),
+      Object.assign({text:'Reporter'}, thStyle),
+      Object.assign({text:'LPC / Beneficiary'}, thStyle),
+      Object.assign({text:'Visit Types'}, thStyle),
+      Object.assign({text:'GPS'}, thStyle),
+    ]];
+    wrRows.slice(0,200).forEach(r=>{
+      body.push([
+        {text:fmtDate(r._date), ...tdStyle},
+        {text:r.operator_name||r.operator_email||'—', ...tdStyle},
+        {text:[r.lpc,r.dbc,r.beneficiary_name].filter(Boolean).join(' / ')||'—', ...tdStyle},
+        {text:parseVt(r.visit_types).join(' // ')||'—', ...tdStyle, fontSize:8},
+        {text:r.gps_lat?`${parseFloat(r.gps_lat).toFixed(4)}, ${parseFloat(r.gps_lng).toFixed(4)}`:'—', ...tdStyle, fontSize:8},
+      ]);
     });
-  };
+    return { table:{ widths:[60,'*','*','*',70], body }, layout:tableLayout, margin:[0,0,0,8] };
+  }
 
-  const staffAttTable = (attRows, d1, d2) => {
-    // Register: Name | daily codes
-    const dates = [];
-    const cur = new Date(d1); const end = new Date(d2);
-    while (cur<=end){ dates.push(isoDate(cur)); cur.setDate(cur.getDate()+1); }
-    const names = [...new Set(attRows.map(r=>r.operator_name||r.operator_email||'').filter(Boolean))].sort();
-    const lookup = {};
-    attRows.forEach(r=>{ const k=(r.operator_name||r.operator_email||'')+'|'+(r._date); if(!lookup[k]) lookup[k]=attCode(r.type); });
-    const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-    const colW = [2800, ...dates.map(()=>Math.floor(6200/dates.length))];
-    const headerRow = new TableRow({ children:[
-      cellOpts('Staff',{bold:true,shade:true}),
-      ...dates.map(d=>cellOpts(DOW[new Date(d).getDay()]+'\n'+d.slice(8),{bold:true,shade:true,align:AlignmentType.CENTER})),
-    ]});
-    const dataRows = names.slice(0,50).map(n=>new TableRow({ children:[
-      cellOpts(n,{bold:true}),
-      ...dates.map(d=>{ const c=lookup[n+'|'+d]||''; const color=c==='P'?'006600':c==='Ab'?'DC2626':'92400E'; return cellOpts(c,{align:AlignmentType.CENTER,color}); }),
-    ]}));
-    return new Table({ columnWidths:colW, rows:[headerRow,...dataRows], width:{size:9000,type:WidthType.DXA} });
-  };
+  function grievTable() {
+    const body = [[
+      Object.assign({text:'Date'}, thStyle),
+      Object.assign({text:'Reporter'}, thStyle),
+      Object.assign({text:'Location'}, thStyle),
+      Object.assign({text:'Types'}, thStyle),
+      Object.assign({text:'Notes'}, thStyle),
+    ]];
+    grievR.forEach(r=>{
+      const gvt = parseVt(r.visit_types).filter(t=>['Fence Repair','Apply: Water','Report: Damage','Report: Flood','Report: Fire'].includes(t)).join(' // ');
+      body.push([
+        {text:fmtDate(r._date), ...tdStyle},
+        {text:r.operator_name||r.operator_email||'—', ...tdStyle},
+        {text:[r.lpc,r.dbc,r.beneficiary_name].filter(Boolean).join(' / ')||'—', ...tdStyle},
+        {text:gvt||'—', ...tdStyle, fontSize:8},
+        {text:(r.notes||'').slice(0,60), ...tdStyle, fontSize:8},
+      ]);
+    });
+    return { table:{ widths:[55,'*','*',100,100], body }, layout:tableLayout, margin:[0,0,0,8] };
+  }
 
-  // ── Aggregate data ───────────────────────────────────────────────────
-  const att   = attSummary(attRows, range.d1, range.d2);
-  const vtF   = vtFreq(wrRows);
-  const topRep= topReporters(wrRows);
-  const grievR= grievanceRows(wrRows);
-  const days  = dayTotals(wrRows, range.d1, range.d2);
-  const maxDay= days.reduce((m,d)=>d.count>m.count?d:m, {date:'—',count:0});
-
-  // ── Build document ───────────────────────────────────────────────────
-  const children = [
-    // Cover section
-    new Paragraph({
-      children:[new TextRun({text:modeLabel, size:56, bold:true, color:COL_FOREST})],
-      alignment: AlignmentType.CENTER,
-      spacing:{ before:0, after:200 },
-    }),
-    new Paragraph({
-      children:[new TextRun({text:`Project ${projLabel}  ·  ${range.label}`, size:28, color:'444444'})],
-      alignment:AlignmentType.CENTER,
-      spacing:{ before:0, after:160 },
-    }),
-    new Paragraph({
-      children:[new TextRun({text:`Generated: ${generated}  ·  ARR Project Suite`, size:20, color:'777777', italics:true})],
-      alignment:AlignmentType.CENTER,
-      spacing:{ before:0, after:400 },
-    }),
+  const content = [
+    // Cover block
+    { text: modeLabel, fontSize:24, bold:true, color:C.forest, margin:[0,0,0,4] },
+    { text:`Project ${projLabel}  ·  ${range.label}`, fontSize:14, color:C.leaf, margin:[0,0,0,4] },
+    { text:`Generated: ${generated}  ·  ARR Project Suite`, fontSize:9, color:C.mid, italics:true, margin:[0,0,0,16] },
     rule(),
 
     // 1. Executive Summary
-    h1('1. Executive Summary'),
+    hdr('1. Executive Summary'),
     kv('Report period', range.label),
     kv('Work reports submitted', wrRows.length),
     kv('Unique reporters', uniqueStaff(wrRows).length),
-    kv('Staff present (attendance records)', att.present),
-    kv('Staff on leave / absent', att.leave + att.absent),
-    kv('Grievance/redressal records', grievR.length),
-    kv('Busiest field day', maxDay.date !== '—' ? `${fmtDate(maxDay.date)} (${maxDay.count} reports)` : '—'),
+    kv('Peak day', peakDay.date!=='—' ? `${fmtDate(peakDay.date)} (${peakDay.count} reports)` : '—'),
+    kv('Attendance present', att.present),
+    kv('Leave / absent', att.leave + att.absent),
+    kv('Grievance records', grievR.length),
+    kv('Enrolled beneficiaries (cumul.)', totEnrol||'—'),
+    kv('Proposed plantation ha (cumul.)', totEnrol ? totPropHa.toFixed(1)+' ha' : '—'),
+    kv('Ha planted this period', plantHa ? plantHa.toFixed(1)+' ha' : '—'),
     rule(),
 
-    // 2. Work Report Activity
-    h1('2. Work Report Activity'),
-    h2('2.1 Daily Submission Volume'),
+    // 2. Work Activity
+    hdr('2. Daily Submission Volume'),
+    {
+      table:{
+        widths: days.length>14 ? days.slice(0,14).map(()=>'*') : days.map(()=>'*'),
+        body:[
+          days.slice(0,14).map(d=>({text:fmtDate(d.date).slice(0,6), ...thStyle, fontSize:7})),
+          days.slice(0,14).map(d=>({text:String(d.count), alignment:'center', fontSize:8})),
+        ]
+      },
+      layout:tableLayout, margin:[0,0,0,8],
+    },
+    ...(days.length>14 ? [{
+      table:{
+        widths: days.slice(14).map(()=>'*'),
+        body:[
+          days.slice(14).map(d=>({text:fmtDate(d.date).slice(0,6), ...thStyle, fontSize:7})),
+          days.slice(14).map(d=>({text:String(d.count), alignment:'center', fontSize:8})),
+        ]
+      },
+      layout:tableLayout, margin:[0,0,0,12],
+    }] : []),
+
+    hdr('3. Visit Type Breakdown', 2),
+    vtTable(),
+
+    hdr('4. Top Field Reporters', 2),
+    {
+      table:{ widths:['*',60], body:[
+        [Object.assign({text:'Reporter'},thStyle), Object.assign({text:'Reports',alignment:'right'},thStyle)],
+        ...topRep.map(([n,c])=>[{text:n,...tdStyle},{text:String(c),alignment:'right',...tdStyle}]),
+      ]},
+      layout:tableLayout, margin:[0,0,0,12],
+    },
+    rule(),
+
+    // 3. Attendance
+    hdr('5. Attendance Summary'),
+    kv('Present records', att.present),
+    kv('Leave records',   att.leave),
+    kv('Absent records',  att.absent),
+    kv('Unique staff',    att.staff),
+    rule(),
+
+    // 4. Grievances
+    hdr('6. Grievance & Redressal Log'),
+    grievR.length
+      ? grievTable()
+      : { text:'No grievance records for this period.', fontSize:10, italics:true, color:C.mid, margin:[0,0,0,12] },
+    rule(),
+
+    // 5. Full log
+    hdr('7. Detailed Work Report Log'),
+    wrRows.length
+      ? wrLogTable()
+      : { text:'No work reports for this period.', fontSize:10, italics:true, color:C.mid },
+    ...(wrRows.length>200 ? [{text:`… and ${wrRows.length-200} more records.`, fontSize:9, italics:true, color:C.mid}] : []),
+    rule(),
+    { text:`ARR Project Suite  ·  Project ${projLabel}  ·  ${generated}`, fontSize:8, color:C.mid, italics:true, alignment:'center', margin:[0,8,0,0] },
   ];
 
-  // Day-by-day table
-  children.push(new Table({
-    columnWidths: [2000, ...days.map(()=>Math.floor(7000/Math.max(days.length,1)))].slice(0,7+1),
-    rows:[
-      new TableRow({ children:[
-        cellOpts('Date',{bold:true,shade:true}),
-        ...days.slice(0,14).map(d=>cellOpts(fmtDate(d.date).slice(0,6),{bold:true,shade:true,align:AlignmentType.CENTER})),
-      ]}),
-      new TableRow({ children:[
-        cellOpts('Reports',{bold:true}),
-        ...days.slice(0,14).map(d=>cellOpts(d.count,{align:AlignmentType.CENTER})),
-      ]}),
-    ],
-    width:{size:9000,type:WidthType.DXA},
-  }));
-
-  if (mode==='monthly' && days.length>14) {
-    // Second row of days
-    children.push(body(''));
-    children.push(new Table({
-      columnWidths:[2000,...days.slice(14).map(()=>Math.floor(7000/Math.max(days.slice(14).length,1)))],
-      rows:[
-        new TableRow({ children:[cellOpts('Date',{bold:true,shade:true}),...days.slice(14).map(d=>cellOpts(fmtDate(d.date).slice(0,6),{bold:true,shade:true,align:AlignmentType.CENTER}))]}),
-        new TableRow({ children:[cellOpts('Reports',{bold:true}),...days.slice(14).map(d=>cellOpts(d.count,{align:AlignmentType.CENTER}))]}),
+  const dd = {
+    pageSize: 'A4',
+    pageMargins: [50, 50, 50, 50],
+    content,
+    defaultStyle: { font:'Roboto', fontSize:10, color:C.dark, lineHeight:1.3 },
+    footer: (pg, pgCount) => ({
+      columns:[
+        {text:`${modeLabel} — Project ${projLabel}`, fontSize:7, color:C.mid},
+        {text:`Page ${pg} of ${pgCount}`, fontSize:7, color:C.mid, alignment:'right'},
       ],
-      width:{size:9000,type:WidthType.DXA},
-    }));
-  }
+      margin:[50,0,50,0],
+    }),
+  };
 
-  children.push(body(''));
-  children.push(h2('2.2 Visit Type Breakdown'));
-  children.push(vtTable(vtF));
-
-  children.push(body(''));
-  children.push(h2('2.3 Top Field Reporters'));
-  children.push(twoColTable(topRep.map(([n,c])=>[n,c+' reports']), ['Reporter','Count']));
-
-  children.push(rule());
-
-  // 3. Attendance
-  children.push(h1('3. Attendance Summary'));
-  children.push(twoColTable([
-    ['Total attendance records', att.total],
-    ['Present records',          att.present],
-    ['Leave records',            att.leave],
-    ['Absent records',           att.absent],
-    ['Unique staff recorded',    att.staff],
-  ], ['Metric','Value']));
-
-  children.push(body(''));
-  children.push(h2('3.1 Attendance Register'));
-  if (attRows.length) {
-    children.push(staffAttTable(attRows, range.d1, range.d2));
-  } else {
-    children.push(body('No attendance data for this period.', {italics:true, color:'777777'}));
-  }
-
-  children.push(rule());
-
-  // 4. Grievance / Redressal
-  children.push(h1('4. Grievance & Redressal Log'));
-  if (grievR.length) {
-    children.push(kv('Total redressal-type records', grievR.length));
-    children.push(body(''));
-    const grievHeader = ['Date','Reporter','LPC / Beneficiary','Type(s)','Notes'];
-    const grievTRows = [new TableRow({ children: grievHeader.map(h=>cellOpts(h,{bold:true,shade:true})) })];
-    grievR.slice(0,40).forEach(r=>{
-      const d   = fmtDate(r._date);
-      const rep = r.operator_name||r.operator_email||'—';
-      const ident= [r.lpc,r.dbc,r.beneficiary_name].filter(Boolean).join(' / ')||'—';
-      const types= parseVt(r.visit_types).join(', ')||'—';
-      const notes=(r.notes||'').slice(0,80)+(r.notes&&r.notes.length>80?'…':'');
-      grievTRows.push(new TableRow({ children:[d,rep,ident,types,notes].map(v=>cellOpts(v)) }));
-    });
-    children.push(new Table({ columnWidths:[1200,1600,1800,2200,2200], rows:grievTRows, width:{size:9000,type:WidthType.DXA} }));
-  } else {
-    children.push(body('No grievance or redressal records for this period.', {italics:true, color:'777777'}));
-  }
-
-  children.push(rule());
-
-  // 5. Full work report log
-  children.push(h1('5. Detailed Work Report Log'));
-  if (wrRows.length) {
-    const wrHeader = ['Date','Reporter','LPC/DBC','Visit Types','GPS'];
-    const wrTRows  = [new TableRow({ children: wrHeader.map(h=>cellOpts(h,{bold:true,shade:true})) })];
-    wrRows.slice(0,200).forEach(r=>{
-      const d    = fmtDate(r._date);
-      const rep  = r.operator_name||r.operator_email||'—';
-      const ident= [r.lpc,r.dbc,r.beneficiary_name].filter(Boolean).join(' / ')||'—';
-      const types= parseVt(r.visit_types).slice(0,3).join(', ')+(parseVt(r.visit_types).length>3?'…':'');
-      const gps  = r.gps_lat ? `${parseFloat(r.gps_lat).toFixed(4)}, ${parseFloat(r.gps_lng).toFixed(4)}` : '—';
-      wrTRows.push(new TableRow({ children:[d,rep,ident,types,gps].map(v=>cellOpts(v)) }));
-    });
-    children.push(new Table({ columnWidths:[1200,1800,1800,2800,1400], rows:wrTRows, width:{size:9000,type:WidthType.DXA} }));
-    if (wrRows.length>200) children.push(body(`… and ${wrRows.length-200} more records. Export XLSX from Daily Report for full data.`, {italics:true,color:'777777'}));
-  } else {
-    children.push(body('No work reports for this period.', {italics:true, color:'777777'}));
-  }
-
-  children.push(rule());
-  children.push(new Paragraph({
-    children:[new TextRun({text:`Generated by ARR Project Suite · Project ${projLabel} · ${generated}`, size:16, color:'999999', italics:true})],
-    alignment:AlignmentType.CENTER,
-    spacing:{before:200},
-  }));
-
-  // ── Pack and save ────────────────────────────────────────────────────
-  const doc = new Document({
-    sections: [{ children }],
-    styles: {
-      paragraphStyles: [{
-        id: 'Normal',
-        name: 'Normal',
-        run: { font: 'Calibri', size: 21, color: '1a1a1a' },
-      }],
-    },
-  });
-
-  const blob = await Packer.toBlob(doc);
-  const modeSlug = mode==='weekly' ? 'WeeklyReport' : 'MonthlyReport';
-  const filename = `${modeSlug}_${projLabel.replace(/\s/g,'')}_${range.d1}_${range.d2}.docx`;
-  saveAs(blob, filename);
+  const slug = mode==='weekly'?'WeeklyReport':'MonthlyReport';
+  await pdfSave(dd, `${slug}_${projLabel.replace(/\s/g,'')}_${range.d1}_${range.d2}.pdf`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  PPTX BUILDER
+//  SLIDES PDF  (16:9 landscape, prior Fri–Thu)
 // ═══════════════════════════════════════════════════════════════════════
-async function buildPPTX(proj, range, wrRows, attRows) {
-  const pres = new PptxGenJS();
-  pres.layout  = 'LAYOUT_16x9'; // 10" × 5.625"
-  pres.author  = 'ARR Project Suite';
-  pres.subject = `EcoAct Weekly Deck — Project ${proj}`;
+async function buildSlidesPDF(proj, range, wrRows, attRows, bRows, pRows) {
+  const projLabel = { asha1:'Asha 1', asha2:'Asha 2', arun:'Arun', banani:'Banani' }[proj]||proj;
+  const generated = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
 
-  const projLabel = { asha1:'Asha 1', asha2:'Asha 2', arun:'Arun', banani:'Banani' }[proj] || proj;
-  const generated = new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'});
+  // Page: 842×474 pt (16:9 at A4-landscape width)
+  const PW = 842, PH = 474;
+  const MAR = 32;
+  const CW = PW - MAR*2;
+  const HEADER_H = 46;
+  const BODY_TOP = HEADER_H + 8;
+  const BODY_H = PH - HEADER_H - 30; // usable body height
 
-  // ── Palette ──────────────────────────────────────────────────────────
-  const FOREST = '1B4332';
-  const LEAF   = '52B788';
-  const MINT   = 'D8F3DC';
-  const AMBER  = 'F59E0B';
-  const WHITE  = 'FFFFFF';
-  const DARK   = '111827';
-  const MID    = '6B7280';
-  const PALE   = 'F0FDF4';
+  // Aggregates
+  const att     = attSummary(attRows, range.d1, range.d2);
+  const vtF     = vtFreq(wrRows);
+  const grievR  = grievanceRows(wrRows);
+  const days    = dayTotals(wrRows, range.d1, range.d2);
+  const peakDay = days.reduce((m,d)=>d.count>m.count?d:m,{date:'—',count:0});
+  const totEnrol= bRows.length;
+  const totPropHa = bRows.reduce((a,r)=>a+(parseFloat(r.land_plantation_sqm)||0)*SQM_TO_HA,0);
+  const pPeriod   = pRows.filter(r=>{const d=repDateStr(r.plantation_date||r.timestamp_server||'');return d>=range.d1&&d<=range.d2;});
+  const plantHaPeriod = pPeriod.reduce((a,r)=>a+(parseFloat(r.area_ha)||0),0);
+  const saplingsPeriod= pPeriod.reduce((a,r)=>a+(parseFloat(r.total_saplings)||0),0);
+  const plantHaTotal  = pRows.reduce((a,r)=>a+(parseFloat(r.area_ha)||0),0);
 
-  // ── Layout constants (inches) ────────────────────────────────────────
-  const W = 10, H = 5.625;
-  const MAR = 0.5;   // slide margin
-  const CW  = W - MAR*2; // content width
+  const tableLayout = {
+    hLineWidth: (i,n) => i===0||i===1||i===n.table.body.length?1:0.5,
+    vLineWidth: () => 0,
+    hLineColor: (i) => i<=1?C.forest:C.rule,
+    fillColor:  (i) => i===0?C.forest:(i%2===0?C.pale:C.white),
+  };
+  const th = (text, opts={}) => ({ text, bold:true, color:C.white, fillColor:C.forest, fontSize:8, ...opts });
+  const td = (text, opts={}) => ({ text:String(text??'—'), fontSize:8, ...opts });
 
-  // ── Aggregate data ───────────────────────────────────────────────────
-  const att    = attSummary(attRows, range.d1, range.d2);
-  const vtF    = vtFreq(wrRows);
-  const grievR = grievanceRows(wrRows);
-  const days   = dayTotals(wrRows, range.d1, range.d2);
-
-  // ── Helper: slide title + header bar ────────────────────────────────
-  function addTitleBar(slide, title, sub='') {
-    // dark header band
-    slide.addShape(pres.ShapeType.rect, {
-      x:0, y:0, w:W, h:0.72,
-      fill:{color:FOREST}, line:{type:'none'},
-    });
-    slide.addText(title, {
-      x:MAR, y:0.08, w:CW*0.75, h:0.55,
-      fontSize:18, bold:true, color:WHITE, fontFace:'Calibri',
-      isTextBox:true, margin:0,
-    });
-    if (sub) {
-      slide.addText(sub, {
-        x:MAR, y:0.63, w:CW, h:0.28,
-        fontSize:9, color:LEAF, fontFace:'Calibri', italic:true,
-        isTextBox:true, margin:0,
-      });
-    }
-    // Project tag top-right
-    slide.addText(`Project ${projLabel}  ·  ${range.label}`, {
-      x:W-3.5, y:0.1, w:3, h:0.52,
-      fontSize:8, color:MINT, fontFace:'Calibri', align:'right',
-      isTextBox:true, margin:0,
-    });
-  }
-
-  // ── Helper: KPI card ─────────────────────────────────────────────────
-  function addKpiCard(slide, x, y, w, h, val, lbl, color=LEAF) {
-    slide.addShape(pres.ShapeType.rect, { x, y, w, h, fill:{color:PALE}, line:{color:'D1D5DB',pt:1} });
-    slide.addText(String(val), { x, y:y+0.08, w, h:h*0.55,
-      fontSize:28, bold:true, color:color, fontFace:'Calibri', align:'center',
-      isTextBox:true, margin:0 });
-    slide.addText(lbl, { x, y:y+h*0.6, w, h:h*0.35,
-      fontSize:9, color:MID, fontFace:'Calibri', align:'center',
-      isTextBox:true, margin:0 });
-  }
-
-  // ── Helper: footer ───────────────────────────────────────────────────
-  function addFooter(slide) {
-    slide.addText(`ARR Project Suite  ·  ${generated}  ·  For EcoAct / Schneider Electric internal use`, {
-      x:0, y:H-0.22, w:W, h:0.20,
-      fontSize:7, color:'AAAAAA', align:'center', fontFace:'Calibri',
-      isTextBox:true, margin:0,
-    });
-  }
-
-  // ═══════════════════════════════════════════════════
-  //  SLIDE 1: Cover
-  // ═══════════════════════════════════════════════════
-  {
-    const s = pres.addSlide();
-    s.addShape(pres.ShapeType.rect, { x:0,y:0,w:W,h:H, fill:{color:FOREST}, line:{type:'none'} });
-    s.addShape(pres.ShapeType.rect, { x:0,y:H-1.2,w:W,h:1.2, fill:{color:LEAF}, line:{type:'none'} });
-    s.addText('EcoAct Weekly Field Report', {
-      x:MAR, y:1.0, w:CW, h:1.0,
-      fontSize:32, bold:true, color:WHITE, fontFace:'Calibri', align:'center',
-      isTextBox:true, margin:0,
-    });
-    s.addText(`Project ${projLabel}`, {
-      x:MAR, y:2.1, w:CW, h:0.5,
-      fontSize:20, color:MINT, fontFace:'Calibri', align:'center',
-      isTextBox:true, margin:0,
-    });
-    s.addText(range.label, {
-      x:MAR, y:2.65, w:CW, h:0.4,
-      fontSize:14, color:MINT, fontFace:'Calibri', align:'center',
-      isTextBox:true, margin:0,
-    });
-    s.addText(`Generated: ${generated}  ·  For EcoAct / Schneider Electric`, {
-      x:MAR, y:H-1.1, w:CW, h:0.4,
-      fontSize:11, color:FOREST, fontFace:'Calibri', align:'center',
-      isTextBox:true, margin:0,
-    });
-    s.addNotes('Cover slide. Adjust project name and period label as needed.');
-  }
-
-  // ═══════════════════════════════════════════════════
-  //  SLIDE 2: Contents
-  // ═══════════════════════════════════════════════════
-  {
-    const s = pres.addSlide();
-    addTitleBar(s, 'Contents');
-    const items = [
-      '1.  Executive Summary — KPIs at a glance',
-      '2.  Field Activity — Work report volume & trends',
-      '3.  Visit Type Breakdown',
-      '4.  Attendance Overview',
-      '5.  Grievance & Redressal',
-      '6.  Geographic Coverage',
-      '7.  Beneficiary & Land Enrolment (Baseline)',
-      '8.  Key Flags & Follow-ups',
-      '9.  Ask — TF to EcoAct',
+  // Header band — canvas rect + overlay text
+  function slide(title, subtitle='') {
+    return [
+      { canvas:[{type:'rect',x:0,y:0,w:PW,h:HEADER_H,color:C.forest}], absolutePosition:{x:0,y:0} },
+      { text:title, fontSize:15, bold:true, color:C.white, absolutePosition:{x:MAR,y:12} },
+      { text:`${projLabel}  ·  ${range.label}`, fontSize:7, color:C.mint, alignment:'right', absolutePosition:{x:0,y:14}, margin:[0,0,MAR,0] },
+      ...(subtitle ? [{ text:subtitle, fontSize:8, color:C.leaf, italics:true, absolutePosition:{x:MAR,y:32} }] : []),
+      { text:'', margin:[0, BODY_TOP, 0, 0] },
     ];
-    items.forEach((item,i)=>{
-      s.addText(item, {
-        x:MAR, y:0.85+i*0.45, w:CW, h:0.4,
-        fontSize:12, color:DARK, fontFace:'Calibri',
-        isTextBox:true, margin:0,
-      });
-    });
-    addFooter(s);
-    s.addNotes('Remove slides not relevant to this week before sharing.');
   }
 
-  // ═══════════════════════════════════════════════════
-  //  SLIDE 3: Executive Summary KPIs
-  // ═══════════════════════════════════════════════════
-  {
-    const s = pres.addSlide();
-    addTitleBar(s,'Executive Summary — Key Figures','Field performance at a glance');
-    const kpis = [
-      { val: wrRows.length,            lbl: 'Work Reports',       color: FOREST },
-      { val: uniqueStaff(wrRows).length, lbl: 'Active Reporters',  color: FOREST },
-      { val: att.present,              lbl: 'Attendance: Present', color: '006600' },
-      { val: att.leave + att.absent,   lbl: 'Leave / Absent',     color: 'DC2626' },
-      { val: grievR.length,            lbl: 'Grievances',          color: AMBER   },
-    ];
-    const kW = CW/kpis.length - 0.08;
-    kpis.forEach((k,i)=>{
-      addKpiCard(s, MAR + i*(kW+0.08), 0.92, kW, 1.7, k.val, k.lbl, k.color);
-    });
-    // Period note
-    s.addText(`Period: ${range.label}`, {
-      x:MAR, y:2.78, w:CW, h:0.28,
-      fontSize:9, color:MID, fontFace:'Calibri', italic:true,
-      isTextBox:true, margin:0,
-    });
-    // Day trend sparkline as text
-    const peakDay = days.reduce((m,d)=>d.count>m.count?d:m, {date:'—',count:0});
-    s.addText([
-      {text:'Peak day: ', options:{bold:true}},
-      {text:`${fmtDate(peakDay.date)} with ${peakDay.count} reports`, options:{}},
-    ], {
-      x:MAR, y:3.1, w:CW, h:0.3,
-      fontSize:10, color:DARK, fontFace:'Calibri',
-      isTextBox:true, margin:0,
-    });
-    addFooter(s);
-    s.addNotes('Headline KPIs. Replace with actual data before sharing if needed.');
+  function kpiCols(kpis) {
+    return {
+      columns: kpis.map(k => ({
+        stack:[
+          {text:String(k.val), fontSize:k.big?28:22, bold:true, color:k.color||C.forest, alignment:'center'},
+          {text:k.lbl, fontSize:7, color:C.mid, alignment:'center', margin:[0,2,0,0]},
+        ],
+        margin:[0,0,4,0],
+      })),
+      columnGap:4, margin:[0,6,0,10],
+    };
   }
 
-  // ═══════════════════════════════════════════════════
-  //  SLIDE 4: Daily report volume (bar data)
-  // ═══════════════════════════════════════════════════
-  {
-    const s = pres.addSlide();
-    addTitleBar(s,'Field Activity — Daily Report Volume','Work reports submitted per day');
-    const chartData = [{
-      name:'Reports',
-      labels: days.map(d=>fmtDate(d.date).slice(0,6)),
-      values: days.map(d=>d.count),
-    }];
-    s.addChart(pres.ChartType.bar, chartData, {
-      x:MAR, y:0.82, w:CW, h:4.25,
-      chartColors:['52B788'],
-      showTitle:false,
-      showValue:true,
-      dataLabelPosition:'outEnd',
-      catAxisLabelColor:DARK,
-      valAxisLabelColor:DARK,
-      valGridLine:{ color:'E5E7EB', size:1 },
-      catGridLine:{ style:'none' },
-      showLegend:false,
-      barGapWidthPct:50,
-    });
-    addFooter(s);
-    s.addNotes('Bar chart of report volume per calendar day. Weekends and non-field days will show zero.');
+  function footer() {
+    return `ARR Project Suite  ·  Project ${projLabel}  ·  ${range.label}  ·  ${generated}  ·  For EcoAct / Schneider Electric`;
   }
 
-  // ═══════════════════════════════════════════════════
-  //  SLIDE 5: Visit Type Breakdown
-  // ═══════════════════════════════════════════════════
-  {
-    const s = pres.addSlide();
-    addTitleBar(s,'Visit Type Breakdown','Activities recorded by field staff');
-    const topVt = vtF.slice(0,12);
-    const vtData = [{
-      name:'Count',
-      labels: topVt.map(([t])=>t.length>22?t.slice(0,22)+'…':t),
-      values: topVt.map(([,n])=>n),
-    }];
-    s.addChart(pres.ChartType.bar, vtData, {
-      x:MAR, y:0.82, w:CW*0.65, h:4.25,
-      chartColors:['1B4332'],
-      showTitle:false,
-      showValue:true,
-      dataLabelPosition:'outEnd',
-      catAxisLabelColor:DARK,
-      valAxisLabelColor:DARK,
-      valGridLine:{color:'E5E7EB',size:1},
-      catGridLine:{style:'none'},
-      showLegend:false,
-      barDir:'bar',
-    });
-    // Text summary on right
-    const rightX = MAR + CW*0.66;
-    s.addText('All Visit Types', { x:rightX, y:0.85, w:CW*0.33, h:0.3,
-      fontSize:10, bold:true, color:FOREST, fontFace:'Calibri', isTextBox:true, margin:0 });
-    vtF.forEach(([t,n],i)=>{
-      s.addText(`${t}: ${n}`, { x:rightX, y:1.18+i*0.28, w:CW*0.34, h:0.26,
-        fontSize:8, color:DARK, fontFace:'Calibri', isTextBox:true, margin:0 });
-    });
-    addFooter(s);
-    s.addNotes('Cull to top 8 bars before sharing if chart is crowded.');
+  const content = [];
+  function addSlide(nodes) {
+    nodes.forEach(n => content.push(n));
+    content.push({ text:'', pageBreak:'after' });
   }
 
-  // ═══════════════════════════════════════════════════
-  //  SLIDE 6: Grievance & Redressal (renumbered)
-  // ═══════════════════════════════════════════════════
-  {
-    const s = pres.addSlide();
-    addTitleBar(s,'Grievance & Redressal Log',`Types: Fence Repair · Water · Damage · Flood · Fire`);
-    s.addText(`Total grievance records: ${grievR.length}`, {
-      x:MAR, y:0.82, w:CW, h:0.3,
-      fontSize:11, bold:true, color: grievR.length?AMBER:LEAF, fontFace:'Calibri',
-      isTextBox:true, margin:0,
-    });
-    if (grievR.length) {
-      const gvtF = vtFreq(grievR);
-      gvtF.forEach(([t,n],i)=>{
-        s.addText(`${t}: ${n} records`, { x:MAR, y:1.18+i*0.32, w:CW*0.45, h:0.3,
-          fontSize:10, color:DARK, fontFace:'Calibri', isTextBox:true, margin:0 });
-      });
-      const logStart = 1.18 + Math.min(gvtF.length,5)*0.32 + 0.2;
-      const headers  = ['Date','Reporter','Location','Type(s)','Notes'];
-      const colWs    = [1.0,1.6,1.6,1.8,3.5];
-      let cx = MAR;
-      headers.forEach((h,i)=>{
-        s.addText(h,{x:cx,y:logStart,w:colWs[i],h:0.26, fontSize:8,bold:true,color:WHITE,fontFace:'Calibri',
-          fill:{color:FOREST}, isTextBox:true,margin:2}); cx+=colWs[i];
-      });
-      grievR.slice(0,10).forEach((r,ri)=>{
-        const cells=[
-          fmtDate(r._date),
-          r.operator_name||r.operator_email||'—',
-          [r.lpc,r.dbc,r.beneficiary_name].filter(Boolean).join('/')||'—',
-          parseVt(r.visit_types).filter(t=>['Fence Repair','Apply: Water','Report: Damage','Report: Flood','Report: Fire'].includes(t)).join(', '),
-          (r.notes||'').slice(0,45)+(r.notes&&r.notes.length>45?'…':''),
-        ];
-        const bg = ri%2===0?PALE:WHITE; cx=MAR;
-        cells.forEach((c,ci)=>{
-          s.addText(c,{x:cx,y:logStart+0.26*(ri+1),w:colWs[ci],h:0.26,fontSize:7,color:DARK,fontFace:'Calibri',
-            fill:{color:bg},isTextBox:true,margin:2}); cx+=colWs[ci];
-        });
-      });
-      if (grievR.length>10) {
-        s.addText(`… and ${grievR.length-10} more. See Grievance Log XLSX export.`,{
-          x:MAR, y:H-0.55, w:CW, h:0.28, fontSize:7, color:MID, italic:true,
-          fontFace:'Calibri', isTextBox:true, margin:0 });
-      }
-    } else {
-      s.addText('No grievance or redressal records for this period.', {
-        x:MAR, y:1.5, w:CW, h:0.4, fontSize:12, color:'006600', fontFace:'Calibri',
-        isTextBox:true, margin:0 });
-    }
-    addFooter(s);
-    s.addNotes('Highlight any open redressal items for verbal follow-up in the meeting.');
-  }
+  // ── Slide 1: Cover ──────────────────────────────────────────────────
+  addSlide([
+    { canvas:[{type:'rect',x:0,y:0,w:PW,h:PH,color:C.forest}], absolutePosition:{x:0,y:0} },
+    { canvas:[{type:'rect',x:0,y:PH-90,w:PW,h:90,color:C.leaf}], absolutePosition:{x:0,y:0} },
+    { text:'EcoAct Weekly Field Report', fontSize:26, bold:true, color:C.white, alignment:'center', absolutePosition:{x:0,y:110} },
+    { text:`Project ${projLabel}`, fontSize:16, color:C.mint, alignment:'center', absolutePosition:{x:0,y:158} },
+    { text:range.label, fontSize:12, color:C.mint, alignment:'center', absolutePosition:{x:0,y:185} },
+    { text:`Generated: ${generated}  ·  For EcoAct / Schneider Electric`, fontSize:10, color:C.forest, alignment:'center', absolutePosition:{x:0,y:PH-68} },
+  ]);
 
-  // ═══════════════════════════════════════════════════
-  //  SLIDE 7: Geographic Coverage
-  // ═══════════════════════════════════════════════════
+  // ── Slide 2: Contents ───────────────────────────────────────────────
+  addSlide([
+    ...slide('Contents'),
+    { ul:[
+      'Executive Summary — KPIs at a glance',
+      'Field Activity — Daily report volume',
+      'Visit Type Breakdown',
+      'Attendance Overview',
+      'Grievance & Redressal',
+      'Geographic Coverage (map placeholder)',
+      'Field Photo Gallery',
+      'Beneficiary & Land Enrolment',
+      'Key Flags & Follow-ups',
+      'Ask — TF to EcoAct',
+    ], fontSize:10, color:C.dark, margin:[0,4,0,0], lineHeight:1.5 },
+  ]);
+
+  // ── Slide 3: Executive Summary ──────────────────────────────────────
+  addSlide([
+    ...slide('Executive Summary — Key Figures','Field performance at a glance'),
+    kpiCols([
+      {val:wrRows.length, lbl:'Work Reports', color:C.forest, big:true},
+      {val:uniqueStaff(wrRows).length, lbl:'Active Reporters', color:C.forest, big:true},
+      {val:att.present, lbl:'Attendance Present', color:C.green, big:true},
+      {val:att.leave+att.absent, lbl:'Leave / Absent', color:C.red, big:true},
+      {val:grievR.length, lbl:'Grievances', color:C.amber, big:true},
+    ]),
+    { columns:[
+      { stack:[
+        {text:'Period: '+range.label, fontSize:9, color:C.dark, bold:true},
+        {text:'Peak day: '+( peakDay.date!=='—' ? `${fmtDate(peakDay.date)} — ${peakDay.count} reports` : '—'), fontSize:9, color:C.mid, margin:[0,4,0,0]},
+      ], width:'*'},
+      { table:{ widths:[120,50,60], body:[
+        [th('Metric'), th('Week'), th('Cumul.')],
+        [td('Work Reports'), td(wrRows.length,{alignment:'right'}), td('—',{alignment:'right'})],
+        [td('Active Reporters'), td(uniqueStaff(wrRows).length,{alignment:'right'}), td('—',{alignment:'right'})],
+        [td('Enrolled Benefic.'), td('—',{alignment:'right'}), td(totEnrol||'—',{alignment:'right'})],
+        [td('Proposed Ha'), td('—',{alignment:'right'}), td(totEnrol?totPropHa.toFixed(1):'—',{alignment:'right'})],
+      ]}, layout:tableLayout, width:'auto' },
+    ], columnGap:12 },
+  ]);
+
+  // ── Slide 4: Daily report volume ────────────────────────────────────
+  addSlide([
+    ...slide('Field Activity — Daily Report Volume','Work reports submitted per day'),
+    {
+      table:{ widths:days.map(()=>'*'), body:[
+        days.map(d=>th(fmtDate(d.date).slice(0,6), {fontSize:6})),
+        days.map(d=>td(d.count, {alignment:'center', fontSize:9, bold:d.count>0})),
+      ]},
+      layout:{...tableLayout, fillColor:(i)=>i===0?C.forest:C.white},
+      margin:[0,6,0,10],
+    },
+    // Mini bar chart via canvas rectangles
+    (() => {
+      const maxC = Math.max(...days.map(d=>d.count), 1);
+      const barW = Math.floor((CW - (days.length-1)*2) / days.length);
+      const maxBarH = BODY_H - 90;
+      const rects = days.map((d,i) => ({
+        type:'rect',
+        x: i*(barW+2),
+        y: maxBarH - Math.round(d.count/maxC*maxBarH),
+        w: barW,
+        h: Math.max(2, Math.round(d.count/maxC*maxBarH)),
+        color: C.leaf,
+      }));
+      return { canvas:rects, margin:[0,6,0,0] };
+    })(),
+  ]);
+
+  // ── Slide 5: Visit Type Breakdown ───────────────────────────────────
+  addSlide([
+    ...slide('Visit Type Breakdown','Activities recorded by field staff'),
+    { columns:[
+      {
+        width:'55%',
+        table:{ widths:['*',35], body:[
+          [th('Visit Type'), th('Count',{alignment:'right'})],
+          ...vtF.slice(0,12).map(([t,n])=>[td(t), td(n,{alignment:'right'})]),
+        ]},
+        layout:tableLayout,
+      },
+      {
+        width:'45%',
+        stack:[
+          {text:'Full list', bold:true, fontSize:8, color:C.forest, margin:[10,0,0,4]},
+          // Two-column layout for the full VT list
+          { columns:[
+            { width:'*', stack: vtF.slice(0, Math.ceil(vtF.length/2)).map(([t,n])=>({text:`${t}: ${n}`, fontSize:7, color:C.dark, margin:[10,1,0,1]})) },
+            { width:'*', stack: vtF.slice(Math.ceil(vtF.length/2)).map(([t,n])=>({text:`${t}: ${n}`, fontSize:7, color:C.dark, margin:[2,1,0,1]})) },
+          ]},
+        ],
+      },
+    ], columnGap:8 },
+  ]);
+
+  // ── Slide 6: Grievance & Redressal ──────────────────────────────────
+  addSlide([
+    ...slide('Grievance & Redressal Log','Fence Repair · Water · Damage · Flood · Fire'),
+    { text:`Total grievance records: ${grievR.length}`, fontSize:11, bold:true, color:grievR.length?C.amber:C.leaf, margin:[0,0,0,8] },
+    grievR.length
+      ? { table:{ widths:[55,'*','*',110,130], body:[
+          [th('Date'),th('Reporter'),th('Location'),th('Types'),th('Notes')],
+          ...grievR.slice(0,10).map(r=>{
+            const gvt=parseVt(r.visit_types).filter(t=>['Fence Repair','Apply: Water','Report: Damage','Report: Flood','Report: Fire'].includes(t)).join(' // ');
+            return [
+              td(fmtDate(r._date)),
+              td(r.operator_name||r.operator_email||'—'),
+              td([r.lpc,r.dbc,r.beneficiary_name].filter(Boolean).join('/')||'—'),
+              td(gvt||'—'),
+              td((r.notes||'').slice(0,45)+(r.notes&&r.notes.length>45?'…':'')),
+            ];
+          }),
+          ...(grievR.length>10?[[{text:`… and ${grievR.length-10} more`,colSpan:5,fontSize:7,italics:true,color:C.mid},{},'','','']]:[] ),
+        ]}, layout:tableLayout }
+      : { text:'No grievance or redressal records for this period.', fontSize:11, color:C.leaf },
+  ]);
+
+  // ── Slide 7: Geographic Coverage ────────────────────────────────────
   {
-    const s = pres.addSlide();
-    addTitleBar(s,'Geographic Coverage','Field report GPS coordinates for the period');
     const gpsRows = wrRows.filter(r=>r.gps_lat&&r.gps_lng);
-    s.addText(`${gpsRows.length} of ${wrRows.length} work reports carry GPS coordinates.`, {
-      x:MAR, y:0.88, w:CW, h:0.35,
-      fontSize:12, color:DARK, fontFace:'Calibri', isTextBox:true, margin:0,
-    });
+    let bboxText = '—';
     if (gpsRows.length) {
-      const lats = gpsRows.map(r=>parseFloat(r.gps_lat));
-      const lngs = gpsRows.map(r=>parseFloat(r.gps_lng));
-      const minLat=Math.min(...lats).toFixed(4), maxLat=Math.max(...lats).toFixed(4);
-      const minLng=Math.min(...lngs).toFixed(4), maxLng=Math.max(...lngs).toFixed(4);
-      s.addText([
-        {text:'Bounding box: ', options:{bold:true}},
-        {text:`${minLat}°N – ${maxLat}°N, ${minLng}°E – ${maxLng}°E`},
-      ],{ x:MAR, y:1.28, w:CW, h:0.3, fontSize:10, color:DARK, fontFace:'Calibri', isTextBox:true, margin:0 });
+      const lats=gpsRows.map(r=>parseFloat(r.gps_lat)), lngs=gpsRows.map(r=>parseFloat(r.gps_lng));
+      bboxText = `${Math.min(...lats).toFixed(4)}°N – ${Math.max(...lats).toFixed(4)}°N, ${Math.min(...lngs).toFixed(4)}°E – ${Math.max(...lngs).toFixed(4)}°E`;
     }
-    s.addText(
-      '☞  Paste the Daily Report dashboard screenshot or a GEE/QGIS export here to replace this slide.',
-      { x:MAR, y:2.0, w:CW, h:0.5, fontSize:11, color:AMBER, fontFace:'Calibri', isTextBox:true, margin:0 }
-    );
-    s.addShape(pres.ShapeType.rect, {
-      x:MAR, y:2.6, w:CW, h:2.5,
-      fill:{color:'F3F4F6'}, line:{color:'D1D5DB', pt:1},
-    });
-    s.addText('[ Insert map screenshot here ]', {
-      x:MAR, y:3.5, w:CW, h:0.5,
-      fontSize:13, color:MID, italic:true, align:'center', fontFace:'Calibri',
-      isTextBox:true, margin:0,
-    });
-    addFooter(s);
-    s.addNotes('Replace placeholder with a screenshot of the map from the Daily Report dashboard or a GEE export.');
+    addSlide([
+      ...slide('Geographic Coverage','Field report GPS coordinates for the period'),
+      { text:`${gpsRows.length} of ${wrRows.length} work reports carry GPS coordinates.`, fontSize:11, margin:[0,0,0,6] },
+      { text:`Bounding box: ${bboxText}`, fontSize:10, color:C.mid, margin:[0,0,0,16] },
+      { canvas:[{type:'rect',x:0,y:0,w:CW,h:BODY_H-80,r:4,color:'F3F4F6',lineColor:'D1D5DB',lineWidth:1}] },
+      { text:'[ Insert map screenshot here — paste from Daily Report dashboard or GEE ]',
+        fontSize:11, color:C.mid, italics:true, alignment:'center',
+        absolutePosition:{x:MAR, y:PH/2-10} },
+    ]);
   }
 
-  // ═══════════════════════════════════════════════════
-  //  SLIDE 8: Beneficiary & Land Area KPIs
-  //  TODO: wire SURVEY_GAS_URL once schema field names confirmed
-  //  Expected fields (update if different in survey_schema_v6.json):
-  //    beneficiary count  → count of distinct lpc_id rows in Baseline sheet
-  //    planting area      → sum of field key e.g. `planting_area_ha` (not family-held)
-  //  When wired: call gasGet({action:'getRows', sheet:'Baseline'}, SURVEY_GAS_URL)
-  //  and replace the placeholder text below with live KPI cards.
-  // ═══════════════════════════════════════════════════
+  // ── Slides 8a–8b: Photo Gallery ─────────────────────────────────────
   {
-    const s = pres.addSlide();
-    addTitleBar(s,'Beneficiary & Land Enrolment','Baseline survey — cumulative programme totals');
-
-    // ── Live KPI block (populated once baselineRows available) ──────────
-    // baselineRows injected by genReport() when SURVEY_GAS_URL is set.
-    // Until then renders as placeholders with instructions.
-    const bRows = window._baselineRows || [];
-    if (bRows.length) {
-      // TODO: replace field key strings below with actual schema keys
-      const AREA_FIELD   = 'planting_area_ha';   // UPDATE to actual key
-      const TENURE_FIELD = 'land_tenure_family';  // UPDATE to actual key — filter OUT family-held
-      const LPC_FIELD    = 'lpc_id';             // UPDATE to actual key
-      const uniqueBen = new Set(bRows.map(r=>r[LPC_FIELD]).filter(Boolean)).size;
-      const nonFamily = bRows.filter(r=>{
-        const t = (r[TENURE_FIELD]||'').toLowerCase();
-        return !t.includes('family') && !t.includes('self');
+    const allPhotos = [];
+    wrRows.forEach(r => {
+      let photos=[]; try{photos=JSON.parse(r.photos_json||'[]');}catch(e){}
+      photos.forEach(p=>{
+        if(p&&p.url) allPhotos.push({url:p.url,date:fmtDate(r._date),reporter:r.operator_name||r.operator_email||'',lpc:r.lpc||r.dbc||''});
       });
-      const totalArea = nonFamily.reduce((s,r)=>s+parseFloat(r[AREA_FIELD]||0),0);
-      const kpis3 = [
-        { val: bRows.length,            lbl: 'Baseline Surveys', color: FOREST },
-        { val: uniqueBen,               lbl: 'Enrolled Beneficiaries', color: FOREST },
-        { val: totalArea.toFixed(1)+' ha', lbl: 'Plantable Area (non-family)', color: LEAF },
-      ];
-      const kW3 = CW/kpis3.length - 0.1;
-      kpis3.forEach((k,i)=>{ addKpiCard(s, MAR+i*(kW3+0.1), 0.92, kW3, 1.7, k.val, k.lbl, k.color); });
-      s.addText(`Source: Baseline survey · ${bRows.length} records · as of ${generated}`, {
-        x:MAR, y:2.75, w:CW, h:0.28,
-        fontSize:9, color:MID, italic:true, fontFace:'Calibri', isTextBox:true, margin:0,
+    });
+    const PER = 9, galleryPhotos = allPhotos.slice(0, PER*2);
+    const slideCount = galleryPhotos.length>0 ? (galleryPhotos.length>PER?2:1) : 1;
+    for (let gi=0; gi<slideCount; gi++) {
+      const sp = galleryPhotos.slice(gi*PER, (gi+1)*PER);
+      const pageLabel = slideCount>1?` (${gi+1}/${slideCount})`:'';
+      const COLS=3, ROWS=3;
+      const cellW = CW/COLS, cellH = (BODY_H-20)/ROWS;
+      const IMG_PAD=5, CAP_H=16, IMG_H=cellH-CAP_H-IMG_PAD*2, IMG_W=cellW-IMG_PAD*2;
+      // Build 3×3 columns
+      const colStacks = [[], [], []];
+      sp.forEach((p,idx)=>{
+        const col = idx%COLS;
+        const cap = [p.date,p.reporter,p.lpc].filter(Boolean).join(' // ');
+        colStacks[col].push(
+          p.url
+            ? { image: p.url, width:IMG_W, height:IMG_H, margin:[IMG_PAD,IMG_PAD,IMG_PAD,2] }
+            : { canvas:[{type:'rect',x:IMG_PAD,y:IMG_PAD,w:IMG_W,h:IMG_H,color:'F3F4F6',lineColor:C.rule,lineWidth:1}], margin:[0,0,0,2] },
+          { text:cap, fontSize:6, color:C.mid, margin:[IMG_PAD,0,IMG_PAD,IMG_PAD] }
+        );
       });
-    } else {
-      // Placeholder — shown until SURVEY_GAS_URL is configured
-      s.addShape(pres.ShapeType.rect, {
-        x:MAR, y:0.9, w:CW, h:1.9,
-        fill:{color:'FEFCE8'}, line:{color:'FDE68A', pt:1},
-      });
-      s.addText([
-        {text:'⚠  Baseline KPIs not yet wired\n', options:{bold:true, color:'92400E'}},
-        {text:'To enable: set SURVEY_GAS_URL in appDocumentReport and confirm field keys:\n', options:{color:'78350F'}},
-        {text:'  · Beneficiary count field (lpc_id?)\n', options:{color:'78350F'}},
-        {text:'  · Planting area field (planting_area_ha?)\n', options:{color:'78350F'}},
-        {text:'  · Tenure/family-held filter field\n', options:{color:'78350F'}},
-        {text:'Then update the TODO block in Slide 8 of buildPPTX().', options:{color:'78350F', italic:true}},
-      ], {
-        x:MAR+0.15, y:0.98, w:CW-0.3, h:1.7,
-        fontSize:10, fontFace:'Calibri', isTextBox:true, margin:6,
-      });
+      addSlide([
+        ...slide(`Field Photos${pageLabel}`, `${allPhotos.length} photo${allPhotos.length!==1?'s':''} in period`),
+        { columns: colStacks.map(stack=>({stack, width:'*'})), columnGap:0 },
+      ]);
     }
-    addFooter(s);
-    s.addNotes('Wire SURVEY_GAS_URL in the script config and confirm field key names from survey_schema_v6.json. See TODO comment in buildPPTX().');
   }
 
-  // ═══════════════════════════════════════════════════
-  //  SLIDE 9: Key Flags & Follow-ups
-  // ═══════════════════════════════════════════════════
+  // ── Slide 9: Beneficiary & Land Enrolment ───────────────────────────
   {
-    const s = pres.addSlide();
-    addTitleBar(s,'Key Flags & Follow-ups','Items requiring attention or decision');
+    const byType={}, byDist={};
+    bRows.forEach(r=>{const t=r.stakeholder_type||'unknown';byType[t]=(byType[t]||0)+1;});
+    bRows.forEach(r=>{const d=r.district_code||'?';byDist[d]=(byDist[d]||0)+1;});
+    const typeLabels={individual:'Individual',tea_garden:'Tea Garden',gram_panchayat:'Gram Panchayat',institution:'Institution',unknown:'Unknown'};
+    addSlide([
+      ...slide('Beneficiary & Land Enrolment','Baseline (cumulative) · Plantation (this period)'),
+      kpiCols([
+        {val:totEnrol, lbl:'Enrolled (cumul.)', color:C.forest, big:true},
+        {val: bRows.filter(r=>{const ts=repDateStr(r.timestamp_server||r.timestamp_local||'');return ts>=range.d1&&ts<=range.d2;}).length, lbl:'New this period', color:C.leaf, big:true},
+        {val:totEnrol?totPropHa.toFixed(1)+' ha':'—', lbl:'Proposed ha (cumul.)', color:C.forest, big:false},
+        {val:plantHaPeriod?plantHaPeriod.toFixed(1)+' ha':'—', lbl:'Planted this period', color:C.green, big:false},
+        {val:saplingsPeriod?Math.round(saplingsPeriod).toLocaleString():'—', lbl:'Saplings this period', color:C.green, big:false},
+      ]),
+      { columns:[
+        { width:'35%', stack:[
+          {text:'Stakeholder Type', bold:true, fontSize:8, color:C.forest, margin:[0,0,0,4]},
+          ...Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t,n])=>({
+            text:`${typeLabels[t]||t}: ${n} (${totEnrol?((n/totEnrol)*100).toFixed(0):0}%)`,
+            fontSize:8, color:C.dark, margin:[0,2,0,0],
+          })),
+        ]},
+        { width:'25%', stack:[
+          {text:'By District', bold:true, fontSize:8, color:C.forest, margin:[0,0,0,4]},
+          ...Object.entries(byDist).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([d,n])=>({
+            text:`${d}: ${n}`, fontSize:8, color:C.dark, margin:[0,2,0,0],
+          })),
+        ]},
+        { width:'40%', table:{ widths:['*',55,55], body:[
+          [th('Pipeline'), th('This period',{alignment:'right'}), th('Cumulative',{alignment:'right'})],
+          [td('Proposed ha'), td('—',{alignment:'right'}), td(totEnrol?totPropHa.toFixed(1):' —',{alignment:'right'})],
+          [td('Planted ha'), td(plantHaPeriod?plantHaPeriod.toFixed(1):'—',{alignment:'right'}), td(plantHaTotal?plantHaTotal.toFixed(1):'—',{alignment:'right'})],
+          [td('Gap (unplanted)'), td('—',{alignment:'right'}), td(totEnrol?Math.max(0,totPropHa-plantHaTotal).toFixed(1):'—',{alignment:'right'})],
+          [td('Plantation records'), td(pPeriod.length,{alignment:'right'}), td(pRows.length,{alignment:'right'})],
+        ]}, layout:tableLayout},
+      ], columnGap:10 },
+    ]);
+  }
+
+  // ── Slide 10: Key Flags ─────────────────────────────────────────────
+  {
     const flags = [];
-    if (grievR.length > 0)  flags.push(`⚠️  ${grievR.length} grievance record(s) — verify resolution status`);
-    const zeroDays = days.filter(d=>d.count===0);
-    if (zeroDays.length > 2) flags.push(`⚠️  ${zeroDays.length} zero-report days in period — confirm field activity`);
-    const noGps = wrRows.filter(r=>!r.gps_lat||!r.gps_lng).length;
-    if (noGps > 0) flags.push(`ℹ️  ${noGps} work reports without GPS — remind field staff`);
-    if (wrRows.length === 0) flags.push(`🔴  No work reports received for this period`);
-    if (att.total === 0)     flags.push(`🔴  No attendance data received for this period`);
-    if (flags.length===0)    flags.push('✓  No critical flags for this period.');
-    flags.forEach((f,i)=>{
-      s.addText(f, { x:MAR, y:0.88+i*0.62, w:CW, h:0.55,
-        fontSize:12, color:DARK, fontFace:'Calibri',
-        isTextBox:true, margin:0 });
-    });
-    addFooter(s);
-    s.addNotes('Edit flags manually before sharing. Add/remove items as relevant to this week.');
+    if (grievR.length>0)          flags.push({icon:'⚠', text:`${grievR.length} grievance record(s) — verify resolution status`, color:C.amber});
+    const zeroDays=days.filter(d=>d.count===0);
+    if (zeroDays.length>2)        flags.push({icon:'⚠', text:`${zeroDays.length} zero-report days in period — confirm field activity`, color:C.amber});
+    const noGps=wrRows.filter(r=>!r.gps_lat||!r.gps_lng).length;
+    if (noGps>0)                  flags.push({icon:'ℹ', text:`${noGps} work reports without GPS — remind field staff`, color:C.mid});
+    if (wrRows.length===0)        flags.push({icon:'🔴', text:'No work reports received for this period', color:C.red});
+    if (att.total===0)            flags.push({icon:'🔴', text:'No attendance data received for this period', color:C.red});
+    if (flags.length===0)         flags.push({icon:'✓', text:'No critical flags for this period.', color:C.leaf});
+    addSlide([
+      ...slide('Key Flags & Follow-ups','Items requiring attention or decision'),
+      ...flags.map(f=>({
+        columns:[
+          {text:f.icon, width:18, fontSize:13, color:f.color},
+          {text:f.text, fontSize:11, color:C.dark},
+        ],
+        columnGap:6, margin:[0,0,0,10],
+      })),
+    ]);
   }
 
-  // ═══════════════════════════════════════════════════
-  //  SLIDE 10: Ask (TF → EcoAct)
-  // ═══════════════════════════════════════════════════
-  {
-    const s = pres.addSlide();
-    // Dark full-bleed background for emphasis
-    s.addShape(pres.ShapeType.rect, { x:0,y:0,w:W,h:0.72, fill:{color:FOREST}, line:{type:'none'} });
-    s.addText('Ask', {
-      x:MAR, y:0.08, w:CW, h:0.55,
-      fontSize:18, bold:true, color:WHITE, fontFace:'Calibri',
-      isTextBox:true, margin:0,
-    });
-    s.addText(`Project ${projLabel}  ·  ${range.label}`, {
-      x:W-3.5, y:0.1, w:3, h:0.52,
-      fontSize:8, color:MINT, fontFace:'Calibri', align:'right',
-      isTextBox:true, margin:0,
-    });
-    // Three ask rows — editable placeholders
-    const askItems = [
-      { icon:'🟢', label:'Decision needed', text:'[ e.g. Approve extension of planting window to 30 Sep ]' },
-      { icon:'🟡', label:'Input requested', text:'[ e.g. Confirm GPS accuracy threshold for VVB submission ]' },
-      { icon:'🔵', label:'Resource / support', text:'[ e.g. EcoAct to share updated MRV schedule ]' },
-    ];
-    askItems.forEach((a,i)=>{
-      const y = 0.85 + i*1.5;
-      s.addShape(pres.ShapeType.rect, {
-        x:MAR, y, w:CW, h:1.35,
-        fill:{color: i===0?'F0FDF4': i===1?'FEFCE8':'EFF6FF'},
-        line:{color: i===0?'86EFAC': i===1?'FDE68A':'BFDBFE', pt:1},
-      });
-      s.addText(`${a.icon}  ${a.label}`, {
-        x:MAR+0.14, y:y+0.1, w:CW-0.3, h:0.35,
-        fontSize:11, bold:true,
-        color: i===0?'166534': i===1?'92400E':'1E40AF',
-        fontFace:'Calibri', isTextBox:true, margin:0,
-      });
-      s.addText(a.text, {
-        x:MAR+0.14, y:y+0.48, w:CW-0.3, h:0.75,
-        fontSize:12, color:DARK, fontFace:'Calibri',
-        isTextBox:true, margin:0,
-      });
-    });
-    addFooter(s);
-    s.addNotes('Edit the three Ask items before sharing. Replace placeholder text with actual requests from TF to EcoAct. Typical categories: decisions, inputs, resources/support.');
-  }
+  // ── Slide 11: Ask ───────────────────────────────────────────────────
+  addSlide([
+    ...slide('Ask','TF → EcoAct'),
+    ...[
+      {label:'🟢  Decision needed', bg:'F0FDF4', bc:'86EFAC', tc:'166534', text:'[ e.g. Approve extension of planting window to 30 Sep ]'},
+      {label:'🟡  Input requested',  bg:'FEFCE8', bc:'FDE68A', tc:'92400E', text:'[ e.g. Confirm GPS accuracy threshold for VVB submission ]'},
+      {label:'🔵  Resource / support',bg:'EFF6FF', bc:'BFDBFE', tc:'1E40AF', text:'[ e.g. EcoAct to share updated MRV schedule ]'},
+    ].map((a,i) => ({
+      stack:[
+        {canvas:[{type:'rect',x:0,y:0,w:CW,h:58,r:4,color:a.bg,lineColor:a.bc,lineWidth:1}]},
+        {text:a.label, fontSize:10, bold:true, color:a.tc, absolutePosition:{x:MAR+10, y:BODY_TOP+8+i*72}},
+        {text:a.text,  fontSize:10,            color:C.dark,  absolutePosition:{x:MAR+10, y:BODY_TOP+26+i*72}},
+      ],
+      margin:[0, i===0?6:14, 0, 0],
+    })),
+  ]);
 
-  // ── Write file ───────────────────────────────────────────────────────
-  const filename = `EcoActDeck_${projLabel.replace(/\s/g,'')}_${range.d1}_${range.d2}.pptx`;
-  await pres.writeFile({ fileName: filename });
+  // Remove last pageBreak (already at end)
+  if (content.length && content[content.length-1].pageBreak==='after') content.pop();
+
+  const dd = {
+    pageSize: { width:PW, height:PH },
+    pageMargins: [MAR, HEADER_H+6, MAR, 22],
+    content,
+    defaultStyle: { font:'Roboto', fontSize:9, color:C.dark },
+    footer: () => ({
+      text: footer(),
+      alignment:'center', fontSize:6, color:'AAAAAA', margin:[MAR,0,MAR,0],
+    }),
+  };
+
+  await pdfSave(dd, `EcoActDeck_${projLabel.replace(/\s/g,'')}_${range.d1}_${range.d2}.pdf`);
 }
 
 </script>
