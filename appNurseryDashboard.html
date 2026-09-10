@@ -2300,6 +2300,16 @@ async function pullFromSheet() {
   }
 }
 
+async function dbClear(store) {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).clear();
+    req.onsuccess = () => res();
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
 async function clearAndPull() {
   if (!navigator.onLine) { toast('Offline — connect first', 'warn'); return; }
   if (!confirm('Clear all local data (dispatches, inspections, seed trees, receives, seeds, stumps) and replace with sheet data?\n\nThe upload queue is NOT cleared — pending unsynced records are preserved.')) return;
@@ -2311,12 +2321,7 @@ async function clearAndPull() {
     // Clear all pulled-data stores except queue and plans
     const storesToClear = ['dispatches','seedtrees','inspections','receives','seeds','stumps'];
     for (const store of storesToClear) {
-      const db = await openDB();
-      await new Promise((res, rej) => {
-        const tx = db.transaction(store, 'readwrite');
-        tx.objectStore(store).clear().onsuccess = res;
-        tx.onerror = e => rej(e.target.error);
-      });
+      await dbClear(store);
     }
     toast('Local data cleared — pulling from sheet…', 'info', 4000);
     await pullFromSheet();
@@ -2871,6 +2876,7 @@ window.addEventListener('offline', updateConnectivity);
 // ═══════════════════════════════════════════════════════
 async function init() {
   initThemeBtn();
+  updateConnectivity();
   await openDB();
   await loadLivePlans();
   buildSpeciesGrids();
