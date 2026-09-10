@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard v20 · Asha 1</title>
+<title>Nursery Dashboard v22 · Asha 1</title>
 <link rel="stylesheet" href="arr-shared.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -162,11 +162,12 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 .dash-card-body{padding:16px}
 
 /* ── KPI ROW ── */
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
 .kpi-card{background:var(--card);border:1.5px solid var(--rule);border-radius:var(--radius);
   padding:14px 16px;text-align:center}
 .kpi-val{font-size:24px;font-weight:700;color:var(--forest);line-height:1}
 .kpi-label{font-size:10px;color:var(--mid);margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+.kpi-sub{font-size:10px;color:var(--mid);margin-top:2px}
 
 /* ── TABLE ── */
 .data-table{width:100%;border-collapse:collapse;font-size:12px}
@@ -226,7 +227,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
 @media(max-width:680px){
   .form-tiles{grid-template-columns:1fr}
   .dash-grid{grid-template-columns:1fr}
-  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .kpi-row{grid-template-columns:repeat(3,1fr)}
   .dash-card.full{grid-column:1}
   header{padding:12px 16px}
   main{padding:16px 12px 48px}
@@ -490,6 +491,117 @@ async function saveReceive() {
 
 // buildReceiveGrid() called inside init() below
 
+// ═══════════════════════════════════════════════════════
+// SEED RECEIPT
+// ═══════════════════════════════════════════════════════
+let _seedPhotoB64 = null;
+
+async function onSeedPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const compressed = await compressImage(input.files[0]);
+  const ab = await compressed.arrayBuffer();
+  _seedPhotoB64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+  document.getElementById('sd-photo-img').src = URL.createObjectURL(compressed);
+  document.getElementById('sd-photo-preview').style.display = 'block';
+  input.value = '';
+}
+
+function clearSeedPhoto() {
+  _seedPhotoB64 = null;
+  document.getElementById('sd-photo-preview').style.display = 'none';
+  document.getElementById('sd-photo-img').src = '';
+  document.getElementById('sd-photo-camera').value = '';
+  document.getElementById('sd-photo-gallery').value = '';
+}
+
+async function saveSeed() {
+  const date        = document.getElementById('sd-date').value;
+  const species     = document.getElementById('sd-species').value;
+  const lotId       = document.getElementById('sd-lot-id').value.trim();
+  const qtyKg       = parseFloat(document.getElementById('sd-qty-kg').value)||0;
+  const germRaw     = document.getElementById('sd-germ-pct').value.trim();
+  const germPct     = germRaw !== '' ? parseFloat(germRaw) : null;
+  const sourceName  = document.getElementById('sd-source-name').value.trim();
+  const sourceVil   = document.getElementById('sd-source-village').value.trim();
+  const storage     = document.getElementById('sd-storage').value.trim();
+  const recordedBy  = document.getElementById('sd-recorded-by').value.trim();
+
+  if (!date || !species || qtyKg <= 0) { toast('Date, species and quantity are required', 'warn'); return; }
+
+  const rec = {
+    id: uuid(), form: 'seed', ts: ts(),
+    date, species,
+    lot_id: lotId || null,
+    quantity_kg: qtyKg,
+    germ_test_pct: germPct,
+    source_name: sourceName || null,
+    source_village: sourceVil || null,
+    storage_location: storage || null,
+    recorded_by: recordedBy || null,
+    photo_b64: _seedPhotoB64 || null,
+    uploaded: false
+  };
+
+  await dbPut('seeds', rec);
+  await enqueue(rec);
+  clearSeedPhoto();
+  closeModal('seed');
+  toast(`✓ Seed lot saved — ${qtyKg} kg ${species}`, 'success');
+  updateKPIs();
+}
+
+// ═══════════════════════════════════════════════════════
+// STUMP RECEIPT
+// ═══════════════════════════════════════════════════════
+let _stumpPhotoB64 = null;
+
+async function onStumpPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const compressed = await compressImage(input.files[0]);
+  const ab = await compressed.arrayBuffer();
+  _stumpPhotoB64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+  document.getElementById('st2-photo-img').src = URL.createObjectURL(compressed);
+  document.getElementById('st2-photo-preview').style.display = 'block';
+  input.value = '';
+}
+
+function clearStumpPhoto() {
+  _stumpPhotoB64 = null;
+  document.getElementById('st2-photo-preview').style.display = 'none';
+  document.getElementById('st2-photo-img').src = '';
+  document.getElementById('st2-photo-camera').value = '';
+  document.getElementById('st2-photo-gallery').value = '';
+}
+
+async function saveStump() {
+  const date       = document.getElementById('st2-date').value;
+  const species    = getChipVal('st2-species', true);
+  const count      = parseInt(document.getElementById('st2-count').value)||0;
+  const sizeClass  = getChipVal('st2-size', true);
+  const source     = document.getElementById('st2-source').value.trim();
+  const storage    = document.getElementById('st2-storage').value.trim();
+  const recordedBy = document.getElementById('st2-recorded-by').value.trim();
+
+  if (!date || !species || count <= 0 || !sizeClass) { toast('Date, species, count and size class are required', 'warn'); return; }
+
+  const rec = {
+    id: uuid(), form: 'stump', ts: ts(),
+    date, species, count, size_class: sizeClass,
+    source: source || null,
+    storage_location: storage || null,
+    recorded_by: recordedBy || null,
+    photo_b64: _stumpPhotoB64 || null,
+    uploaded: false
+  };
+
+  await dbPut('stumps', rec);
+  await enqueue(rec);
+  clearStumpPhoto();
+  closeModal('stump');
+  toast(`✓ Stump receipt saved — ${count} × ${species} (${sizeClass})`, 'success');
+  updateKPIs();
+}
+
 </script>
 </head>
 <body>
@@ -546,6 +658,16 @@ async function saveReceive() {
     <div class="kpi-card">
       <div class="kpi-val" id="kpi-queue">0</div>
       <div class="kpi-label">Pending Upload</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val" id="kpi-seeds">0</div>
+      <div class="kpi-label">Seed Lots</div>
+      <div class="kpi-sub" id="kpi-seeds-kg">—</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val" id="kpi-stumps">0</div>
+      <div class="kpi-label">Stumps Received</div>
+      <div class="kpi-sub" id="kpi-stumps-sub">Teak + Gamar</div>
     </div>
 
   </div>
@@ -617,7 +739,17 @@ async function saveReceive() {
 
     <div class="dash-card full">
       <div class="dash-card-hdr">
-        <h3>🗺️ Soil Map Integration</h3>
+        <h3>🌰 Seed &amp; Stump Inventory</h3>
+        <span style="font-size:11px;color:var(--mid);margin-left:auto">Latest receipts by species</span>
+      </div>
+      <div class="dash-card-body">
+        <div id="seed-stump-overview">
+          <div style="text-align:center;color:var(--mid);font-size:12px;padding:16px">No seed or stump records yet</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-card full">
         <span style="font-size:11px;color:var(--mid);margin-left:auto">Pending soil polygon push from ARR Mapper</span>
       </div>
       <div class="dash-card-body">
@@ -694,8 +826,38 @@ async function saveReceive() {
         </button>
       </div>
     </div>
+
+    <div class="form-tile" style="--accent:#854d0e" onclick="arrAuthGet()?openForm('seed'):(window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href))" title="Sign in to record seed receipt">
+      <div class="tile-icon">🌰</div>
+      <div class="tile-name">Seed Receipt</div>
+      <div class="tile-sub">Record seed intake by species, lot ID, quantity (kg), storage location and germination test result</div>
+      <div class="tile-actions" onclick="event.stopPropagation()">
+        <button class="tile-action-btn" onclick="viewRecords('seed')" title="Browse seed records">
+          <span class="ta-icon">👁</span><span>View</span>
+        </button>
+        <div class="tile-action-sep"></div>
+        <button class="tile-action-btn" id="get-btn-seed" onclick="getXLSX('seed',this)" title="Download seed records as XLSX">
+          <span class="ta-icon">⬇</span><span>Get</span>
+        </button>
+      </div>
     </div>
 
+    <div class="form-tile" style="--accent:#44403c" onclick="arrAuthGet()?openForm('stump'):(window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href))" title="Sign in to record stump receipt">
+      <div class="tile-icon">🪵</div>
+      <div class="tile-name">Stump Receipt</div>
+      <div class="tile-sub">Record Teak or Gamar stump intake — count, size class, source and storage location</div>
+      <div class="tile-actions" onclick="event.stopPropagation()">
+        <button class="tile-action-btn" onclick="viewRecords('stump')" title="Browse stump records">
+          <span class="ta-icon">👁</span><span>View</span>
+        </button>
+        <div class="tile-action-sep"></div>
+        <button class="tile-action-btn" id="get-btn-stump" onclick="getXLSX('stump',this)" title="Download stump records as XLSX">
+          <span class="ta-icon">⬇</span><span>Get</span>
+        </button>
+      </div>
+    </div>
+
+    </div>
   </div>
 </div>
 
@@ -718,11 +880,16 @@ async function saveReceive() {
     <button onclick="clearNDRecFilter()" style="font-size:11px;padding:3px 8px;border:1px solid var(--rule);border-radius:5px;background:var(--mint);cursor:pointer">✕</button>
   </div>
   <div id="rec-panel-status" style="font-size:11px;color:var(--mid);margin-bottom:6px"></div>
-  <div style="overflow-x:auto;border:1px solid var(--rule);border-radius:8px;max-height:400px;overflow-y:auto">
+  <div style="overflow-x:auto;border:1px solid var(--rule);border-radius:8px 8px 0 0;max-height:400px;overflow-y:auto">
     <table style="border-collapse:collapse;width:100%;font-size:11px;min-width:500px">
       <thead id="rec-panel-thead" style="position:sticky;top:0;z-index:2"></thead>
       <tbody id="rec-panel-tbody"></tbody>
     </table>
+  </div>
+  <div id="rec-panel-pager" style="display:none;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--rule);border-top:none;border-radius:0 0 8px 8px;background:var(--mint)">
+    <button onclick="recPagePrev()" id="rec-pg-prev" style="font-size:11px;padding:3px 10px;border:1px solid var(--rule);border-radius:5px;background:var(--card);cursor:pointer;font-family:var(--font)">‹ Prev</button>
+    <span id="rec-pg-label" style="font-size:11px;color:var(--mid);flex:1;text-align:center"></span>
+    <button onclick="recPageNext()" id="rec-pg-next" style="font-size:11px;padding:3px 10px;border:1px solid var(--rule);border-radius:5px;background:var(--card);cursor:pointer;font-family:var(--font)">Next ›</button>
   </div>
 </div>
 
@@ -1110,6 +1277,173 @@ async function saveReceive() {
 </div>
 </div>
 
+<!-- ═══ SEED RECEIPT MODAL ═══ -->
+<div class="modal-bg" id="modal-seed">
+<div class="modal">
+<div class="modal-hdr">
+  <div style="flex:1">
+    <h2>🌰 Seed Receipt &amp; Inventory</h2>
+    <p>Record seed intake by species, lot, weight and storage</p>
+  </div>
+  <button class="modal-close" onclick="closeModal('seed')">✕</button>
+</div>
+<div class="modal-body">
+
+  <div class="field-group">
+    <label class="field-label">Date</label>
+    <input type="date" class="field-input" id="sd-date">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Species</label>
+    <select class="field-select" id="sd-species">
+      <option value="">— Select —</option>
+    </select>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Lot / Batch ID</label>
+    <input type="text" class="field-input" id="sd-lot-id" placeholder="e.g. TK-2026-L01">
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="field-group">
+      <label class="field-label">Quantity (kg)</label>
+      <input type="number" class="field-input" id="sd-qty-kg" min="0" step="0.1" placeholder="0.0">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Germination Test % <span style="font-weight:400;color:var(--mid)">(optional)</span></label>
+      <input type="number" class="field-input" id="sd-germ-pct" min="0" max="100" step="1" placeholder="—">
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Collector Name</label>
+    <input type="text" class="field-input" id="sd-source-name" placeholder="Name of collector or supplier">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Collector Village / Location</label>
+    <input type="text" class="field-input" id="sd-source-village" placeholder="Village or area">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Storage Location</label>
+    <input type="text" class="field-input" id="sd-storage" placeholder="e.g. SALS Seed Store, Rack B">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Recorded By</label>
+    <input type="text" class="field-input" id="sd-recorded-by" placeholder="Staff name">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Photo <span style="font-weight:400;color:var(--mid)">(optional)</span></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:8px 14px">
+        📷 Camera
+        <input type="file" accept="image/*" capture="environment" id="sd-photo-camera" style="display:none" onchange="onSeedPhoto(this)">
+      </label>
+      <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:8px 14px">
+        🖼 Gallery
+        <input type="file" accept="image/*" id="sd-photo-gallery" style="display:none" onchange="onSeedPhoto(this)">
+      </label>
+    </div>
+    <div id="sd-photo-preview" style="margin-top:8px;display:none">
+      <img id="sd-photo-img" style="max-width:100%;max-height:180px;border-radius:8px;border:1.5px solid var(--rule)">
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:4px" onclick="clearSeedPhoto()">✕ Remove</button>
+    </div>
+  </div>
+
+</div>
+<div class="modal-footer">
+  <button class="btn btn-secondary" onclick="closeModal('seed')">Cancel</button>
+  <button class="btn btn-primary" onclick="saveSeed()">Save Offline</button>
+</div>
+</div>
+</div>
+
+<!-- ═══ STUMP RECEIPT MODAL ═══ -->
+<div class="modal-bg" id="modal-stump">
+<div class="modal">
+<div class="modal-hdr">
+  <div style="flex:1">
+    <h2>🪵 Stump Receipt &amp; Inventory</h2>
+    <p>Record Teak or Gamar stump intake — count, size class and storage</p>
+  </div>
+  <button class="modal-close" onclick="closeModal('stump')">✕</button>
+</div>
+<div class="modal-body">
+
+  <div class="field-group">
+    <label class="field-label">Date</label>
+    <input type="date" class="field-input" id="st2-date">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Species</label>
+    <div class="chip-row" id="st2-species">
+      <div class="chip" data-val="TK" onclick="selChip(this,'st2-species',true)">🌳 Teak</div>
+      <div class="chip" data-val="GMR" onclick="selChip(this,'st2-species',true)">🌿 Gamar</div>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Count</label>
+    <input type="number" class="field-input" id="st2-count" min="0" placeholder="0">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Size Class</label>
+    <div class="chip-row" id="st2-size">
+      <div class="chip" data-val="SMALL" onclick="selChip(this,'st2-size',true)">Small</div>
+      <div class="chip" data-val="MEDIUM" onclick="selChip(this,'st2-size',true)">Medium</div>
+      <div class="chip" data-val="LARGE" onclick="selChip(this,'st2-size',true)">Large</div>
+    </div>
+    <div class="field-hint">Small (&lt;10 cm ht) · Medium (10–25 cm) · Large (&gt;25 cm)</div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Source / Supplier</label>
+    <input type="text" class="field-input" id="st2-source" placeholder="Name and location of stump supplier">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Storage Location</label>
+    <input type="text" class="field-input" id="st2-storage" placeholder="e.g. SALS Shade House Row 3">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Recorded By</label>
+    <input type="text" class="field-input" id="st2-recorded-by" placeholder="Staff name">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Photo <span style="font-weight:400;color:var(--mid)">(optional)</span></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:8px 14px">
+        📷 Camera
+        <input type="file" accept="image/*" capture="environment" id="st2-photo-camera" style="display:none" onchange="onStumpPhoto(this)">
+      </label>
+      <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:8px 14px">
+        🖼 Gallery
+        <input type="file" accept="image/*" id="st2-photo-gallery" style="display:none" onchange="onStumpPhoto(this)">
+      </label>
+    </div>
+    <div id="st2-photo-preview" style="margin-top:8px;display:none">
+      <img id="st2-photo-img" style="max-width:100%;max-height:180px;border-radius:8px;border:1.5px solid var(--rule)">
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:4px" onclick="clearStumpPhoto()">✕ Remove</button>
+    </div>
+  </div>
+
+</div>
+<div class="modal-footer">
+  <button class="btn btn-secondary" onclick="closeModal('stump')">Cancel</button>
+  <button class="btn btn-primary" onclick="saveStump()">Save Offline</button>
+</div>
+</div>
+</div>
+
 <script>
 'use strict';
 
@@ -1117,7 +1451,7 @@ async function saveReceive() {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════
 
-const APP_VERSION = 'nursery_v20';
+const APP_VERSION = 'nursery_v22';
 
 const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec';
 
@@ -1275,8 +1609,8 @@ function sppName(sp) {
 // INDEXEDDB
 // ═══════════════════════════════════════════════════════
 let _db = null;
-const DB_NAME = 'NurseryDB'; const DB_VER = 1;
-const STORES = ['dispatches','seedtrees','inspections','receives','queue'];
+const DB_NAME = 'NurseryDB'; const DB_VER = 2;
+const STORES = ['dispatches','seedtrees','inspections','receives','seeds','stumps','queue'];
 
 async function openDB() {
   if (_db) return _db;
@@ -1770,7 +2104,7 @@ async function pullFromSheet() {
         id,
         form: 'dispatch',
         ts: row.app_timestamp || row[2] || '',
-        date: row.Date || row[3] || '',
+        date: (row.Date || row[3] || '').toString().slice(0,10),
         source: row['Source Nursery'] || row[4] || '',
         district: row['Destination District'] || row[5] || '',
         lpc: row['Project Field Location (LPC)'] || row[6] || '',
@@ -1813,7 +2147,7 @@ async function pullFromSheet() {
         form: 'seedtree',
         ts: row.app_timestamp || '',
         seed_tree_id: row['Seed Tree ID'] || '',
-        date: row.Date || '',
+        date: (row.Date || '').toString().slice(0,10),
         species: row['Species Code'] || '',
         location_type: row['Location Type'] || '',
         seeds_collected: parseInt(row['Seeds Collected'])||0,
@@ -1838,7 +2172,7 @@ async function pullFromSheet() {
         id,
         form: 'inspection',
         ts: row.app_timestamp || '',
-        date: row.Date || '',
+        date: (row.Date || '').toString().slice(0,10),
         source: row['Source Nursery'] || '',
         inspector: row.Inspector || '',
         health: row['Overall Health'] || '',
@@ -1865,7 +2199,55 @@ async function pullFromSheet() {
       iCount++;
     }
 
-    toast(`✓ Pulled: ${dCount} dispatches, ${sCount} seed trees, ${iCount} inspections`, 'success', 6000);
+    // Seeds
+    let seedCount = 0;
+    for (const row of (data.seeds||[])) {
+      const id = row.submission_id;
+      if (!id || id==='submission_id') continue;
+      if (await dbGet('seeds', id)) continue;
+      const rec = {
+        id, form:'seed',
+        ts: row.app_timestamp||'',
+        date: (row.Date||'').toString().slice(0,10),
+        species: row.Species_Code||'',
+        lot_id: row.Lot_ID||null,
+        quantity_kg: parseFloat(row.Quantity_kg)||0,
+        germ_test_pct: row.Germ_Test_Pct!==''&&row.Germ_Test_Pct!=null ? parseFloat(row.Germ_Test_Pct) : null,
+        source_name: row.Source_Name||null,
+        source_village: row.Source_Village||null,
+        storage_location: row.Storage_Location||null,
+        recorded_by: row.Recorded_By||null,
+        photo_url: row.Photo_URL||null,
+        uploaded: true
+      };
+      await dbPut('seeds', rec);
+      seedCount++;
+    }
+
+    // Stumps
+    let stumpCount = 0;
+    for (const row of (data.stumps||[])) {
+      const id = row.submission_id;
+      if (!id || id==='submission_id') continue;
+      if (await dbGet('stumps', id)) continue;
+      const rec = {
+        id, form:'stump',
+        ts: row.app_timestamp||'',
+        date: (row.Date||'').toString().slice(0,10),
+        species: row.Species_Code||'',
+        count: parseInt(row.Count)||0,
+        size_class: row.Size_Class||'',
+        source: row.Source||null,
+        storage_location: row.Storage_Location||null,
+        recorded_by: row.Recorded_By||null,
+        photo_url: row.Photo_URL||null,
+        uploaded: true
+      };
+      await dbPut('stumps', rec);
+      stumpCount++;
+    }
+
+    toast(`✓ Pulled: ${dCount} dispatches, ${sCount} seed trees, ${iCount} inspections, ${seedCount} seed lots, ${stumpCount} stump records`, 'success', 8000);
     refreshDashboard();
   } catch(err) {
     toast('Pull failed: ' + err.message, 'error');
@@ -1904,6 +2286,7 @@ async function refreshDashboard() {
   await renderDistrictTable();
   await renderDispatchTable();
   await renderProvenance();
+  await renderSeedStumpOverview();
 }
 
 async function updateKPIs() {
@@ -1936,6 +2319,20 @@ async function updateKPIs() {
   document.getElementById('kpi-total-plan').textContent = hasStock ? fmtNum(carbonTotal) : '—';
   const subEl = document.getElementById('kpi-stock-carbon-date');
   if (subEl) subEl.textContent = hasStock ? `${latestDate}${lemonStr}` : 'no inspection yet';
+
+  // Seed KPI
+  const seeds = await dbGetAll('seeds');
+  const totalKg = seeds.reduce((s,r)=>s+(r.quantity_kg||0),0);
+  document.getElementById('kpi-seeds').textContent = seeds.length;
+  document.getElementById('kpi-seeds-kg').textContent = seeds.length ? `${totalKg.toFixed(1)} kg total` : '—';
+
+  // Stump KPI
+  const stumps = await dbGetAll('stumps');
+  const totalStumps = stumps.reduce((s,r)=>s+(r.count||0),0);
+  const tkSt  = stumps.filter(r=>r.species==='TK').reduce((s,r)=>s+(r.count||0),0);
+  const gmrSt = stumps.filter(r=>r.species==='GMR').reduce((s,r)=>s+(r.count||0),0);
+  document.getElementById('kpi-stumps').textContent = fmtNum(totalStumps);
+  document.getElementById('kpi-stumps-sub').textContent = totalStumps ? `TK ${fmtNum(tkSt)} · GMR ${fmtNum(gmrSt)}` : 'Teak + Gamar';
 }
 
 async function renderPlanChart() {
@@ -2039,6 +2436,68 @@ async function renderProvenance() {
       <div style="font-size:13px;font-weight:700;color:var(--forest);margin-bottom:6px">🌳 ${stId}</div>
       ${recs.map(r=>`<div style="font-size:12px;color:var(--mid);margin-left:16px">→ ${r.date} · ${r.district} · LPC ${r.lpc} · ${fmtNum(r.total)} saplings</div>`).join('')}
     </div>`).join('');
+}
+
+async function renderSeedStumpOverview() {
+  const el = document.getElementById('seed-stump-overview');
+  if (!el) return;
+  const seeds  = await dbGetAll('seeds');
+  const stumps = await dbGetAll('stumps');
+
+  if (!seeds.length && !stumps.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--mid);font-size:12px;padding:16px">No seed or stump records yet</div>';
+    return;
+  }
+
+  // Seeds: aggregate by species
+  const seedBySpp = {};
+  seeds.forEach(r => {
+    if (!seedBySpp[r.species]) seedBySpp[r.species] = { lots:0, kg:0 };
+    seedBySpp[r.species].lots++;
+    seedBySpp[r.species].kg += r.quantity_kg || 0;
+  });
+
+  // Stumps: aggregate by species + size
+  const stumpBySpp = {};
+  stumps.forEach(r => {
+    const k = r.species;
+    if (!stumpBySpp[k]) stumpBySpp[k] = { SMALL:0, MEDIUM:0, LARGE:0, total:0 };
+    stumpBySpp[k][r.size_class] = (stumpBySpp[k][r.size_class]||0) + (r.count||0);
+    stumpBySpp[k].total += r.count||0;
+  });
+
+  const sppName = code => SPECIES.find(s=>s.code===code)?.local || code;
+
+  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+
+  // Seeds table
+  if (seeds.length) {
+    html += `<div>
+      <div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🌰 Seeds</div>
+      <table class="data-table" style="font-size:11px">
+        <thead><tr><th>Species</th><th class="num">Lots</th><th class="num">kg</th></tr></thead>
+        <tbody>` +
+      Object.entries(seedBySpp).map(([code, v]) =>
+        `<tr><td>${sppName(code)}</td><td class="num">${v.lots}</td><td class="num">${v.kg.toFixed(1)}</td></tr>`
+      ).join('') +
+      `</tbody></table></div>`;
+  }
+
+  // Stumps table
+  if (stumps.length) {
+    html += `<div>
+      <div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🪵 Stumps</div>
+      <table class="data-table" style="font-size:11px">
+        <thead><tr><th>Species</th><th class="num">S</th><th class="num">M</th><th class="num">L</th><th class="num">Total</th></tr></thead>
+        <tbody>` +
+      Object.entries(stumpBySpp).map(([code, v]) =>
+        `<tr><td>${sppName(code)}</td><td class="num">${v.SMALL||0}</td><td class="num">${v.MEDIUM||0}</td><td class="num">${v.LARGE||0}</td><td class="num"><b>${fmtNum(v.total)}</b></td></tr>`
+      ).join('') +
+      `</tbody></table></div>`;
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2170,6 +2629,32 @@ function openForm(id) {
     clearReceivePhoto();
     buildReceiveGrid();
   }
+  if (id==='seed') {
+    document.getElementById('sd-date').value = today();
+    document.getElementById('sd-species').value = '';
+    document.getElementById('sd-lot-id').value = '';
+    document.getElementById('sd-qty-kg').value = '';
+    document.getElementById('sd-germ-pct').value = '';
+    document.getElementById('sd-source-name').value = '';
+    document.getElementById('sd-source-village').value = '';
+    document.getElementById('sd-storage').value = '';
+    document.getElementById('sd-recorded-by').value = '';
+    clearSeedPhoto();
+    // populate species dropdown from SPECIES constant
+    const sel = document.getElementById('sd-species');
+    sel.innerHTML = '<option value="">— Select —</option>' +
+      SPECIES.map(sp=>`<option value="${sp.code}">${sppName(sp)}</option>`).join('');
+  }
+  if (id==='stump') {
+    document.getElementById('st2-date').value = today();
+    document.querySelectorAll('#st2-species .chip').forEach(c=>c.classList.remove('sel'));
+    document.querySelectorAll('#st2-size .chip').forEach(c=>c.classList.remove('sel'));
+    document.getElementById('st2-count').value = '';
+    document.getElementById('st2-source').value = '';
+    document.getElementById('st2-storage').value = '';
+    document.getElementById('st2-recorded-by').value = '';
+    clearStumpPhoto();
+  }
   document.getElementById('modal-'+id).classList.add('open');
 }
 
@@ -2219,6 +2704,8 @@ const REC_STORE = {
   seedtree:   'seedtrees',
   inspection: 'inspections',
   receive:    'receives',
+  seed:       'seeds',
+  stump:      'stumps',
 };
 
 const REC_LABEL = {
@@ -2226,6 +2713,8 @@ const REC_LABEL = {
   seedtree:   '🌳 Seed Tree Records',
   inspection: '📋 Nursery Inspections',
   receive:    '📥 Sapling Receives',
+  seed:       '🌰 Seed Receipt & Inventory',
+  stump:      '🪵 Stump Receipt & Inventory',
 };
 
 // Key columns to show first in viewer/XLSX
@@ -2234,6 +2723,8 @@ const REC_KEY_COLS = {
   seedtree:   ['id','date','seed_tree_id','species','location_type','seeds_collected','lat','lon','submitter','notes'],
   inspection: ['id','date','source','inspector','health','remarks'],
   receive:    ['id','date','source','destination','challan','received_by','total','quality','vehicle_no','remarks'],
+  seed:       ['id','date','species','quantity_kg','lot_id','source_name','source_village','storage_location','germ_test_pct','recorded_by'],
+  stump:      ['id','date','species','count','size_class','source','storage_location','recorded_by'],
 };
 
 let _recForm = null;
@@ -2247,6 +2738,7 @@ async function viewRecords(form) {
   const rows = await dbGetAll(REC_STORE[form]);
   _recRows   = rows || [];
   _ndRecFiltered = _recRows.slice();
+  _recPage = 0;
 
   document.getElementById('rec-panel-title').textContent = REC_LABEL[form] + ' — ' + _recRows.length + ' records';
   document.getElementById('rec-panel-status').textContent =
@@ -2255,7 +2747,7 @@ async function viewRecords(form) {
   document.getElementById('rec-panel').scrollIntoView({ behavior:'smooth', block:'nearest' });
 
   populateNDRecFilters();
-  renderNDRecPanel(_recRows);
+  renderNDRecPanel(_ndRecFiltered);
 }
 
 function closeRecPanel() {
@@ -2307,6 +2799,7 @@ function applyNDRecFilter() {
     return true;
   });
 
+  _recPage = 0;
   // Re-render with filtered rows
   renderNDRecPanel(_ndRecFiltered);
   document.getElementById('rec-panel-status').textContent =
@@ -2321,16 +2814,26 @@ function clearNDRecFilter() {
   applyNDRecFilter();
 }
 
+let _recPage = 0;
+const REC_PAGE_SIZE = 10;
+
 function renderNDRecPanel(rows) {
+  const pager = document.getElementById('rec-panel-pager');
   if (!rows || !rows.length) {
     document.getElementById('rec-panel-thead').innerHTML = '';
     document.getElementById('rec-panel-tbody').innerHTML =
       '<tr><td style="padding:20px;color:var(--mid);text-align:center">No records match filter</td></tr>';
+    if (pager) pager.style.display = 'none';
     return;
   }
+
   const keyCols = REC_KEY_COLS[_recForm] || [];
   const allCols = [...new Set(rows.flatMap(r => Object.keys(r)))];
   const cols    = [...keyCols.filter(c => allCols.includes(c)), ...allCols.filter(c => !keyCols.includes(c))];
+
+  const totalPages = Math.ceil(rows.length / REC_PAGE_SIZE);
+  _recPage = Math.max(0, Math.min(_recPage, totalPages - 1));
+  const pageRows = rows.slice(_recPage * REC_PAGE_SIZE, (_recPage + 1) * REC_PAGE_SIZE);
 
   document.getElementById('rec-panel-thead').innerHTML =
     '<tr>' + cols.map(c =>
@@ -2340,7 +2843,7 @@ function renderNDRecPanel(rows) {
     ).join('') + '</tr>';
 
   document.getElementById('rec-panel-tbody').innerHTML =
-    rows.map((row, ri) => {
+    pageRows.map((row, ri) => {
       const bg = ri % 2 === 0 ? '' : 'background:var(--mint)';
       return '<tr style="' + bg + '">' + cols.map(c => {
         let val = row[c] ?? '';
@@ -2353,6 +2856,21 @@ function renderNDRecPanel(rows) {
         return `<td style="padding:5px 8px;border-bottom:1px solid var(--rule);vertical-align:top">${val}</td>`;
       }).join('') + '</tr>';
     }).join('');
+
+  if (pager) {
+    pager.style.display = totalPages > 1 ? 'flex' : 'none';
+    document.getElementById('rec-pg-label').textContent =
+      `Page ${_recPage + 1} of ${totalPages} · ${rows.length} records`;
+    document.getElementById('rec-pg-prev').disabled = _recPage === 0;
+    document.getElementById('rec-pg-next').disabled = _recPage >= totalPages - 1;
+  }
+}
+
+function recPagePrev() {
+  if (_recPage > 0) { _recPage--; renderNDRecPanel(_ndRecFiltered); }
+}
+function recPageNext() {
+  if ((_recPage + 1) * REC_PAGE_SIZE < _ndRecFiltered.length) { _recPage++; renderNDRecPanel(_ndRecFiltered); }
 }
 
 
