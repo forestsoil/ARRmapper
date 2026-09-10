@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard v19 · Asha 1</title>
+<title>Nursery Dashboard v20 · Asha 1</title>
 <link rel="stylesheet" href="arr-shared.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -532,7 +532,8 @@ async function saveReceive() {
   <div class="kpi-row" id="kpi-row">
     <div class="kpi-card">
       <div class="kpi-val" id="kpi-total-plan">—</div>
-      <div class="kpi-label">Total Planned (carbon spp)</div>
+      <div class="kpi-label">Current Stock</div>
+      <div class="kpi-sub" id="kpi-stock-carbon-date">no inspection yet</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-val" id="kpi-dispatched">0</div>
@@ -546,11 +547,7 @@ async function saveReceive() {
       <div class="kpi-val" id="kpi-queue">0</div>
       <div class="kpi-label">Pending Upload</div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-val" id="kpi-stock-total">—</div>
-      <div class="kpi-label">Stock at Nurseries</div>
-      <div class="kpi-sub" id="kpi-stock-date">no inspection yet</div>
-    </div>
+
   </div>
 
   <div class="dash-grid">
@@ -1120,7 +1117,7 @@ async function saveReceive() {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════
 
-const APP_VERSION = 'nursery_v19';
+const APP_VERSION = 'nursery_v20';
 
 const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec';
 
@@ -1910,32 +1907,35 @@ async function refreshDashboard() {
 }
 
 async function updateKPIs() {
-  const dispatches   = await dbGetAll('dispatches');
-  const trees        = await dbGetAll('seedtrees');
-  const q            = await dbGetAll('queue');
-  const inspections  = await dbGetAll('inspections');
-  const totalDisp    = dispatches.reduce((s,d)=>s+(d.total||0), 0);
-  document.getElementById('kpi-dispatched').textContent  = fmtNum(totalDisp);
-  document.getElementById('kpi-seed-trees').textContent  = trees.length;
-  document.getElementById('kpi-queue').textContent       = q.length;
-  const _planTotal = ['SALS','GRAS','MSAL','MEHB'].reduce((s,src) =>
-    s + Object.values(PLAN_2026[src]).reduce((a,v)=>a+(typeof v==='number'?v:0),0), 0);
-  document.getElementById('kpi-total-plan').textContent = fmtNum(_planTotal);
+  const dispatches  = await dbGetAll('dispatches');
+  const trees       = await dbGetAll('seedtrees');
+  const q           = await dbGetAll('queue');
+  const inspections = await dbGetAll('inspections');
 
-  // Stock KPI — sum latest inspection per source
+  // Basic KPIs
+  document.getElementById('kpi-dispatched').textContent = fmtNum(dispatches.reduce((s,d)=>s+(d.total||0),0));
+  document.getElementById('kpi-seed-trees').textContent = trees.length;
+  document.getElementById('kpi-queue').textContent      = q.length;
+
+  // Current Stock KPI — latest inspection per source, carbon vs lemon split
   const latestBySrc = {};
   inspections.forEach(r => {
     if (!r.source || !r.stock) return;
     const cur = latestBySrc[r.source];
     if (!cur || (r.date||r.ts||'') > (cur.date||cur.ts||'')) latestBySrc[r.source] = r;
   });
-  const stockTotal = Object.values(latestBySrc)
-    .reduce((s, r) => s + Object.values(r.stock).reduce((a,v)=>a+(v||0), 0), 0);
-  const srcCount = Object.keys(latestBySrc).length;
-  const latestDate = Object.values(latestBySrc)
-    .map(r=>r.date||'').filter(Boolean).sort().reverse()[0] || '';
-  document.getElementById('kpi-stock-total').textContent = srcCount > 0 ? fmtNum(stockTotal) : '—';
-  document.getElementById('kpi-stock-date').textContent  = latestDate ? `as of ${latestDate}` : 'no inspection yet';
+  const carbonCodes = SPECIES.filter(s=>s.carbon).map(s=>s.code);
+  let carbonTotal = 0, lemonTotal = 0;
+  Object.values(latestBySrc).forEach(r => {
+    carbonCodes.forEach(c => { carbonTotal += r.stock[c]||0; });
+    lemonTotal += r.stock['LMN']||0;
+  });
+  const hasStock   = Object.keys(latestBySrc).length > 0;
+  const latestDate = Object.values(latestBySrc).map(r=>r.date||'').filter(Boolean).sort().reverse()[0] || '';
+  const lemonStr   = lemonTotal > 0 ? ` · 🍋 ${fmtNum(lemonTotal)}` : '';
+  document.getElementById('kpi-total-plan').textContent = hasStock ? fmtNum(carbonTotal) : '—';
+  const subEl = document.getElementById('kpi-stock-carbon-date');
+  if (subEl) subEl.textContent = hasStock ? `${latestDate}${lemonStr}` : 'no inspection yet';
 }
 
 async function renderPlanChart() {
