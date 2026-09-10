@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Documentation v14 · ARR Projects</title>
+<title>Documentation v15 · ARR Projects</title>
 <link rel="stylesheet" href="arr-shared.css">
 <style>
 .proj-tabs{display:none}
@@ -1019,22 +1019,22 @@ async function fetchPhotosAsBase64(photoObjs, maxPhotos=18, timeoutMs=8000) {
 // portrait=true → 2 cols × 3 rows (A4 body width); portrait=false → 3 cols × 3 rows (16:9 slide)
 function photoPageContent(photos, portrait, bodyW) {
   const COLS   = portrait ? 2 : 3;
-  const ROWS   = 3;
   const PAD    = 5;
-  const CAP_H  = portrait ? 20 : 14;
+  const CAP_H  = portrait ? 18 : 14;
   const cellW  = bodyW / COLS;
-  const cellH  = portrait ? 140 : 100;
   const IMG_W  = cellW - PAD*2;
-  const IMG_H  = cellH - CAP_H - PAD*2;
+  // Max height per image — aspect-ratio preserved by pdfmake fit
+  const IMG_MAX_H = portrait ? 170 : 105;
 
   const colStacks = Array.from({length:COLS}, () => []);
-  photos.slice(0, COLS*ROWS).forEach((p, i) => {
+  photos.slice(0, COLS * (portrait?3:3)).forEach((p, i) => {
     const col = i % COLS;
     const cap = [p.date, p.reporter, p.lpc].filter(Boolean).join(' // ');
     colStacks[col].push(
       p.dataUrl
-        ? { image: p.dataUrl, width:IMG_W, height:IMG_H, margin:[PAD,PAD,PAD,2] }
-        : { canvas:[{type:'rect',x:PAD,y:PAD,w:IMG_W,h:IMG_H,r:3,color:'F3F4F6',lineColor:'D1D5DB',lineWidth:1}], margin:[0,PAD,0,2] },
+        // fit:[w,h] scales image to fit within box while preserving aspect ratio
+        ? { image: p.dataUrl, fit:[IMG_W, IMG_MAX_H], margin:[PAD, PAD, PAD, 2] }
+        : { canvas:[{type:'rect',x:PAD,y:PAD,w:IMG_W,h:IMG_MAX_H,r:3,color:'F3F4F6',lineColor:'D1D5DB',lineWidth:1}], margin:[0,PAD,0,2] },
       { text: cap || '—', fontSize: portrait?7:6, color:'6B7280', margin:[PAD,0,PAD,PAD] }
     );
   });
@@ -1361,15 +1361,25 @@ async function buildSlidesPDF(proj, range, wrRows, attRows, bRows, pRows, fetche
   const th = (text, opts={}) => ({ text, bold:true, color:C.white, fillColor:C.forest, fontSize:8, ...opts });
   const td = (text, opts={}) => ({ text:String(text??'—'), fontSize:8, ...opts });
 
-  // Header band — canvas rect + overlay text
+  // Header band — dark green table spanning full content width
   function slide(title, subtitle='') {
-    return [
-      { canvas:[{type:'rect',x:0,y:0,w:PW,h:HEADER_H,color:C.forest}], absolutePosition:{x:0,y:0} },
-      { text:title, fontSize:15, bold:true, color:C.white, absolutePosition:{x:MAR,y:12} },
-      { text:`${projLabel}  ·  ${range.label}`, fontSize:7, color:C.mint, alignment:'right', absolutePosition:{x:0,y:14}, margin:[0,0,MAR,0] },
-      ...(subtitle ? [{ text:subtitle, fontSize:8, color:C.leaf, italics:true, absolutePosition:{x:MAR,y:32} }] : []),
-      { text:'', margin:[0, BODY_TOP, 0, 0] },
-    ];
+    return [{
+      table: {
+        widths: ['*', 'auto'],
+        body: [[
+          { stack: [
+            { text: title, fontSize: 14, bold: true, color: C.white, margin:[0,0,0,subtitle?2:0] },
+            ...(subtitle ? [{ text: subtitle, fontSize: 7, color: C.leaf, italics: true }] : []),
+          ], margin:[0,7,0,7] },
+          { text: `${projLabel}  ·  ${range.label}`, fontSize: 6.5, color: C.mint,
+            alignment: 'right', margin:[0,10,0,0] },
+        ]],
+      },
+      layout: { hLineWidth:()=>0, vLineWidth:()=>0,
+        fillColor:()=>C.forest, paddingLeft:()=>0, paddingRight:()=>0,
+        paddingTop:()=>0, paddingBottom:()=>0 },
+      margin:[0,0,0,8],
+    }];
   }
 
   function kpiCols(kpis) {
@@ -1397,12 +1407,24 @@ async function buildSlidesPDF(proj, range, wrRows, attRows, bRows, pRows, fetche
 
   // ── Slide 1: Cover ──────────────────────────────────────────────────
   addSlide([
-    { canvas:[{type:'rect',x:0,y:0,w:PW,h:PH,color:C.forest}], absolutePosition:{x:0,y:0} },
-    { canvas:[{type:'rect',x:0,y:PH-90,w:PW,h:90,color:C.leaf}], absolutePosition:{x:0,y:0} },
-    { text:'EcoAct Weekly Field Report', fontSize:26, bold:true, color:C.white, alignment:'center', absolutePosition:{x:0,y:110} },
-    { text:`Project ${projLabel}`, fontSize:16, color:C.mint, alignment:'center', absolutePosition:{x:0,y:158} },
-    { text:range.label, fontSize:12, color:C.mint, alignment:'center', absolutePosition:{x:0,y:185} },
-    { text:`Generated: ${generated}  ·  For EcoAct / Schneider Electric`, fontSize:10, color:C.forest, alignment:'center', absolutePosition:{x:0,y:PH-68} },
+    {
+      table: {
+        widths: ['*'],
+        body: [
+          [{ text: 'EcoAct Weekly Field Report', fontSize: 26, bold: true,
+             color: C.white, alignment: 'center', margin: [0, 80, 0, 16] }],
+          [{ text: `Project ${projLabel}`, fontSize: 16, color: C.mint,
+             alignment: 'center', margin: [0, 0, 0, 8] }],
+          [{ text: range.label, fontSize: 12, color: C.mint,
+             alignment: 'center', margin: [0, 0, 0, 60] }],
+          [{ text: `Generated: ${generated}  ·  For EcoAct / Schneider Electric`,
+             fontSize: 10, color: C.leaf, alignment: 'center', margin: [0, 0, 0, 12] }],
+        ],
+      },
+      layout: { hLineWidth:()=>0, vLineWidth:()=>0, fillColor:()=>C.forest,
+        paddingLeft:()=>MAR, paddingRight:()=>MAR, paddingTop:()=>0, paddingBottom:()=>0 },
+      margin: [-MAR, -HEADER_H, -MAR, 0],
+    },
   ]);
 
   // ── Slide 2: Contents ───────────────────────────────────────────────
@@ -1456,22 +1478,29 @@ async function buildSlidesPDF(proj, range, wrRows, attRows, bRows, pRows, fetche
         days.map(d=>td(d.count, {alignment:'center', fontSize:9, bold:d.count>0})),
       ]},
       layout:{...tableLayout, fillColor:(i)=>i===0?C.forest:C.white},
-      margin:[0,6,0,10],
+      margin:[0,6,0,8],
     },
-    // Mini bar chart via canvas rectangles
+    // Bar chart — canvas uses top-left origin; bars grow downward from top
     (() => {
       const maxC = Math.max(...days.map(d=>d.count), 1);
-      const barW = Math.floor((CW - (days.length-1)*2) / days.length);
-      const maxBarH = BODY_H - 90;
-      const rects = days.map((d,i) => ({
-        type:'rect',
-        x: i*(barW+2),
-        y: maxBarH - Math.round(d.count/maxC*maxBarH),
-        w: barW,
-        h: Math.max(2, Math.round(d.count/maxC*maxBarH)),
-        color: C.leaf,
-      }));
-      return { canvas:rects, margin:[0,6,0,0] };
+      const chartH = 160;
+      const chartW = CW;
+      const gap = 3;
+      const barW = Math.max(4, Math.floor((chartW - gap*(days.length-1)) / days.length));
+      const rects = days.map((d,i) => {
+        const bh = Math.max(2, Math.round(d.count/maxC * (chartH-4)));
+        return {
+          type:'rect',
+          x: i*(barW+gap),
+          y: chartH - bh,   // top-left origin, bar hangs from bottom
+          w: barW,
+          h: bh,
+          color: d.count > 0 ? C.leaf : 'E5E7EB',
+        };
+      });
+      // Baseline
+      rects.push({ type:'line', x1:0, y1:chartH, x2:chartW, y2:chartH, lineWidth:0.5, lineColor:C.rule });
+      return { canvas: rects, margin:[0,0,0,0] };
     })(),
   ]);
 
@@ -1534,11 +1563,16 @@ async function buildSlidesPDF(proj, range, wrRows, attRows, bRows, pRows, fetche
     addSlide([
       ...slide('Geographic Coverage','Field report GPS coordinates for the period'),
       { text:`${gpsRows.length} of ${wrRows.length} work reports carry GPS coordinates.`, fontSize:11, margin:[0,0,0,6] },
-      { text:`Bounding box: ${bboxText}`, fontSize:10, color:C.mid, margin:[0,0,0,16] },
-      { canvas:[{type:'rect',x:0,y:0,w:CW,h:BODY_H-80,r:4,color:'F3F4F6',lineColor:'D1D5DB',lineWidth:1}] },
-      { text:'[ Insert map screenshot here — paste from Daily Report dashboard or GEE ]',
-        fontSize:11, color:C.mid, italics:true, alignment:'center',
-        absolutePosition:{x:MAR, y:PH/2-10} },
+      { text:`Bounding box: ${bboxText}`, fontSize:10, color:C.mid, margin:[0,0,0,10] },
+      {
+        table:{ widths:['*'], body:[[
+          { text:'[ Insert map screenshot here — paste from Daily Report dashboard or GEE ]',
+            fontSize:12, color:C.mid, italics:true, alignment:'center',
+            margin:[0,60,0,60] },
+        ]]},
+        layout:{ hLineWidth:()=>0.5, vLineWidth:()=>0.5, hLineColor:()=>'D1D5DB', vLineColor:()=>'D1D5DB',
+          fillColor:()=>'F3F4F6' },
+      },
     ]);
   }
 
@@ -1634,16 +1668,19 @@ async function buildSlidesPDF(proj, range, wrRows, attRows, bRows, pRows, fetche
   addSlide([
     ...slide('Ask','TF → EcoAct'),
     ...[
-      {label:'🟢  Decision needed', bg:'F0FDF4', bc:'86EFAC', tc:'166534', text:'[ e.g. Approve extension of planting window to 30 Sep ]'},
-      {label:'🟡  Input requested',  bg:'FEFCE8', bc:'FDE68A', tc:'92400E', text:'[ e.g. Confirm GPS accuracy threshold for VVB submission ]'},
-      {label:'🔵  Resource / support',bg:'EFF6FF', bc:'BFDBFE', tc:'1E40AF', text:'[ e.g. EcoAct to share updated MRV schedule ]'},
-    ].map((a,i) => ({
-      stack:[
-        {canvas:[{type:'rect',x:0,y:0,w:CW,h:58,r:4,color:a.bg,lineColor:a.bc,lineWidth:1}]},
-        {text:a.label, fontSize:10, bold:true, color:a.tc, absolutePosition:{x:MAR+10, y:BODY_TOP+8+i*72}},
-        {text:a.text,  fontSize:10,            color:C.dark,  absolutePosition:{x:MAR+10, y:BODY_TOP+26+i*72}},
-      ],
-      margin:[0, i===0?6:14, 0, 0],
+      {label:'🟢  Decision needed',  bg:'F0FDF4', lc:'86EFAC', tc:'166534', text:'[ e.g. Approve extension of planting window to 30 Sep ]'},
+      {label:'🟡  Input requested',  bg:'FEFCE8', lc:'FDE68A', tc:'92400E', text:'[ e.g. Confirm GPS accuracy threshold for VVB submission ]'},
+      {label:'🔵  Resource / support',bg:'EFF6FF', lc:'BFDBFE', tc:'1E40AF', text:'[ e.g. EcoAct to share updated MRV schedule ]'},
+    ].map((a, i) => ({
+      table:{ widths:['*'], body:[[
+        { stack:[
+          {text:a.label, fontSize:10, bold:true, color:a.tc, margin:[0,0,0,6]},
+          {text:a.text,  fontSize:10, color:C.dark},
+        ], margin:[10,10,10,10] },
+      ]]},
+      layout:{ hLineWidth:()=>1, vLineWidth:()=>1,
+        hLineColor:()=>a.lc, vLineColor:()=>a.lc, fillColor:()=>a.bg },
+      margin:[0, i===0?4:10, 0, 0],
     })),
   ]);
 
@@ -1652,7 +1689,7 @@ async function buildSlidesPDF(proj, range, wrRows, attRows, bRows, pRows, fetche
 
   const dd = {
     pageSize: { width:PW, height:PH },
-    pageMargins: [MAR, HEADER_H+6, MAR, 22],
+    pageMargins: [MAR, MAR, MAR, 22],
     content,
     defaultStyle: { font:'Roboto', fontSize:9, color:C.dark },
     footer: () => ({
