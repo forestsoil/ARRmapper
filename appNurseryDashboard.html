@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard v22 · Asha 1</title>
+<title>Nursery Dashboard v24 · Asha 1</title>
 <link rel="stylesheet" href="arr-shared.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -676,16 +676,21 @@ async function saveStump() {
 
     <div class="dash-card full">
       <div class="dash-card-hdr">
-        <h3>Plan vs Dispatched — by Species</h3>
-        <select class="field-select" style="width:auto;padding:4px 8px;font-size:11px" id="chart-source-filter" onchange="renderPlanChart()">
-          <option value="ALL">All Sources</option>
-          <option value="SALS">TF Salsalabari</option>
-          <option value="GRAS">TF Grassmore</option>
-          <option value="MSAL">Mujaffar - Salsalabari</option>
-          <option value="MJAL">Mujaffar - Jalpaiguri</option>
-          <option value="MEHB">Meheboob Nursery</option>
-          <option value="CHAL">MS Nursery Chalsa</option>
-        </select>
+        <h3>Stock vs Dispatched — by Species</h3>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select class="field-select" style="width:auto;padding:4px 8px;font-size:11px" id="chart-year-filter" onchange="renderPlanChart()">
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+          </select>
+          <select class="field-select" style="width:auto;padding:4px 8px;font-size:11px" id="chart-source-filter" onchange="renderPlanChart()">
+            <option value="ALL">All Sources</option>
+            <option value="SALS">TF Salsalabari</option>
+            <option value="GRAS">TF Grassmore</option>
+            <option value="MSAL">Mujaffar - Salsalabari</option>
+            <option value="MEHB">Meheboob Nursery</option>
+          </select>
+          <button onclick="openModal('planview')" style="padding:4px 12px;font-size:11px;font-weight:700;background:var(--leaf);color:#fff;border:none;border-radius:6px;cursor:pointer">📋 Plans</button>
+        </div>
       </div>
       <div class="dash-card-body">
         <canvas id="plan-chart" height="180"></canvas>
@@ -1278,6 +1283,29 @@ async function saveStump() {
 </div>
 </div>
 
+<!-- ═══ PLAN VIEW MODAL ═══ -->
+<div class="modal-bg" id="modal-planview">
+<div class="modal" style="max-width:780px">
+<div class="modal-hdr">
+  <div style="flex:1">
+    <h2>📋 Nursery Plans</h2>
+    <p>Species × Source breakdown — carbon species only</p>
+  </div>
+  <button class="modal-close" onclick="closeModal('planview')">✕</button>
+</div>
+<div class="modal-body" style="padding:0">
+  <div style="display:flex;border-bottom:1px solid var(--rule);background:var(--mint)">
+    <button class="plan-tab active" id="plan-tab-2026" onclick="switchPlanTab(2026)" style="flex:1;padding:10px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;border-bottom:3px solid var(--leaf);color:var(--forest);font-family:var(--font)">2026</button>
+    <button class="plan-tab" id="plan-tab-2027" onclick="switchPlanTab(2027)" style="flex:1;padding:10px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;color:var(--mid);font-family:var(--font)">2027</button>
+  </div>
+  <div style="overflow-x:auto;padding:16px" id="plan-table-wrap"></div>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-secondary" onclick="closeModal('planview')">Close</button>
+</div>
+</div>
+</div>
+
 <!-- ═══ SEED RECEIPT MODAL ═══ -->
 <div class="modal-bg" id="modal-seed">
 <div class="modal">
@@ -1452,7 +1480,7 @@ async function saveStump() {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════
 
-const APP_VERSION = 'nursery_v22';
+const APP_VERSION = 'nursery_v24';
 
 const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec';
 
@@ -1474,18 +1502,21 @@ const SPECIES = [
 ];
 
 // 2026 plan per source (carbon species only, from blob)
-const PLAN_2026 = {
-  SALS:{ TK:100000,MHG:10000,CKS:10000,GMR:20000,KSR:20000,PNS:25000,SML:40000,NM:0,    KTH:5000, JM:25000,JRL:20000,KHR:15000,CHP:10000 },
-  GRAS:{ TK:100000,MHG:10000,CKS:10000,GMR:20000,KSR:20000,PNS:25000,SML:40000,NM:0,    KTH:5000, JM:25000,JRL:20000,KHR:15000,CHP:10000 },
-  MSAL:{ TK:30000, MHG:10000,CKS:10000,GMR:20000,KSR:20000,PNS:0,    SML:0,    NM:10000,KTH:10000,JM:10000,JRL:20000,KHR:0,    CHP:20000 },
-  MEHB:{ TK:20000, MHG:0,    CKS:0,    GMR:10000,KSR:10000,PNS:0,    SML:0,    NM:0,    KTH:0,    JM:0,    JRL:10000,KHR:10000,CHP:0    },
-  MJAL:{ legacy:true },
-  CHAL:{ legacy:true }
-};
+// Live plans pulled from GSheet Plans tab — keyed by year then source
+// Empty until first pull; app shows zeros until then
+let _livePlans = null;
 
-// Total plan per species (all active sources)
-function totalPlanForSpp(code) {
-  return ['SALS','GRAS','MSAL','MEHB'].reduce((s,src) => s + (PLAN_2026[src][code]||0), 0);
+function getPlanData(year) {
+  return (_livePlans && _livePlans[year]) ? _livePlans[year] : {};
+}
+
+// Active plan sources (non-legacy)
+const PLAN_SOURCES = ['SALS','GRAS','MSAL','MEHB'];
+
+// Total plan per species across active sources for a given year
+function totalPlanForSpp(code, year=2026) {
+  const p = getPlanData(year);
+  return PLAN_SOURCES.reduce((s,src) => s + (p[src]?.[code]||0), 0);
 }
 
 const SOURCES = [
@@ -1610,8 +1641,8 @@ function sppName(sp) {
 // INDEXEDDB
 // ═══════════════════════════════════════════════════════
 let _db = null;
-const DB_NAME = 'NurseryDB'; const DB_VER = 2;
-const STORES = ['dispatches','seedtrees','inspections','receives','seeds','stumps','queue'];
+const DB_NAME = 'NurseryDB'; const DB_VER = 3;
+const STORES = ['dispatches','seedtrees','inspections','receives','seeds','stumps','plans','queue'];
 
 async function openDB() {
   if (_db) return _db;
@@ -2248,6 +2279,17 @@ async function pullFromSheet() {
       stumpCount++;
     }
 
+    // Plans — overwrite always (reference data, not append)
+    if (data.plans && data.plans.length) {
+      for (const row of data.plans) {
+        if (!row.year || !row.source) continue;
+        const rec = { id: `${row.year}_${row.source}`, year: parseInt(row.year), source: row.source };
+        SPECIES.forEach(sp => { rec[sp.code] = parseInt(row[sp.code]) || 0; });
+        await dbPut('plans', rec);
+      }
+      await loadLivePlans();
+    }
+
     toast(`✓ Pulled: ${dCount} dispatches, ${sCount} seed trees, ${iCount} inspections, ${seedCount} seed lots, ${stumpCount} stump records`, 'success', 8000);
     refreshDashboard();
   } catch(err) {
@@ -2337,48 +2379,72 @@ async function updateKPIs() {
 }
 
 async function renderPlanChart() {
-  const dispatches = await dbGetAll('dispatches');
-  const srcFilter  = document.getElementById('chart-source-filter').value;
+  const dispatches   = await dbGetAll('dispatches');
+  const inspections  = await dbGetAll('inspections');
+  const srcFilter    = document.getElementById('chart-source-filter').value;
+  const year         = parseInt(document.getElementById('chart-year-filter').value) || 2026;
 
-  const filtered = srcFilter==='ALL' ? dispatches : dispatches.filter(d=>d.source===srcFilter);
+  const filtDisp = srcFilter === 'ALL' ? dispatches : dispatches.filter(d => d.source === srcFilter);
 
-  const labels = SPECIES.filter(s=>s.carbon).map(s=>sppName(s));
-  const planVals = SPECIES.filter(s=>s.carbon).map(sp => {
-    if (srcFilter==='ALL') return totalPlanForSpp(sp.code);
-    return PLAN_2026[srcFilter] ? (PLAN_2026[srcFilter][sp.code]||0) : 0;
+  // Latest inspection per source → stock
+  const latestBySrc = {};
+  inspections.forEach(r => {
+    if (!r.source || !r.stock) return;
+    if (!latestBySrc[r.source] || (r.date||'') > (latestBySrc[r.source].date||'')) latestBySrc[r.source] = r;
   });
-  const dispVals = SPECIES.filter(s=>s.carbon).map(sp =>
-    filtered.reduce((sum,d)=>sum+(d.species?.[sp.code]||0),0)
+
+  const carbonSpp = SPECIES.filter(s => s.carbon);
+  const labels    = carbonSpp.map(s => sppName(s));
+
+  const stockVals = carbonSpp.map(sp => {
+    if (srcFilter === 'ALL') {
+      return PLAN_SOURCES.reduce((s, src) => s + (latestBySrc[src]?.stock?.[sp.code] || 0), 0);
+    }
+    return latestBySrc[srcFilter]?.stock?.[sp.code] || 0;
+  });
+
+  const dispVals = carbonSpp.map(sp =>
+    filtDisp.reduce((sum, d) => sum + (d.species?.[sp.code] || 0), 0)
   );
+
+  const planData = getPlanData(year);
+  const planVals = carbonSpp.map(sp => {
+    if (srcFilter === 'ALL') return totalPlanForSpp(sp.code, year);
+    return planData[srcFilter]?.[sp.code] || 0;
+  });
 
   if (_planChart) _planChart.destroy();
   const ctx = document.getElementById('plan-chart').getContext('2d');
   _planChart = new Chart(ctx, {
-    type:'bar',
-    data:{
+    type: 'bar',
+    data: {
       labels,
-      datasets:[
-        { label:'Plan 2026', data:planVals, backgroundColor:'rgba(82,183,136,.25)', borderColor:'#52b788', borderWidth:1.5, borderRadius:4 },
-        { label:'Dispatched', data:dispVals, backgroundColor:'rgba(45,106,79,.7)', borderColor:'#2d6a4f', borderWidth:1, borderRadius:4 }
+      datasets: [
+        { label: `Plan ${year}`,   data: planVals,  backgroundColor: 'rgba(82,183,136,.2)',  borderColor: '#52b788', borderWidth: 1.5, borderRadius: 4 },
+        { label: 'Current Stock',  data: stockVals, backgroundColor: 'rgba(3,105,161,.55)',  borderColor: '#0369a1', borderWidth: 1,   borderRadius: 4 },
+        { label: 'Dispatched',     data: dispVals,  backgroundColor: 'rgba(45,106,79,.75)',  borderColor: '#2d6a4f', borderWidth: 1,   borderRadius: 4 },
       ]
     },
-    options:{ responsive:true, plugins:{legend:{position:'top'}}, scales:{ y:{ beginAtZero:true } } }
+    options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
   });
 }
 
 async function renderSourceTable() {
   const dispatches = await dbGetAll('dispatches');
+  const year = parseInt(document.getElementById('chart-year-filter')?.value) || 2026;
+  const planData = getPlanData(year);
   const tbody = document.getElementById('source-tbody');
   tbody.innerHTML = '';
   SOURCES.forEach(src => {
-    const plan = src.type==='leg' ? '—' : fmtNum(Object.values(PLAN_2026[src.code]||{}).reduce((s,v)=>s+(typeof v==='number'?v:0),0));
-    const disp = fmtNum(dispatches.filter(d=>d.source===src.code).reduce((s,d)=>s+(d.total||0),0));
-    const planN= src.type==='leg' ? 0 : Object.values(PLAN_2026[src.code]||{}).reduce((s,v)=>s+(typeof v==='number'?v:0),0);
-    const dispN= dispatches.filter(d=>d.source===src.code).reduce((s,d)=>s+(d.total||0),0);
-    const rem  = src.type==='leg' ? '—' : fmtNum(Math.max(0,planN-dispN));
-    const badge= src.type==='own'?'src-own':src.type==='ext'?'src-ext':'src-leg';
-    const typeLabel= src.type==='own'?'TF Own':src.type==='ext'?'External':'Legacy';
-    const pct  = planN>0 ? Math.min(100,Math.round(dispN/planN*100)) : 0;
+    const p     = src.type === 'leg' ? null : planData[src.code];
+    const planN = p ? Object.values(p).reduce((s,v) => s + (typeof v==='number' ? v : 0), 0) : 0;
+    const dispN = dispatches.filter(d => d.source === src.code).reduce((s,d) => s + (d.total||0), 0);
+    const plan  = src.type === 'leg' ? '—' : fmtNum(planN);
+    const disp  = fmtNum(dispN);
+    const rem   = src.type === 'leg' ? '—' : fmtNum(Math.max(0, planN - dispN));
+    const badge = src.type==='own' ? 'src-own' : src.type==='ext' ? 'src-ext' : 'src-leg';
+    const typeLabel = src.type==='own' ? 'TF Own' : src.type==='ext' ? 'External' : 'Legacy';
+    const pct   = planN > 0 ? Math.min(100, Math.round(dispN / planN * 100)) : 0;
     tbody.innerHTML += `<tr>
       <td>${src.label}</td>
       <td><span class="src-badge ${badge}">${typeLabel}</span></td>
@@ -2502,7 +2568,96 @@ async function renderSeedStumpOverview() {
 }
 
 // ═══════════════════════════════════════════════════════
-// SEED MAP
+// PLAN VIEW MODAL
+// ═══════════════════════════════════════════════════════
+let _planTabYear = 2026;
+
+function openModal(id) {
+  if (id === 'planview') renderPlanTable(_planTabYear);
+  document.getElementById('modal-' + id).classList.add('open');
+}
+
+function switchPlanTab(year) {
+  _planTabYear = year;
+  [2026, 2027].forEach(y => {
+    const tab = document.getElementById('plan-tab-' + y);
+    if (!tab) return;
+    tab.style.borderBottomColor = y === year ? 'var(--leaf)' : 'transparent';
+    tab.style.color = y === year ? 'var(--forest)' : 'var(--mid)';
+    tab.style.fontWeight = y === year ? '700' : '600';
+  });
+  renderPlanTable(year);
+}
+
+function renderPlanTable(year) {
+  const wrap = document.getElementById('plan-table-wrap');
+  if (!wrap) return;
+  const planData = getPlanData(year);
+  const carbonSpp = SPECIES.filter(s => s.carbon);
+  const srcLabels = {
+    SALS: 'TF Salsalabari', GRAS: 'TF Grassmore',
+    MSAL: 'Mujaffar', MEHB: 'Meheboob'
+  };
+
+  let html = `<table class="data-table" style="min-width:560px;font-size:11px">
+    <thead><tr>
+      <th>Species</th>
+      ${PLAN_SOURCES.map(s => `<th class="num">${srcLabels[s]}</th>`).join('')}
+      <th class="num" style="background:var(--mint);font-weight:800">Total</th>
+    </tr></thead><tbody>`;
+
+  carbonSpp.forEach(sp => {
+    const vals = PLAN_SOURCES.map(src => planData[src]?.[sp.code] || 0);
+    const total = vals.reduce((a, b) => a + b, 0);
+    html += `<tr>
+      <td>${sp.local}</td>
+      ${vals.map(v => `<td class="num">${v > 0 ? fmtNum(v) : '—'}</td>`).join('')}
+      <td class="num" style="font-weight:700">${fmtNum(total)}</td>
+    </tr>`;
+  });
+
+  // Totals row
+  const colTotals = PLAN_SOURCES.map(src =>
+    carbonSpp.reduce((s, sp) => s + (planData[src]?.[sp.code] || 0), 0)
+  );
+  const grandTotal = colTotals.reduce((a, b) => a + b, 0);
+  html += `<tr style="border-top:2px solid var(--rule);font-weight:700;background:var(--mint)">
+    <td>Total (carbon)</td>
+    ${colTotals.map(v => `<td class="num">${fmtNum(v)}</td>`).join('')}
+    <td class="num">${fmtNum(grandTotal)}</td>
+  </tr>`;
+
+  // Lemon row
+  const lemonVals = PLAN_SOURCES.map(src => planData[src]?.LMN || 0);
+  const lemonTotal = lemonVals.reduce((a, b) => a + b, 0);
+  if (lemonTotal > 0) {
+    html += `<tr style="color:#92400e;font-style:italic">
+      <td>🍋 Lemon (Lebu)</td>
+      ${lemonVals.map(v => `<td class="num">${v > 0 ? fmtNum(v) : '—'}</td>`).join('')}
+      <td class="num">${fmtNum(lemonTotal)}</td>
+    </tr>`;
+  }
+
+  html += '</tbody></table>';
+  const src = _livePlans ? 'Live from GSheet' : 'Fallback — pull from sheet to refresh';
+  html += `<div style="font-size:10px;color:var(--mid);margin-top:8px;font-style:italic">Source: ${src}</div>`;
+  wrap.innerHTML = html;
+}
+
+// ── Load live plans from IDB (populated by pull) ─────────────────────
+async function loadLivePlans() {
+  const rows = await dbGetAll('plans');
+  if (!rows || !rows.length) return;
+  const built = {};
+  rows.forEach(r => {
+    if (!built[r.year]) built[r.year] = {};
+    built[r.year][r.source] = {};
+    SPECIES.forEach(sp => { built[r.year][r.source][sp.code] = r[sp.code] || 0; });
+  });
+  if (Object.keys(built).length) _livePlans = built;
+}
+
+
 // ═══════════════════════════════════════════════════════
 let _map = null;
 let _markers = [];
@@ -2688,6 +2843,7 @@ window.addEventListener('offline', updateConnectivity);
 async function init() {
   initThemeBtn();
   await openDB();
+  await loadLivePlans();
   buildSpeciesGrids();
   buildReceiveGrid();
   applyI18N();
