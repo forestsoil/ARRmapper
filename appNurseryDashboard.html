@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard v14 · Asha 1</title>
+<title>Nursery Dashboard v19 · Asha 1</title>
 <link rel="stylesheet" href="arr-shared.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -231,6 +231,103 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
   header{padding:12px 16px}
   main{padding:16px 12px 48px}
 }
+
+/* ── DARK MODE FORM INPUTS ── */
+[data-theme="dark"] .field-input,
+[data-theme="dark"] .field-select,
+[data-theme="dark"] .field-textarea {
+  background: #1e3a2f;
+  color: var(--ink);
+  border-color: #3d6b55;
+}
+[data-theme="dark"] .field-input[readonly] {
+  background: #152b22;
+  color: var(--mid);
+}
+[data-theme="dark"] .chip {
+  background: #1e3a2f;
+  color: var(--ink);
+  border-color: #3d6b55;
+}
+[data-theme="dark"] .spp-inp {
+  background: #1e3a2f;
+  color: var(--ink);
+  border-color: #3d6b55;
+}
+[data-theme="dark"] .spp-inp.dispatched {
+  background: #14532d;
+  border-color: var(--leaf);
+}
+[data-theme="dark"] .spp-row {
+  background: #111f18;
+}
+[data-theme="dark"] .spp-hdr {
+  background: #162a1e;
+}
+[data-theme="dark"] .spp-row.lemon-row {
+  background: #231a00;
+}
+[data-theme="dark"] .tile-action-btn {
+  color: var(--mid);
+}
+[data-theme="dark"] .tile-action-btn:hover {
+  background: #1e3a2f;
+  color: var(--ink);
+}
+[data-theme="dark"] .modal {
+  background: #111f18;
+}
+[data-theme="dark"] .modal-body {
+  background: #111f18;
+}
+[data-theme="dark"] .modal-footer {
+  background: #111f18;
+  border-color: #2d4d3a;
+}
+[data-theme="dark"] .btn-secondary {
+  background: #1e3a2f;
+  color: var(--mid);
+  border-color: #3d6b55;
+}
+[data-theme="dark"] .data-table th {
+  background: #162a1e;
+  color: var(--mid);
+}
+[data-theme="dark"] .data-table td {
+  color: var(--ink);
+}
+[data-theme="dark"] .kpi-card {
+  background: #111f18;
+}
+[data-theme="dark"] .form-tile {
+  background: #111f18;
+}
+[data-theme="dark"] .tile-name {
+  color: var(--leaf);
+}
+[data-theme="dark"] .dash-card {
+  background: #111f18;
+}
+[data-theme="dark"] .lang-btn {
+  color: var(--mist);
+}
+[data-theme="dark"] .lang-btn.active {
+  background: var(--leaf);
+  color: #fff;
+}
+[data-theme="dark"] #rec-panel table thead tr th {
+  background: #162a1e;
+  color: var(--mid);
+}
+[data-theme="dark"] #rec-panel table tbody tr:nth-child(even) {
+  background: #162a1e;
+}
+[data-theme="dark"] .spp-row-stid input {
+  background: #1e3a2f;
+  color: var(--ink);
+  border-color: #3d6b55;
+}
+
 </style>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <script>
@@ -301,6 +398,98 @@ function arrAuthRenderChip(containerId, onSignOut) {
   };
 }
 
+// ═══════════════════════════════════════════════════════
+// RECEIVE (3rd party inbound)
+// ═══════════════════════════════════════════════════════
+let _receivePhotoB64 = null;
+
+function buildReceiveGrid() {
+  const g = document.getElementById('rcv-spp-grid');
+  if (!g) return;
+  g.innerHTML = `<div class="spp-hdr"><span>Species</span><span>Polybag</span><span>Count</span></div>`;
+  SPECIES.forEach(sp => {
+    const row = document.createElement('div');
+    row.className = 'spp-row' + (!sp.carbon ? ' lemon-row' : '');
+    row.innerHTML = `
+      <div class="spp-name${!sp.carbon?' lemon':''}">${sppName(sp)}${!sp.carbon?' 🍋':''}</div>
+      <div class="spp-plan">${sp.polybag}"</div>
+      <input type="number" min="0" class="spp-inp" id="rcv-spp-${sp.code}" placeholder="0">`;
+    g.appendChild(row);
+  });
+}
+
+async function onReceivePhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const capTs = new Date().toLocaleString();
+  const b64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Read failed'));
+    r.readAsDataURL(file);
+  });
+  _receivePhotoB64 = b64;
+  document.getElementById('rcv-photo-img').src = 'data:image/jpeg;base64,' + b64;
+  document.getElementById('rcv-photo-ts').textContent = '📷 Captured: ' + capTs;
+  document.getElementById('rcv-photo-preview').style.display = 'block';
+  document.getElementById('rcv-photo-camera').value = '';
+  document.getElementById('rcv-photo-gallery').value = '';
+}
+
+function clearReceivePhoto() {
+  _receivePhotoB64 = null;
+  document.getElementById('rcv-photo-preview').style.display = 'none';
+  document.getElementById('rcv-photo-img').src = '';
+  document.getElementById('rcv-photo-camera').value = '';
+  document.getElementById('rcv-photo-gallery').value = '';
+}
+
+async function saveReceive() {
+  const date       = document.getElementById('rcv-date').value;
+  const source     = document.getElementById('rcv-source').value;
+  const dest       = document.getElementById('rcv-destination').value;
+  const challan    = document.getElementById('rcv-challan').value.trim();
+  const receivedBy = document.getElementById('rcv-received-by').value.trim();
+  const vehicleNo  = document.getElementById('rcv-vehicle-no').value.trim();
+  const quality    = getChipVal('rcv-quality', true);
+  const remarks    = document.getElementById('rcv-remarks').value.trim();
+
+  if (!date || !source || !dest) { toast('Fill required fields', 'warn'); return; }
+
+  const sppCounts = {};
+  let total = 0;
+  SPECIES.forEach(sp => {
+    const v = parseInt(document.getElementById('rcv-spp-'+sp.code)?.value)||0;
+    if (v > 0) { sppCounts[sp.code] = v; total += v; }
+  });
+
+  if (total === 0) { toast('Enter at least one species count', 'warn'); return; }
+
+  const rec = {
+    id: uuid(), form: 'receive', ts: ts(),
+    date, source, destination: dest,
+    challan: challan || null,
+    received_by: receivedBy || null,
+    vehicle_no: vehicleNo || null,
+    quality: quality || null,
+    remarks: remarks || null,
+    species: sppCounts,
+    total,
+    delivery_photo_b64: _receivePhotoB64 || null,
+    uploaded: false
+  };
+
+  await dbPut('receives', rec);
+  await enqueue(rec);
+  clearReceivePhoto();
+  closeModal('receive');
+  toast(`✓ Receive saved — ${fmtNum(total)} saplings from ${source}`, 'success');
+  refreshDashboard();
+}
+
+
+// buildReceiveGrid() called inside init() below
+
 </script>
 </head>
 <body>
@@ -342,7 +531,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
 
   <div class="kpi-row" id="kpi-row">
     <div class="kpi-card">
-      <div class="kpi-val" id="kpi-total-plan">820,000</div>
+      <div class="kpi-val" id="kpi-total-plan">—</div>
       <div class="kpi-label">Total Planned (carbon spp)</div>
     </div>
     <div class="kpi-card">
@@ -357,6 +546,11 @@ function arrAuthRenderChip(containerId, onSignOut) {
       <div class="kpi-val" id="kpi-queue">0</div>
       <div class="kpi-label">Pending Upload</div>
     </div>
+    <div class="kpi-card">
+      <div class="kpi-val" id="kpi-stock-total">—</div>
+      <div class="kpi-label">Stock at Nurseries</div>
+      <div class="kpi-sub" id="kpi-stock-date">no inspection yet</div>
+    </div>
   </div>
 
   <div class="dash-grid">
@@ -368,8 +562,10 @@ function arrAuthRenderChip(containerId, onSignOut) {
           <option value="ALL">All Sources</option>
           <option value="SALS">TF Salsalabari</option>
           <option value="GRAS">TF Grassmore</option>
-          <option value="MSAL">Monirul (Salsalabari)</option>
-          <option value="MEHB">Mehboob (Sisubari)</option>
+          <option value="MSAL">Mujaffar - Salsalabari</option>
+          <option value="MJAL">Mujaffar - Jalpaiguri</option>
+          <option value="MEHB">Meheboob Nursery</option>
+          <option value="CHAL">MS Nursery Chalsa</option>
         </select>
       </div>
       <div class="dash-card-body">
@@ -486,6 +682,21 @@ function arrAuthRenderChip(containerId, onSignOut) {
           <span class="ta-icon">⬇</span><span>Get</span>
         </button>
       </div>
+
+    <div class="form-tile" style="--accent:#0369a1" onclick="arrAuthGet()?openForm('receive'):(window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href))" title="Sign in to record received saplings">
+      <div class="tile-icon">📥</div>
+      <div class="tile-name">Sapling Receive</div>
+      <div class="tile-sub">Record inbound sapling delivery from 3rd party nursery — Monirul, Mehboob or other external supplier</div>
+      <div class="tile-actions" onclick="event.stopPropagation()">
+        <button class="tile-action-btn" onclick="viewRecords('receive')" title="Browse receive records">
+          <span class="ta-icon">👁</span><span>View</span>
+        </button>
+        <div class="tile-action-sep"></div>
+        <button class="tile-action-btn" id="get-btn-receive" onclick="getXLSX('receive',this)" title="Download receive records as XLSX">
+          <span class="ta-icon">⬇</span><span>Get</span>
+        </button>
+      </div>
+    </div>
     </div>
 
   </div>
@@ -575,10 +786,10 @@ function arrAuthRenderChip(containerId, onSignOut) {
       <option value="">— Select —</option>
       <option value="SALS">TF Salsalabari (Own)</option>
       <option value="GRAS">TF Grassmore (Own)</option>
-      <option value="MSAL">Monirul — Salsalabari</option>
-      <option value="MEHB">Mehboob (Sisubari)</option>
-      <option value="MJAL">Monirul — Jalpaiguri (Legacy)</option>
-      <option value="CHAL">MS Chalsa (Legacy)</option>
+      <option value="MSAL">Mujaffar Nursery - Salsalabari</option>
+      <option value="MJAL">Mujaffar Nursery - Jalpaiguri</option>
+      <option value="MEHB">Meheboob Nursery</option>
+      <option value="CHAL">MS Nursery Chalsa</option>
     </select>
   </div>
 
@@ -758,10 +969,10 @@ function arrAuthRenderChip(containerId, onSignOut) {
       <option value="">— Select —</option>
       <option value="SALS">TF Salsalabari (Own)</option>
       <option value="GRAS">TF Grassmore (Own)</option>
-      <option value="MSAL">Monirul — Salsalabari</option>
-      <option value="MEHB">Mehboob (Sisubari)</option>
-      <option value="MJAL">Monirul — Jalpaiguri (Legacy)</option>
-      <option value="CHAL">MS Chalsa (Legacy)</option>
+      <option value="MSAL">Mujaffar Nursery - Salsalabari</option>
+      <option value="MJAL">Mujaffar Nursery - Jalpaiguri</option>
+      <option value="MEHB">Meheboob Nursery</option>
+      <option value="CHAL">MS Nursery Chalsa</option>
     </select>
   </div>
 
@@ -801,6 +1012,107 @@ function arrAuthRenderChip(containerId, onSignOut) {
 </div>
 </div>
 
+<!-- ═══ RECEIVE MODAL (Sapling Receive from 3rd party) ═══ -->
+<div class="modal-bg" id="modal-receive">
+<div class="modal">
+<div class="modal-hdr">
+  <div style="flex:1">
+    <h2>📥 Sapling Receive</h2>
+    <p>Record inbound delivery from external / 3rd party nursery</p>
+  </div>
+  <button class="modal-close" onclick="closeModal('receive')">✕</button>
+</div>
+<div class="modal-body">
+
+  <div class="field-group">
+    <label class="field-label">Date</label>
+    <input type="date" class="field-input" id="rcv-date">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Source Nursery (3rd party)</label>
+    <select class="field-select" id="rcv-source">
+      <option value="">— Select —</option>
+      <option value="MSAL">Mujaffar Nursery - Salsalabari</option>
+      <option value="MJAL">Mujaffar Nursery - Jalpaiguri</option>
+      <option value="MEHB">Meheboob Nursery</option>
+      <option value="CHAL">MS Nursery Chalsa</option>
+      <option value="OTHER">Other (specify in remarks)</option>
+    </select>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Receiving TF Nursery</label>
+    <select class="field-select" id="rcv-destination">
+      <option value="">— Select —</option>
+      <option value="SALS">TF Salsalabari</option>
+      <option value="GRAS">TF Grassmore</option>
+    </select>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Challan / Invoice No.</label>
+    <input type="text" class="field-input" id="rcv-challan" placeholder="e.g. MNS/2026/047">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Received by (TF Staff)</label>
+    <input type="text" class="field-input" id="rcv-received-by" placeholder="Name of TF staff accepting delivery">
+  </div>
+
+  <div class="section-hdr">Species Count Received</div>
+  <div class="spp-grid" id="rcv-spp-grid">
+    <div class="spp-hdr">
+      <span>Species</span><span>Polybag</span><span>Count</span>
+    </div>
+  </div>
+
+  <div class="field-group" style="margin-top:16px">
+    <label class="field-label">Vehicle Number</label>
+    <input type="text" class="field-input" id="rcv-vehicle-no" placeholder="e.g. WB 77 A 1234">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Quality Condition</label>
+    <div class="chip-row" id="rcv-quality">
+      <div class="chip" data-val="GOOD" onclick="selChip(this,'rcv-quality',true)">Good</div>
+      <div class="chip" data-val="FAIR" onclick="selChip(this,'rcv-quality',true)">Fair</div>
+      <div class="chip" data-val="POOR" onclick="selChip(this,'rcv-quality',true)">Poor / Rejected</div>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Remarks / Rejections</label>
+    <textarea class="field-input field-textarea" id="rcv-remarks" rows="2" placeholder="Note any species rejected, short counts, or quality issues"></textarea>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Delivery Photo <span style="font-weight:400;color:var(--mid)">(optional)</span></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:8px 14px">
+        📷 Camera
+        <input type="file" accept="image/*" capture="environment" id="rcv-photo-camera" style="display:none" onchange="onReceivePhoto(this)">
+      </label>
+      <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:8px 14px">
+        🖼 Gallery
+        <input type="file" accept="image/*" id="rcv-photo-gallery" style="display:none" onchange="onReceivePhoto(this)">
+      </label>
+    </div>
+    <div id="rcv-photo-preview" style="margin-top:8px;display:none">
+      <img id="rcv-photo-img" style="max-width:100%;max-height:180px;border-radius:8px;border:1.5px solid var(--rule)">
+      <div style="font-size:10px;color:var(--mid);margin-top:4px" id="rcv-photo-ts"></div>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:4px" onclick="clearReceivePhoto()">✕ Remove</button>
+    </div>
+  </div>
+
+</div>
+<div class="modal-footer">
+  <button class="btn btn-secondary" onclick="closeModal('receive')">Cancel</button>
+  <button class="btn btn-primary" onclick="saveReceive()">Save Offline</button>
+</div>
+</div>
+</div>
+
 <script>
 'use strict';
 
@@ -808,7 +1120,7 @@ function arrAuthRenderChip(containerId, onSignOut) {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════
 
-const APP_VERSION = 'nursery_DEV7';
+const APP_VERSION = 'nursery_v19';
 
 const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec';
 
@@ -845,12 +1157,12 @@ function totalPlanForSpp(code) {
 }
 
 const SOURCES = [
-  { code:'SALS', label:'TF Salsalabari',        type:'own', serves:['APDE','APDW','CBH'] },
-  { code:'GRAS', label:'TF Grassmore',           type:'own', serves:['JPG','KPG'] },
-  { code:'MSAL', label:'Monirul (Salsalabari)',  type:'ext', serves:['APDE','APDW'] },
-  { code:'MJAL', label:'Monirul (Jalpaiguri)',   type:'leg', serves:['APDE','APDW'] },
-  { code:'MEHB', label:'Mehboob (Sisubari)',     type:'ext', serves:['JPG','KPG'] },
-  { code:'CHAL', label:'MS Chalsa',              type:'leg', serves:['JPG','KPG'] },
+  { code:'SALS', label:'TF Salsalabari',              type:'own', serves:['APDE','APDW','CBH'] },
+  { code:'GRAS', label:'TF Grassmore',                type:'own', serves:['JPG','KPG'] },
+  { code:'MSAL', label:'Mujaffar Nursery - Salsalabari', type:'ext', serves:['APDE','APDW'] },
+  { code:'MJAL', label:'Mujaffar Nursery - Jalpaiguri',  type:'leg', serves:['APDE','APDW'] },
+  { code:'MEHB', label:'Meheboob Nursery',            type:'ext', serves:['JPG','KPG'] },
+  { code:'CHAL', label:'MS Nursery Chalsa',           type:'leg', serves:['JPG','KPG'] },
 ];
 
 const DISTRICTS = ['APDE','APDW','JPG','CBH','KPG'];
@@ -967,7 +1279,7 @@ function sppName(sp) {
 // ═══════════════════════════════════════════════════════
 let _db = null;
 const DB_NAME = 'NurseryDB'; const DB_VER = 1;
-const STORES = ['dispatches','seedtrees','inspections','queue'];
+const STORES = ['dispatches','seedtrees','inspections','receives','queue'];
 
 async function openDB() {
   if (_db) return _db;
@@ -1189,11 +1501,35 @@ function buildMapSppFilter() {
   });
 }
 
-function onSourceChange() {
-  // Could filter suggested districts based on source routing — for now just toast
+// Returns the stock object from the latest inspection record for a given source
+async function getLatestInspectionStock(source) {
+  const all = await dbGetAll('inspections');
+  const forSrc = all
+    .filter(r => r.source === source && r.stock)
+    .sort((a, b) => (b.date||b.ts||'') > (a.date||a.ts||'') ? 1 : -1);
+  return forSrc.length ? forSrc[0] : null;
+}
+
+async function onSourceChange() {
   const src = document.getElementById('d-source').value;
-  const s = SOURCES.find(x=>x.code===src);
+  const s = SOURCES.find(x => x.code === src);
   if (s && s.serves.length) toast(`Typical districts: ${s.serves.join(', ')}`, 'info', 3000);
+
+  // Auto-populate Available fields from latest inspection for this source
+  if (!src) return;
+  const latest = await getLatestInspectionStock(src);
+  if (!latest) return;
+
+  let filled = 0;
+  SPECIES.forEach(sp => {
+    const el = document.getElementById('d-avail-' + sp.code);
+    if (!el) return;
+    const val = latest.stock?.[sp.code] || 0;
+    el.value = val > 0 ? val : '';
+    if (val > 0) filled++;
+  });
+  if (filled > 0) toast(`✓ Stock auto-filled from inspection ${latest.date||''}`, 'success', 4000);
+  else toast(`No inspection stock found for ${src}`, 'info', 3000);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1574,14 +1910,32 @@ async function refreshDashboard() {
 }
 
 async function updateKPIs() {
-  const dispatches = await dbGetAll('dispatches');
-  const trees      = await dbGetAll('seedtrees');
-  const q          = await dbGetAll('queue');
-  const totalDisp  = dispatches.reduce((s,d)=>s+(d.total||0), 0);
+  const dispatches   = await dbGetAll('dispatches');
+  const trees        = await dbGetAll('seedtrees');
+  const q            = await dbGetAll('queue');
+  const inspections  = await dbGetAll('inspections');
+  const totalDisp    = dispatches.reduce((s,d)=>s+(d.total||0), 0);
   document.getElementById('kpi-dispatched').textContent  = fmtNum(totalDisp);
   document.getElementById('kpi-seed-trees').textContent  = trees.length;
   document.getElementById('kpi-queue').textContent       = q.length;
-  document.getElementById('kpi-total-plan').textContent  = '820,000';
+  const _planTotal = ['SALS','GRAS','MSAL','MEHB'].reduce((s,src) =>
+    s + Object.values(PLAN_2026[src]).reduce((a,v)=>a+(typeof v==='number'?v:0),0), 0);
+  document.getElementById('kpi-total-plan').textContent = fmtNum(_planTotal);
+
+  // Stock KPI — sum latest inspection per source
+  const latestBySrc = {};
+  inspections.forEach(r => {
+    if (!r.source || !r.stock) return;
+    const cur = latestBySrc[r.source];
+    if (!cur || (r.date||r.ts||'') > (cur.date||cur.ts||'')) latestBySrc[r.source] = r;
+  });
+  const stockTotal = Object.values(latestBySrc)
+    .reduce((s, r) => s + Object.values(r.stock).reduce((a,v)=>a+(v||0), 0), 0);
+  const srcCount = Object.keys(latestBySrc).length;
+  const latestDate = Object.values(latestBySrc)
+    .map(r=>r.date||'').filter(Boolean).sort().reverse()[0] || '';
+  document.getElementById('kpi-stock-total').textContent = srcCount > 0 ? fmtNum(stockTotal) : '—';
+  document.getElementById('kpi-stock-date').textContent  = latestDate ? `as of ${latestDate}` : 'no inspection yet';
 }
 
 async function renderPlanChart() {
@@ -1803,6 +2157,19 @@ function openForm(id) {
     SPECIES.forEach(sp=>{const el=document.getElementById('ins-spp-'+sp.code);if(el)el.value='';});
     buildInspectionGrid();
   }
+  if (id==='receive') {
+    document.getElementById('rcv-date').value = today();
+    document.getElementById('rcv-source').value='';
+    document.getElementById('rcv-destination').value='';
+    document.getElementById('rcv-challan').value='';
+    document.getElementById('rcv-received-by').value='';
+    document.getElementById('rcv-vehicle-no').value='';
+    document.getElementById('rcv-remarks').value='';
+    document.querySelectorAll('#rcv-quality .chip').forEach(c=>c.classList.remove('sel'));
+    SPECIES.forEach(sp=>{const el=document.getElementById('rcv-spp-'+sp.code);if(el)el.value='';});
+    clearReceivePhoto();
+    buildReceiveGrid();
+  }
   document.getElementById('modal-'+id).classList.add('open');
 }
 
@@ -1836,6 +2203,7 @@ async function init() {
   initThemeBtn();
   await openDB();
   buildSpeciesGrids();
+  buildReceiveGrid();
   applyI18N();
   updateConnectivity();
   await refreshDashboard();
@@ -1850,12 +2218,14 @@ const REC_STORE = {
   dispatch:   'dispatches',
   seedtree:   'seedtrees',
   inspection: 'inspections',
+  receive:    'receives',
 };
 
 const REC_LABEL = {
   dispatch:   '🌿 Sapling Dispatch',
   seedtree:   '🌳 Seed Tree Records',
   inspection: '📋 Nursery Inspections',
+  receive:    '📥 Sapling Receives',
 };
 
 // Key columns to show first in viewer/XLSX
@@ -1863,6 +2233,7 @@ const REC_KEY_COLS = {
   dispatch:   ['id','date','source','district','lpc','nature','total','requested_by','vehicle_no','driver','remarks'],
   seedtree:   ['id','date','seed_tree_id','species','location_type','seeds_collected','lat','lon','submitter','notes'],
   inspection: ['id','date','source','inspector','health','remarks'],
+  receive:    ['id','date','source','destination','challan','received_by','total','quality','vehicle_no','remarks'],
 };
 
 let _recForm = null;
@@ -2021,5 +2392,4 @@ function buildAndDownloadXLSX(form, rows) {
   XLSX.writeFile(wb, fname);
   toast('Downloaded: ' + fname, 'success', 4000);
 }
-
 </script>
