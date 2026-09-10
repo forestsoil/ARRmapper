@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard v26 · Asha 1</title>
+<title>Nursery Dashboard v26</title>
 <link rel="stylesheet" href="arr-shared.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -718,12 +718,42 @@ async function saveStump() {
     </div>
 
     <div class="dash-card full">
-      <div class="dash-card-hdr"><h3>Recent Dispatches</h3></div>
-      <div class="dash-card-body">
-        <table class="data-table" id="dispatch-table">
-          <thead><tr><th>Date</th><th>Source</th><th>District</th><th>LPC</th><th>Type</th><th class="num">Total</th></tr></thead>
-          <tbody id="dispatch-tbody"><tr><td colspan="6" style="text-align:center;color:var(--mid);padding:20px">No dispatches recorded yet</td></tr></tbody>
-        </table>
+      <div class="dash-card-hdr">
+        <h3>Dispatch Records</h3>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:auto">
+          <input type="date" id="dv-from" class="field-input" style="width:130px;padding:4px 8px;font-size:11px" onchange="applyDispatchFilter()">
+          <span style="font-size:11px;color:var(--mid)">to</span>
+          <input type="date" id="dv-to" class="field-input" style="width:130px;padding:4px 8px;font-size:11px" onchange="applyDispatchFilter()">
+          <select class="field-select" id="dv-source" style="width:auto;padding:4px 8px;font-size:11px" onchange="applyDispatchFilter()">
+            <option value="">All Sources</option>
+          </select>
+          <select class="field-select" id="dv-district" style="width:auto;padding:4px 8px;font-size:11px" onchange="applyDispatchFilter()">
+            <option value="">All Districts</option>
+          </select>
+          <select class="field-select" id="dv-nature" style="width:auto;padding:4px 8px;font-size:11px" onchange="applyDispatchFilter()">
+            <option value="">All Types</option>
+            <option value="NEW">New Plantation</option>
+            <option value="REPLANT">Replant</option>
+          </select>
+          <button onclick="clearDispatchFilter()" style="padding:4px 8px;font-size:11px;border:1px solid var(--rule);border-radius:5px;background:var(--mint);cursor:pointer;color:var(--mid)">✕</button>
+          <button onclick="exportDispatchXLSX()" style="padding:4px 10px;font-size:11px;font-weight:700;background:var(--canopy);color:#fff;border:none;border-radius:5px;cursor:pointer">⬇ XLSX</button>
+        </div>
+      </div>
+      <div class="dash-card-body" style="padding:0">
+        <div id="dv-status" style="font-size:11px;color:var(--mid);padding:6px 16px"></div>
+        <div style="overflow-x:auto;overflow-y:auto;max-height:340px">
+          <table class="data-table" id="dispatch-table" style="min-width:600px">
+            <thead style="position:sticky;top:0;z-index:2">
+              <tr>
+                <th>Date</th><th>Source</th><th>District</th><th>LPC</th>
+                <th>Type</th><th class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody id="dispatch-tbody">
+              <tr><td colspan="6" style="text-align:center;color:var(--mid);padding:20px">No dispatches recorded yet</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -755,6 +785,8 @@ async function saveStump() {
     </div>
 
     <div class="dash-card full">
+      <div class="dash-card-hdr">
+        <h3>🗺️ Soil Map Integration</h3>
         <span style="font-size:11px;color:var(--mid);margin-left:auto">Pending soil polygon push from ARR Mapper</span>
       </div>
       <div class="dash-card-body">
@@ -2501,15 +2533,55 @@ async function renderDistrictTable() {
   });
 }
 
+let _allDispatches = [];
+
 async function renderDispatchTable() {
-  const dispatches = await dbGetAll('dispatches');
+  _allDispatches = await dbGetAll('dispatches');
+
+  // Populate source and district dropdowns
+  const srcSel  = document.getElementById('dv-source');
+  const distSel = document.getElementById('dv-district');
+  const curSrc  = srcSel.value;
+  const curDist = distSel.value;
+
+  const sources = [...new Set(_allDispatches.map(d=>d.source).filter(Boolean))].sort();
+  const dists   = [...new Set(_allDispatches.map(d=>d.district).filter(Boolean))].sort();
+
+  srcSel.innerHTML  = '<option value="">All Sources</option>'  + sources.map(s=>`<option value="${s}">${SOURCES.find(x=>x.code===s)?.label||s}</option>`).join('');
+  distSel.innerHTML = '<option value="">All Districts</option>' + dists.map(d=>`<option value="${d}">${d}</option>`).join('');
+  srcSel.value  = curSrc;
+  distSel.value = curDist;
+
+  applyDispatchFilter();
+}
+
+function applyDispatchFilter() {
+  const from   = document.getElementById('dv-from').value;
+  const to     = document.getElementById('dv-to').value;
+  const src    = document.getElementById('dv-source').value;
+  const dist   = document.getElementById('dv-district').value;
+  const nature = document.getElementById('dv-nature').value;
+
+  const filtered = _allDispatches.filter(d => {
+    if (from   && d.date < from)      return false;
+    if (to     && d.date > to)        return false;
+    if (src    && d.source !== src)   return false;
+    if (dist   && d.district !== dist) return false;
+    if (nature && d.nature !== nature) return false;
+    return true;
+  }).sort((a,b) => b.date.localeCompare(a.date));
+
   const tbody = document.getElementById('dispatch-tbody');
-  if (!dispatches.length) {
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--mid);padding:20px">No dispatches recorded yet</td></tr>';
+  const status = document.getElementById('dv-status');
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--mid);padding:20px">No dispatches match filter</td></tr>';
+    status.textContent = '0 records';
     return;
   }
-  const sorted = [...dispatches].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20);
-  tbody.innerHTML = sorted.map(d => `<tr>
+
+  status.textContent = `${filtered.length} record${filtered.length!==1?'s':''} · ${fmtNum(filtered.reduce((s,d)=>s+(d.total||0),0))} saplings`;
+  tbody.innerHTML = filtered.map((d,i) => `<tr style="${i%2===1?'background:var(--mint)':''}">
     <td>${d.date}</td>
     <td>${SOURCES.find(s=>s.code===d.source)?.label||d.source}</td>
     <td>${d.district}</td>
@@ -2517,6 +2589,26 @@ async function renderDispatchTable() {
     <td>${d.nature==='NEW'?'New':'Replant'}</td>
     <td class="num">${fmtNum(d.total)}</td>
   </tr>`).join('');
+
+  // Store filtered for XLSX
+  _dvFiltered = filtered;
+}
+
+function clearDispatchFilter() {
+  ['dv-from','dv-to','dv-source','dv-district','dv-nature'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  applyDispatchFilter();
+}
+
+let _dvFiltered = [];
+
+function exportDispatchXLSX() {
+  if (!window.XLSX) { toast('XLSX library not loaded', 'warn'); return; }
+  const rows = _dvFiltered.length ? _dvFiltered : _allDispatches;
+  if (!rows.length) { toast('No records to export', 'warn'); return; }
+  buildAndDownloadXLSX('dispatch', rows);
 }
 
 async function renderProvenance() {
@@ -2567,8 +2659,6 @@ async function renderSeedStumpOverview() {
     stumpBySpp[k].total += r.count||0;
   });
 
-  const sppName = code => SPECIES.find(s=>s.code===code)?.local || code;
-
   let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
 
   // Seeds table
@@ -2578,9 +2668,10 @@ async function renderSeedStumpOverview() {
       <table class="data-table" style="font-size:11px">
         <thead><tr><th>Species</th><th class="num">Lots</th><th class="num">kg</th></tr></thead>
         <tbody>` +
-      Object.entries(seedBySpp).map(([code, v]) =>
-        `<tr><td>${sppName(code)}</td><td class="num">${v.lots}</td><td class="num">${v.kg.toFixed(1)}</td></tr>`
-      ).join('') +
+      Object.entries(seedBySpp).map(([code, v]) => {
+        const sp = SPECIES.find(s=>s.code===code);
+        return `<tr><td>${sp ? sppName(sp) : code}</td><td class="num">${v.lots}</td><td class="num">${v.kg.toFixed(1)}</td></tr>`;
+      }).join('') +
       `</tbody></table></div>`;
   }
 
@@ -2591,9 +2682,10 @@ async function renderSeedStumpOverview() {
       <table class="data-table" style="font-size:11px">
         <thead><tr><th>Species</th><th class="num">S</th><th class="num">M</th><th class="num">L</th><th class="num">Total</th></tr></thead>
         <tbody>` +
-      Object.entries(stumpBySpp).map(([code, v]) =>
-        `<tr><td>${sppName(code)}</td><td class="num">${v.SMALL||0}</td><td class="num">${v.MEDIUM||0}</td><td class="num">${v.LARGE||0}</td><td class="num"><b>${fmtNum(v.total)}</b></td></tr>`
-      ).join('') +
+      Object.entries(stumpBySpp).map(([code, v]) => {
+        const sp = SPECIES.find(s=>s.code===code);
+        return `<tr><td>${sp ? sppName(sp) : code}</td><td class="num">${v.SMALL||0}</td><td class="num">${v.MEDIUM||0}</td><td class="num">${v.LARGE||0}</td><td class="num"><b>${fmtNum(v.total)}</b></td></tr>`;
+      }).join('') +
       `</tbody></table></div>`;
   }
 
@@ -3073,7 +3165,7 @@ function recPageNext() {
 
 
 function getXLSXFromViewer() {
-  if (_recForm) buildAndDownloadXLSX(_recForm, _ndRecFiltered.length ? _ndRecFiltered : _recRows);
+  if (_recForm) buildAndDownloadXLSX(_recForm, _ndRecFiltered);
 }
 
 async function getXLSX(form, btn) {
