@@ -973,14 +973,72 @@ function getPdfMake() {
 function pdfSave(dd, filename) {
   return new Promise((resolve, reject) => {
     const pm = getPdfMake();
-    const doc = pm.createPdf(dd);
-    doc.getBuffer((buf) => {
-      try {
-        saveAs(new Blob([buf], { type: 'application/pdf' }), filename);
-        resolve();
-      } catch(e) { reject(e); }
-    });
+    let doc;
+    try { doc = pm.createPdf(dd); }
+    catch(e) { return reject(new Error('pdfmake build error: ' + e.message)); }
+    const timer = setTimeout(() => reject(new Error('PDF generation timed out (60s)')), 60000);
+    doc.getBuffer(
+      (buf) => { clearTimeout(timer); try { saveAs(new Blob([buf],{type:'application/pdf'}), filename); resolve(); } catch(e){ reject(e); } },
+      (err)  => { clearTimeout(timer); reject(new Error('pdfmake render error: ' + (err&&err.message||String(err)))); }
+    );
   });
+}
+
+// ── Photo pre-fetch ───────────────────────────────────────────────────────────
+// pdfmake cannot load external URLs — must convert to base64 data URIs first.
+// Fetches up to maxPhotos URLs with per-image timeout; skips failed images.
+async function fetchPhotosAsBase64(photoObjs, maxPhotos=18, timeoutMs=8000) {
+  const subset = photoObjs.slice(0, maxPhotos);
+  setRepStatus(window._currentProj||'', `⏳ Fetching ${subset.length} photos…`);
+  const results = await Promise.all(subset.map(async (p) => {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+      const resp = await fetch(p.url, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const blob = await resp.blob();
+      return new Promise((res) => {
+        const reader = new FileReader();
+        reader.onload = () => res({ ...p, dataUrl: reader.result });
+        reader.onerror = () => res({ ...p, dataUrl: null });
+        reader.readAsDataURL(blob);
+      });
+    } catch(e) {
+      return { ...p, dataUrl: null };
+    }
+  }));
+  const ok  = results.filter(p => p.dataUrl).length;
+  const bad = results.length - ok;
+  if (bad > 0) console.warn(`fetchPhotosAsBase64: ${bad} of ${results.length} photos failed (CORS / Drive not public?)`);
+  return results; // dataUrl null = show placeholder
+}
+
+// ── Photo grid builder (shared by report and slides) ─────────────────────────
+// Returns pdfmake content nodes for one photo page.
+// portrait=true → 2 cols × 3 rows (A4 body width); portrait=false → 3 cols × 3 rows (16:9 slide)
+function photoPageContent(photos, portrait, bodyW) {
+  const COLS   = portrait ? 2 : 3;
+  const ROWS   = 3;
+  const PAD    = 5;
+  const CAP_H  = portrait ? 20 : 14;
+  const cellW  = bodyW / COLS;
+  const cellH  = portrait ? 140 : 100;
+  const IMG_W  = cellW - PAD*2;
+  const IMG_H  = cellH - CAP_H - PAD*2;
+
+  const colStacks = Array.from({length:COLS}, () => []);
+  photos.slice(0, COLS*ROWS).forEach((p, i) => {
+    const col = i % COLS;
+    const cap = [p.date, p.reporter, p.lpc].filter(Boolean).join(' // ');
+    colStacks[col].push(
+      p.dataUrl
+        ? { image: p.dataUrl, width:IMG_W, height:IMG_H, margin:[PAD,PAD,PAD,2] }
+        : { canvas:[{type:'rect',x:PAD,y:PAD,w:IMG_W,h:IMG_H,r:3,color:'F3F4F6',lineColor:'D1D5DB',lineWidth:1}], margin:[0,PAD,0,2] },
+      { text: cap || '—', fontSize: portrait?7:6, color:'6B7280', margin:[PAD,0,PAD,PAD] }
+    );
+  });
+  return { columns: colStacks.map(s => ({stack:s, width:'*'})), columnGap:0 };
 }
 
 // ── Shared pdfmake style tokens ───────────────────────────────────────────────
@@ -1001,6 +1059,7 @@ const C = {
 // ── Main entry point ──────────────────────────────────────────────────────────
 async function genReport(mode, proj, btn) {
   disablePanelBtns(proj, true);
+  window._currentProj = proj;
   setRepStatus(proj, '⏳ Fetching data from server…');
   try {
     const surveyUrl = SURVEY_GAS_URLS[proj];
@@ -1019,8 +1078,6 @@ async function genReport(mode, proj, btn) {
     const bRows   = (baselineData  && baselineData.ok)   ? (baselineData.records   || []) : [];
     const pRows   = (plantationData && plantationData.ok) ? (plantationData.records || []) : [];
 
-    setRepStatus(proj, '⏳ Building PDF…');
-
     let range;
     if (mode==='weekly')       range = weekRange();
     else if (mode==='monthly') range = monthRange();
@@ -1029,8 +1086,28 @@ async function genReport(mode, proj, btn) {
     const wrF  = filterByRange(wrRows,  range.d1, range.d2);
     const attF = filterByRange(attRows, range.d1, range.d2);
 
-    if (mode==='ppt') await buildSlidesPDF(proj, range, wrF, attF, bRows, pRows);
-    else              await buildReportPDF(proj, mode, range, wrF, attF, bRows, pRows);
+    // Collect photo objects from filtered work report rows
+    const allPhotoObjs = [];
+    wrF.forEach(r => {
+      let photos = []; try { photos = JSON.parse(r.photos_json||'[]'); } catch(e) {}
+      photos.forEach(p => {
+        if (p && p.url) allPhotoObjs.push({
+          url: p.url, date: fmtDate(r._date),
+          reporter: r.operator_name || r.operator_email || '',
+          lpc: r.lpc || r.dbc || '',
+        });
+      });
+    });
+
+    // Pre-fetch up to 18 photos as base64 (pdfmake cannot load external URLs)
+    const fetchedPhotos = allPhotoObjs.length > 0
+      ? await fetchPhotosAsBase64(allPhotoObjs, 18)
+      : [];
+
+    setRepStatus(proj, '⏳ Building PDF…');
+
+    if (mode==='ppt') await buildSlidesPDF(proj, range, wrF, attF, bRows, pRows, fetchedPhotos);
+    else              await buildReportPDF(proj, mode, range, wrF, attF, bRows, pRows, fetchedPhotos);
 
     setRepStatus(proj, '✓ PDF downloaded', 'ok');
   } catch(e) {
@@ -1044,7 +1121,7 @@ async function genReport(mode, proj, btn) {
 // ═══════════════════════════════════════════════════════════════════════
 //  PORTRAIT REPORT PDF  (A4, weekly / monthly)
 // ═══════════════════════════════════════════════════════════════════════
-async function buildReportPDF(proj, mode, range, wrRows, attRows, bRows, pRows) {
+async function buildReportPDF(proj, mode, range, wrRows, attRows, bRows, pRows, fetchedPhotos=[]) {
   const projLabel = { asha1:'Asha 1', asha2:'Asha 2', arun:'Arun', banani:'Banani' }[proj]||proj;
   const modeLabel = mode==='weekly' ? 'Weekly Field Report' : 'Monthly Field Report';
   const generated = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
@@ -1210,6 +1287,23 @@ async function buildReportPDF(proj, mode, range, wrRows, attRows, bRows, pRows) 
     ...(wrRows.length>200 ? [{text:`… and ${wrRows.length-200} more records.`, fontSize:9, italics:true, color:C.mid}] : []),
     rule(),
     { text:`ARR Project Suite  ·  Project ${projLabel}  ·  ${generated}`, fontSize:8, color:C.mid, italics:true, alignment:'center', margin:[0,8,0,0] },
+    // ── Photo pages (up to 2 pages, 2×3 grid = 6 photos each) ─────────
+    ...(() => {
+      const validPhotos = fetchedPhotos.filter(p => p.dataUrl || p.url);
+      if (!validPhotos.length) return [];
+      const PER = 6, bodyW = 495; // A4 body width at 50pt margins
+      const pages = [];
+      for (let pi=0; pi<Math.min(2, Math.ceil(validPhotos.length/PER)); pi++) {
+        const slice = validPhotos.slice(pi*PER, (pi+1)*PER);
+        const pageLabel = validPhotos.length>PER ? ` (${pi+1}/${Math.min(2,Math.ceil(validPhotos.length/PER))})` : '';
+        pages.push(
+          { text: `8. Field Photo Gallery${pageLabel}`, fontSize:14, bold:true, color:C.forest, margin:[0,16,0,8], pageBreak:'before' },
+          { text:`${validPhotos.length} photos in period · ${fetchedPhotos.filter(p=>!p.dataUrl).length} failed to load`, fontSize:9, color:C.mid, italics:true, margin:[0,0,0,10] },
+          photoPageContent(slice, true, bodyW)
+        );
+      }
+      return pages;
+    })(),
   ];
 
   const dd = {
@@ -1233,7 +1327,7 @@ async function buildReportPDF(proj, mode, range, wrRows, attRows, bRows, pRows) 
 // ═══════════════════════════════════════════════════════════════════════
 //  SLIDES PDF  (16:9 landscape, prior Fri–Thu)
 // ═══════════════════════════════════════════════════════════════════════
-async function buildSlidesPDF(proj, range, wrRows, attRows, bRows, pRows) {
+async function buildSlidesPDF(proj, range, wrRows, attRows, bRows, pRows, fetchedPhotos=[]) {
   const projLabel = { asha1:'Asha 1', asha2:'Asha 2', arun:'Arun', banani:'Banani' }[proj]||proj;
   const generated = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
 
@@ -1450,36 +1544,25 @@ async function buildSlidesPDF(proj, range, wrRows, attRows, bRows, pRows) {
 
   // ── Slides 8a–8b: Photo Gallery ─────────────────────────────────────
   {
-    const allPhotos = [];
-    wrRows.forEach(r => {
-      let photos=[]; try{photos=JSON.parse(r.photos_json||'[]');}catch(e){}
-      photos.forEach(p=>{
-        if(p&&p.url) allPhotos.push({url:p.url,date:fmtDate(r._date),reporter:r.operator_name||r.operator_email||'',lpc:r.lpc||r.dbc||''});
-      });
-    });
-    const PER = 9, galleryPhotos = allPhotos.slice(0, PER*2);
-    const slideCount = galleryPhotos.length>0 ? (galleryPhotos.length>PER?2:1) : 1;
+    const validPhotos = fetchedPhotos.filter(p => p.dataUrl || p.url);
+    const PER = 9;
+    const slideCount = validPhotos.length > 0 ? (validPhotos.length > PER ? 2 : 1) : 1;
     for (let gi=0; gi<slideCount; gi++) {
-      const sp = galleryPhotos.slice(gi*PER, (gi+1)*PER);
-      const pageLabel = slideCount>1?` (${gi+1}/${slideCount})`:'';
-      const COLS=3, ROWS=3;
-      const cellW = CW/COLS, cellH = (BODY_H-20)/ROWS;
-      const IMG_PAD=5, CAP_H=16, IMG_H=cellH-CAP_H-IMG_PAD*2, IMG_W=cellW-IMG_PAD*2;
-      // Build 3×3 columns
-      const colStacks = [[], [], []];
-      sp.forEach((p,idx)=>{
-        const col = idx%COLS;
-        const cap = [p.date,p.reporter,p.lpc].filter(Boolean).join(' // ');
-        colStacks[col].push(
-          p.url
-            ? { image: p.url, width:IMG_W, height:IMG_H, margin:[IMG_PAD,IMG_PAD,IMG_PAD,2] }
-            : { canvas:[{type:'rect',x:IMG_PAD,y:IMG_PAD,w:IMG_W,h:IMG_H,color:'F3F4F6',lineColor:C.rule,lineWidth:1}], margin:[0,0,0,2] },
-          { text:cap, fontSize:6, color:C.mid, margin:[IMG_PAD,0,IMG_PAD,IMG_PAD] }
-        );
-      });
+      const sp = validPhotos.slice(gi*PER, (gi+1)*PER);
+      const pageLabel = slideCount>1 ? ` (${gi+1}/${slideCount})` : '';
+      const failCount = fetchedPhotos.filter(p=>!p.dataUrl).length;
+      const sub = `${fetchedPhotos.length} photos in period${failCount?' · '+failCount+' failed (Drive not public?)':''}`;
       addSlide([
-        ...slide(`Field Photos${pageLabel}`, `${allPhotos.length} photo${allPhotos.length!==1?'s':''} in period`),
-        { columns: colStacks.map(stack=>({stack, width:'*'})), columnGap:0 },
+        ...slide(`Field Photos${pageLabel}`, sub),
+        validPhotos.length > 0
+          ? photoPageContent(sp, false, CW)
+          : { text:'No photos with accessible URLs found in this period.', fontSize:11, color:C.mid, italics:true, margin:[0,20,0,0] },
+      ]);
+    }
+    if (validPhotos.length === 0) {
+      addSlide([
+        ...slide('Field Photos', 'No accessible photos in this period'),
+        { text:'No work report rows in this period carry accessible photo URLs.\nEnsure the Drive folder is shared (Anyone with the link → Viewer).', fontSize:10, color:C.mid, italics:true, alignment:'center', margin:[0,40,0,0] },
       ]);
     }
   }
