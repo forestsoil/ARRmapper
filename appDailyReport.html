@@ -7,7 +7,7 @@
 <script>
 (function(){const t=localStorage.getItem('arr_theme')||'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
 </script>
-<title>Daily Report v36</title>
+<title>Daily Report v37</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100vh;padding-bottom:60px}
@@ -489,7 +489,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
     <input type="file" id="camera-input"  accept="image/*" capture="environment" style="display:none" onchange="handlePhotoCapture(this)">
     <input type="file" id="gallery-input" accept="image/*" multiple            style="display:none" onchange="handlePhotoCapture(this)">
     <div class="photo-count" id="photo-count">0 / 10</div>
-    <div id="photo-req" class="field-req" style="display:none" data-i18n="err_photo">At least 1 photo required</div>
+    <div id="photo-req" class="field-req" style="display:none;font-size:12px;padding:6px 8px;background:rgba(255,160,0,.12);border-radius:6px" data-i18n="err_photo">📸 At least 1 photo required before submitting</div>
   </div>
 
   <!-- Submit -->
@@ -696,7 +696,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:10
 
 <script>
 // ── Config ───────────────────────────────────────────────────────────────────
-const APP_VERSION    = 'DRT-v36';
+const APP_VERSION    = 'DRT-v37';
 const GAS_URL        = 'https://script.google.com/macros/s/AKfycbyQ1AmDKLV2r0aJl54nhcvBIBhEGSAC9prUQdUtqd1tulmrM8LfLezhPraAcZ4LLbk0/exec';   // replace per project
 
 const MAX_PHOTOS     = 10;
@@ -1040,6 +1040,7 @@ async function handlePhotoCapture(input) {
       renderPhotos();
     } catch(e) {
       console.error('Photo processing failed:', e);
+      setStatus('⚠️ Photo could not be added. Try again or use gallery.', 'status-err');
     }
   }
 
@@ -1192,25 +1193,33 @@ function removePhoto(i) {
 // ── Validation ────────────────────────────────────────────────────────────────
 function validate() {
   let ok = true;
-  
+  let firstErr = null;
+
   // At least one identifier
   const lpc = document.getElementById('f-lpc').value.trim();
   const dbc = document.getElementById('f-dbc').value.trim();
   const ben = document.getElementById('f-ben').value.trim();
   const identOk = lpc || dbc || ben;
-  document.getElementById('ident-req').style.display = identOk ? 'none' : '';
-  if (!identOk) ok = false;
-  
+  const identReq = document.getElementById('ident-req');
+  identReq.style.display = identOk ? 'none' : '';
+  if (!identOk) { ok = false; if (!firstErr) firstErr = identReq; }
+
   // At least one visit type
   const vtOk = selectedVisitTypes().length > 0;
-  document.getElementById('vt-req').style.display = vtOk ? 'none' : '';
-  if (!vtOk) ok = false;
-  
+  const vtReq = document.getElementById('vt-req');
+  vtReq.style.display = vtOk ? 'none' : '';
+  if (!vtOk) { ok = false; if (!firstErr) firstErr = vtReq; }
+
   // At least one photo
   const photoOk = photos.length > 0;
-  document.getElementById('photo-req').style.display = photoOk ? 'none' : '';
-  if (!photoOk) ok = false;
-  
+  const photoReq = document.getElementById('photo-req');
+  photoReq.style.display = photoOk ? 'none' : '';
+  if (!photoOk) { ok = false; if (!firstErr) firstErr = photoReq; }
+
+  if (!ok) {
+    if (firstErr) firstErr.scrollIntoView({ behavior:'smooth', block:'center' });
+    setStatus('⚠️ Please fix the highlighted fields above.', 'status-err');
+  }
   return ok;
 }
 
