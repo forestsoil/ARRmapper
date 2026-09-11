@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard v27</title>
+<title>Nursery Dashboard v29</title>
 <link rel="stylesheet" href="arr-shared.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -402,7 +402,6 @@ function arrAuthRenderChip(containerId, onSignOut) {
 // ═══════════════════════════════════════════════════════
 // RECEIVE (3rd party inbound)
 // ═══════════════════════════════════════════════════════
-let _receivePhotoB64 = null;
 
 function buildReceiveGrid() {
   const g = document.getElementById('rcv-spp-grid');
@@ -419,31 +418,9 @@ function buildReceiveGrid() {
   });
 }
 
-async function onReceivePhoto(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  const capTs = new Date().toLocaleString();
-  const b64 = await new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload  = () => res(r.result.split(',')[1]);
-    r.onerror = () => rej(new Error('Read failed'));
-    r.readAsDataURL(file);
-  });
-  _receivePhotoB64 = b64;
-  document.getElementById('rcv-photo-img').src = 'data:image/jpeg;base64,' + b64;
-  document.getElementById('rcv-photo-ts').textContent = '📷 Captured: ' + capTs;
-  document.getElementById('rcv-photo-preview').style.display = 'block';
-  document.getElementById('rcv-photo-camera').value = '';
-  document.getElementById('rcv-photo-gallery').value = '';
-}
-
-function clearReceivePhoto() {
-  _receivePhotoB64 = null;
-  document.getElementById('rcv-photo-preview').style.display = 'none';
-  document.getElementById('rcv-photo-img').src = '';
-  document.getElementById('rcv-photo-camera').value = '';
-  document.getElementById('rcv-photo-gallery').value = '';
-}
+// ── Receive photo ────────────────────────────────────────────────────────
+function onReceivePhoto(input) { return capturePhoto(input, PHOTO_CFG.receive); }
+function clearReceivePhoto()   { clearPhoto(PHOTO_CFG.receive); }
 
 async function saveReceive() {
   const date       = document.getElementById('rcv-date').value;
@@ -470,18 +447,17 @@ async function saveReceive() {
     id: uuid(), form: 'receive', ts: ts(),
     date, source, destination: dest,
     challan: challan || null,
-    received_by: receivedBy || null,
+    received_by: receivedBy || getAuthName() || null,
     vehicle_no: vehicleNo || null,
     quality: quality || null,
     remarks: remarks || null,
     species: sppCounts,
     total,
-    delivery_photo_b64: _receivePhotoB64 || null,
+    delivery_photo_b64: _photoB64['receive'] || null,
     uploaded: false
   };
 
-  await dbPut('receives', rec);
-  await enqueue(rec);
+  await submitRecord(rec);
   clearReceivePhoto();
   closeModal('receive');
   toast(`✓ Receive saved — ${fmtNum(total)} saplings from ${source}`, 'success');
@@ -494,28 +470,9 @@ async function saveReceive() {
 // ═══════════════════════════════════════════════════════
 // SEED RECEIPT
 // ═══════════════════════════════════════════════════════
-let _seedPhotoB64 = null;
-
-async function onSeedPhoto(input) {
-  if (!input.files || !input.files[0]) return;
-  const capTs = new Date().toLocaleString();
-  const compressed = await compressImage(input.files[0]);
-  const ab = await compressed.arrayBuffer();
-  _seedPhotoB64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
-  document.getElementById('sd-photo-img').src = URL.createObjectURL(compressed);
-  document.getElementById('sd-photo-ts').textContent = '📷 Captured: ' + capTs;
-  document.getElementById('sd-photo-preview').style.display = 'block';
-  input.value = '';
-}
-
-function clearSeedPhoto() {
-  _seedPhotoB64 = null;
-  document.getElementById('sd-photo-preview').style.display = 'none';
-  document.getElementById('sd-photo-img').src = '';
-  document.getElementById('sd-photo-ts').textContent = '';
-  document.getElementById('sd-photo-camera').value = '';
-  document.getElementById('sd-photo-gallery').value = '';
-}
+// ── Seed photo ───────────────────────────────────────────────────────────
+function onSeedPhoto(input) { return capturePhoto(input, PHOTO_CFG.seed); }
+function clearSeedPhoto()   { clearPhoto(PHOTO_CFG.seed); }
 
 async function saveSeed() {
   const date        = document.getElementById('sd-date').value;
@@ -540,13 +497,12 @@ async function saveSeed() {
     source_name: sourceName || null,
     source_village: sourceVil || null,
     storage_location: storage || null,
-    recorded_by: recordedBy || null,
-    photo_b64: _seedPhotoB64 || null,
+    recorded_by: recordedBy || getAuthName() || null,
+    photo_b64: _photoB64['seed'] || null,
     uploaded: false
   };
 
-  await dbPut('seeds', rec);
-  await enqueue(rec);
+  await submitRecord(rec);
   clearSeedPhoto();
   closeModal('seed');
   toast(`✓ Seed lot saved — ${qtyKg} kg ${species}`, 'success');
@@ -556,28 +512,9 @@ async function saveSeed() {
 // ═══════════════════════════════════════════════════════
 // STUMP RECEIPT
 // ═══════════════════════════════════════════════════════
-let _stumpPhotoB64 = null;
-
-async function onStumpPhoto(input) {
-  if (!input.files || !input.files[0]) return;
-  const capTs = new Date().toLocaleString();
-  const compressed = await compressImage(input.files[0]);
-  const ab = await compressed.arrayBuffer();
-  _stumpPhotoB64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
-  document.getElementById('st2-photo-img').src = URL.createObjectURL(compressed);
-  document.getElementById('st2-photo-ts').textContent = '📷 Captured: ' + capTs;
-  document.getElementById('st2-photo-preview').style.display = 'block';
-  input.value = '';
-}
-
-function clearStumpPhoto() {
-  _stumpPhotoB64 = null;
-  document.getElementById('st2-photo-preview').style.display = 'none';
-  document.getElementById('st2-photo-img').src = '';
-  document.getElementById('st2-photo-ts').textContent = '';
-  document.getElementById('st2-photo-camera').value = '';
-  document.getElementById('st2-photo-gallery').value = '';
-}
+// ── Stump photo ──────────────────────────────────────────────────────────
+function onStumpPhoto(input) { return capturePhoto(input, PHOTO_CFG.stump); }
+function clearStumpPhoto()   { clearPhoto(PHOTO_CFG.stump); }
 
 async function saveStump() {
   const date       = document.getElementById('st2-date').value;
@@ -595,13 +532,12 @@ async function saveStump() {
     date, species, count, size_class: sizeClass,
     source: source || null,
     storage_location: storage || null,
-    recorded_by: recordedBy || null,
-    photo_b64: _stumpPhotoB64 || null,
+    recorded_by: recordedBy || getAuthName() || null,
+    photo_b64: _photoB64['stump'] || null,
     uploaded: false
   };
 
-  await dbPut('stumps', rec);
-  await enqueue(rec);
+  await submitRecord(rec);
   clearStumpPhoto();
   closeModal('stump');
   toast(`✓ Stump receipt saved — ${count} × ${species} (${sizeClass})`, 'success');
@@ -1076,7 +1012,7 @@ async function saveStump() {
 </div>
 <div class="modal-footer">
   <button class="btn btn-secondary" onclick="closeModal('dispatch')" data-i18n="btn.cancel">Cancel</button>
-  <button class="btn btn-primary" onclick="saveDispatch()" data-i18n="btn.save">Save Offline</button>
+  <button class="btn btn-primary" onclick="saveDispatch()" data-i18n="btn.save">Save & Upload</button>
 </div>
 </div>
 </div>
@@ -1155,13 +1091,13 @@ async function saveStump() {
 
   <div class="field-group">
     <label class="field-label" data-i18n="f.submitter">Recorded by</label>
-    <input type="text" class="field-input" id="st-submitter" readonly placeholder="Auto — set after sign-in">
+    <input type="text" class="field-input" id="st-submitter" placeholder="Recorded by">
   </div>
 
 </div>
 <div class="modal-footer">
   <button class="btn btn-secondary" onclick="closeModal('seedtree')" data-i18n="btn.cancel">Cancel</button>
-  <button class="btn btn-primary" onclick="saveSeedTree()" data-i18n="btn.save">Save Offline</button>
+  <button class="btn btn-primary" onclick="saveSeedTree()" data-i18n="btn.save">Save & Upload</button>
 </div>
 </div>
 </div>
@@ -1227,7 +1163,7 @@ async function saveStump() {
 </div>
 <div class="modal-footer">
   <button class="btn btn-secondary" onclick="closeModal('inspection')" data-i18n="btn.cancel">Cancel</button>
-  <button class="btn btn-primary" onclick="saveInspection()" data-i18n="btn.save">Save Offline</button>
+  <button class="btn btn-primary" onclick="saveInspection()" data-i18n="btn.save">Save & Upload</button>
 </div>
 </div>
 </div>
@@ -1328,7 +1264,7 @@ async function saveStump() {
 </div>
 <div class="modal-footer">
   <button class="btn btn-secondary" onclick="closeModal('receive')">Cancel</button>
-  <button class="btn btn-primary" onclick="saveReceive()">Save Offline</button>
+  <button class="btn btn-primary" onclick="saveReceive()">Save & Upload</button>
 </div>
 </div>
 </div>
@@ -1438,7 +1374,7 @@ async function saveStump() {
 </div>
 <div class="modal-footer">
   <button class="btn btn-secondary" onclick="closeModal('seed')">Cancel</button>
-  <button class="btn btn-primary" onclick="saveSeed()">Save Offline</button>
+  <button class="btn btn-primary" onclick="saveSeed()">Save & Upload</button>
 </div>
 </div>
 </div>
@@ -1522,7 +1458,7 @@ async function saveStump() {
 </div>
 <div class="modal-footer">
   <button class="btn btn-secondary" onclick="closeModal('stump')">Cancel</button>
-  <button class="btn btn-primary" onclick="saveStump()">Save Offline</button>
+  <button class="btn btn-primary" onclick="saveStump()">Save & Upload</button>
 </div>
 </div>
 </div>
@@ -1534,7 +1470,7 @@ async function saveStump() {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════
 
-const APP_VERSION = 'nursery_v27';
+const APP_VERSION = 'nursery_v29';
 
 const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec';
 
@@ -1609,7 +1545,7 @@ const I18N = {
     'nat.new':'New Plantation','nat.replant':'Replantation',
     'loc.all':'All Location Types','loc.road':'By Roadside','loc.village':'In Village','loc.forest':'In Forest',
     'hlth.good':'Good','hlth.fair':'Fair','hlth.poor':'Poor',
-    'btn.cancel':'Cancel','btn.save':'Save Offline','btn.gps':'📍 Get GPS',
+    'btn.cancel':'Cancel','btn.save':'Save & Upload','btn.gps':'📍 Get GPS',
   },
   hi:{
     'tile.dispatch':'पौधा प्रेषण',
@@ -1629,7 +1565,7 @@ const I18N = {
     'nat.new':'नई रोपण','nat.replant':'पुनः रोपण',
     'loc.all':'सभी स्थान प्रकार','loc.road':'सड़क किनारे','loc.village':'गाँव में','loc.forest':'जंगल में',
     'hlth.good':'अच्छा','hlth.fair':'ठीक','hlth.poor':'खराब',
-    'btn.cancel':'रद्द करें','btn.save':'ऑफलाइन सहेजें','btn.gps':'📍 GPS लें',
+    'btn.cancel':'रद्द करें','btn.save':'सहेजें और अपलोड करें','btn.gps':'📍 GPS लें',
   },
   bn:{
     'tile.dispatch':'চারা প্রেরণ',
@@ -1651,7 +1587,7 @@ const I18N = {
     'nat.new':'নতুন রোপণ','nat.replant':'পুনরায় রোপণ',
     'loc.all':'সব অবস্থানের ধরন','loc.road':'রাস্তার পাশে','loc.village':'গ্রামে','loc.forest':'বনে',
     'hlth.good':'ভালো','hlth.fair':'মোটামুটি','hlth.poor':'খারাপ',
-    'btn.cancel':'বাতিল','btn.save':'অফলাইনে সংরক্ষণ','btn.gps':'📍 GPS নিন',
+    'btn.cancel':'বাতিল','btn.save':'সংরক্ষণ ও আপলোড','btn.gps':'📍 GPS নিন',
   }
 };
 
@@ -1726,13 +1662,12 @@ async function dbPut(store, rec) {
 }
 
 async function dbGet(store, id) {
-  return new Promise((res,rej)=>{
-    openDB().then(db=>{
-      const tx = db.transaction(store,'readonly');
-      const req = tx.objectStore(store).get(id);
-      req.onsuccess = ()=>res(req.result||null);
-      req.onerror   = ()=>rej(req.error);
-    });
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx  = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(id);
+    req.onsuccess = () => res(req.result || null);
+    req.onerror   = () => rej(req.error);
   });
 }
 
@@ -1791,7 +1726,11 @@ function getChipVal(groupId, single=false) {
 }
 
 // Image compression to ~3MP / 80% quality
-function compressImage(file, maxMp=3, quality=0.8) {
+// ── Shared photo capture — 2MP, 80% JPEG, timestamped ───────────────────
+// All 6 forms use capturePhoto(input, cfg) and clearPhoto(cfg)
+// cfg = { b64Key, imgId, tsId, previewId, cameraId, galleryId }
+
+function compressImage(file, maxMp=2, quality=0.8) {
   return new Promise(res => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -1809,6 +1748,42 @@ function compressImage(file, maxMp=3, quality=0.8) {
     img.src = url;
   });
 }
+
+// Shared state store keyed by b64Key
+const _photoB64 = {};
+
+async function capturePhoto(input, cfg) {
+  if (!input.files || !input.files[0]) return;
+  const capTs = new Date().toLocaleString();
+  const compressed = await compressImage(input.files[0]);
+  const ab = await compressed.arrayBuffer();
+  _photoB64[cfg.b64Key] = btoa(String.fromCharCode(...new Uint8Array(ab)));
+  const kb = Math.round(compressed.size / 1024);
+  document.getElementById(cfg.imgId).src = URL.createObjectURL(compressed);
+  document.getElementById(cfg.tsId).textContent = `📷 ${capTs} · ${kb} KB`;
+  document.getElementById(cfg.previewId).style.display = 'block';
+  if (cfg.cameraId)  document.getElementById(cfg.cameraId).value  = '';
+  if (cfg.galleryId) document.getElementById(cfg.galleryId).value = '';
+  toast(`Photo — ${kb} KB`, 'success', 2000);
+}
+
+function clearPhoto(cfg) {
+  _photoB64[cfg.b64Key] = null;
+  document.getElementById(cfg.previewId).style.display = 'none';
+  document.getElementById(cfg.imgId).src = '';
+  document.getElementById(cfg.tsId).textContent = '';
+  if (cfg.cameraId)  document.getElementById(cfg.cameraId).value  = '';
+  if (cfg.galleryId) document.getElementById(cfg.galleryId).value = '';
+}
+
+// Per-form config objects
+const PHOTO_CFG = {
+  dispatch: { b64Key:'dispatch', imgId:'d-photo-img',   tsId:'d-photo-ts',   previewId:'d-photo-preview',   cameraId:'d-photo-camera',   galleryId:'d-photo-gallery'  },
+  seedtree: { b64Key:'seedtree', imgId:'st-photo-img',  tsId:'st-photo-ts',  previewId:'st-photo-preview',  cameraId:'st-photo-camera',  galleryId:'st-photo-gallery' },
+  receive:  { b64Key:'receive',  imgId:'rcv-photo-img', tsId:'rcv-photo-ts', previewId:'rcv-photo-preview', cameraId:'rcv-photo-camera', galleryId:'rcv-photo-gallery'},
+  seed:     { b64Key:'seed',     imgId:'sd-photo-img',  tsId:'sd-photo-ts',  previewId:'sd-photo-preview',  cameraId:'sd-photo-camera',  galleryId:'sd-photo-gallery' },
+  stump:    { b64Key:'stump',    imgId:'st2-photo-img', tsId:'st2-photo-ts', previewId:'st2-photo-preview', cameraId:'st2-photo-camera', galleryId:'st2-photo-gallery'},
+};
 
 // ═══════════════════════════════════════════════════════
 // SCREEN NAVIGATION
@@ -1869,34 +1844,9 @@ function buildDispatchGrid() {
 }
 
 // ── Dispatch photo handling ──────────────────────────────────────────────
-let _dispatchPhotoB64 = null;
-
-async function onDispatchPhoto(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  const capTs = new Date().toLocaleString();
-  const b64 = await new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload  = () => res(r.result.split(',')[1]);
-    r.onerror = () => rej(new Error('Read failed'));
-    r.readAsDataURL(file);
-  });
-  _dispatchPhotoB64 = b64;
-  const prev = document.getElementById('d-photo-preview');
-  document.getElementById('d-photo-img').src = 'data:image/jpeg;base64,' + b64;
-  document.getElementById('d-photo-ts').textContent = '📷 Captured: ' + capTs;
-  prev.style.display = 'block';
-  document.getElementById('d-photo-camera').value  = '';
-  document.getElementById('d-photo-gallery').value = '';
-}
-
-function clearDispatchPhoto() {
-  _dispatchPhotoB64 = null;
-  document.getElementById('d-photo-preview').style.display = 'none';
-  document.getElementById('d-photo-img').src = '';
-  document.getElementById('d-photo-camera').value  = '';
-  document.getElementById('d-photo-gallery').value = '';
-}
+// ── Dispatch photo ───────────────────────────────────────────────────────
+function onDispatchPhoto(input) { return capturePhoto(input, PHOTO_CFG.dispatch); }
+function clearDispatchPhoto()   { clearPhoto(PHOTO_CFG.dispatch); }
 
 function buildInspectionGrid() {
   const g = document.getElementById('ins-spp-grid');
@@ -2002,7 +1952,7 @@ async function saveDispatch() {
   const rec = {
     id: uuid(), form:'dispatch', ts: ts(),
     date, source, district:dist, lpc, nature,
-    requested_by: requestedBy || null,
+    requested_by: requestedBy || getAuthName() || null,
     vehicle_no:   vehicleNo   || null,
     driver:       driver       || null,
     remarks:      remarks      || null,
@@ -2011,12 +1961,11 @@ async function saveDispatch() {
     spp_requested:sppRequested,
     spp_stids:    sppStIds,
     total,
-    loading_photo_b64: _dispatchPhotoB64 || null,
+    loading_photo_b64: _photoB64['dispatch'] || null,
     uploaded: false
   };
 
-  await dbPut('dispatches', rec);
-  await enqueue(rec);
+  await submitRecord(rec);
   clearDispatchPhoto();
   closeModal('dispatch');
   toast(`✓ Dispatch saved — ${fmtNum(total)} saplings`, 'success');
@@ -2029,42 +1978,50 @@ async function saveDispatch() {
 let _stPhoto = null; // compressed blob
 let _stLat=null, _stLon=null;
 
-function getGPS() {
+// ═══════════════════════════════════════════════════════
+// SHARED GPS
+// ═══════════════════════════════════════════════════════
+// All forms that capture location use getGPS(latId, lonId, accId)
+function getGPS(latId='st-lat', lonId='st-lon', accId='st-gps-acc') {
   if (!navigator.geolocation) { toast('Geolocation not available', 'warn'); return; }
-  toast('Getting GPS…', 'info', 5000);
+  toast('Getting GPS…', 'info', 3000);
   navigator.geolocation.getCurrentPosition(pos => {
-    _stLat = pos.coords.latitude.toFixed(6);
-    _stLon = pos.coords.longitude.toFixed(6);
-    document.getElementById('st-lat').value = _stLat;
-    document.getElementById('st-lon').value = _stLon;
-    document.getElementById('st-gps-acc').textContent = `Accuracy: ±${Math.round(pos.coords.accuracy)}m`;
-    toast(`GPS: ${_stLat}, ${_stLon}`, 'success');
-  }, err => toast('GPS error: '+err.message, 'error'), { enableHighAccuracy:true, timeout:15000 });
+    const lat = pos.coords.latitude.toFixed(6);
+    const lon = pos.coords.longitude.toFixed(6);
+    const acc = Math.round(pos.coords.accuracy);
+    const latEl = document.getElementById(latId);
+    const lonEl = document.getElementById(lonId);
+    const accEl = document.getElementById(accId);
+    if (latEl) latEl.value = lat;
+    if (lonEl) lonEl.value = lon;
+    if (accEl) accEl.textContent = `±${acc}m`;
+    // keep module-level for seed tree save
+    if (latId === 'st-lat') { _stLat = lat; _stLon = lon; }
+    toast(`GPS: ${lat}, ${lon} (±${acc}m)`, 'success', 4000);
+  }, err => toast('GPS error: ' + err.message, 'error'), { enableHighAccuracy:true, timeout:15000 });
 }
 
-async function handleSeedPhoto(inp) {
-  if (!inp.files || !inp.files[0]) return;
-  const capTs = new Date().toLocaleString();
-  const compressed = await compressImage(inp.files[0]);
-  _stPhoto = compressed;
-  const url = URL.createObjectURL(compressed);
-  const kb = Math.round(compressed.size/1024);
-  document.getElementById('st-photo-img').src = url;
-  document.getElementById('st-photo-ts').textContent = '📷 Captured: ' + capTs + ' · ' + kb + 'KB';
-  document.getElementById('st-photo-preview').style.display = 'block';
-  document.getElementById('st-photo-camera').value = '';
-  document.getElementById('st-photo-gallery').value = '';
-  toast(`Photo compressed — ${kb}KB`, 'success');
+// Auto-attempt GPS silently on form open (no toast on failure)
+function autoGPS(latId, lonId, accId) {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude.toFixed(6);
+    const lon = pos.coords.longitude.toFixed(6);
+    const acc = Math.round(pos.coords.accuracy);
+    const latEl = document.getElementById(latId);
+    const lonEl = document.getElementById(lonId);
+    const accEl = document.getElementById(accId);
+    if (latEl) latEl.value = lat;
+    if (lonEl) lonEl.value = lon;
+    if (accEl) accEl.textContent = `±${acc}m`;
+    if (latId === 'st-lat') { _stLat = lat; _stLon = lon; }
+    toast(`📍 GPS: ${lat}, ${lon} (±${acc}m)`, 'success', 3000);
+  }, () => {}, { enableHighAccuracy:true, timeout:10000 });
 }
 
-function clearSeedTreePhoto() {
-  _stPhoto = null;
-  document.getElementById('st-photo-preview').style.display = 'none';
-  document.getElementById('st-photo-img').src = '';
-  document.getElementById('st-photo-ts').textContent = '';
-  document.getElementById('st-photo-camera').value = '';
-  document.getElementById('st-photo-gallery').value = '';
-}
+// ── Seed tree photo ──────────────────────────────────────────────────────
+function handleSeedPhoto(inp) { return capturePhoto(inp, PHOTO_CFG.seedtree); }
+function clearSeedTreePhoto() { _stPhoto = null; clearPhoto(PHOTO_CFG.seedtree); }
 
 // ═══════════════════════════════════════════════════════
 // SAVE SEED TREE
@@ -2084,13 +2041,6 @@ async function saveSeedTree() {
   const allTrees = await dbGetAll('seedtrees');
   const stId = `ST-ASHA1-${String(allTrees.length+1).padStart(3,'0')}`;
 
-  // Store photo as base64 for offline
-  let photoB64 = null;
-  if (_stPhoto) {
-    const ab = await _stPhoto.arrayBuffer();
-    photoB64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
-  }
-
   const rec = {
     id: uuid(), form:'seedtree', ts: ts(),
     seed_tree_id: stId, date,
@@ -2098,12 +2048,11 @@ async function saveSeedTree() {
     seeds_collected: seeds, notes,
     lat: parseFloat(_stLat), lon: parseFloat(_stLon),
     submitter: sub,
-    photo_b64: photoB64,
+    photo_b64: _photoB64['seedtree'] || null,
     uploaded: false
   };
 
-  await dbPut('seedtrees', rec);
-  await enqueue(rec);
+  await submitRecord(rec);
   closeModal('seedtree');
   toast(`✓ ${stId} saved`, 'success');
   updateKPIs();
@@ -2129,22 +2078,71 @@ async function saveInspection() {
 
   const rec = {
     id: uuid(), form:'inspection', ts: ts(),
-    date, source, inspector, health, remarks, stock,
+    date, source,
+    inspector: inspector || getAuthName() || null,
+    health, remarks, stock,
     uploaded: false
   };
 
-  await dbPut('inspections', rec);
-  await enqueue(rec);
+  await submitRecord(rec);
   closeModal('inspection');
   toast('✓ Inspection saved', 'success');
+  refreshDashboard();
 }
 
 // ═══════════════════════════════════════════════════════
 // OFFLINE QUEUE
 // ═══════════════════════════════════════════════════════
-async function enqueue(rec) {
+// ═══════════════════════════════════════════════════════
+// AUTH HELPER — persistent name across session
+// ═══════════════════════════════════════════════════════
+function getAuthName() {
+  const auth = arrAuthGet();
+  if (!auth) return '';
+  return (auth.name && !auth.email.endsWith('@device')) ? auth.name : auth.email;
+}
+
+// Refresh TTL on every form open so active sessions don't expire
+function refreshAuthTTL() {
+  const email = localStorage.getItem(ARR_AUTH_EMAIL_KEY);
+  if (email) localStorage.setItem(ARR_AUTH_TS_KEY, String(Date.now()));
+}
+
+// ═══════════════════════════════════════════════════════
+// SUBMIT — auto-upload if online, outbox if offline
+// ═══════════════════════════════════════════════════════
+async function submitRecord(rec) {
+  // Always persist to IDB store first
+  await dbPut(REC_STORE[rec.form], rec);
+  // Attempt immediate upload if online
+  if (navigator.onLine) {
+    try {
+      const res  = await fetch(NURSERY_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ form: rec.form, payload: rec })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json.status === 'ok') {
+        // Mark as uploaded — no queue entry needed
+        rec.uploaded = true;
+        await dbPut(REC_STORE[rec.form], rec);
+        updateQueueKPI();
+        return;
+      }
+      console.warn('GAS rejected record', rec.id, json);
+    } catch(e) {
+      console.warn('Upload failed, queuing for later', rec.id, e.message);
+    }
+  }
+  // Offline or upload failed — add to outbox queue
   await dbPut('queue', { id: rec.id, form: rec.form, ts: rec.ts, payload: rec });
   updateQueueKPI();
+}
+
+async function enqueue(rec) {
+  // Legacy alias — kept so any stray calls still work
+  await submitRecord(rec);
 }
 
 async function updateQueueKPI() {
@@ -2153,8 +2151,8 @@ async function updateQueueKPI() {
   const dot = document.getElementById('queue-dot');
   const txt = document.getElementById('queue-status');
   if (dot && txt) {
-    dot.className = 'sync-dot' + (q.length>0?' pending':'');
-    txt.textContent = q.length>0 ? `${q.length} record(s) pending upload` : 'All synced';
+    dot.className = 'sync-dot' + (q.length > 0 ? ' pending' : '');
+    txt.textContent = q.length > 0 ? `${q.length} record(s) pending upload` : 'All synced';
   }
 }
 
@@ -2163,20 +2161,31 @@ async function syncQueue() {
   if (!q.length) { toast('Nothing to sync', 'info'); return; }
   if (!navigator.onLine) { toast('Offline — connect to sync', 'warn'); return; }
   toast(`Uploading ${q.length} record(s)…`, 'info', 5000);
-  let ok=0, fail=0;
+  let ok = 0, fail = 0;
   for (const item of q) {
-    // Apps Script endpoint would go here — same pattern as Survey Manager
-    // Seed tree photos upload to Drive folder linked to asha1.data album
     try {
-      await fetch(NURSERY_SCRIPT_URL, {
-        method:'POST', mode:'no-cors',
-        body: JSON.stringify(item.payload)
+      const res  = await fetch(NURSERY_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ form: item.form, payload: item.payload })
       });
-      await dbDelete('queue', item.id);
-      ok++;
-    } catch(e) { fail++; }
+      const json = await res.json().catch(() => ({}));
+      if (json.status === 'ok') {
+        await dbDelete('queue', item.id);
+        // Mark the stored record as uploaded
+        const stored = await dbGet(REC_STORE[item.form], item.id);
+        if (stored) { stored.uploaded = true; await dbPut(REC_STORE[item.form], stored); }
+        ok++;
+      } else {
+        console.error('GAS error', item.id, json);
+        fail++;
+      }
+    } catch(e) {
+      console.error('Sync error', item.id, e);
+      fail++;
+    }
   }
-  toast(`✓ ${ok} uploaded${fail?`, ${fail} failed`:''}`, ok>0?'success':'error');
+  toast(`✓ ${ok} uploaded${fail ? `, ${fail} failed — check console` : ''}`, ok > 0 ? 'success' : 'error');
   updateQueueKPI();
   renderQueue();
 }
@@ -2900,6 +2909,10 @@ async function renderSeedMap() {
 // MODAL MANAGEMENT
 // ═══════════════════════════════════════════════════════
 function openForm(id) {
+  const auth     = arrAuthGet();
+  const userName = auth ? (auth.name && !auth.email.endsWith('@device') ? auth.name : auth.email) : '';
+  refreshAuthTTL();
+
   // Reset form state
   if (id==='dispatch') {
     document.getElementById('d-date').value = today();
@@ -2910,7 +2923,7 @@ function openForm(id) {
     document.getElementById('d-vehicle-no').value='';
     document.getElementById('d-driver').value='';
     document.getElementById('d-remarks').value='';
-    document.getElementById('d-requested-by').value='';
+    document.getElementById('d-requested-by').value = userName;
     clearDispatchPhoto();
     buildDispatchGrid();
   }
@@ -2924,12 +2937,14 @@ function openForm(id) {
     document.getElementById('st-seeds').value='';
     document.getElementById('st-notes').value='';
     document.getElementById('st-species').value='';
+    document.getElementById('st-submitter').value = userName;
     document.querySelectorAll('#st-loctype .chip').forEach(c=>c.classList.remove('sel'));
+    autoGPS('st-lat', 'st-lon', 'st-gps-acc');
   }
   if (id==='inspection') {
     document.getElementById('ins-date').value = today();
     document.getElementById('ins-source').value='';
-    document.getElementById('ins-inspector').value='';
+    document.getElementById('ins-inspector').value = userName;
     document.getElementById('ins-remarks').value='';
     document.querySelectorAll('#ins-health .chip').forEach(c=>c.classList.remove('sel'));
     SPECIES.forEach(sp=>{const el=document.getElementById('ins-spp-'+sp.code);if(el)el.value='';});
@@ -2940,7 +2955,7 @@ function openForm(id) {
     document.getElementById('rcv-source').value='';
     document.getElementById('rcv-destination').value='';
     document.getElementById('rcv-challan').value='';
-    document.getElementById('rcv-received-by').value='';
+    document.getElementById('rcv-received-by').value = userName;
     document.getElementById('rcv-vehicle-no').value='';
     document.getElementById('rcv-remarks').value='';
     document.querySelectorAll('#rcv-quality .chip').forEach(c=>c.classList.remove('sel'));
@@ -2957,9 +2972,8 @@ function openForm(id) {
     document.getElementById('sd-source-name').value = '';
     document.getElementById('sd-source-village').value = '';
     document.getElementById('sd-storage').value = '';
-    document.getElementById('sd-recorded-by').value = '';
+    document.getElementById('sd-recorded-by').value = userName;
     clearSeedPhoto();
-    // populate species dropdown from SPECIES constant
     const sel = document.getElementById('sd-species');
     sel.innerHTML = '<option value="">— Select —</option>' +
       SPECIES.map(sp=>`<option value="${sp.code}">${sppName(sp)}</option>`).join('');
@@ -2971,7 +2985,7 @@ function openForm(id) {
     document.getElementById('st2-count').value = '';
     document.getElementById('st2-source').value = '';
     document.getElementById('st2-storage').value = '';
-    document.getElementById('st2-recorded-by').value = '';
+    document.getElementById('st2-recorded-by').value = userName;
     clearStumpPhoto();
   }
   document.getElementById('modal-'+id).classList.add('open');
