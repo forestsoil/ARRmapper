@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Documentation v16 · ARR Projects</title>
+<title>Documentation v15 · ARR Projects</title>
 <link rel="stylesheet" href="arr-shared.css">
 <style>
 .proj-tabs{display:none}
@@ -148,9 +148,27 @@ footer a:hover{color:var(--canopy)}
 </style>
 
 <!-- Report generation libraries -->
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/dist/index.iife.js"></script>
+<!-- pptxgenjs and FileSaver — both confirmed working from cdnjs -->
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script>
+// docx iife — loaded dynamically so a CDN failure gives a clean error, not a silent crash.
+// The iife sets window.docx = { Document, Packer, Paragraph, … }
+window._docxReady = new Promise((resolve, reject) => {
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/docx@8.5.0/dist/index.iife.js';
+  s.onload  = () => typeof docx !== 'undefined' ? resolve() : reject(new Error('docx loaded but global missing'));
+  s.onerror = () => {
+    // fallback: try unpkg
+    const s2 = document.createElement('script');
+    s2.src = 'https://unpkg.com/docx@8.5.0/dist/index.iife.js';
+    s2.onload  = () => typeof docx !== 'undefined' ? resolve() : reject(new Error('docx global missing after unpkg'));
+    s2.onerror = () => reject(new Error('docx failed to load from jsdelivr and unpkg'));
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s);
+});
+</script>
 
 <script>
 // ── ARR Suite Shared Auth — arr_auth.js ──────────────────────────────
@@ -953,6 +971,71 @@ function disablePanelBtns(proj, disabled) {
 }
 
 // ── Main entry point ──────────────────────────────────────────────────────────
+// ── Canvas photo collage ───────────────────────────────────────────────────────
+// Takes an array of {dataUrl, ...} photo objects.
+// Draws them into a grid on an offscreen canvas — each cell center-crops to 1:1
+// so aspect ratio is preserved within each cell (no stretching).
+// Returns a Promise<dataURLstring> (PNG) or null if no valid photos.
+async function makeCollage(photos, opts={}) {
+  const validPhotos = photos.filter(p => p.dataUrl);
+  if (!validPhotos.length) return null;
+
+  const {
+    canvasW = 1200,   // output canvas width px
+    canvasH = 675,    // output canvas height px (16:9 for slides; use 849×1200 for portrait A4)
+    cols    = 3,
+    rows    = Math.ceil(validPhotos.length / cols),
+    gap     = 4,
+    bg      = '#1B4332',
+  } = opts;
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = canvasW;
+  canvas.height = canvasH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvasW, canvasH);
+
+  const cellW = (canvasW - gap*(cols+1)) / cols;
+  const cellH = (canvasH - gap*(rows+1)) / rows;
+
+  // Load all images in parallel
+  const imgs = await Promise.all(validPhotos.slice(0, cols*rows).map(p =>
+    new Promise(res => {
+      const img = new Image();
+      img.onload  = () => res(img);
+      img.onerror = () => res(null);
+      img.src = p.dataUrl;
+    })
+  ));
+
+  imgs.forEach((img, i) => {
+    if (!img) return;
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const cx  = gap + col*(cellW+gap);
+    const cy  = gap + row*(cellH+gap);
+
+    // Center-crop: scale so the shorter side fills the cell
+    const scaleX = cellW / img.naturalWidth;
+    const scaleY = cellH / img.naturalHeight;
+    const scale  = Math.max(scaleX, scaleY);    // cover (center-crop)
+    const sw = cellW / scale;   // source width  in img coords
+    const sh = cellH / scale;   // source height in img coords
+    const sx = (img.naturalWidth  - sw) / 2;
+    const sy = (img.naturalHeight - sh) / 2;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(cx, cy, cellW, cellH);
+    ctx.clip();
+    ctx.drawImage(img, sx, sy, sw, sh, cx, cy, cellW, cellH);
+    ctx.restore();
+  });
+
+  return canvas.toDataURL('image/jpeg', 0.88);
+}
+
 // ── Photo pre-fetch (for DOCX — docx.js cannot load external URLs) ────────────
 // Fetches up to maxPhotos URLs as base64 data URIs; failed ones get dataUrl:null.
 async function fetchPhotosAsBase64(photoObjs, maxPhotos=12, timeoutMs=8000) {
@@ -1026,17 +1109,36 @@ async function genReport(mode, proj, btn) {
     const allPhotoObjs = collectPhotos(wrFiltered);
 
     if (mode==='ppt') {
+      setRepStatus(proj, `⏳ Fetching ${Math.min(allPhotoObjs.length,18)} photos…`);
+      // PPTX: need base64 for canvas collage
+      const fetchedPhotos = allPhotoObjs.length > 0
+        ? await fetchPhotosAsBase64(allPhotoObjs, 18)
+        : [];
+      setRepStatus(proj, '⏳ Building collages…');
+      // Two collages: slide 1 = photos 0-8, slide 2 = photos 9-17
+      const collage1 = await makeCollage(fetchedPhotos.slice(0, 9),
+        { canvasW:1200, canvasH:675, cols:3, rows:3, gap:4 });
+      const collage2 = fetchedPhotos.length > 9
+        ? await makeCollage(fetchedPhotos.slice(9, 18),
+            { canvasW:1200, canvasH:675, cols:3, rows:3, gap:4 })
+        : null;
       setRepStatus(proj, '⏳ Building slide deck…');
-      // PPTX: pptxgenjs fetches URLs itself — pass raw photo objects
-      await buildPPTX(proj, range, wrFiltered, attFiltered, allPhotoObjs);
+      await buildPPTX(proj, range, wrFiltered, attFiltered, allPhotoObjs, collage1, collage2);
     } else {
-      // DOCX: must pre-fetch as base64 — docx.js cannot load external URLs
       setRepStatus(proj, `⏳ Fetching ${Math.min(allPhotoObjs.length,12)} photos…`);
       const fetchedPhotos = allPhotoObjs.length > 0
         ? await fetchPhotosAsBase64(allPhotoObjs, 12)
         : [];
+      setRepStatus(proj, '⏳ Building collages…');
+      // Two portrait collages: 2×3 grid each page
+      const pCollage1 = await makeCollage(fetchedPhotos.slice(0, 6),
+        { canvasW:1240, canvasH:875, cols:2, rows:3, gap:4 });
+      const pCollage2 = fetchedPhotos.length > 6
+        ? await makeCollage(fetchedPhotos.slice(6, 12),
+            { canvasW:1240, canvasH:875, cols:2, rows:3, gap:4 })
+        : null;
       setRepStatus(proj, '⏳ Building document…');
-      await buildDOCX(proj, mode, range, wrFiltered, attFiltered, fetchedPhotos);
+      await buildDOCX(proj, mode, range, wrFiltered, attFiltered, fetchedPhotos, pCollage1, pCollage2);
     }
 
     setRepStatus(proj, '✓ Download ready', 'ok');
@@ -1051,7 +1153,9 @@ async function genReport(mode, proj, btn) {
 // ═══════════════════════════════════════════════════════════════════════
 //  DOCX BUILDER
 // ═══════════════════════════════════════════════════════════════════════
-async function buildDOCX(proj, mode, range, wrRows, attRows, fetchedPhotos=[]) {
+async function buildDOCX(proj, mode, range, wrRows, attRows, fetchedPhotos=[], collage1=null, collage2=null) {
+  await window._docxReady;
+  if (typeof docx === 'undefined') throw new Error('docx library failed to load — check network/CDN');
   const { Document, Paragraph, TextRun, Table, TableRow, TableCell,
           HeadingLevel, AlignmentType, WidthType, BorderStyle,
           PageBreak, ShadingType, PageOrientation, Packer } = docx;
@@ -1316,46 +1420,28 @@ async function buildDOCX(proj, mode, range, wrRows, attRows, fetchedPhotos=[]) {
     spacing:{before:200},
   }));
 
-  // ── Photo pages (up to 2 pages, 2×3 = 6 photos each) ───────────────────────
-  const validPhotos = fetchedPhotos.filter(p => p.dataUrl);
-  if (validPhotos.length > 0) {
-    const failCount = fetchedPhotos.length - validPhotos.length;
+  // ── Photo pages (collage images — one per page) ─────────────────────────────
+  const collages = [collage1, collage2].filter(Boolean);
+  if (collages.length > 0) {
+    const failCount = fetchedPhotos.filter(p=>!p.dataUrl).length;
     children.push(pageBreak());
     children.push(new Paragraph({
       heading: HeadingLevel.HEADING_1,
       children: [new TextRun({ text: '8. Field Photo Gallery', color: COL_FOREST, size: 28, bold: true })],
-      spacing: { before: 0, after: 160 },
+      spacing: { before: 0, after: 120 },
     }));
-    children.push(body(`${validPhotos.length} photos in period${failCount ? ' · ' + failCount + ' could not load' : ''}.`, {italics:true, color:'777777'}));
-    children.push(body(''));
-
-    // 2-column image table, up to 12 photos (2 pages × 6)
-    const PER_PAGE = 6, COLS = 2;
-    for (let page = 0; page < Math.min(2, Math.ceil(validPhotos.length / PER_PAGE)); page++) {
-      const slice = validPhotos.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
-      // Build rows of 2
-      for (let ri = 0; ri < Math.ceil(slice.length / COLS); ri++) {
-        const pair = slice.slice(ri * COLS, ri * COLS + COLS);
-        const cells = pair.map(p => {
-          const cap = [p.date, p.reporter, p.lpc].filter(Boolean).join(' // ');
-          return new TableCell({
-            children: [
-              new Paragraph({
-                children: [new docx.ImageRun({ data: p.dataUrl, transformation: { width: 220, height: 155 }, type: 'jpg' })],
-                spacing: { before: 40, after: 20 },
-              }),
-              new Paragraph({ children: [new TextRun({ text: cap, size: 14, color: '888888' })], spacing: { before: 0, after: 40 } }),
-            ],
-            margins: { top: 60, bottom: 60, left: 80, right: 80 },
-          });
-        });
-        // Pad to 2 cells if odd
-        while (cells.length < COLS) cells.push(new TableCell({ children: [new Paragraph({ children: [] })] }));
-        children.push(new Table({ columnWidths: [4500, 4500], rows: [new TableRow({ children: cells })], width: { size: 9000, type: WidthType.DXA } }));
-        children.push(body(''));
-      }
-      if (page < Math.min(1, Math.ceil(validPhotos.length / PER_PAGE) - 1)) children.push(pageBreak());
-    }
+    children.push(body(`${fetchedPhotos.filter(p=>p.dataUrl).length} of ${fetchedPhotos.length} photos loaded${failCount?' · '+failCount+' failed':''}.`, {italics:true, color:'777777'}));
+    collages.forEach((dataUrl, ci) => {
+      if (ci > 0) children.push(pageBreak());
+      children.push(new Paragraph({
+        children: [new docx.ImageRun({
+          data: dataUrl,
+          transformation: { width: 495, height: 350 },
+          type: 'jpeg',
+        })],
+        spacing: { before: ci===0?120:0, after: 0 },
+      }));
+    });
   }
 
   // ── Pack and save ────────────────────────────────────────────────────
@@ -1379,7 +1465,7 @@ async function buildDOCX(proj, mode, range, wrRows, attRows, fetchedPhotos=[]) {
 // ═══════════════════════════════════════════════════════════════════════
 //  PPTX BUILDER
 // ═══════════════════════════════════════════════════════════════════════
-async function buildPPTX(proj, range, wrRows, attRows, allPhotoObjs=[]) {
+async function buildPPTX(proj, range, wrRows, attRows, allPhotoObjs=[], collage1=null, collage2=null) {
   const pres = new PptxGenJS();
   pres.layout  = 'LAYOUT_16x9'; // 10" × 5.625"
   pres.author  = 'ARR Project Suite';
@@ -1436,15 +1522,25 @@ async function buildPPTX(proj, range, wrRows, attRows, allPhotoObjs=[]) {
     });
   }
 
-  // ── Helper: KPI card ─────────────────────────────────────────────────
-  function addKpiCard(slide, x, y, w, h, val, lbl, color=LEAF) {
-    slide.addShape(pres.ShapeType.rect, { x, y, w, h, fill:{color:PALE}, line:{color:'D1D5DB',pt:1} });
-    slide.addText(String(val), { x, y:y+0.08, w, h:h*0.55,
-      fontSize:28, bold:true, color:color, fontFace:'Calibri', align:'center',
-      isTextBox:true, margin:0 });
-    slide.addText(lbl, { x, y:y+h*0.6, w, h:h*0.35,
-      fontSize:9, color:MID, fontFace:'Calibri', align:'center',
-      isTextBox:true, margin:0 });
+  // ── Helper: KPI block — single text box, all KPIs concatenated ──────
+  // Renders as: VAL\nLabel  VAL\nLabel  … across one wide text box.
+  // Using array-of-runs so pptxgenjs keeps it as one shape.
+  function addKpiBlock(slide, x, y, w, h, kpis) {
+    // Separate each KPI with a wide space; bold+large val, small label, newline between pairs
+    const runs = [];
+    kpis.forEach((k, i) => {
+      if (i > 0) runs.push({ text: '     ', options: { fontSize: 8 } }); // inter-KPI gap
+      runs.push({ text: String(k.val), options: { fontSize: 26, bold: true, color: k.color, breakLine: false } });
+      runs.push({ text: '\n' + k.lbl, options: { fontSize: 8, color: '6B7280', breakLine: false } });
+    });
+    slide.addText(runs, {
+      x, y, w, h,
+      fontFace: 'Calibri',
+      align: 'center',
+      valign: 'middle',
+      isTextBox: true,
+      margin: 0,
+    });
   }
 
   // ── Helper: footer ───────────────────────────────────────────────────
@@ -1504,13 +1600,12 @@ async function buildPPTX(proj, range, wrRows, attRows, allPhotoObjs=[]) {
       '9.  Key Flags & Follow-ups',
       '10. Ask — TF to EcoAct',
     ];
-    items.forEach((item,i)=>{
-      s.addText(item, {
-        x:MAR, y:0.85+i*0.45, w:CW, h:0.4,
-        fontSize:12, color:DARK, fontFace:'Calibri',
-        isTextBox:true, margin:0,
-      });
-    });
+    const contentRuns = items.map((item,i) => ({
+      text: (i>0?'\n':'') + item,
+      options: { fontSize:12, color:DARK, breakLine:false },
+    }));
+    s.addText(contentRuns, { x:MAR, y:0.85, w:CW, h:H-1.2,
+      fontFace:'Calibri', isTextBox:true, margin:0, valign:'top' });
     addFooter(s);
     s.addNotes('Remove slides not relevant to this week before sharing.');
   }
@@ -1522,34 +1617,23 @@ async function buildPPTX(proj, range, wrRows, attRows, allPhotoObjs=[]) {
     const s = pres.addSlide();
     addTitleBar(s,'Executive Summary — Key Figures','Field performance at a glance');
     const kpis = [
-      { val: wrRows.length,            lbl: 'Work Reports',       color: FOREST },
-      { val: uniqueStaff(wrRows).length, lbl: 'Active Reporters',  color: FOREST },
-      { val: att.present,              lbl: 'Attendance: Present', color: '006600' },
-      { val: att.leave + att.absent,   lbl: 'Leave / Absent',     color: 'DC2626' },
-      { val: grievR.length,            lbl: 'Grievances',          color: AMBER   },
+      { val: wrRows.length,              lbl: 'Work Reports',       color: FOREST },
+      { val: uniqueStaff(wrRows).length, lbl: 'Active Reporters',   color: FOREST },
+      { val: att.present,                lbl: 'Att: Present',       color: '006600' },
+      { val: att.leave + att.absent,     lbl: 'Leave / Absent',     color: 'DC2626' },
+      { val: grievR.length,              lbl: 'Grievances',         color: AMBER   },
     ];
-    const kW = CW/kpis.length - 0.08;
-    kpis.forEach((k,i)=>{
-      addKpiCard(s, MAR + i*(kW+0.08), 0.92, kW, 1.7, k.val, k.lbl, k.color);
-    });
-    // Period note
-    s.addText(`Period: ${range.label}`, {
-      x:MAR, y:2.78, w:CW, h:0.28,
-      fontSize:9, color:MID, fontFace:'Calibri', italic:true,
-      isTextBox:true, margin:0,
-    });
-    // Day trend sparkline as text
+    addKpiBlock(s, MAR, 0.90, CW, 1.8, kpis);
+    // Period note + peak day as a single text box
     const peakDay = days.reduce((m,d)=>d.count>m.count?d:m, {date:'—',count:0});
     s.addText([
-      {text:'Peak day: ', options:{bold:true}},
-      {text:`${fmtDate(peakDay.date)} with ${peakDay.count} reports`, options:{}},
-    ], {
-      x:MAR, y:3.1, w:CW, h:0.3,
-      fontSize:10, color:DARK, fontFace:'Calibri',
-      isTextBox:true, margin:0,
-    });
+      {text:'Period: ', options:{bold:true, fontSize:9}},
+      {text:range.label + '     ', options:{fontSize:9, color:MID}},
+      {text:'Peak day: ', options:{bold:true, fontSize:9}},
+      {text: peakDay.date!=='—' ? `${fmtDate(peakDay.date)} — ${peakDay.count} reports` : '—', options:{fontSize:9, color:MID}},
+    ], { x:MAR, y:2.85, w:CW, h:0.32, fontFace:'Calibri', isTextBox:true, margin:0 });
     addFooter(s);
-    s.addNotes('Headline KPIs. Replace with actual data before sharing if needed.');
+    s.addNotes('Headline KPIs.');
   }
 
   // ═══════════════════════════════════════════════════
@@ -1605,27 +1689,24 @@ async function buildPPTX(proj, range, wrRows, attRows, allPhotoObjs=[]) {
       showLegend:false,
       barDir:'bar',
     });
-    // Right panel — flowing two-column text block using single addText with array
+    // Right panel — all VTs in one text box, two-column layout via tab stops
     const rightX = MAR + CW*0.64;
     const rightW = CW*0.35;
-    s.addText('All Visit Types', { x:rightX, y:0.85, w:rightW, h:0.3,
-      fontSize:9, bold:true, color:FOREST, fontFace:'Calibri', isTextBox:true, margin:0 });
-    // Build flowing text runs: "Label: N // Label: N // …" wrapped in one box
     const vtLines = vtF.map(([t,n])=>`${t}: ${n}`);
-    // Split into two columns of ~half each
     const mid = Math.ceil(vtLines.length/2);
-    const col1 = vtLines.slice(0,mid);
-    const col2 = vtLines.slice(mid);
-    const maxRows = Math.max(col1.length, col2.length);
-    const rowH = Math.min(0.24, 3.8/Math.max(maxRows,1));
-    col1.forEach((line,i)=>{
-      s.addText(line, { x:rightX, y:1.2+i*rowH, w:rightW*0.5-0.05, h:rowH,
-        fontSize:7, color:DARK, fontFace:'Calibri', isTextBox:true, margin:1 });
-    });
-    col2.forEach((line,i)=>{
-      s.addText(line, { x:rightX+rightW*0.5, y:1.2+i*rowH, w:rightW*0.5, h:rowH,
-        fontSize:7, color:DARK, fontFace:'Calibri', isTextBox:true, margin:1 });
-    });
+    // Build as single addText with newline runs — two side-by-side columns
+    const vtRuns = [];
+    for (let i = 0; i < mid; i++) {
+      const left  = vtLines[i] || '';
+      const right = vtLines[mid+i] || '';
+      vtRuns.push({ text: left, options: { fontSize:7, color:DARK, breakLine:false } });
+      if (right) vtRuns.push({ text: '   ' + right, options: { fontSize:7, color:'888888', breakLine:false } });
+      if (i < mid-1) vtRuns.push({ text: '\n', options: { fontSize:7 } });
+    }
+    s.addText('All Visit Types', { x:rightX, y:0.85, w:rightW, h:0.25,
+      fontSize:9, bold:true, color:FOREST, fontFace:'Calibri', isTextBox:true, margin:0 });
+    s.addText(vtRuns, { x:rightX, y:1.14, w:rightW, h:3.9,
+      fontFace:'Calibri', isTextBox:true, margin:1, valign:'top' });
     addFooter(s);
     s.addNotes('Bar chart shows top 12 visit types. Full list in right panel. Cull chart to top 8 if crowded.');
   }
@@ -1643,10 +1724,11 @@ async function buildPPTX(proj, range, wrRows, attRows, allPhotoObjs=[]) {
     });
     if (grievR.length) {
       const gvtF = vtFreq(grievR);
-      gvtF.forEach(([t,n],i)=>{
-        s.addText(`${t}: ${n} records`, { x:MAR, y:1.18+i*0.32, w:CW*0.45, h:0.3,
-          fontSize:10, color:DARK, fontFace:'Calibri', isTextBox:true, margin:0 });
-      });
+      const gvtRuns = gvtF.map(([t,n],i) => ({
+        text:(i>0?'\n':'')+`${t}: ${n} records`, options:{fontSize:10, color:DARK, breakLine:false}
+      }));
+      s.addText(gvtRuns, { x:MAR, y:1.18, w:CW*0.45, h:Math.min(gvtF.length,5)*0.32,
+        fontFace:'Calibri', isTextBox:true, margin:0, valign:'top' });
       const logStart = 1.18 + Math.min(gvtF.length,5)*0.32 + 0.2;
       const headers  = ['Date','Reporter','Location','Type(s)','Notes'];
       const colWs    = [1.0,1.6,1.6,1.8,3.5];
@@ -1722,79 +1804,38 @@ async function buildPPTX(proj, range, wrRows, attRows, allPhotoObjs=[]) {
   }
 
   // ═══════════════════════════════════════════════════
-  //  SLIDES 8a–8b: Field Photo Gallery
-  //  Photos pre-collected by genReport from photos_json.
-  //  pptxgenjs fetches URLs itself (Drive must be public).
-  //  Up to 18 photos across 2 slides (3×3 grid each).
+  //  SLIDES 8a–8b: Field Photo Gallery (canvas collage)
+  //  Each collage is a pre-rendered 1200×675 JPEG (3×3 grid,
+  //  center-cropped per cell). No aspect distortion.
   // ═══════════════════════════════════════════════════
   {
-    const allPhotos = allPhotoObjs;
+    const collages = [collage1, collage2].filter(Boolean);
+    const totalPhotos = allPhotoObjs.length;
 
-    const GRID_COLS = 3, GRID_ROWS = 3, PER_SLIDE = GRID_COLS * GRID_ROWS;
-    // Up to 2 gallery slides = 18 photos max
-    const galleryPhotos = allPhotos.slice(0, PER_SLIDE * 2);
-    const slideCount = galleryPhotos.length > 0 ? (galleryPhotos.length > PER_SLIDE ? 2 : 1) : 0;
-
-    for (let gi = 0; gi < slideCount; gi++) {
-      const s = pres.addSlide();
-      const slidePhotos = galleryPhotos.slice(gi * PER_SLIDE, (gi + 1) * PER_SLIDE);
-      const pageLabel = slideCount > 1 ? ` (${gi+1}/${slideCount})` : '';
-      addTitleBar(s, `Field Photos${pageLabel}`, `${allPhotos.length} photo${allPhotos.length!==1?'s':''} in period · showing ${Math.min((gi+1)*PER_SLIDE, allPhotos.length)} of ${allPhotos.length}`);
-
-      const CELL_W = CW / GRID_COLS;
-      const CELL_H = (H - 0.82 - 0.35) / GRID_ROWS;
-      const IMG_PAD = 0.06;
-      const CAP_H = 0.22;
-      const IMG_H = CELL_H - CAP_H - IMG_PAD * 2;
-      const IMG_W = CELL_W - IMG_PAD * 2;
-
-      slidePhotos.forEach((p, idx) => {
-        const col = idx % GRID_COLS;
-        const row = Math.floor(idx / GRID_COLS);
-        const x = MAR + col * CELL_W + IMG_PAD;
-        const y = 0.82 + row * CELL_H + IMG_PAD;
-
-        // Photo image
-        try {
-          s.addImage({
-            path: p.url,
-            x, y, w: IMG_W, h: IMG_H,
-            sizing: { type: 'contain', w: IMG_W, h: IMG_H },
-          });
-        } catch(e) {
-          // If image fails to load, show placeholder
-          s.addShape(pres.ShapeType.rect, {
-            x, y, w: IMG_W, h: IMG_H,
-            fill:{color:'F3F4F6'}, line:{color:'D1D5DB',pt:1},
-          });
-          s.addText('📷', { x, y: y + IMG_H*0.3, w: IMG_W, h: IMG_H*0.4,
-            fontSize:18, align:'center', fontFace:'Calibri', isTextBox:true, margin:0 });
-        }
-
-        // Caption: date // reporter // lpc
-        const cap = [p.date, p.reporter, p.lpc].filter(Boolean).join(' // ');
-        s.addText(cap, {
-          x, y: y + IMG_H + 0.02, w: IMG_W, h: CAP_H,
-          fontSize: 6, color: MID, fontFace: 'Calibri',
-          isTextBox: true, margin: 0,
+    if (collages.length > 0) {
+      collages.forEach((dataUrl, gi) => {
+        const s = pres.addSlide();
+        const pageLabel = collages.length > 1 ? ` (${gi+1}/${collages.length})` : '';
+        addTitleBar(s, `Field Photos${pageLabel}`, `${totalPhotos} photo${totalPhotos!==1?'s':''} in period · center-cropped grid`);
+        s.addImage({
+          data: dataUrl,
+          x: MAR, y: 0.82, w: CW, h: H - 0.82 - 0.35,
+          sizing: { type:'contain', w:CW, h:H-0.82-0.35 },
         });
+        addFooter(s);
+        s.addNotes(`Gallery slide ${gi+1}. Collage of ${Math.min(9,(gi+1)*9)} photos. Center-crop preserves aspect ratio.`);
       });
-
-      addFooter(s);
-      s.addNotes(`Gallery slide ${gi+1}. Photos loaded directly from Google Drive URLs in photos_json. If images show as broken, check Drive sharing on the appSurveyManager folder.`);
-    }
-
-    if (galleryPhotos.length === 0) {
-      // Single placeholder slide if no photos
+    } else {
       const s = pres.addSlide();
-      addTitleBar(s,'Field Photos','No photos with Drive URLs found in this period');
-      s.addText('No work report rows in this period carry photo URLs.\nPhotos attach after the patchPhoto GAS step completes.', {
-        x:MAR, y:2.0, w:CW, h:1.0,
-        fontSize:12, color:MID, italic:true, align:'center', fontFace:'Calibri',
-        isTextBox:true, margin:0,
-      });
+      addTitleBar(s,'Field Photos','No photos available or photos could not be loaded');
+      s.addText(
+        totalPhotos > 0
+          ? `${totalPhotos} photo URL(s) found but none loaded. Check Drive folder sharing (Anyone with the link → Viewer).`
+          : 'No work report rows in this period carry photo URLs.',
+        { x:MAR, y:2.0, w:CW, h:1.0, fontSize:12, color:MID, italic:true, align:'center', fontFace:'Calibri', isTextBox:true, margin:0 }
+      );
       addFooter(s);
-      s.addNotes('No photos found. This slide can be deleted before sharing.');
+      s.addNotes('No photos. Delete this slide before sharing.');
     }
   }
 
@@ -1840,51 +1881,38 @@ async function buildPPTX(proj, range, wrRows, attRows, allPhotoObjs=[]) {
     const saplingsPeriod    = pPeriod.reduce((acc,r)=>acc+(parseFloat(r.total_saplings)||0),0);
     const plantedHaTotal    = pRows.reduce((acc,r)=>acc+(parseFloat(r.area_ha)||0),0);
 
-    // ── Row 1: five KPI cards ────────────────────────────────────────
-    const kpis3 = [
-      { val: totalEnrolled,                   lbl: 'Enrolled (cumul.)',      color: FOREST },
-      { val: newThisPeriod,                   lbl: 'New this period',         color: LEAF   },
-      { val: totalProposedHa.toFixed(1)+' ha',lbl: 'Proposed ha (cumul.)',   color: FOREST },
-      { val: plantedHaPeriod.toFixed(1)+' ha',lbl: 'Planted this period',   color: '006600'},
-      { val: Math.round(saplingsPeriod).toLocaleString(), lbl: 'Saplings this period', color: '006600'},
-    ];
-    const kW3 = CW/kpis3.length - 0.07;
-    kpis3.forEach((k,i)=>{ addKpiCard(s, MAR+i*(kW3+0.07), 0.82, kW3, 1.5, k.val, k.lbl, k.color); });
+    // ── Row 1: KPI block ────────────────────────────────────────────
+    addKpiBlock(s, MAR, 0.82, CW, 1.5, kpis3);
 
-    // ── Row 2 left: stakeholder type breakdown ───────────────────────
+    // ── Row 2: three columns — each as a single text box ────────────
     const leftX = MAR, col2X = MAR + CW*0.38, col3X = MAR + CW*0.66;
     const row2Y = 2.48;
 
-    s.addText('Stakeholder Type', { x:leftX, y:row2Y, w:CW*0.36, h:0.28,
-      fontSize:9, bold:true, color:FOREST, fontFace:'Calibri', isTextBox:true, margin:0 });
-    Object.entries(byType).sort((a,b)=>b[1]-a[1]).forEach(([t,n],i)=>{
+    // Stakeholder type — one text box
+    const typeRuns = Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t,n],i) => {
       const pct = totalEnrolled ? ((n/totalEnrolled)*100).toFixed(0) : 0;
-      s.addText(`${typeLabels[t]||t}: ${n} (${pct}%)`, {
-        x:leftX, y:row2Y+0.3+i*0.26, w:CW*0.36, h:0.24,
-        fontSize:9, color:DARK, fontFace:'Calibri', isTextBox:true, margin:0 });
+      return { text: (i>0?'\n':'') + `${typeLabels[t]||t}: ${n} (${pct}%)`, options:{fontSize:9, color:DARK, breakLine:false} };
     });
+    s.addText([{text:'Stakeholder Type\n', options:{fontSize:9, bold:true, color:FOREST}}, ...typeRuns],
+      { x:leftX, y:row2Y, w:CW*0.36, h:2.0, fontFace:'Calibri', isTextBox:true, margin:0, valign:'top' });
 
-    // ── Row 2 centre: district breakdown ────────────────────────────
-    s.addText('By District', { x:col2X, y:row2Y, w:CW*0.26, h:0.28,
-      fontSize:9, bold:true, color:FOREST, fontFace:'Calibri', isTextBox:true, margin:0 });
-    Object.entries(byDistrict).sort((a,b)=>b[1]-a[1]).slice(0,6).forEach(([d,n],i)=>{
-      s.addText(`${d}: ${n}`, { x:col2X, y:row2Y+0.3+i*0.26, w:CW*0.26, h:0.24,
-        fontSize:9, color:DARK, fontFace:'Calibri', isTextBox:true, margin:0 });
-    });
+    // District — one text box
+    const distRuns = Object.entries(byDistrict).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([d,n],i) =>
+      ({ text: (i>0?'\n':'') + `${d}: ${n}`, options:{fontSize:9, color:DARK, breakLine:false} })
+    );
+    s.addText([{text:'By District\n', options:{fontSize:9, bold:true, color:FOREST}}, ...distRuns],
+      { x:col2X, y:row2Y, w:CW*0.26, h:2.0, fontFace:'Calibri', isTextBox:true, margin:0, valign:'top' });
 
-    // ── Row 2 right: plantation pipeline note ───────────────────────
-    s.addText('Pipeline', { x:col3X, y:row2Y, w:CW*0.33, h:0.28,
-      fontSize:9, bold:true, color:FOREST, fontFace:'Calibri', isTextBox:true, margin:0 });
-    const pipeLines = [
+    // Pipeline — one text box
+    const pipeText = [
       `Proposed (cumul.): ${totalProposedHa.toFixed(1)} ha`,
       `Planted (cumul.):  ${plantedHaTotal.toFixed(1)} ha`,
       `Gap:               ${Math.max(0, totalProposedHa-plantedHaTotal).toFixed(1)} ha`,
       `Plantation records: ${pRows.length}`,
-    ];
-    pipeLines.forEach((line,i)=>{
-      s.addText(line, { x:col3X, y:row2Y+0.3+i*0.26, w:CW*0.34, h:0.24,
-        fontSize:9, color:DARK, fontFace:'Calibri', isTextBox:true, margin:0 });
-    });
+    ].join('\n');
+    s.addText([{text:'Pipeline\n', options:{fontSize:9, bold:true, color:FOREST}},
+               {text:pipeText, options:{fontSize:9, color:DARK}}],
+      { x:col3X, y:row2Y, w:CW*0.33, h:2.0, fontFace:'Calibri', isTextBox:true, margin:0, valign:'top' });
 
     // ── Source note ──────────────────────────────────────────────────
     s.addText(
@@ -1910,12 +1938,12 @@ async function buildPPTX(proj, range, wrRows, attRows, allPhotoObjs=[]) {
     if (noGps > 0) flags.push(`ℹ️  ${noGps} work reports without GPS — remind field staff`);
     if (wrRows.length === 0) flags.push(`🔴  No work reports received for this period`);
     if (att.total === 0)     flags.push(`🔴  No attendance data received for this period`);
-    if (flags.length===0)    flags.push('✓  No critical flags for this period.');
-    flags.forEach((f,i)=>{
-      s.addText(f, { x:MAR, y:0.88+i*0.62, w:CW, h:0.55,
-        fontSize:12, color:DARK, fontFace:'Calibri',
-        isTextBox:true, margin:0 });
-    });
+    if (flags.length===0) flags.push('✓  No critical flags for this period.');
+    const flagRuns = flags.map((f,i) => ({
+      text: (i>0?'\n':'') + f,
+      options: { fontSize:11, color:DARK, breakLine:false },
+    }));
+    s.addText(flagRuns, { x:MAR, y:0.88, w:CW, h:H-1.4, fontFace:'Calibri', isTextBox:true, margin:0, valign:'top' });
     addFooter(s);
     s.addNotes('Edit flags manually before sharing. Add/remove items as relevant to this week.');
   }

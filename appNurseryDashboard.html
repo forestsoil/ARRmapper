@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard v29</title>
+<title>Nursery Dashboard v30</title>
 <link rel="stylesheet" href="arr-shared.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1470,7 +1470,7 @@ async function saveStump() {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════
 
-const APP_VERSION = 'nursery_v29';
+const APP_VERSION = 'nursery_v30';
 
 const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec';
 
@@ -3011,7 +3011,7 @@ function updateConnectivity() {
   if (text) text.textContent = online ? 'Online — tap Sync to upload pending records' : 'Offline — records saved locally';
 }
 
-window.addEventListener('online',  updateConnectivity);
+window.addEventListener('online',  () => { updateConnectivity(); syncQueue(); });
 window.addEventListener('offline', updateConnectivity);
 
 // ═══════════════════════════════════════════════════════
@@ -3034,6 +3034,7 @@ async function init() {
   updateConnectivity();
   await refreshDashboard();
   arrAuthRenderChip('arr-user-chip', () => window.location.href = './index.html');
+  if (navigator.onLine) syncQueue();
 }
 
 init();
