@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nursery Dashboard v26</title>
+<title>Nursery Dashboard v27</title>
 <link rel="stylesheet" href="arr-shared.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -498,10 +498,12 @@ let _seedPhotoB64 = null;
 
 async function onSeedPhoto(input) {
   if (!input.files || !input.files[0]) return;
+  const capTs = new Date().toLocaleString();
   const compressed = await compressImage(input.files[0]);
   const ab = await compressed.arrayBuffer();
   _seedPhotoB64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
   document.getElementById('sd-photo-img').src = URL.createObjectURL(compressed);
+  document.getElementById('sd-photo-ts').textContent = '📷 Captured: ' + capTs;
   document.getElementById('sd-photo-preview').style.display = 'block';
   input.value = '';
 }
@@ -510,6 +512,7 @@ function clearSeedPhoto() {
   _seedPhotoB64 = null;
   document.getElementById('sd-photo-preview').style.display = 'none';
   document.getElementById('sd-photo-img').src = '';
+  document.getElementById('sd-photo-ts').textContent = '';
   document.getElementById('sd-photo-camera').value = '';
   document.getElementById('sd-photo-gallery').value = '';
 }
@@ -557,10 +560,12 @@ let _stumpPhotoB64 = null;
 
 async function onStumpPhoto(input) {
   if (!input.files || !input.files[0]) return;
+  const capTs = new Date().toLocaleString();
   const compressed = await compressImage(input.files[0]);
   const ab = await compressed.arrayBuffer();
   _stumpPhotoB64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
   document.getElementById('st2-photo-img').src = URL.createObjectURL(compressed);
+  document.getElementById('st2-photo-ts').textContent = '📷 Captured: ' + capTs;
   document.getElementById('st2-photo-preview').style.display = 'block';
   input.value = '';
 }
@@ -569,6 +574,7 @@ function clearStumpPhoto() {
   _stumpPhotoB64 = null;
   document.getElementById('st2-photo-preview').style.display = 'none';
   document.getElementById('st2-photo-img').src = '';
+  document.getElementById('st2-photo-ts').textContent = '';
   document.getElementById('st2-photo-camera').value = '';
   document.getElementById('st2-photo-gallery').value = '';
 }
@@ -883,7 +889,7 @@ async function saveStump() {
     <div class="form-tile" style="--accent:#44403c" onclick="arrAuthGet()?openForm('stump'):(window.location.href='./index.html?redirect='+encodeURIComponent(window.location.href))" title="Sign in to record stump receipt">
       <div class="tile-icon">🪵</div>
       <div class="tile-name">Stump Receipt</div>
-      <div class="tile-sub">Record Teak or Gamar stump intake — count, size class, source and storage location</div>
+      <div class="tile-sub">Record Teak, Gamar, Shimul or Lebu stump intake — count, size class, source and storage location</div>
       <div class="tile-actions" onclick="event.stopPropagation()">
         <button class="tile-action-btn" onclick="viewRecords('stump')" title="Browse stump records">
           <span class="ta-icon">👁</span><span>View</span>
@@ -1125,10 +1131,21 @@ async function saveStump() {
 
   <div class="field-group">
     <label class="field-label" data-i18n="f.photo">Photo (max 3MP, 80% quality)</label>
-    <div class="photo-preview" id="st-photo-preview" onclick="document.getElementById('st-photo-input').click()">
-      <div class="photo-preview-label">📷 Tap to capture or choose photo</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:8px 14px">
+        📷 Camera
+        <input type="file" accept="image/*" capture="environment" id="st-photo-camera" style="display:none" onchange="handleSeedPhoto(this)">
+      </label>
+      <label class="btn btn-secondary" style="cursor:pointer;font-size:12px;padding:8px 14px">
+        🖼 Gallery
+        <input type="file" accept="image/*" id="st-photo-gallery" style="display:none" onchange="handleSeedPhoto(this)">
+      </label>
     </div>
-    <input type="file" id="st-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleSeedPhoto(this)">
+    <div id="st-photo-preview" style="margin-top:8px;display:none">
+      <img id="st-photo-img" style="max-width:100%;max-height:180px;border-radius:8px;border:1.5px solid var(--rule)">
+      <div style="font-size:10px;color:var(--mid);margin-top:4px" id="st-photo-ts"></div>
+      <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:4px" onclick="clearSeedTreePhoto()">✕ Remove</button>
+    </div>
   </div>
 
   <div class="field-group">
@@ -1413,6 +1430,7 @@ async function saveStump() {
     </div>
     <div id="sd-photo-preview" style="margin-top:8px;display:none">
       <img id="sd-photo-img" style="max-width:100%;max-height:180px;border-radius:8px;border:1.5px solid var(--rule)">
+      <div style="font-size:10px;color:var(--mid);margin-top:4px" id="sd-photo-ts"></div>
       <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:4px" onclick="clearSeedPhoto()">✕ Remove</button>
     </div>
   </div>
@@ -1431,7 +1449,7 @@ async function saveStump() {
 <div class="modal-hdr">
   <div style="flex:1">
     <h2>🪵 Stump Receipt &amp; Inventory</h2>
-    <p>Record Teak or Gamar stump intake — count, size class and storage</p>
+    <p>Record stump intake — Teak, Gamar, Shimul or Lebu — count, size class and storage</p>
   </div>
   <button class="modal-close" onclick="closeModal('stump')">✕</button>
 </div>
@@ -1447,6 +1465,8 @@ async function saveStump() {
     <div class="chip-row" id="st2-species">
       <div class="chip" data-val="TK" onclick="selChip(this,'st2-species',true)">🌳 Teak</div>
       <div class="chip" data-val="GMR" onclick="selChip(this,'st2-species',true)">🌿 Gamar</div>
+      <div class="chip" data-val="SML" onclick="selChip(this,'st2-species',true)">🌸 Shimul</div>
+      <div class="chip lemon" data-val="LMN" onclick="selChip(this,'st2-species',true)">🍋 Lebu</div>
     </div>
   </div>
 
@@ -1494,6 +1514,7 @@ async function saveStump() {
     </div>
     <div id="st2-photo-preview" style="margin-top:8px;display:none">
       <img id="st2-photo-img" style="max-width:100%;max-height:180px;border-radius:8px;border:1.5px solid var(--rule)">
+      <div style="font-size:10px;color:var(--mid);margin-top:4px" id="st2-photo-ts"></div>
       <button class="btn btn-secondary" style="font-size:11px;padding:4px 10px;margin-top:4px" onclick="clearStumpPhoto()">✕ Remove</button>
     </div>
   </div>
@@ -1513,7 +1534,7 @@ async function saveStump() {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════
 
-const APP_VERSION = 'nursery_v26';
+const APP_VERSION = 'nursery_v27';
 
 const NURSERY_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwewdZWptC-VyVTJ0fXsFXUM6TzonzPVDurstDAApG4WwT90H2kXiFFmU7ghFP18zJ4/exec';
 
@@ -2022,14 +2043,27 @@ function getGPS() {
 }
 
 async function handleSeedPhoto(inp) {
-  if (!inp.files[0]) return;
+  if (!inp.files || !inp.files[0]) return;
+  const capTs = new Date().toLocaleString();
   const compressed = await compressImage(inp.files[0]);
   _stPhoto = compressed;
   const url = URL.createObjectURL(compressed);
-  const prev = document.getElementById('st-photo-preview');
-  prev.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
   const kb = Math.round(compressed.size/1024);
+  document.getElementById('st-photo-img').src = url;
+  document.getElementById('st-photo-ts').textContent = '📷 Captured: ' + capTs + ' · ' + kb + 'KB';
+  document.getElementById('st-photo-preview').style.display = 'block';
+  document.getElementById('st-photo-camera').value = '';
+  document.getElementById('st-photo-gallery').value = '';
   toast(`Photo compressed — ${kb}KB`, 'success');
+}
+
+function clearSeedTreePhoto() {
+  _stPhoto = null;
+  document.getElementById('st-photo-preview').style.display = 'none';
+  document.getElementById('st-photo-img').src = '';
+  document.getElementById('st-photo-ts').textContent = '';
+  document.getElementById('st-photo-camera').value = '';
+  document.getElementById('st-photo-gallery').value = '';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2440,8 +2474,11 @@ async function updateKPIs() {
   const totalStumps = stumps.reduce((s,r)=>s+(r.count||0),0);
   const tkSt  = stumps.filter(r=>r.species==='TK').reduce((s,r)=>s+(r.count||0),0);
   const gmrSt = stumps.filter(r=>r.species==='GMR').reduce((s,r)=>s+(r.count||0),0);
+  const smlSt = stumps.filter(r=>r.species==='SML').reduce((s,r)=>s+(r.count||0),0);
+  const lmnSt = stumps.filter(r=>r.species==='LMN').reduce((s,r)=>s+(r.count||0),0);
   document.getElementById('kpi-stumps').textContent = fmtNum(totalStumps);
-  document.getElementById('kpi-stumps-sub').textContent = totalStumps ? `TK ${fmtNum(tkSt)} · GMR ${fmtNum(gmrSt)}` : 'Teak + Gamar';
+  const stumpParts = [tkSt&&`TK ${fmtNum(tkSt)}`,gmrSt&&`GMR ${fmtNum(gmrSt)}`,smlSt&&`SML ${fmtNum(smlSt)}`,lmnSt&&`🍋 ${fmtNum(lmnSt)}`].filter(Boolean);
+  document.getElementById('kpi-stumps-sub').textContent = totalStumps ? stumpParts.join(' · ') : 'TK · GMR · SML · Lebu';
 }
 
 async function renderPlanChart() {
@@ -2880,7 +2917,7 @@ function openForm(id) {
   if (id==='seedtree') {
     document.getElementById('st-date').value = today();
     _stPhoto=null; _stLat=null; _stLon=null;
-    document.getElementById('st-photo-preview').innerHTML='<div class="photo-preview-label">📷 Tap to capture or choose photo</div>';
+    clearSeedTreePhoto();
     document.getElementById('st-lat').value='';
     document.getElementById('st-lon').value='';
     document.getElementById('st-gps-acc').textContent='';
