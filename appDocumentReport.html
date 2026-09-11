@@ -1034,7 +1034,7 @@ function photoPageContent(photos, portrait, bodyW) {
       p.dataUrl
         // fit:[w,h] scales image to fit within box while preserving aspect ratio
         ? { image: p.dataUrl, fit:[IMG_W, IMG_MAX_H], margin:[PAD, PAD, PAD, 2] }
-        : { canvas:[{type:'rect',x:PAD,y:PAD,w:IMG_W,h:IMG_MAX_H,r:3,color:'F3F4F6',lineColor:'D1D5DB',lineWidth:1}], margin:[0,PAD,0,2] },
+        : { table:{ widths:[IMG_W], heights:[IMG_MAX_H], body:[[{text:'📷', alignment:'center', fontSize:16, color:'AAAAAA', border:[true,true,true,true], borderColor:['D1D5DB','D1D5DB','D1D5DB','D1D5DB'], margin:[0,IMG_MAX_H/2-12,0,0]}]] }, layout:{ paddingTop:()=>0, paddingBottom:()=>0, paddingLeft:()=>0, paddingRight:()=>0 }, margin:[PAD,PAD,PAD,2] },
       { text: cap || '—', fontSize: portrait?7:6, color:'6B7280', margin:[PAD,0,PAD,PAD] }
     );
   });
@@ -1142,7 +1142,11 @@ async function buildReportPDF(proj, mode, range, wrRows, attRows, bRows, pRows, 
     text, fontSize: level===1?14:12, bold:true, color:C.forest,
     margin:[0, level===1?16:12, 0, 6],
   });
-  const rule = () => ({ canvas:[{type:'line',x1:0,y1:0,x2:495,y2:0,lineWidth:0.5,lineColor:C.rule}], margin:[0,4,0,8] });
+  const rule = () => ({
+    table:{ widths:['*'], body:[[{text:'', border:[false,false,false,true], borderColor:['','','',C.rule], margin:[0,0,0,0]}]] },
+    layout:{ paddingTop:()=>0, paddingBottom:()=>0, paddingLeft:()=>0, paddingRight:()=>0 },
+    margin:[0,6,0,8],
+  });
   const kv = (label, val) => ({ columns:[{text:label+':',bold:true,width:160,fontSize:10},{text:String(val??'—'),fontSize:10,width:'*'}], margin:[0,2,0,2] });
 
   const tableLayout = {
@@ -1472,35 +1476,48 @@ async function buildSlidesPDF(proj, range, wrRows, attRows, bRows, pRows, fetche
   // ── Slide 4: Daily report volume ────────────────────────────────────
   addSlide([
     ...slide('Field Activity — Daily Report Volume','Work reports submitted per day'),
-    {
-      table:{ widths:days.map(()=>'*'), body:[
-        days.map(d=>th(fmtDate(d.date).slice(0,6), {fontSize:6})),
-        days.map(d=>td(d.count, {alignment:'center', fontSize:9, bold:d.count>0})),
-      ]},
-      layout:{...tableLayout, fillColor:(i)=>i===0?C.forest:C.white},
-      margin:[0,6,0,8],
-    },
-    // Bar chart — canvas uses top-left origin; bars grow downward from top
+    // Table bar chart — two row sections per day:
+    //   spacer row (white, proportional to unused height) + bar row (green, proportional to count)
+    //   followed by date label row and count row
     (() => {
       const maxC = Math.max(...days.map(d=>d.count), 1);
-      const chartH = 160;
-      const chartW = CW;
-      const gap = 3;
-      const barW = Math.max(4, Math.floor((chartW - gap*(days.length-1)) / days.length));
-      const rects = days.map((d,i) => {
-        const bh = Math.max(2, Math.round(d.count/maxC * (chartH-4)));
-        return {
-          type:'rect',
-          x: i*(barW+gap),
-          y: chartH - bh,   // top-left origin, bar hangs from bottom
-          w: barW,
-          h: bh,
-          color: d.count > 0 ? C.leaf : 'E5E7EB',
-        };
-      });
-      // Baseline
-      rects.push({ type:'line', x1:0, y1:chartH, x2:chartW, y2:chartH, lineWidth:0.5, lineColor:C.rule });
-      return { canvas: rects, margin:[0,0,0,0] };
+      const BAR_ROWS = 12; // virtual rows for bar height resolution
+      // Build rows: BAR_ROWS rows of small cells that are either filled or white
+      const rows = [];
+      for (let r = 0; r < BAR_ROWS; r++) {
+        // r=0 is top, r=BAR_ROWS-1 is bottom (bar base)
+        rows.push(days.map(d => {
+          const barRows = Math.max(1, Math.round(d.count / maxC * BAR_ROWS));
+          const filled = r >= (BAR_ROWS - barRows);
+          return {
+            text: '', border:[false,false,false,false],
+            fillColor: filled && d.count > 0 ? C.leaf : 'FFFFFF',
+            margin:0,
+          };
+        }));
+      }
+      // Label row
+      rows.push(days.map(d => th(fmtDate(d.date).slice(0,6), {fontSize:6, border:[false,true,false,false]})));
+      // Count row
+      rows.push(days.map(d => td(d.count, {alignment:'center', fontSize:8, bold:d.count>0, border:[false,false,false,false]})));
+
+      return {
+        table: {
+          widths: days.map(()=>'*'),
+          heights: [...Array(BAR_ROWS).fill(11), 14, 12],
+          body: rows,
+        },
+        layout: {
+          hLineWidth: (i, n) => i === BAR_ROWS ? 0.5 : 0,
+          vLineWidth: () => 0,
+          hLineColor: () => C.rule,
+          paddingLeft: () => 1,
+          paddingRight: () => 1,
+          paddingTop: () => 0,
+          paddingBottom: () => 0,
+        },
+        margin:[0,6,0,0],
+      };
     })(),
   ]);
 
