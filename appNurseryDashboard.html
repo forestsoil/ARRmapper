@@ -2119,7 +2119,7 @@ async function submitRecord(rec) {
     try {
       const res  = await fetch(NURSERY_SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ form: rec.form, payload: rec })
       });
       const json = await res.json().catch(() => ({}));
@@ -2166,7 +2166,7 @@ async function syncQueue() {
     try {
       const res  = await fetch(NURSERY_SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ form: item.form, payload: item.payload })
       });
       const json = await res.json().catch(() => ({}));
