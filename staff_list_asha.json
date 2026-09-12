@@ -22,8 +22,8 @@
     "name": "Amit Paul",
     "district": "HO",
     "designation": "QC/QA Lead",
-    "affiliation": "TSLPL",
-    "cluster": "project",
+    "affiliation": "TF",
+    "cluster": "Project",
     "supervisor": "Swarup Ghosh"
   },
   {
@@ -34,6 +34,15 @@
     "affiliation": "TSLPL",
     "cluster": "Mal, Matiali, Kranti",
     "supervisor": "Goutam Dhar"
+  },
+  {
+    "email": "arolinalakra332@gmail.com",
+    "name": "Rupesh Oraon",
+    "district": "APDW",
+    "designation": "Driver",
+    "affiliation": "TSLPL",
+    "cluster": "Alipurduar West",
+    "supervisor": "Shanti Oraon"
   },
   {
     "email": "ashamanjonbarman@gmail.com",
@@ -67,13 +76,13 @@
     "name": "Bhairab Nath Bandyopadhyay",
     "district": "HO",
     "designation": "Logistics Lead",
-    "affiliation": "TSLPL",
-    "cluster": "project",
+    "affiliation": "TF",
+    "cluster": "Project",
     "supervisor": "Swarup Ghosh"
   },
   {
     "email": "bikylakara5676@gmail.com",
-    "name": "Biky Lakra (Oraon)",
+    "name": "Biky Lakra",
     "district": "JPG",
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
@@ -162,6 +171,15 @@
     "supervisor": "Suvojit Palit"
   },
   {
+    "email": "debanandoraon270@gmail.com",
+    "name": "Debanand Oraon",
+    "district": "APDW",
+    "designation": "Field Executive",
+    "affiliation": "TSLPL",
+    "cluster": "Madarihat",
+    "supervisor": "Roshni Subba"
+  },
+  {
     "email": "debajyotiroyashatslpl@gmail.com",
     "name": "Debajyoti Roy",
     "district": "JPG",
@@ -169,15 +187,6 @@
     "affiliation": "TSLPL",
     "cluster": "Mal, Matiali, Kranti",
     "supervisor": "Goutam Dhar"
-  },
-  {
-    "email": "debanandoraon270@gmail.com",
-    "name": "Debananda Oraon",
-    "district": "APDW",
-    "designation": "Field Executive",
-    "affiliation": "TSLPL",
-    "cluster": "Madarihat",
-    "supervisor": "Roshni Subba"
   },
   {
     "email": "majhidebi769@gmail.com",
@@ -208,7 +217,7 @@
   },
   {
     "email": "donasen8944@gmail.com",
-    "name": "Dona Sen",
+    "name": "Guriya (Dona) Sen",
     "district": "APDE",
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
@@ -320,7 +329,7 @@
     "district": "APDW",
     "designation": "Soil Expert",
     "affiliation": "TSLPL",
-    "cluster": "project",
+    "cluster": "Alipurduar West",
     "supervisor": "Nirmalya Chatterjee"
   },
   {
@@ -379,7 +388,7 @@
   },
   {
     "email": "mdanisul0855@gmail.com",
-    "name": "Muhammad Anisul",
+    "name": "Md. Anisul",
     "district": "JPG",
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
@@ -410,7 +419,7 @@
     "district": "HO",
     "designation": "Carbon Science Lead",
     "affiliation": "TSLPL",
-    "cluster": "project",
+    "cluster": "Project",
     "supervisor": "Swarup Ghosh"
   },
   {
@@ -432,12 +441,12 @@
     "supervisor": "Suvojit Bose"
   },
   {
-    "email": "pampiashatslpl@gmail.com",
+    "email": "pampi@tomorrowsfoundation.in",
     "name": "Pampi Mohanta Saha",
     "district": "HO",
     "designation": "Project Coordinator",
     "affiliation": "TSLPL",
-    "cluster": "project",
+    "cluster": "Project",
     "supervisor": "Swarup Ghosh"
   },
   {
@@ -464,7 +473,7 @@
     "district": "HO",
     "designation": "Finance Lead 2",
     "affiliation": "TSLPL",
-    "cluster": "project",
+    "cluster": "Project",
     "supervisor": "Swarup Ghosh"
   },
   {
@@ -527,7 +536,7 @@
     "district": "HO",
     "designation": "Finance Lead 1",
     "affiliation": "TSLPL",
-    "cluster": "project",
+    "cluster": "Project",
     "supervisor": "Swarup Ghosh"
   },
   {
@@ -568,20 +577,11 @@
   },
   {
     "email": "roshniashatslpl@gmail.com",
-    "name": "Roshni Suba",
+    "name": "Roshni Subba",
     "district": "APDW",
     "designation": "Cluster Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Madarihat",
-    "supervisor": "Shanti Oraon"
-  },
-  {
-    "email": "arolinalakra332@gmail.com",
-    "name": "Rupesh Oraon",
-    "district": "APDW",
-    "designation": "Driver",
-    "affiliation": "TSLPL",
-    "cluster": "Alipurduar West",
     "supervisor": "Shanti Oraon"
   },
   {
@@ -689,7 +689,7 @@
     "district": "HO",
     "designation": "GIS Lead",
     "affiliation": "TSLPL",
-    "cluster": "project",
+    "cluster": "Project",
     "supervisor": "Nirmalya Chatterjee"
   },
   {
@@ -721,7 +721,7 @@
   },
   {
     "email": "subbadeo6@gmail.com",
-    "name": "Subba Deo / Deoman Subba",
+    "name": "Deoman Subba",
     "district": "APDE",
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
@@ -730,7 +730,7 @@
   },
   {
     "email": "ravasubhash3@gmail.com",
-    "name": "Subhash Rava",
+    "name": "Subhash Rabha",
     "district": "APDW",
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
@@ -832,8 +832,8 @@
     "name": "Swarup Ghosh",
     "district": "HO",
     "designation": "CEO",
-    "affiliation": "TSLPL",
-    "cluster": "project",
+    "affiliation": "TF",
+    "cluster": "Project",
     "supervisor": "Swarup Ghosh"
   },
   {
@@ -865,7 +865,7 @@
   },
   {
     "email": "umaoroan@gmail.com",
-    "name": "Uma Oroan",
+    "name": "Uma Oraon",
     "district": "APDW",
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
@@ -886,8 +886,8 @@
     "name": "Vaswati Banerjee",
     "district": "HO",
     "designation": "HR",
-    "affiliation": "TSLPL",
-    "cluster": "project",
+    "affiliation": "TF",
+    "cluster": "Project",
     "supervisor": "Swarup Ghosh"
   },
   {
@@ -898,5 +898,41 @@
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 1",
     "supervisor": "Shanti Oraon"
+  },
+  {
+    "email": "anupamkujur143@gmail.com",
+    "name": "Anupam Kujur",
+    "district": "--",
+    "designation": "--",
+    "affiliation": "Vendor",
+    "cluster": "--",
+    "supervisor": "--"
+  },
+  {
+    "email": "kartiksahu05056@gmail.com",
+    "name": "Kartik Sahu",
+    "district": "--",
+    "designation": "--",
+    "affiliation": "Vendor",
+    "cluster": "--",
+    "supervisor": "--"
+  },
+  {
+    "email": "riju09738@gmail.com",
+    "name": "Riju Roy",
+    "district": "--",
+    "designation": "--",
+    "affiliation": "Vendor",
+    "cluster": "--",
+    "supervisor": "--"
+  },
+  {
+    "email": "wilsontoppo123@gmail.com",
+    "name": "Wilson Toppo",
+    "district": "--",
+    "designation": "--",
+    "affiliation": "Vendor",
+    "cluster": "--",
+    "supervisor": "--"
   }
 ]
