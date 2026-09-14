@@ -81,6 +81,9 @@ footer{text-align:center;font-size:.72rem;color:#aaa;padding:16px;margin-top:aut
 const OAUTH_CLIENT_ID = '712889656596-385d3fgsju3dfi5mdvub6ieqajuebi1g.apps.googleusercontent.com';
 const GAS_AUTH_URL    = 'https://script.google.com/macros/s/AKfycbyI3UWQ_EupR5u5bOyy2SAeyoGGo22KBWXl3M1Wce9NDONr-yC8u3747OoB4k21RErAMA/exec';
 const LAUNCHER_URL    = './launcher.html';
+const BUNDLE_URL      = './bundle.bin';
+const BUNDLE_VER_KEY  = 'arr_bundle_ver';
+const OPFS_READY_KEY  = 'arr_opfs_ready';
 
 const ARR_AUTH_EMAIL_KEY = 'arr_user_email';
 const ARR_AUTH_NAME_KEY  = 'arr_user_name';
@@ -153,12 +156,10 @@ function handleCredential(response) {
         data.name,
         data.key
       );
-      setStatus('✓ Access granted — loading…', 'status-ok');
+      setStatus('✓ Access granted — loading bundle…', 'status-ok');
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get('redirect');
-      setTimeout(() => {
-        window.location.href = redirect ? decodeURIComponent(redirect) : LAUNCHER_URL;
-      }, 600);
+      loadBundle(data.key, redirect);
     } else {
       showSpinner(false);
       document.getElementById('gsi-btn-wrap').style.display = 'flex';
@@ -183,16 +184,105 @@ function handleCredential(response) {
   document.head.appendChild(s);
 }
 
+// ── Bundle loader (fetch → decrypt → unzip → OPFS) ───────────────
+async function hexToKey(hex) {
+  const raw = new Uint8Array(hex.match(/../g).map(h => parseInt(h, 16)));
+  return crypto.subtle.importKey('raw', raw, {name:'AES-GCM'}, false, ['decrypt']);
+}
+
+async function decryptBundle(encrypted, keyHex) {
+  const buf   = new Uint8Array(encrypted);
+  const nonce = buf.slice(0, 12);
+  const ct    = buf.slice(12);
+  const key   = await hexToKey(keyHex);
+  return crypto.subtle.decrypt({name:'AES-GCM', iv:nonce}, key, ct);
+}
+
+async function writeToOPFS(zipBuf) {
+  const root = await navigator.storage.getDirectory();
+  const { entries } = await new Promise((res, rej) => {
+    const worker = new Worker(URL.createObjectURL(new Blob([`
+      importScripts('https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js');
+      self.onmessage = function(e) {
+        fflate.unzip(new Uint8Array(e.data), function(err, files) {
+          if (err) { self.postMessage({error: err.message}); return; }
+          const out = {};
+          for (const [name, data] of Object.entries(files)) {
+            out[name] = Array.from(data);
+          }
+          self.postMessage({entries: out});
+        });
+      };
+    `], {type:'application/javascript'})));
+    worker.onmessage = e => { worker.terminate(); e.data.error ? rej(new Error(e.data.error)) : res(e.data); };
+    worker.postMessage(zipBuf);
+  });
+
+  let count = 0;
+  for (const [name, dataArr] of Object.entries(entries)) {
+    const parts = name.split('/');
+    let dir = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      dir = await dir.getDirectoryHandle(parts[i], {create:true});
+    }
+    const fh = await dir.getFileHandle(parts[parts.length-1], {create:true});
+    const w  = await fh.createWritable();
+    await w.write(new Uint8Array(dataArr));
+    await w.close();
+    count++;
+  }
+  return count;
+}
+
+async function loadBundle(keyHex, redirectAfter) {
+  showSpinner(true);
+  try {
+    setStatus('Downloading bundle…');
+    const resp = await fetch(BUNDLE_URL, {cache:'no-store'});
+    if (!resp.ok) throw new Error('fetch ' + resp.status);
+    const encrypted = await resp.arrayBuffer();
+
+    setStatus('Decrypting…');
+    const zipBuf = await decryptBundle(encrypted, keyHex);
+
+    setStatus('Installing to device…');
+    const count = await writeToOPFS(zipBuf);
+
+    localStorage.setItem(OPFS_READY_KEY, '1');
+    setStatus('✓ Ready — launching (' + count + ' files)', 'status-ok');
+    setTimeout(() => {
+      window.location.href = redirectAfter ? decodeURIComponent(redirectAfter) : LAUNCHER_URL;
+    }, 500);
+  } catch(err) {
+    showSpinner(false);
+    setStatus('Bundle error: ' + err.message + ' — try again', 'status-error');
+    document.getElementById('gsi-btn-wrap').style.display = 'flex';
+    console.error('loadBundle:', err);
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────────
 function init() {
   const auth = arrAuthGet();
   if (auth) {
-    setStatus('✓ Already signed in — redirecting…', 'status-ok');
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');
-    setTimeout(() => {
-      window.location.href = redirect ? decodeURIComponent(redirect) : LAUNCHER_URL;
-    }, 400);
+    const aesKey = sessionStorage.getItem('arr_aes_key');
+    if (aesKey && localStorage.getItem(OPFS_READY_KEY) === '1') {
+      setStatus('✓ Already signed in — launching…', 'status-ok');
+      setTimeout(() => {
+        window.location.href = redirect ? decodeURIComponent(redirect) : LAUNCHER_URL;
+      }, 300);
+    } else if (aesKey) {
+      setStatus('✓ Signed in — refreshing bundle…', 'status-ok');
+      showSpinner(true);
+      loadBundle(aesKey, redirect);
+    } else {
+      // Session expired or first load — need to sign in again to get key
+      setStatus('Session expired — please sign in again');
+      if (window.google?.accounts?.id) initGSI();
+      else window.addEventListener('load', () => { if (window.google?.accounts?.id) initGSI(); });
+    }
     return;
   }
 
