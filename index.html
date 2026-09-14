@@ -109,15 +109,14 @@ function toggleTheme() {
 // ── Auth helpers ──────────────────────────────────────────────────
 function arrAuthGet() {
   const email = localStorage.getItem(ARR_AUTH_EMAIL_KEY);
-  const ts    = parseInt(localStorage.getItem(ARR_AUTH_TS_KEY) || '0');
-  if (!email || Date.now() - ts > ARR_AUTH_TTL) return null;
+  if (!email) return null;
   return { email, name: localStorage.getItem(ARR_AUTH_NAME_KEY) || '' };
 }
 function arrAuthSet(email, name, aesKey) {
   localStorage.setItem(ARR_AUTH_EMAIL_KEY, email);
   localStorage.setItem(ARR_AUTH_NAME_KEY,  name || '');
   localStorage.setItem(ARR_AUTH_TS_KEY,    String(Date.now()));
-  if (aesKey) sessionStorage.setItem('arr_aes_key', aesKey); // session only — not persisted
+  if (aesKey) localStorage.setItem('arr_aes_key', aesKey); // persisted across tab close
 }
 
 // ── Status helpers ────────────────────────────────────────────────
@@ -267,19 +266,22 @@ function init() {
   if (auth) {
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');
-    const aesKey = sessionStorage.getItem('arr_aes_key');
-    if (aesKey && localStorage.getItem(OPFS_READY_KEY) === '1') {
+    const aesKey = localStorage.getItem('arr_aes_key');
+    const opfsReady = localStorage.getItem(OPFS_READY_KEY) === '1';
+    if (opfsReady) {
+      // Bundle already in OPFS — go straight to launcher, no key needed
       setStatus('✓ Already signed in — launching…', 'status-ok');
       setTimeout(() => {
         window.location.href = redirect ? decodeURIComponent(redirect) : LAUNCHER_URL;
       }, 300);
     } else if (aesKey) {
-      setStatus('✓ Signed in — refreshing bundle…', 'status-ok');
+      // Have key but OPFS not ready — load bundle
+      setStatus('✓ Signed in — loading bundle…', 'status-ok');
       showSpinner(true);
       loadBundle(aesKey, redirect);
     } else {
-      // Session expired or first load — need to sign in again to get key
-      setStatus('Session expired — please sign in again');
+      // No key, no bundle — must sign in
+      setStatus('Sign in to access field tools');
       if (window.google?.accounts?.id) initGSI();
       else window.addEventListener('load', () => { if (window.google?.accounts?.id) initGSI(); });
     }
