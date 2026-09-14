@@ -15,7 +15,7 @@
 <script>
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v40</title>
+<title>ARR Project Suite v41</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{ --card-name: var(--forest); }
@@ -469,22 +469,24 @@ function initGSI(redirectAfter) {
 
 const STAFF_JSON_URL = './staff_list_asha.json';
 
-async function resolveStaffName(email) {
+async function resolveStaffEntry(email) {
   try {
     const resp = await fetch(STAFF_JSON_URL);
     if (!resp.ok) return null;
     const data = await resp.json();
-    const entry = data.find(s => s.email && s.email.toLowerCase() === email.toLowerCase());
-    if (entry && entry.name && entry.name !== '--') return entry.name;
-  } catch(e) {}
-  return null;
+    return data.find(s => s.email && s.email.toLowerCase() === email.toLowerCase()) || null;
+  } catch(e) { return null; }
 }
 
 async function handleLauncherCredential(response, redirectAfter) {
   try {
     const p = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-    // Resolve canonical name from staff JSON — fall back to Google display name
-    const canonicalName = (await resolveStaffName(p.email)) || p.name || '';
+    const staffEntry = await resolveStaffEntry(p.email);
+    if (!staffEntry) {
+      document.getElementById('auth-status').textContent = '⛔ Access denied — contact your project coordinator';
+      return;
+    }
+    const canonicalName = (staffEntry.name && staffEntry.name !== '--') ? staffEntry.name : (p.name || '');
     arrAuthSet(p.email, canonicalName);
     showSignedIn({ email: p.email, name: canonicalName });
     if (redirectAfter) window.location.href = decodeURIComponent(redirectAfter);
