@@ -134,10 +134,8 @@ async function handleCredential(response) {
   document.getElementById('gsi-btn-wrap').style.display = 'none';
 
   try {
-    const res = await fetch(GAS_AUTH_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ id_token: response.credential })
+    const res = await fetch(GAS_AUTH_URL + '?id_token=' + encodeURIComponent(response.credential), {
+      method: 'GET'
     });
     const data = await res.json();
 
