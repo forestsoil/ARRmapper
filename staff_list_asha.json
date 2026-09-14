@@ -1,5 +1,14 @@
 [
   {
+    "email": "ajgarashatslpl@gmail.com",
+    "name": "Ajgar Ali",
+    "district": "JPG",
+    "designation": "Field Executive",
+    "affiliation": "TSLPL",
+    "cluster": "Mal, Matiali, Kranti",
+    "supervisor": "Goutam Dhar"
+  },
+  {
     "email": "roya79298@gmail.com",
     "name": "Akshay Roy",
     "district": "JPG",
@@ -7,6 +16,15 @@
     "affiliation": "Vendor",
     "cluster": "Banarhat",
     "supervisor": "Ujjwal Barman"
+  },
+  {
+    "email": "amit@tomorrowsfoundation.org",
+    "name": "Amit Paul",
+    "district": "HO",
+    "designation": "QC/QA Lead",
+    "affiliation": "TF",
+    "cluster": "Project",
+    "supervisor": "Swarup Ghosh"
   },
   {
     "email": "apuashatslpl@gmail.com",
@@ -27,6 +45,15 @@
     "supervisor": "Shanti Oraon"
   },
   {
+    "email": "ashamanjonbarman@gmail.com",
+    "name": "Ashamanjon Barman",
+    "district": "APDE",
+    "designation": "Nursery Lead",
+    "affiliation": "TSLPL",
+    "cluster": "Alipurduar East",
+    "supervisor": "Pampi Mohanta Saha"
+  },
+  {
     "email": "babitachhetri531@gmail.com",
     "name": "Babita Chhetri",
     "district": "JPG",
@@ -34,6 +61,24 @@
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
     "supervisor": "Ujjwal Barman"
+  },
+  {
+    "email": "baldeoashatslpl@gmail.com",
+    "name": "Baldeo Sahu",
+    "district": "JPG",
+    "designation": "Field Executive",
+    "affiliation": "TSLPL",
+    "cluster": "Nagrakata",
+    "supervisor": "Ujjwal Barman"
+  },
+  {
+    "email": "bhairab@tomorrowsfoundation.org",
+    "name": "Bhairab Nath Bandyopadhyay",
+    "district": "HO",
+    "designation": "Logistics Lead",
+    "affiliation": "TF",
+    "cluster": "Project",
+    "supervisor": "Swarup Ghosh"
   },
   {
     "email": "bikylakara5676@gmail.com",
@@ -90,6 +135,15 @@
     "supervisor": "Pampi Mohanta Saha"
   },
   {
+    "email": "bdas1525@gmail.com",
+    "name": "Biswajit Das",
+    "district": "APDE",
+    "designation": "CC Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Alipurduar 2, Coochbehar",
+    "supervisor": "Kartik Barman"
+  },
+  {
     "email": "roybiswajit735206@gmail.com",
     "name": "Biswajit Roy",
     "district": "JPG",
@@ -126,6 +180,15 @@
     "supervisor": "Roshni Subba"
   },
   {
+    "email": "debajyotiroyashatslpl@gmail.com",
+    "name": "Debajyoti Roy",
+    "district": "JPG",
+    "designation": "Field Executive",
+    "affiliation": "TSLPL",
+    "cluster": "Mal, Matiali, Kranti",
+    "supervisor": "Goutam Dhar"
+  },
+  {
     "email": "majhidebi769@gmail.com",
     "name": "Debi Majhi",
     "district": "JPG",
@@ -133,6 +196,15 @@
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
     "supervisor": "Ujjwal Barman"
+  },
+  {
+    "email": "debranjan@tomorrowsfoundation.org",
+    "name": "Debranjan Banerjee",
+    "district": "JPG",
+    "designation": "District Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Jalpaiguri",
+    "supervisor": "Swarup Ghosh"
   },
   {
     "email": "bhowmickroy537@gmail.com",
@@ -169,6 +241,15 @@
     "affiliation": "TSLPL",
     "cluster": "Nagrakata",
     "supervisor": "Ujjwal Barman"
+  },
+  {
+    "email": "goutamashatslpl@gmail.com",
+    "name": "Goutam Dhar",
+    "district": "JPG",
+    "designation": "Cluster Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Mal, Matiali, Kranti",
+    "supervisor": "Debranjan Banerjee"
   },
   {
     "email": "goutammunda1311@gmail.com",
@@ -232,6 +313,24 @@
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 2",
     "supervisor": "Suvojit Palit"
+  },
+  {
+    "email": "kartikashatslpl@gmail.com",
+    "name": "Kartik Barman",
+    "district": "APDE",
+    "designation": "Cluster Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Alipurduar East, Coochbehar",
+    "supervisor": "Panchali Dutta Biswas"
+  },
+  {
+    "email": "kazi@tomorrowsfoundation.in",
+    "name": "Kazi Momenul Ahasan",
+    "district": "APDW",
+    "designation": "Soil Expert",
+    "affiliation": "TSLPL",
+    "cluster": "Alipurduar West",
+    "supervisor": "Nirmalya Chatterjee"
   },
   {
     "email": "k46342260@gmail.com",
@@ -306,6 +405,24 @@
     "supervisor": "Suvojit Bose"
   },
   {
+    "email": "nirajashatslps@gmail.com",
+    "name": "Niraj Oraon",
+    "district": "JPG",
+    "designation": "Field Executive",
+    "affiliation": "TSLPL",
+    "cluster": "Banarhat",
+    "supervisor": "Ujjwal Barman"
+  },
+  {
+    "email": "nirmalya@tomorrowsfoundation.in",
+    "name": "Nirmalya Chatterjee",
+    "district": "HO",
+    "designation": "Carbon Science Lead",
+    "affiliation": "TSLPL",
+    "cluster": "Project",
+    "supervisor": "Swarup Ghosh"
+  },
+  {
     "email": "ni6893946@gmail.com",
     "name": "Nur Islam",
     "district": "APDW",
@@ -322,6 +439,24 @@
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
     "supervisor": "Suvojit Bose"
+  },
+  {
+    "email": "panchali@tomorrowsfoundation.in",
+    "name": "Panchali Datta Biswas",
+    "district": "APDE",
+    "designation": "District Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Alipurduar East, Coochbehar",
+    "supervisor": "Swarup Ghosh"
+  },
+  {
+    "email": "prachi@tomorrowsfoundation.in",
+    "name": "Prachi Baskey",
+    "district": "APDE",
+    "designation": "Forestry Expert",
+    "affiliation": "TSLPL",
+    "cluster": "Alipurduar East, Coochbehar",
+    "supervisor": "Nirmalya Chatterjee"
   },
   {
     "email": "pranishac588@gmail.com",
@@ -387,6 +522,15 @@
     "supervisor": "Suvojit Palit"
   },
   {
+    "email": "ranaganguly2717@gmail.com",
+    "name": "Rana Ganguly",
+    "district": "APDE",
+    "designation": "Field Executive",
+    "affiliation": "TSLPL",
+    "cluster": "Kumargram",
+    "supervisor": "Suvojit Bose"
+  },
+  {
     "email": "sikharanjan1983@gmail.com",
     "name": "Ranjan Biswas",
     "district": "APDE",
@@ -403,6 +547,15 @@
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
     "supervisor": "Suvojit Bose"
+  },
+  {
+    "email": "roshniashatslpl@gmail.com",
+    "name": "Roshni Subba",
+    "district": "APDW",
+    "designation": "Cluster Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Madarihat",
+    "supervisor": "Shanti Oraon"
   },
   {
     "email": "sabnur114@gmail.com",
@@ -441,6 +594,15 @@
     "supervisor": "Shanti Oraon"
   },
   {
+    "email": "salimali80161@gmail.com",
+    "name": "Salim Ali",
+    "district": "JPG",
+    "designation": "CC Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Nagrakata",
+    "supervisor": "Ujjwal Barman"
+  },
+  {
     "email": "samanibarman7@gmail.com",
     "name": "Samani Barman",
     "district": "APDE",
@@ -477,6 +639,15 @@
     "supervisor": "Roshni Subba"
   },
   {
+    "email": "sarbanandaashatslpl@gmail.com",
+    "name": "Sarbananda Barman",
+    "district": "CBH",
+    "designation": "Cluster Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Coochbehar",
+    "supervisor": "Shanti Oraon"
+  },
+  {
     "email": "bmksatyajit5233@gmail.com",
     "name": "Satyajit Bhowmick",
     "district": "APDE",
@@ -484,6 +655,24 @@
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
     "supervisor": "Suvojit Bose"
+  },
+  {
+    "email": "satyajitchakraborty@tomorrowsfoundation.in",
+    "name": "Satyajit Chakraborty",
+    "district": "HO",
+    "designation": "GIS Lead",
+    "affiliation": "TSLPL",
+    "cluster": "Project",
+    "supervisor": "Nirmalya Chatterjee"
+  },
+  {
+    "email": "shanti@tomorrowsfoundation.in",
+    "name": "Shanti Oraon",
+    "district": "APDW",
+    "designation": "District Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Alipurduar West, Coochbehar",
+    "supervisor": "Swarup Ghosh"
   },
   {
     "email": "bhagatshyam775@gmail.com",
@@ -585,6 +774,42 @@
     "supervisor": "Ujjwal Barman"
   },
   {
+    "email": "sushmatirkey602@gmail.com",
+    "name": "Sushma Tirkey",
+    "district": "APDW",
+    "designation": "CC Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Kalchini",
+    "supervisor": "Shanti Oraon"
+  },
+  {
+    "email": "sboseashatslpl@gmail.com",
+    "name": "Suvojit Bose",
+    "district": "APDE",
+    "designation": "Cluster Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Kumargram",
+    "supervisor": "Panchali Dutta Biswas"
+  },
+  {
+    "email": "suvoashatslpl@gmail.com",
+    "name": "Suvojit Palit",
+    "district": "APDE",
+    "designation": "Cluster Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Alipurduar 2",
+    "supervisor": "Panchali Dutta Biswas"
+  },
+  {
+    "email": "tanumunda211@gmail.com",
+    "name": "Tanu Munda",
+    "district": "JPG",
+    "designation": "Field Executive",
+    "affiliation": "TSLPL",
+    "cluster": "Banarhat",
+    "supervisor": "Ujjwal Barman"
+  },
+  {
     "email": "tapanroy123ltp@gmail.com",
     "name": "Tapan Roy",
     "district": "CBH",
@@ -592,6 +817,15 @@
     "affiliation": "Vendor",
     "cluster": "Coochbehar",
     "supervisor": "Sarbananda Barman"
+  },
+  {
+    "email": "ujjwalashatslpl@gmail.com",
+    "name": "Ujjwal Barman",
+    "district": "JPG",
+    "designation": "Cluster Coordinator",
+    "affiliation": "TSLPL",
+    "cluster": "Nagrakata, Banarhat",
+    "supervisor": "Debranjan Banerjee"
   },
   {
     "email": "umaoroan@gmail.com",
@@ -610,6 +844,15 @@
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 1",
     "supervisor": "Kartik Barman"
+  },
+  {
+    "email": "yogeshgosai495@gmail.com",
+    "name": "Yogesh Gosai",
+    "district": "APDW",
+    "designation": "Field Executive",
+    "affiliation": "TSLPL",
+    "cluster": "Alipurduar 1",
+    "supervisor": "Shanti Oraon"
   },
   {
     "email": "anupamkujur143@gmail.com",
