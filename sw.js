@@ -3,7 +3,7 @@
 // Only shell files (index.html, launcher.html, arr-shared.css, logos, icons) are cached
 // bundle.bin is fetched by index.html and written to OPFS — not SW-cached
 
-const CACHE_NAME = 'arrm-shell-0d437c5';
+const CACHE_NAME = 'arrm-shell-68d2175';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
