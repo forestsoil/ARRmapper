@@ -131,24 +131,18 @@ function showSpinner(on) {
 }
 
 // ── Main credential handler ───────────────────────────────────────
-function handleCredential(response) {
+async function handleCredential(response) {
   setStatus('Verifying…');
   showSpinner(true);
   document.getElementById('gsi-btn-wrap').style.display = 'none';
 
-  const cbName = '_gasAuth_' + Date.now();
-  const timeout = setTimeout(() => {
-    delete window[cbName];
-    document.getElementById(cbName + '_script') && document.getElementById(cbName + '_script').remove();
-    showSpinner(false);
-    document.getElementById('gsi-btn-wrap').style.display = 'flex';
-    setStatus('Network error — check connection and try again', 'status-error');
-  }, 15000);
-
-  window[cbName] = function(data) {
-    clearTimeout(timeout);
-    delete window[cbName];
-    document.getElementById(cbName + '_script') && document.getElementById(cbName + '_script').remove();
+  try {
+    const url = GAS_AUTH_URL + '?id_token=' + encodeURIComponent(response.credential);
+    const res = await fetch(url, {method: 'GET', redirect: 'follow'});
+    const text = await res.text();
+    // GAS may return JSONP wrapper or plain JSON depending on redirect
+    const json = text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, '');
+    const data = JSON.parse(json);
 
     if (data.ok) {
       arrAuthSet(
@@ -169,19 +163,12 @@ function handleCredential(response) {
         setStatus('Sign-in error (' + (data.error || 'unknown') + ') — try again', 'status-error');
       }
     }
-  };
-
-  const s = document.createElement('script');
-  s.id = cbName + '_script';
-  s.src = GAS_AUTH_URL + '?callback=' + cbName + '&id_token=' + encodeURIComponent(response.credential);
-  s.onerror = () => {
-    clearTimeout(timeout);
-    delete window[cbName];
+  } catch(err) {
     showSpinner(false);
     document.getElementById('gsi-btn-wrap').style.display = 'flex';
     setStatus('Network error — check connection and try again', 'status-error');
-  };
-  document.head.appendChild(s);
+    console.error('handleCredential:', err);
+  }
 }
 
 // ── Bundle loader (fetch → decrypt → unzip → OPFS) ───────────────
