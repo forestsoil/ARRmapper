@@ -1,9 +1,9 @@
-// ARR Project Suite — Service Worker v9
-// Bundle+OPFS architecture: applets no longer served as static files
-// Only shell files (index.html, launcher.html, arr-shared.css, logos, icons) are cached
-// bundle.bin is fetched by index.html and written to OPFS — not SW-cached
+// ARR Project Suite — Service Worker v10
+// OPFS intercept: applet HTML is read from OPFS and returned directly.
+// Static files (index, launcher, css, icons) served normally from network/cache.
+// bundle.bin always fetched fresh from network.
 
-const CACHE_NAME = 'arrm-shell-9219115';
+const CACHE_NAME = 'arrm-shell-v10';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
@@ -18,6 +18,35 @@ const SHELL_URLS = [
   '/ARRmapper/terms_of_service.html',
 ];
 
+// Applet filenames served from OPFS
+const OPFS_APPLETS = [
+  'appARRmapper.html',
+  'appPlantationMapper.html',
+  'appSoilMapper.html',
+  'appVectorTool.html',
+  'appCCBSDG.html',
+  'appDailyReport.html',
+  'appDashboard.html',
+  'appDocumentReport.html',
+  'appHotspot.html',
+  'appInventory.html',
+  'appInventory_Arun_v1.html',
+  'appMonitoringDashboard.html',
+  'appNurseryDashboard.html',
+  'appNurseryDashboard_Arun_v1.html',
+  'appSurveyManager.html',
+];
+
+// OPFS assets (non-HTML files needed by applets)
+const OPFS_ASSETS = [
+  'asha_plantation.geojson',
+  'inv_manifest.json',
+  'staff_list_asha.json',
+  'survey_schema_v7.json',
+];
+
+const ALL_OPFS = [...OPFS_APPLETS, ...OPFS_ASSETS];
+
 // Never cache — always network
 const NETWORK_ONLY_HOSTS = [
   'accounts.google.com',
@@ -26,7 +55,7 @@ const NETWORK_ONLY_HOSTS = [
   'maps.googleapis.com',
 ];
 
-// ── Install: pre-cache shell ──────────────────────────────────────────
+// ── Install ───────────────────────────────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
@@ -39,31 +68,81 @@ self.addEventListener('install', event => {
   );
 });
 
-// ── Activate: remove old caches ───────────────────────────────────────
+// ── Activate ──────────────────────────────────────────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
 
-// ── Fetch strategy ────────────────────────────────────────────────────
+// ── OPFS reader ───────────────────────────────────────────────────
+async function readFromOPFS(filename) {
+  const root = await navigator.storage.getDirectory();
+  // Handle subdirectory paths like invasiveImages/xxx.jpg
+  const parts = filename.split('/');
+  let dir = root;
+  for (let i = 0; i < parts.length - 1; i++) {
+    dir = await dir.getDirectoryHandle(parts[i]);
+  }
+  const fh   = await dir.getFileHandle(parts[parts.length - 1]);
+  return fh.getFile();
+}
+
+function mimeType(filename) {
+  if (filename.endsWith('.html')) return 'text/html; charset=utf-8';
+  if (filename.endsWith('.json')) return 'application/json';
+  if (filename.endsWith('.geojson')) return 'application/geo+json';
+  if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) return 'image/jpeg';
+  if (filename.endsWith('.png')) return 'image/png';
+  if (filename.endsWith('.css')) return 'text/css';
+  return 'application/octet-stream';
+}
+
+// ── Fetch ─────────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
   // Network-only for Google APIs
   if (NETWORK_ONLY_HOSTS.some(h => url.hostname.includes(h))) return;
 
-  // bundle.bin — always network-first (must be fresh for updates)
+  // bundle.bin — always fresh from network
   if (url.pathname.endsWith('/bundle.bin')) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // Network-first for shell HTML files
+  // Check if this is an OPFS-served file
+  const filename = url.pathname.split('/').pop();
+  const pathEnd  = url.pathname.replace('/ARRmapper/', '');
+
+  // invasiveImages assets
+  const isInvasive = url.pathname.includes('/invasiveImages/');
+  const invasiveFile = isInvasive ? 'invasiveImages/' + filename : null;
+
+  if (ALL_OPFS.includes(filename) || isInvasive) {
+    event.respondWith(
+      readFromOPFS(invasiveFile || filename)
+        .then(file => new Response(file, {
+          status: 200,
+          headers: {'Content-Type': mimeType(filename)}
+        }))
+        .catch(err => {
+          console.warn('SW OPFS miss:', filename, err.message);
+          // Fall through to network (will 404, but gracefully)
+          return fetch(event.request).catch(() =>
+            new Response('Bundle not loaded — please sign in again.', {
+              status: 503,
+              headers: {'Content-Type': 'text/plain'}
+            })
+          );
+        })
+    );
+    return;
+  }
+
+  // Network-first for shell HTML
   if (url.pathname.endsWith('index.html') ||
       url.pathname.endsWith('launcher.html') ||
       url.pathname === '/ARRmapper/' ||
@@ -83,7 +162,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache-first for everything else (CSS, images, icons)
+  // Cache-first for everything else
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
