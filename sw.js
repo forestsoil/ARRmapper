@@ -1,68 +1,32 @@
-// ARR Project Suite — Service Worker v8
-// Caching strategy:
-//   index.html              → network-first (always serve fresh launcher)
-//   appDashboard.html       → network-first (data-dependent, stale is misleading)
-//   mapper applets          → stale-while-revalidate (serve cached for speed,
-//                             update in background — preserves offline capability)
-//   CDN assets              → cache-first (immutable versioned URLs)
-//   Google APIs             → network-only (auth, Maps, Apps Script)
+// ARR Project Suite — Service Worker v9
+// Bundle+OPFS architecture: applets no longer served as static files
+// Only shell files (index.html, launcher.html, arr-shared.css, logos, icons) are cached
+// bundle.bin is fetched by index.html and written to OPFS — not SW-cached
 
-const CACHE_NAME = 'arrm-shell-e1b19e1';
+const CACHE_NAME = 'arrm-shell-94685b2';
 
 const SHELL_URLS = [
-  '/ARRmapper/appVectorTool.html',
-  '/ARRmapper/appPlantationMapper.html',
-  '/ARRmapper/appSoilMapper.html',
-  '/ARRmapper/appDailyReport.html',
-  '/ARRmapper/appNurseryDashboard.html',
-  '/ARRmapper/appHotspot.html',
+  '/ARRmapper/index.html',
+  '/ARRmapper/launcher.html',
   '/ARRmapper/arr-shared.css',
   '/ARRmapper/manifest.json',
-  '/ARRmapper/logo.png',
-  '/ARRmapper/logo2.png',
-  // Leaflet (jsdelivr — matches all applets)
-  'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css',
-  'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
-  // Leaflet Draw (mapper trio)
-  'https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css',
-  'https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js',
-  // Turf
-  'https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js',
-  // JSZip
-  'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
-  // Google Identity
-  'https://accounts.google.com/gsi/client',
+  '/ARRmapper/logo_dark.png',
+  '/ARRmapper/logo_light.png',
+  '/ARRmapper/pwa_icon_dark.png',
+  '/ARRmapper/pwa_icon_light.png',
+  '/ARRmapper/privacy_policy.html',
+  '/ARRmapper/terms_of_service.html',
 ];
 
-// Never cache these — always network
+// Never cache — always network
 const NETWORK_ONLY_HOSTS = [
-  'maps.googleapis.com',
   'accounts.google.com',
   'script.google.com',
   'oauth2.googleapis.com',
+  'maps.googleapis.com',
 ];
 
-// Always fetch fresh from network (fall back to cache if offline)
-const NETWORK_FIRST_PATHS = [
-  '/ARRmapper/index.html',
-  '/ARRmapper/',
-  '/ARRmapper/appDashboard.html',
-  '/ARRmapper/appCCBSDG.html',
-  '/ARRmapper/appMonitoringDashboard.html',
-  '/ARRmapper/appSurveyManager.html',
-  '/ARRmapper/appInventory.html',
-];
-
-// Stale-while-revalidate: offline-capable field tools
-const STALE_WHILE_REVALIDATE_PATHS = [
-  '/ARRmapper/appVectorTool.html',
-  '/ARRmapper/appPlantationMapper.html',
-  '/ARRmapper/appSoilMapper.html',
-  '/ARRmapper/appDailyReport.html',
-  '/ARRmapper/appNurseryDashboard.html',
-];
-
-// ── Install: pre-cache app shell ─────────────────────────────────────
+// ── Install: pre-cache shell ──────────────────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
@@ -75,7 +39,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// ── Activate: remove old caches ──────────────────────────────────────
+// ── Activate: remove old caches ───────────────────────────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -86,22 +50,30 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ── Fetch strategy ───────────────────────────────────────────────────
+// ── Fetch strategy ────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
   // Network-only for Google APIs
   if (NETWORK_ONLY_HOSTS.some(h => url.hostname.includes(h))) return;
 
-  // Network-first for index + dashboards
-  if (NETWORK_FIRST_PATHS.some(p => url.pathname === p || url.pathname.endsWith(p))) {
+  // bundle.bin — always network-first (must be fresh for updates)
+  if (url.pathname.endsWith('/bundle.bin')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Network-first for shell HTML files
+  if (url.pathname.endsWith('index.html') ||
+      url.pathname.endsWith('launcher.html') ||
+      url.pathname === '/ARRmapper/' ||
+      url.pathname === '/ARRmapper') {
     event.respondWith(
       fetch(event.request)
         .then(response => {
           if (response && response.status === 200) {
-            const clone = response.clone();
             caches.open(CACHE_NAME)
-              .then(cache => cache.put(event.request, clone))
+              .then(cache => cache.put(event.request, response.clone()))
               .catch(() => {});
           }
           return response;
@@ -111,33 +83,14 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Stale-while-revalidate for offline-capable field applets
-  if (STALE_WHILE_REVALIDATE_PATHS.some(p => url.pathname === p || url.pathname.endsWith(p))) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then(cache =>
-        cache.match(event.request).then(cached => {
-          const networkFetch = fetch(event.request).then(response => {
-            if (response && response.status === 200) {
-              cache.put(event.request, response.clone()).catch(() => {});
-            }
-            return response;
-          }).catch(() => cached);
-          return cached || networkFetch;
-        })
-      )
-    );
-    return;
-  }
-
-  // Cache-first for everything else (CDN assets, images, etc.)
+  // Cache-first for everything else (CSS, images, icons)
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
         if (response && response.status === 200 && event.request.method === 'GET') {
-          const clone = response.clone();
           caches.open(CACHE_NAME)
-            .then(cache => cache.put(event.request, clone))
+            .then(cache => cache.put(event.request, response.clone()))
             .catch(() => {});
         }
         return response;
