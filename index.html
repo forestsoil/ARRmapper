@@ -142,7 +142,7 @@ function handleCredential(response) {
     showSpinner(false);
     document.getElementById('gsi-btn-wrap').style.display = 'flex';
     setStatus('Network error — check connection and try again', 'status-error');
-  }, 15000);
+  }, 60000);
 
   window[cbName] = function(data) {
     clearTimeout(timeout);
