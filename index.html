@@ -135,20 +135,9 @@ async function handleCredential(response) {
   showSpinner(true);
   document.getElementById('gsi-btn-wrap').style.display = 'none';
 
-<<<<<<< HEAD
-  const cbName = '_gasAuth_' + Date.now();
-  const timeout = setTimeout(() => {
-    delete window[cbName];
-    document.getElementById(cbName + '_script') && document.getElementById(cbName + '_script').remove();
-    showSpinner(false);
-    document.getElementById('gsi-btn-wrap').style.display = 'flex';
-    setStatus('Network error — check connection and try again', 'status-error');
-  }, 60000);
-=======
   try {
     const p = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
     const email = (p.email || '').trim().toLowerCase();
->>>>>>> 7ad2ded (index v7: remove GAS auth, local staff list check, hardcoded AES key)
 
     const resp = await fetch(STAFF_JSON_URL);
     const staff = await resp.json();
