@@ -79,7 +79,8 @@ footer{text-align:center;font-size:.72rem;color:#aaa;padding:16px;margin-top:aut
 <script>
 // ── Constants ─────────────────────────────────────────────────────
 const OAUTH_CLIENT_ID = '712889656596-385d3fgsju3dfi5mdvub6ieqajuebi1g.apps.googleusercontent.com';
-const GAS_AUTH_URL    = 'https://script.google.com/macros/s/AKfycbyI3UWQ_EupR5u5bOyy2SAeyoGGo22KBWXl3M1Wce9NDONr-yC8u3747OoB4k21RErAMA/exec';
+const STAFF_JSON_URL  = './staff_list_asha.json';
+const AES_KEY_HEX     = '94e9c442ac66d419e895949425e55f787052d1dfe3fbe522c868fdec22302d84';
 const LAUNCHER_URL    = './launcher.html';
 const BUNDLE_URL      = './bundle.bin';
 const BUNDLE_VER_KEY  = 'arr_bundle_ver';
@@ -112,11 +113,10 @@ function arrAuthGet() {
   if (!email) return null;
   return { email, name: localStorage.getItem(ARR_AUTH_NAME_KEY) || '' };
 }
-function arrAuthSet(email, name, aesKey) {
+function arrAuthSet(email, name) {
   localStorage.setItem(ARR_AUTH_EMAIL_KEY, email);
   localStorage.setItem(ARR_AUTH_NAME_KEY,  name || '');
   localStorage.setItem(ARR_AUTH_TS_KEY,    String(Date.now()));
-  if (aesKey) localStorage.setItem('arr_aes_key', aesKey); // persisted across tab close
 }
 
 // ── Status helpers ────────────────────────────────────────────────
@@ -130,11 +130,12 @@ function showSpinner(on) {
 }
 
 // ── Main credential handler ───────────────────────────────────────
-function handleCredential(response) {
+async function handleCredential(response) {
   setStatus('Verifying…');
   showSpinner(true);
   document.getElementById('gsi-btn-wrap').style.display = 'none';
 
+<<<<<<< HEAD
   const cbName = '_gasAuth_' + Date.now();
   const timeout = setTimeout(() => {
     delete window[cbName];
@@ -143,45 +144,38 @@ function handleCredential(response) {
     document.getElementById('gsi-btn-wrap').style.display = 'flex';
     setStatus('Network error — check connection and try again', 'status-error');
   }, 60000);
+=======
+  try {
+    const p = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    const email = (p.email || '').trim().toLowerCase();
+>>>>>>> 7ad2ded (index v7: remove GAS auth, local staff list check, hardcoded AES key)
 
-  window[cbName] = function(data) {
-    clearTimeout(timeout);
-    delete window[cbName];
-    document.getElementById(cbName + '_script') && document.getElementById(cbName + '_script').remove();
+    const resp = await fetch(STAFF_JSON_URL);
+    const staff = await resp.json();
+    const entry = staff.find(s => s.email && s.email.trim().toLowerCase() === email);
 
-    if (data.ok) {
-      arrAuthSet(
-        JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).email,
-        data.name,
-        data.key
-      );
-      setStatus('✓ Access granted — loading bundle…', 'status-ok');
-      const params = new URLSearchParams(window.location.search);
-      const redirect = params.get('redirect');
-      loadBundle(data.key, redirect);
-    } else {
+    if (!entry) {
       showSpinner(false);
       document.getElementById('gsi-btn-wrap').style.display = 'flex';
-      if (data.error === 'not_authorised') {
-        setStatus('⛔ Access denied — contact your project coordinator', 'status-error');
-      } else {
-        setStatus('Sign-in error (' + (data.error || 'unknown') + ') — try again', 'status-error');
-      }
+      setStatus('⛔ Access denied — contact your project coordinator', 'status-error');
+      return;
     }
-  };
 
-  const s = document.createElement('script');
-  s.id = cbName + '_script';
-  s.src = GAS_AUTH_URL + '?callback=' + cbName + '&id_token=' + encodeURIComponent(response.credential);
-  s.onerror = () => {
-    clearTimeout(timeout);
-    delete window[cbName];
+    const canonicalName = (entry.name && entry.name !== '--') ? entry.name : (p.name || '');
+    arrAuthSet(email, canonicalName);
+    setStatus('✓ Access granted — loading bundle…', 'status-ok');
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get('redirect');
+    loadBundle(AES_KEY_HEX, redirect);
+
+  } catch(err) {
     showSpinner(false);
     document.getElementById('gsi-btn-wrap').style.display = 'flex';
-    setStatus('Network error — check connection and try again', 'status-error');
-  };
-  document.head.appendChild(s);
+    setStatus('Sign-in error — check connection and try again', 'status-error');
+    console.error('handleCredential:', err);
+  }
 }
+
 
 // ── Bundle loader (fetch → decrypt → unzip → OPFS) ───────────────
 async function hexToKey(hex) {
@@ -266,24 +260,16 @@ function init() {
   if (auth) {
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('redirect');
-    const aesKey = localStorage.getItem('arr_aes_key');
     const opfsReady = localStorage.getItem(OPFS_READY_KEY) === '1';
     if (opfsReady) {
-      // Bundle already in OPFS — go straight to launcher, no key needed
       setStatus('✓ Already signed in — launching…', 'status-ok');
       setTimeout(() => {
         window.location.href = redirect ? decodeURIComponent(redirect) : LAUNCHER_URL;
       }, 300);
-    } else if (aesKey) {
-      // Have key but OPFS not ready — load bundle
+    } else {
       setStatus('✓ Signed in — loading bundle…', 'status-ok');
       showSpinner(true);
-      loadBundle(aesKey, redirect);
-    } else {
-      // No key, no bundle — must sign in
-      setStatus('Sign in to access field tools');
-      if (window.google?.accounts?.id) initGSI();
-      else window.addEventListener('load', () => { if (window.google?.accounts?.id) initGSI(); });
+      loadBundle(AES_KEY_HEX, redirect);
     }
     return;
   }
