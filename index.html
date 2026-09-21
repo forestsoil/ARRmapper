@@ -16,6 +16,7 @@
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
 <title>ARR Project Suite</title>
+<!-- index_v8.html — iOS IDB fallback for bundle storage -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;background:var(--bg,#f0fdf4)}
@@ -166,7 +167,11 @@ async function handleCredential(response) {
 }
 
 
-// ── Bundle loader (fetch → decrypt → unzip → OPFS) ───────────────
+// ── Platform detection ────────────────────────────────────────────
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// ── Bundle loader (fetch → decrypt → unzip → OPFS or IDB) ────────
 async function hexToKey(hex) {
   const raw = new Uint8Array(hex.match(/../g).map(h => parseInt(h, 16)));
   return crypto.subtle.importKey('raw', raw, {name:'AES-GCM'}, false, ['decrypt']);
@@ -180,9 +185,9 @@ async function decryptBundle(encrypted, keyHex) {
   return crypto.subtle.decrypt({name:'AES-GCM', iv:nonce}, key, ct);
 }
 
-async function writeToOPFS(zipBuf) {
-  const root = await navigator.storage.getDirectory();
-  const { entries } = await new Promise((res, rej) => {
+// Unzip in a worker; returns plain object { filename: Uint8Array }
+function unzipInWorker(zipBuf) {
+  return new Promise((res, rej) => {
     const worker = new Worker(URL.createObjectURL(new Blob([`
       importScripts('https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js');
       self.onmessage = function(e) {
@@ -196,10 +201,14 @@ async function writeToOPFS(zipBuf) {
         });
       };
     `], {type:'application/javascript'})));
-    worker.onmessage = e => { worker.terminate(); e.data.error ? rej(new Error(e.data.error)) : res(e.data); };
+    worker.onmessage = e => { worker.terminate(); e.data.error ? rej(new Error(e.data.error)) : res(e.data.entries); };
     worker.postMessage(zipBuf);
   });
+}
 
+// OPFS path (desktop / Android Chrome)
+async function writeToOPFS(entries) {
+  const root = await navigator.storage.getDirectory();
   let count = 0;
   for (const [name, dataArr] of Object.entries(entries)) {
     const parts = name.split('/');
@@ -216,6 +225,27 @@ async function writeToOPFS(zipBuf) {
   return count;
 }
 
+// IDB path (iOS Safari / iOS Chrome fallback)
+function writeToIDB(entries) {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('arr_bundle', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('files');
+    req.onerror = () => rej(new Error('IDB open failed'));
+    req.onsuccess = e => {
+      const db = e.target.result;
+      const tx = db.transaction('files', 'readwrite');
+      const store = tx.objectStore('files');
+      let count = 0;
+      for (const [name, dataArr] of Object.entries(entries)) {
+        store.put(new Uint8Array(dataArr), name);
+        count++;
+      }
+      tx.oncomplete = () => { db.close(); res(count); };
+      tx.onerror = ev => rej(new Error('IDB write: ' + ev.target.error));
+    };
+  });
+}
+
 async function loadBundle(keyHex, redirectAfter) {
   showSpinner(true);
   try {
@@ -228,7 +258,16 @@ async function loadBundle(keyHex, redirectAfter) {
     const zipBuf = await decryptBundle(encrypted, keyHex);
 
     setStatus('Installing to device…');
-    const count = await writeToOPFS(zipBuf);
+    const entries = await unzipInWorker(zipBuf);
+
+    let count;
+    if (IS_IOS) {
+      count = await writeToIDB(entries);
+      localStorage.setItem('arr_bundle_store', 'idb');
+    } else {
+      count = await writeToOPFS(entries);
+      localStorage.setItem('arr_bundle_store', 'opfs');
+    }
 
     localStorage.setItem(OPFS_READY_KEY, '1');
     setStatus('✓ Ready — launching (' + count + ' files)', 'status-ok');
