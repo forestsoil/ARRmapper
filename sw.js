@@ -1,9 +1,9 @@
-// ARR Project Suite — Service Worker v10
-// OPFS intercept: applet HTML is read from OPFS and returned directly.
+// ARR Project Suite — Service Worker v11
+// OPFS intercept: applet HTML is read from OPFS (desktop/Android) or IDB (iOS) and returned directly.
 // Static files (index, launcher, css, icons) served normally from network/cache.
 // bundle.bin always fetched fresh from network.
 
-const CACHE_NAME = 'arrm-shell-9cb49f8';
+const CACHE_NAME = 'arrm-shell-v11';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
@@ -77,6 +77,25 @@ self.addEventListener('activate', event => {
   );
 });
 
+// ── IDB reader (iOS fallback) ─────────────────────────────────────
+function readFromIDB(filename) {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('arr_bundle', 1);
+    req.onerror = () => reject(new Error('IDB open failed'));
+    req.onsuccess = e => {
+      const db = e.target.result;
+      const tx = db.transaction('files', 'readonly');
+      const get = tx.objectStore('files').get(filename);
+      get.onsuccess = ev => {
+        db.close();
+        if (ev.target.result) resolve(new Blob([ev.target.result], {type: mimeType(filename)}));
+        else reject(new Error('IDB miss: ' + filename));
+      };
+      get.onerror = () => { db.close(); reject(new Error('IDB get error')); };
+    };
+  });
+}
+
 // ── OPFS reader ───────────────────────────────────────────────────
 async function readFromOPFS(filename) {
   const root = await navigator.storage.getDirectory();
@@ -86,8 +105,17 @@ async function readFromOPFS(filename) {
   for (let i = 0; i < parts.length - 1; i++) {
     dir = await dir.getDirectoryHandle(parts[i]);
   }
-  const fh   = await dir.getFileHandle(parts[parts.length - 1]);
+  const fh = await dir.getFileHandle(parts[parts.length - 1]);
   return fh.getFile();
+}
+
+// Try OPFS first; fall back to IDB (iOS path)
+async function readFromBundle(filename) {
+  try {
+    return await readFromOPFS(filename);
+  } catch (opfsErr) {
+    return readFromIDB(filename);
+  }
 }
 
 function mimeType(filename) {
@@ -123,7 +151,7 @@ self.addEventListener('fetch', event => {
 
   if (ALL_OPFS.includes(filename) || isInvasive) {
     event.respondWith(
-      readFromOPFS(invasiveFile || filename)
+      readFromBundle(invasiveFile || filename)
         .then(file => new Response(file, {
           status: 200,
           headers: {'Content-Type': mimeType(filename)}

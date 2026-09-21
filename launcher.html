@@ -15,7 +15,8 @@
 <script>
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v43</title>
+<title>ARR Project Suite v44</title>
+<!-- launcher_landing_v44.html — iOS IDB-aware bundle check -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{ --card-name: var(--forest); }
@@ -406,6 +407,12 @@ function arrAuthCheck(redirectIfMissing = true) {
   return auth;
 }
 
+// ── Platform / bundle store ───────────────────────────────────────
+const OPFS_READY_KEY   = 'arr_opfs_ready';
+const BUNDLE_STORE_KEY = 'arr_bundle_store'; // 'opfs' | 'idb' | null (old install)
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 // ── Launcher auth ─────────────────────────────────────────────────
 const OAUTH_CLIENT_ID = '712889656596-385d3fgsju3dfi5mdvub6ieqajuebi1g.apps.googleusercontent.com';
 
@@ -433,6 +440,23 @@ function launcherInit() {
   const params   = new URLSearchParams(window.location.search);
   const redirect = params.get('redirect');
   const auth = arrAuthGet();
+
+  // If bundle was written by an old index (no store key), or iOS but store says opfs,
+  // treat bundle as stale and force re-download via index.
+  const bundleReady = localStorage.getItem(OPFS_READY_KEY) === '1';
+  const bundleStore = localStorage.getItem(BUNDLE_STORE_KEY); // null = old install
+  const storeIsIDB  = bundleStore === 'idb';
+  const storeIsOPFS = bundleStore === 'opfs';
+  const bundleStale = !bundleReady || (IS_IOS && storeIsOPFS) || (!bundleStore && bundleReady);
+
+  if (bundleStale && auth) {
+    // Clear stale flags and re-run index to re-download bundle via correct path
+    localStorage.removeItem(OPFS_READY_KEY);
+    localStorage.removeItem(BUNDLE_STORE_KEY);
+    window.location.href = '/ARRmapper/index.html?redirect=' + encodeURIComponent(window.location.href);
+    return;
+  }
+
   if (auth) {
     showSignedIn(auth);
     if (redirect) window.location.href = decodeURIComponent(redirect);
