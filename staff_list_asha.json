@@ -858,7 +858,7 @@
     "email": "anupamkujur143@gmail.com",
     "name": "Anupam Kujur",
     "district": "--",
-    "designation": "--",
+    "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
     "supervisor": "--"
@@ -867,7 +867,7 @@
     "email": "kartiksahu05056@gmail.com",
     "name": "Kartik Sahu",
     "district": "--",
-    "designation": "--",
+    "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
     "supervisor": "--"
@@ -876,7 +876,7 @@
     "email": "riju09738@gmail.com",
     "name": "Riju Roy",
     "district": "--",
-    "designation": "--",
+    "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
     "supervisor": "--"
@@ -885,7 +885,7 @@
     "email": "wilsontoppo123@gmail.com",
     "name": "Wilson Toppo",
     "district": "--",
-    "designation": "--",
+    "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
     "supervisor": "--"
@@ -894,7 +894,7 @@
     "email": "nayansarkar325@gmail.com",
     "name": "Nayan Sarkar",
     "district": "--",
-    "designation": "--",
+    "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
     "supervisor": "--"
@@ -903,7 +903,7 @@
     "email": "garialtari016@gmail.com",
     "name": "Malay Roy",
     "district": "--",
-    "designation": "--",
+    "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
     "supervisor": "--"
@@ -912,7 +912,7 @@
     "email": "bikkyyonzon@gmail.com",
     "name": "Bikky Yonzon Lama",
     "district": "--",
-    "designation": "--",
+    "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
     "supervisor": "--"
@@ -921,7 +921,7 @@
     "email": "kiranlohar1334@gmail.com",
     "name": "Kiran Lohar",
     "district": "--",
-    "designation": "--",
+    "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
     "supervisor": "--"
@@ -930,7 +930,7 @@
     "email": "r47003305@gmail.com",
     "name": "Rajesh Oraon",
     "district": "--",
-    "designation": "--",
+    "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
     "supervisor": "--"
@@ -939,7 +939,7 @@
     "email": "ashoktirkey1209@gmail.com",
     "name": "Ashok Tirkey",
     "district": "--",
-    "designation": "--",
+    "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
     "supervisor": "--"
@@ -948,13 +948,13 @@
     "email": "kujurmiron@gmail.com",
     "name": "Miron Kujur",
     "district": "--",
-    "designation": "--",
+    "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
     "supervisor": "--"
   },
   {
-    "email": "gopalgowala559@gmail.com",
+    "email": "gopalgowala751@gmail.com",
     "name": "Gopal Gowala",
     "district": "APDW",
     "designation": "Plantation Field Assistant",
@@ -1001,6 +1001,15 @@
   {
     "email": "koilashbarman610@gmail.com",
     "name": "Kailash Barman",
+    "district": "APDW",
+    "designation": "Plantation Field Assistant",
+    "affiliation": "Vendor",
+    "cluster": "APD West",
+    "supervisor": "--"
+  },
+  {
+    "email": "mintunamadas60@gmail.com",
+    "name": "Mintu Namadas",
     "district": "APDW",
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
