@@ -1,14 +1,5 @@
 [
   {
-    "email": "forestsoil.dev@gmail.com",
-    "name": "Forest Soil Developer",
-    "district": "",
-    "designation": "Developer",
-    "affiliation": "",
-    "cluster": "",
-    "supervisor": ""
-  },
-  {
     "email": "ajgarashatslpl@gmail.com",
     "name": "Ajgar Ali",
     "district": "JPG",
@@ -270,7 +261,7 @@
     "supervisor": "Shanti Oraon"
   },
   {
-    "email": "hritikkerketta777@gmail.com",
+    "email": "hritikkerketta.official@gmail.com",
     "name": "Hritik Kerketta",
     "district": "APDE",
     "designation": "Plantation Field Assistant",
@@ -774,15 +765,6 @@
     "supervisor": "Kartik Barman"
   },
   {
-    "email": "sbsumit94@gmail.com",
-    "name": "Sumit Bhagat",
-    "district": "JPG",
-    "designation": "Climate Captain",
-    "affiliation": "TSLPL",
-    "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
-  },
-  {
     "email": "sumitrachhh048@gmail.com",
     "name": "Sumitra Chhetri",
     "district": "JPG",
@@ -924,6 +906,105 @@
     "designation": "--",
     "affiliation": "Vendor",
     "cluster": "--",
+    "supervisor": "--"
+  },
+  {
+    "email": "bikkyyonzon@gmail.com",
+    "name": "Bikky Yonzon Lama",
+    "district": "--",
+    "designation": "--",
+    "affiliation": "Vendor",
+    "cluster": "--",
+    "supervisor": "--"
+  },
+  {
+    "email": "kiranlohar1334@gmail.com",
+    "name": "Kiran Lohar",
+    "district": "--",
+    "designation": "--",
+    "affiliation": "Vendor",
+    "cluster": "--",
+    "supervisor": "--"
+  },
+  {
+    "email": "r47003305@gmail.com",
+    "name": "Rajesh Oraon",
+    "district": "--",
+    "designation": "--",
+    "affiliation": "Vendor",
+    "cluster": "--",
+    "supervisor": "--"
+  },
+  {
+    "email": "ashoktirkey1209@gmail.com",
+    "name": "Ashok Tirkey",
+    "district": "--",
+    "designation": "--",
+    "affiliation": "Vendor",
+    "cluster": "--",
+    "supervisor": "--"
+  },
+  {
+    "email": "kujurmiron@gmail.com",
+    "name": "Miron Kujur",
+    "district": "--",
+    "designation": "--",
+    "affiliation": "Vendor",
+    "cluster": "--",
+    "supervisor": "--"
+  },
+  {
+    "email": "gopalgowala559@gmail.com",
+    "name": "Gopal Gowala",
+    "district": "APDW",
+    "designation": "Plantation Field Assistant",
+    "affiliation": "Vendor",
+    "cluster": "APD West",
+    "supervisor": "--"
+  },
+  {
+    "email": "kujurrohan0@gmail.com",
+    "name": "Rohan Kujur",
+    "district": "APDW",
+    "designation": "Plantation Field Assistant",
+    "affiliation": "Vendor",
+    "cluster": "APD West",
+    "supervisor": "--"
+  },
+  {
+    "email": "diprajmangar639@gmail.com",
+    "name": "Dipraj Mangar",
+    "district": "APDW",
+    "designation": "Plantation Field Assistant",
+    "affiliation": "Vendor",
+    "cluster": "APD West",
+    "supervisor": "--"
+  },
+  {
+    "email": "mistermiya901@gmail.com",
+    "name": "Habibar Miya",
+    "district": "APDW",
+    "designation": "Plantation Field Assistant",
+    "affiliation": "Vendor",
+    "cluster": "APD West",
+    "supervisor": "--"
+  },
+  {
+    "email": "sushantabarman71683@gmail.com",
+    "name": "Sushanta Barman",
+    "district": "APDW",
+    "designation": "Plantation Field Assistant",
+    "affiliation": "Vendor",
+    "cluster": "APD West",
+    "supervisor": "--"
+  },
+  {
+    "email": "koilashbarman610@gmail.com",
+    "name": "Kailash Barman",
+    "district": "APDW",
+    "designation": "Plantation Field Assistant",
+    "affiliation": "Vendor",
+    "cluster": "APD West",
     "supervisor": "--"
   }
 ]
