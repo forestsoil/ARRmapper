@@ -3,7 +3,7 @@
 // Static files (index, launcher, css, icons) served normally from network/cache.
 // bundle.bin always fetched fresh from network.
 
-const CACHE_NAME = 'arrm-shell-b406175';
+const CACHE_NAME = 'arrm-shell-4c9d6e4';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
