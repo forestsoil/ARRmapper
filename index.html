@@ -16,7 +16,7 @@
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
 <title>ARR Project Suite</title>
-<!-- index_v8.html — iOS IDB fallback for bundle storage -->
+<!-- index_v9.html — no TTL, timed staff lookup, skip reinstall, watchdog -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;background:var(--bg,#f0fdf4)}
@@ -40,6 +40,7 @@ header img{height:48px;width:48px;border-radius:8px;object-fit:contain}
 #auth-status{display:block;font-size:.8rem;min-height:20px;color:#888;margin-top:8px}
 .status-error{color:#c0392b!important;font-weight:600}
 .status-ok{color:#27ae60!important;font-weight:600}
+#retry-btn{display:none;margin-top:14px;padding:8px 22px;border:none;border-radius:8px;background:var(--leaf,#52b788);color:#fff;font-size:.9rem;cursor:pointer}
 
 /* Spinner */
 .spinner{display:none;width:28px;height:28px;border:3px solid rgba(82,183,136,.3);border-top-color:var(--leaf,#52b788);border-radius:50%;animation:spin .8s linear infinite;margin:12px auto 0}
@@ -72,25 +73,16 @@ footer{text-align:center;font-size:.72rem;color:#aaa;padding:16px;margin-top:aut
     <div id="gsi-btn-wrap"></div>
     <div class="spinner" id="spinner"></div>
     <span id="auth-status">Checking sign-in…</span>
+    <button id="retry-btn" onclick="location.reload()">Retry</button>
   </div>
 </div>
 
 <footer>ARR Project Suite · Developed by Nirmalya Chatterjee · For use by authorised project partners, funders &amp; clients only</footer>
 
+<script src="arr-loader.js"></script>
 <script>
-// ── Constants ─────────────────────────────────────────────────────
+const LAUNCHER_URL = './launcher.html';
 const OAUTH_CLIENT_ID = '712889656596-385d3fgsju3dfi5mdvub6ieqajuebi1g.apps.googleusercontent.com';
-const STAFF_JSON_URL  = './staff_list_asha.json';
-const AES_KEY_HEX     = '94e9c442ac66d419e895949425e55f787052d1dfe3fbe522c868fdec22302d84';
-const LAUNCHER_URL    = './launcher.html';
-const BUNDLE_URL      = './bundle.bin';
-const BUNDLE_VER_KEY  = 'arr_bundle_ver';
-const OPFS_READY_KEY  = 'arr_opfs_ready';
-
-const ARR_AUTH_EMAIL_KEY = 'arr_user_email';
-const ARR_AUTH_NAME_KEY  = 'arr_user_name';
-const ARR_AUTH_TS_KEY    = 'arr_auth_ts';
-const ARR_AUTH_TTL       = 12 * 60 * 60 * 1000; // 12 hours
 
 // ── Theme ─────────────────────────────────────────────────────────
 function toggleTheme() {
@@ -108,211 +100,95 @@ function toggleTheme() {
   document.getElementById('suite-logo').src = isDark ? 'logo_dark.png' : 'logo_light.png';
 })();
 
-// ── Auth helpers ──────────────────────────────────────────────────
-function arrAuthGet() {
-  const email = localStorage.getItem(ARR_AUTH_EMAIL_KEY);
-  if (!email) return null;
-  return { email, name: localStorage.getItem(ARR_AUTH_NAME_KEY) || '' };
-}
-function arrAuthSet(email, name) {
-  localStorage.setItem(ARR_AUTH_EMAIL_KEY, email);
-  localStorage.setItem(ARR_AUTH_NAME_KEY,  name || '');
-  localStorage.setItem(ARR_AUTH_TS_KEY,    String(Date.now()));
-}
-
-// ── Status helpers ────────────────────────────────────────────────
+// ── Status + watchdog ─────────────────────────────────────────────
+let _wd = null;
 function setStatus(msg, cls) {
   const el = document.getElementById('auth-status');
   el.textContent = msg;
   el.className = cls || '';
 }
-function showSpinner(on) {
-  document.getElementById('spinner').style.display = on ? 'block' : 'none';
+function showSpinner(on) { document.getElementById('spinner').style.display = on ? 'block' : 'none'; }
+function showRetry(on) { document.getElementById('retry-btn').style.display = on ? 'inline-block' : 'none'; }
+function stage(msg, cls) {            // any progress resets the watchdog
+  setStatus(msg, cls);
+  clearTimeout(_wd);
+  _wd = setTimeout(() => {
+    showSpinner(false);
+    setStatus('Taking too long — check connection', 'status-error');
+    showRetry(true);
+  }, 25000);
+}
+function stageDone() { clearTimeout(_wd); }
+
+function redirectTarget() {
+  const r = new URLSearchParams(window.location.search).get('redirect');
+  return r ? decodeURIComponent(r) : LAUNCHER_URL;
+}
+function go() { stageDone(); setTimeout(() => { window.location.href = redirectTarget(); }, 300); }
+
+async function ensureBundleThenGo() {
+  if (arrBundleInstalled()) { stage('✓ Signed in — launching…', 'status-ok'); go(); return; }
+  showSpinner(true);
+  try {
+    const n = await arrInstallBundle(m => stage(m));
+    stage('✓ Ready — launching (' + n + ' files)', 'status-ok');
+    go();
+  } catch (err) {
+    stageDone();
+    showSpinner(false);
+    setStatus('Install error: ' + err.message, 'status-error');
+    showRetry(true);
+    console.error('install:', err);
+  }
 }
 
-// ── Main credential handler ───────────────────────────────────────
+// ── Credential handler ────────────────────────────────────────────
 async function handleCredential(response) {
-  setStatus('Verifying…');
-  showSpinner(true);
   document.getElementById('gsi-btn-wrap').style.display = 'none';
-
+  showSpinner(true);
+  stage('Verifying…');
   try {
-    const p = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    const p = arrDecodeJwt(response.credential);
     const email = (p.email || '').trim().toLowerCase();
-
-    const resp = await fetch(STAFF_JSON_URL);
-    const staff = await resp.json();
-    const entry = staff.find(s => s.email && s.email.trim().toLowerCase() === email);
-
-    if (!entry) {
-      showSpinner(false);
+    const v = await arrVerifyEmail(email, p.name);
+    if (!v.ok) {
+      stageDone(); showSpinner(false);
       document.getElementById('gsi-btn-wrap').style.display = 'flex';
       setStatus('⛔ Access denied — contact your project coordinator', 'status-error');
       return;
     }
-
-    const canonicalName = (entry.name && entry.name !== '--') ? entry.name : (p.name || '');
-    arrAuthSet(email, canonicalName);
-    setStatus('✓ Access granted — loading bundle…', 'status-ok');
-    const params = new URLSearchParams(window.location.search);
-    const redirect = params.get('redirect');
-    loadBundle(AES_KEY_HEX, redirect);
-
-  } catch(err) {
-    showSpinner(false);
+    arrLoaderAuthSet(email, v.name, v.provisional);
+    await ensureBundleThenGo();
+  } catch (err) {
+    stageDone(); showSpinner(false);
     document.getElementById('gsi-btn-wrap').style.display = 'flex';
-    setStatus('Sign-in error — check connection and try again', 'status-error');
+    setStatus('Sign-in error — try again', 'status-error');
     console.error('handleCredential:', err);
-  }
-}
-
-
-// ── Platform detection ────────────────────────────────────────────
-const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
-               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-// ── Bundle loader (fetch → decrypt → unzip → OPFS or IDB) ────────
-async function hexToKey(hex) {
-  const raw = new Uint8Array(hex.match(/../g).map(h => parseInt(h, 16)));
-  return crypto.subtle.importKey('raw', raw, {name:'AES-GCM'}, false, ['decrypt']);
-}
-
-async function decryptBundle(encrypted, keyHex) {
-  const buf   = new Uint8Array(encrypted);
-  const nonce = buf.slice(0, 12);
-  const ct    = buf.slice(12);
-  const key   = await hexToKey(keyHex);
-  return crypto.subtle.decrypt({name:'AES-GCM', iv:nonce}, key, ct);
-}
-
-// Unzip in a worker; returns plain object { filename: Uint8Array }
-function unzipInWorker(zipBuf) {
-  return new Promise((res, rej) => {
-    const worker = new Worker(URL.createObjectURL(new Blob([`
-      importScripts('https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js');
-      self.onmessage = function(e) {
-        fflate.unzip(new Uint8Array(e.data), function(err, files) {
-          if (err) { self.postMessage({error: err.message}); return; }
-          const out = {};
-          for (const [name, data] of Object.entries(files)) {
-            out[name] = Array.from(data);
-          }
-          self.postMessage({entries: out});
-        });
-      };
-    `], {type:'application/javascript'})));
-    worker.onmessage = e => { worker.terminate(); e.data.error ? rej(new Error(e.data.error)) : res(e.data.entries); };
-    worker.postMessage(zipBuf);
-  });
-}
-
-// OPFS path (desktop / Android Chrome)
-async function writeToOPFS(entries) {
-  const root = await navigator.storage.getDirectory();
-  let count = 0;
-  for (const [name, dataArr] of Object.entries(entries)) {
-    const parts = name.split('/');
-    let dir = root;
-    for (let i = 0; i < parts.length - 1; i++) {
-      dir = await dir.getDirectoryHandle(parts[i], {create:true});
-    }
-    const fh = await dir.getFileHandle(parts[parts.length-1], {create:true});
-    const w  = await fh.createWritable();
-    await w.write(new Uint8Array(dataArr));
-    await w.close();
-    count++;
-  }
-  return count;
-}
-
-// IDB path (iOS Safari / iOS Chrome fallback)
-function writeToIDB(entries) {
-  return new Promise((res, rej) => {
-    const req = indexedDB.open('arr_bundle', 1);
-    req.onupgradeneeded = e => e.target.result.createObjectStore('files');
-    req.onerror = () => rej(new Error('IDB open failed'));
-    req.onsuccess = e => {
-      const db = e.target.result;
-      const tx = db.transaction('files', 'readwrite');
-      const store = tx.objectStore('files');
-      let count = 0;
-      for (const [name, dataArr] of Object.entries(entries)) {
-        store.put(new Uint8Array(dataArr), name);
-        count++;
-      }
-      tx.oncomplete = () => { db.close(); res(count); };
-      tx.onerror = ev => rej(new Error('IDB write: ' + ev.target.error));
-    };
-  });
-}
-
-async function loadBundle(keyHex, redirectAfter) {
-  showSpinner(true);
-  try {
-    setStatus('Downloading bundle…');
-    const resp = await fetch(BUNDLE_URL, {cache:'no-store'});
-    if (!resp.ok) throw new Error('fetch ' + resp.status);
-    const encrypted = await resp.arrayBuffer();
-
-    setStatus('Decrypting…');
-    const zipBuf = await decryptBundle(encrypted, keyHex);
-
-    setStatus('Installing to device…');
-    const entries = await unzipInWorker(zipBuf);
-
-    let count;
-    if (IS_IOS) {
-      count = await writeToIDB(entries);
-      localStorage.setItem('arr_bundle_store', 'idb');
-    } else {
-      count = await writeToOPFS(entries);
-      localStorage.setItem('arr_bundle_store', 'opfs');
-    }
-
-    localStorage.setItem(OPFS_READY_KEY, '1');
-    setStatus('✓ Ready — launching (' + count + ' files)', 'status-ok');
-    setTimeout(() => {
-      window.location.href = redirectAfter ? decodeURIComponent(redirectAfter) : LAUNCHER_URL;
-    }, 500);
-  } catch(err) {
-    showSpinner(false);
-    setStatus('Bundle error: ' + err.message + ' — try again', 'status-error');
-    document.getElementById('gsi-btn-wrap').style.display = 'flex';
-    console.error('loadBundle:', err);
   }
 }
 
 // ── Init ──────────────────────────────────────────────────────────
 function init() {
-  const auth = arrAuthGet();
-  if (auth) {
-    const params = new URLSearchParams(window.location.search);
-    const redirect = params.get('redirect');
-    const opfsReady = localStorage.getItem(OPFS_READY_KEY) === '1';
-    if (opfsReady) {
-      setStatus('✓ Already signed in — launching…', 'status-ok');
-      setTimeout(() => {
-        window.location.href = redirect ? decodeURIComponent(redirect) : LAUNCHER_URL;
-      }, 300);
-    } else {
-      setStatus('✓ Signed in — loading bundle…', 'status-ok');
-      showSpinner(true);
-      loadBundle(AES_KEY_HEX, redirect);
-    }
-    return;
-  }
+  if (localStorage.getItem(ARR_K.email)) { ensureBundleThenGo(); return; }
 
   setStatus('Sign in to access field tools');
-
-  if (window.google?.accounts?.id) initGSI();
-  else window.addEventListener('load', () => { if (window.google?.accounts?.id) initGSI(); });
+  const tryGSI = () => { if (window.google?.accounts?.id) { initGSI(); return true; } return false; };
+  if (!tryGSI()) {
+    window.addEventListener('load', tryGSI);
+    setTimeout(() => {
+      if (!window.google?.accounts?.id) {
+        setStatus('Google sign-in not reachable — check connection', 'status-error');
+        showRetry(true);
+      }
+    }, 12000);
+  }
 }
 
 function initGSI() {
   google.accounts.id.initialize({
     client_id: OAUTH_CLIENT_ID,
     callback: handleCredential,
-    auto_select: false,
+    auto_select: true,
     cancel_on_tap_outside: false,
     use_fedcm_for_prompt: true,
   });
@@ -323,7 +199,6 @@ function initGSI() {
   google.accounts.id.prompt();
 }
 
-// ── SW ────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }

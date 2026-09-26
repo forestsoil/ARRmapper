@@ -1,13 +1,16 @@
-// ARR Project Suite — Service Worker v11
+// ARR Project Suite — Service Worker v12
 // OPFS intercept: applet HTML is read from OPFS (desktop/Android) or IDB (iOS) and returned directly.
 // Static files (index, launcher, css, icons) served normally from network/cache.
-// bundle.bin always fetched fresh from network.
+// bundle.bin, bundle_ver.json and ?net=1 requests always go to network (not intercepted).
+// v12: safe IDB reader (no empty-DB creation / hang), bundle-read timeout,
+//      network-first shell with timeout, appARRMapper.html name fix.
 
-const CACHE_NAME = 'arrm-shell-8602454';
+const CACHE_NAME = 'arrm-shell-v12';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
   '/ARRmapper/launcher.html',
+  '/ARRmapper/arr-loader.js',
   '/ARRmapper/arr-shared.css',
   '/ARRmapper/manifest.json',
   '/ARRmapper/logo_dark.png',
@@ -20,6 +23,7 @@ const SHELL_URLS = [
 
 // Applet filenames served from OPFS
 const OPFS_APPLETS = [
+  'appARRMapper.html',
   'appARRmapper.html',
   'appPlantationMapper.html',
   'appSoilMapper.html',
@@ -78,20 +82,27 @@ self.addEventListener('activate', event => {
 });
 
 // ── IDB reader (iOS fallback) ─────────────────────────────────────
+// Opens at current version; never creates the DB (aborts upgrade) and
+// rejects if the 'files' store is missing — the old reader hung here.
 function readFromIDB(filename) {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open('arr_bundle', 1);
-    req.onerror = () => reject(new Error('IDB open failed'));
+    let req;
+    try { req = indexedDB.open('arr_bundle'); } catch (e) { reject(e); return; }
+    req.onupgradeneeded = e => { e.target.transaction.abort(); };
+    req.onerror = () => reject(new Error('IDB not installed'));
+    req.onblocked = () => reject(new Error('IDB blocked'));
     req.onsuccess = e => {
       const db = e.target.result;
-      const tx = db.transaction('files', 'readonly');
-      const get = tx.objectStore('files').get(filename);
-      get.onsuccess = ev => {
-        db.close();
-        if (ev.target.result) resolve(new Blob([ev.target.result], {type: mimeType(filename)}));
-        else reject(new Error('IDB miss: ' + filename));
-      };
-      get.onerror = () => { db.close(); reject(new Error('IDB get error')); };
+      if (!db.objectStoreNames.contains('files')) { db.close(); reject(new Error('IDB empty')); return; }
+      try {
+        const get = db.transaction('files', 'readonly').objectStore('files').get(filename);
+        get.onsuccess = ev => {
+          db.close();
+          if (ev.target.result) resolve(new Blob([ev.target.result], {type: mimeType(filename)}));
+          else reject(new Error('IDB miss: ' + filename));
+        };
+        get.onerror = () => { db.close(); reject(new Error('IDB get error')); };
+      } catch (err) { db.close(); reject(err); }
     };
   });
 }
@@ -109,23 +120,35 @@ async function readFromOPFS(filename) {
   return fh.getFile();
 }
 
-// Try OPFS first; fall back to IDB (iOS path)
+function withTimeout(p, ms, label) {
+  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(label + ' timeout')), ms))]);
+}
+
+// Try OPFS first; fall back to IDB (iOS path). Never hangs.
 async function readFromBundle(filename) {
   try {
-    return await readFromOPFS(filename);
+    return await withTimeout(readFromOPFS(filename), 3000, 'OPFS');
   } catch (opfsErr) {
-    return readFromIDB(filename);
+    return withTimeout(readFromIDB(filename), 3000, 'IDB');
   }
 }
 
-function mimeType(filename) {
-  if (filename.endsWith('.html')) return 'text/html; charset=utf-8';
-  if (filename.endsWith('.json')) return 'application/json';
-  if (filename.endsWith('.geojson')) return 'application/geo+json';
-  if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) return 'image/jpeg';
-  if (filename.endsWith('.png')) return 'image/png';
-  if (filename.endsWith('.css')) return 'text/css';
-  return 'application/octet-stream';
+// Network-first with timeout → cache; if no cache, keep waiting on network.
+function networkFirst(request, ms = 4000) {
+  const fromCache = () => caches.match(request, {ignoreSearch: true});
+  const net = fetch(request).then(response => {
+    if (response && response.status === 200) {
+      const copy = response.clone();
+      caches.open(CACHE_NAME).then(c => c.put(request, copy)).catch(() => {});
+    }
+    return response;
+  });
+  return new Promise(resolve => {
+    let settled = false;
+    const done = r => { if (!settled) { settled = true; clearTimeout(t); resolve(r); } };
+    const t = setTimeout(() => { fromCache().then(c => { if (c) done(c); }); }, ms);
+    net.then(done).catch(() => fromCache().then(c => done(c || Response.error())));
+  });
 }
 
 // ── Fetch ─────────────────────────────────────────────────────────
@@ -135,11 +158,10 @@ self.addEventListener('fetch', event => {
   // Network-only for Google APIs
   if (NETWORK_ONLY_HOSTS.some(h => url.hostname.includes(h))) return;
 
-  // bundle.bin — always fresh from network
-  if (url.pathname.endsWith('/bundle.bin')) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
+  // Network-only, not intercepted: bundle, version file, explicit ?net=1
+  if (url.pathname.endsWith('/bundle.bin') ||
+      url.pathname.endsWith('/bundle_ver.json') ||
+      url.searchParams.has('net')) return;
 
   // Check if this is an OPFS-served file
   const filename = url.pathname.split('/').pop();
@@ -170,23 +192,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Network-first for shell HTML
+  // Network-first (timed) for shell HTML + loader
   if (url.pathname.endsWith('index.html') ||
       url.pathname.endsWith('launcher.html') ||
+      url.pathname.endsWith('arr-loader.js') ||
       url.pathname === '/ARRmapper/' ||
       url.pathname === '/ARRmapper') {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          if (response && response.status === 200) {
-            caches.open(CACHE_NAME)
-              .then(cache => cache.put(event.request, response.clone()))
-              .catch(() => {});
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
+    event.respondWith(networkFirst(event.request));
     return;
   }
 

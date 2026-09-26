@@ -15,8 +15,8 @@
 <script>
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v44</title>
-<!-- launcher_landing_v44.html — iOS IDB-aware bundle check -->
+<title>ARR Project Suite v46</title>
+<!-- launcher_landing_v46.html — background bundle update, revalidation, timed staff lookup -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{ --card-name: var(--forest); }
@@ -200,7 +200,7 @@ footer a:hover{color:var(--canopy)}
       <div class="card-arrow">→</div>
     </a>
 
-    <a class="app-card" href="appVectorTool.html" style="--accent:#2d6a4f">
+    <a class="app-card" href="appARRMapper.html?mode=vec" style="--accent:#2d6a4f">
       <div class="card-icon">∟</div>
       <div class="card-name">Vector Tool</div>
       <div class="card-sub">GPS &amp; manual capture of POIs, paths, polygons</div>
@@ -219,7 +219,7 @@ footer a:hover{color:var(--canopy)}
       <div class="card-arrow">→</div>
     </a>
 
-    <a class="app-card" href="appSoilMapper.html" style="--accent:#92400e">
+    <a class="app-card" href="appARRMapper.html?mode=soil" style="--accent:#92400e">
       <div class="card-icon">⛏️</div>
       <div class="card-name">Soil Mapper</div>
       <div class="card-sub">Hand-drawn soil texture classification</div>
@@ -227,7 +227,7 @@ footer a:hover{color:var(--canopy)}
       <div class="card-arrow">→</div>
     </a>
 
-    <a class="app-card" href="appPlantationMapper.html" style="--accent:#16a34a">
+    <a class="app-card" href="appARRMapper.html?mode=plant" style="--accent:#16a34a">
       <div class="card-icon">🌳</div>
       <div class="card-name">Plantation Mapper</div>
       <div class="card-sub">Species-based sapling grid placement</div>
@@ -278,7 +278,7 @@ footer a:hover{color:var(--canopy)}
 
   <div class="grid">
 
-    <a class="app-card" href="appVectorTool.html" style="--accent:#2d6a4f">
+    <a class="app-card" href="appARRMapper.html?mode=vec" style="--accent:#2d6a4f">
       <div class="card-icon">∟</div>
       <div class="card-name">Vector Tool</div>
       <div class="card-sub">GPS &amp; manual capture of POIs, paths, polygons</div>
@@ -286,7 +286,7 @@ footer a:hover{color:var(--canopy)}
       <div class="card-arrow">→</div>
     </a>
 
-    <a class="app-card" href="appPlantationMapper.html" style="--accent:#16a34a">
+    <a class="app-card" href="appARRMapper.html?mode=plant" style="--accent:#16a34a">
       <div class="card-icon">🌳</div>
       <div class="card-name">Plantation Mapper</div>
       <div class="card-sub">Species-based sapling grid placement</div>
@@ -294,7 +294,7 @@ footer a:hover{color:var(--canopy)}
       <div class="card-arrow">→</div>
     </a>
 
-    <a class="app-card" href="appSoilMapper.html" style="--accent:#92400e">
+    <a class="app-card" href="appARRMapper.html?mode=soil" style="--accent:#92400e">
       <div class="card-icon">⛏️</div>
       <div class="card-name">Soil Mapper</div>
       <div class="card-sub">Hand-drawn soil texture classification</div>
@@ -338,6 +338,7 @@ footer a:hover{color:var(--canopy)}
   </div>
 </main>
 
+<script src="arr-loader.js"></script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/ARRmapper/sw.js');
@@ -459,7 +460,8 @@ function launcherInit() {
 
   if (auth) {
     showSignedIn(auth);
-    if (redirect) window.location.href = decodeURIComponent(redirect);
+    if (redirect) { window.location.href = decodeURIComponent(redirect); return; }
+    launcherBackground(auth);
     return;
   }
   document.getElementById('auth-status').textContent = 'Sign in to access field tools';
@@ -471,7 +473,7 @@ function initGSI(redirectAfter) {
   google.accounts.id.initialize({
     client_id: OAUTH_CLIENT_ID,
     callback: r => handleLauncherCredential(r, redirectAfter),
-    auto_select: false,
+    auto_select: true,
     cancel_on_tap_outside: false,
     use_fedcm_for_prompt: true,
   });
@@ -482,32 +484,77 @@ function initGSI(redirectAfter) {
   google.accounts.id.prompt();
 }
 
-const STAFF_JSON_URL = './staff_list_asha.json';
-
-async function resolveStaffEntry(email) {
-  try {
-    const resp = await fetch(STAFF_JSON_URL);
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    return data.find(s => s.email && s.email.toLowerCase() === email.toLowerCase()) || null;
-  } catch(e) { return null; }
-}
-
 async function handleLauncherCredential(response, redirectAfter) {
+  const st = document.getElementById('auth-status');
+  st.textContent = 'Verifying…';
   try {
-    const p = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-    const staffEntry = await resolveStaffEntry(p.email);
-    if (!staffEntry) {
-      document.getElementById('auth-status').textContent = '⛔ Access denied — contact your project coordinator';
+    const p = arrDecodeJwt(response.credential);
+    const email = (p.email || '').trim().toLowerCase();
+    const v = await arrVerifyEmail(email, p.name);
+    if (!v.ok) { st.textContent = '⛔ Access denied — contact your project coordinator'; return; }
+    arrLoaderAuthSet(email, v.name, v.provisional);
+    if (!arrBundleInstalled()) {
+      window.location.href = '/ARRmapper/index.html?redirect=' + encodeURIComponent(redirectAfter ? decodeURIComponent(redirectAfter) : window.location.href);
       return;
     }
-    const canonicalName = (staffEntry.name && staffEntry.name !== '--') ? staffEntry.name : (p.name || '');
-    arrAuthSet(p.email, canonicalName);
-    showSignedIn({ email: p.email, name: canonicalName });
+    showSignedIn({ email, name: v.name });
     if (redirectAfter) window.location.href = decodeURIComponent(redirectAfter);
+    else launcherBackground({ email, name: v.name });
   } catch(e) {
-    document.getElementById('auth-status').textContent = 'Sign-in error — try again';
+    st.textContent = 'Sign-in error — try again';
   }
+}
+
+// ── Background: revalidation + bundle update (never blocks unless forced) ─
+async function launcherBackground(auth) {
+  arrPersist();
+  if (!navigator.onLine) return;
+
+  // Revalidate against fresh staff list; network failure = no action
+  arrStaffFetchFresh().then(list => {
+    if (!list) return;
+    const s = arrStaffFind(list, auth.email);
+    if (!s) {
+      arrLoaderAuthClear();
+      alert('Your account is no longer on the project staff list. Contact your project coordinator.');
+      window.location.reload();
+      return;
+    }
+    const name = (s.name && s.name !== '--') ? s.name : auth.name;
+    arrLoaderAuthSet(auth.email, name, false);
+    if (name !== auth.name) showSignedIn({ email: auth.email, name });
+  });
+
+  const chk = await arrCheckUpdate();
+  if (chk.status === 'update') {
+    arrInstallBundle().then(() => launcherToast('✓ Suite updated'))
+                      .catch(e => console.warn('bg update:', e.message));
+  } else if (chk.status === 'forced') {
+    launcherForcedUpdate();
+  }
+}
+
+function launcherToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--canopy);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:9999;box-shadow:var(--shadow)';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+function launcherForcedUpdate() {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999';
+  ov.innerHTML = '<div style="background:var(--card);color:var(--ink);padding:24px 28px;border-radius:12px;max-width:320px;text-align:center;font-size:14px">' +
+    '<div style="font-weight:700;margin-bottom:8px">Updating ARR Suite</div>' +
+    '<div id="fu-msg">Starting…</div>' +
+    '<button id="fu-btn" style="display:none;margin-top:14px;padding:6px 18px;border:none;border-radius:8px;background:var(--leaf);color:#fff;cursor:pointer">Continue with current version</button></div>';
+  document.body.appendChild(ov);
+  const msg = ov.querySelector('#fu-msg'), btn = ov.querySelector('#fu-btn');
+  btn.onclick = () => ov.remove();
+  arrInstallBundle(m => { msg.textContent = m; })
+    .then(() => { msg.textContent = '✓ Updated'; setTimeout(() => ov.remove(), 800); })
+    .catch(e => { msg.textContent = 'Update failed: ' + e.message; btn.style.display = 'inline-block'; });
 }
 
 function showSignedIn(auth) {
