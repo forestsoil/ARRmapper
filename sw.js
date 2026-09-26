@@ -5,7 +5,7 @@
 // v12: safe IDB reader (no empty-DB creation / hang), bundle-read timeout,
 //      network-first shell with timeout, appARRMapper.html name fix.
 
-const CACHE_NAME = 'arrm-shell-v12';
+const CACHE_NAME = 'arrm-shell-0f390a2';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
