@@ -3,9 +3,10 @@
 // Static files (index, launcher, css, icons) served normally from network/cache.
 // bundle.bin, bundle_ver.json and ?net=1 requests always go to network (not intercepted).
 // v12: safe IDB reader (no empty-DB creation / hang), bundle-read timeout,
-//      network-first shell with timeout, appARRMapper.html name fix.
+//      network-first shell with timeout, appARRMapper.html name fix,
+//      bundle miss on navigation → index reinstall (no 404).
 
-const CACHE_NAME = 'arrm-shell-0f390a2';
+const CACHE_NAME = 'arrm-shell-v12';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
@@ -127,9 +128,9 @@ function withTimeout(p, ms, label) {
 // Try OPFS first; fall back to IDB (iOS path). Never hangs.
 async function readFromBundle(filename) {
   try {
-    return await withTimeout(readFromOPFS(filename), 3000, 'OPFS');
+    return await withTimeout(readFromOPFS(filename), 15000, 'OPFS');
   } catch (opfsErr) {
-    return withTimeout(readFromIDB(filename), 3000, 'IDB');
+    return withTimeout(readFromIDB(filename), 15000, 'IDB');
   }
 }
 
@@ -180,12 +181,13 @@ self.addEventListener('fetch', event => {
         }))
         .catch(err => {
           console.warn('SW OPFS miss:', filename, err.message);
-          // Fall through to network (will 404, but gracefully)
+          // Applets don't exist on the network — send navigations to index to reinstall
+          if (event.request.mode === 'navigate') {
+            return Response.redirect('/ARRmapper/index.html?reinstall=1&redirect=' +
+                                     encodeURIComponent(event.request.url), 302);
+          }
           return fetch(event.request).catch(() =>
-            new Response('Bundle not loaded — please sign in again.', {
-              status: 503,
-              headers: {'Content-Type': 'text/plain'}
-            })
+            new Response('Bundle not loaded', {status: 503, headers: {'Content-Type': 'text/plain'}})
           );
         })
     );

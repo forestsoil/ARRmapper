@@ -169,6 +169,20 @@ async function handleCredential(response) {
 
 // ── Init ──────────────────────────────────────────────────────────
 function init() {
+  // SW bundle miss → forced reinstall (guarded against loops: once per 2 min)
+  if (new URLSearchParams(location.search).has('reinstall')) {
+    const last = +sessionStorage.getItem('arr_reinstall_ts') || 0;
+    if (Date.now() - last > 120000) {
+      sessionStorage.setItem('arr_reinstall_ts', String(Date.now()));
+      localStorage.removeItem(ARR_K.ready);
+      localStorage.removeItem(ARR_K.ver);
+    } else {
+      setStatus('App files could not be loaded on this device — tap Retry', 'status-error');
+      sessionStorage.removeItem('arr_reinstall_ts');
+      showRetry(true);
+      return;
+    }
+  }
   if (localStorage.getItem(ARR_K.email)) { ensureBundleThenGo(); return; }
 
   setStatus('Sign in to access field tools');
