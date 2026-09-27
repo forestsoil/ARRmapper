@@ -6,7 +6,7 @@
 //      network-first shell with timeout, appARRMapper.html name fix,
 //      bundle miss on navigation → index reinstall (no 404).
 
-const CACHE_NAME = 'arrm-shell-fe8e2e7';
+const CACHE_NAME = 'arrm-shell-v12';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
@@ -152,6 +152,16 @@ function networkFirst(request, ms = 4000) {
   });
 }
 
+function mimeType(filename) {
+  if (filename.endsWith('.html')) return 'text/html; charset=utf-8';
+  if (filename.endsWith('.json')) return 'application/json';
+  if (filename.endsWith('.geojson')) return 'application/geo+json';
+  if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) return 'image/jpeg';
+  if (filename.endsWith('.png')) return 'image/png';
+  if (filename.endsWith('.css')) return 'text/css';
+  return 'application/octet-stream';
+}
+
 // ── Fetch ─────────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
@@ -183,8 +193,9 @@ self.addEventListener('fetch', event => {
           console.warn('SW OPFS miss:', filename, err.message);
           // Applets don't exist on the network — send navigations to index to reinstall
           if (event.request.mode === 'navigate') {
-            return Response.redirect('/ARRmapper/index.html?reinstall=1&redirect=' +
-                                     encodeURIComponent(event.request.url), 302);
+            return Response.redirect('/ARRmapper/index.html?reinstall=1&why=' +
+                                     encodeURIComponent(filename + ': ' + err.message) +
+                                     '&redirect=' + encodeURIComponent(event.request.url), 302);
           }
           return fetch(event.request).catch(() =>
             new Response('Bundle not loaded', {status: 503, headers: {'Content-Type': 'text/plain'}})
