@@ -1033,5 +1033,14 @@
     "affiliation": "Vendor",
     "cluster": "APD West",
     "supervisor": "--"
+  },
+  {
+    "email": "akhilibegum432@gmail.com",
+    "name": "Akali Begam",
+    "district": "APDW",
+    "designation": "Climate Captain",
+    "affiliation": "TSLPL",
+    "cluster": "Matiali",
+    "supervisor": "Goutam Dhar"
   }
 ]
