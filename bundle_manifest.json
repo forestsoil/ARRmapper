@@ -28,7 +28,8 @@
     "appMonitoringDashboard.html",
     "appNurseryDashboard.html",
     "appNurseryDashboard_Arun_v1.html",
-    "appSurveyManager.html"
+    "appSurveyManager.html",
+    "survey_schema_v9.json"
   ],
-  "zip_size": 4280614
+  "zip_size": 4313115
 }
