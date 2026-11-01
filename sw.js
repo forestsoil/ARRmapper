@@ -6,7 +6,7 @@
 //      network-first shell with timeout, appARRMapper.html name fix,
 //      bundle miss on navigation → index reinstall (no 404).
 
-const CACHE_NAME = 'arrm-shell-82f0457';
+const CACHE_NAME = 'arrm-shell-95595e0';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
