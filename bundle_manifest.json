@@ -5,6 +5,9 @@
     "manifest.json",
     "appARRMapper.html",
     "appCCBSDG.html",
+    "ccb_survey_schema_v1.json",
+    "ccb_species_v1.json",
+    "appInvasives.html",
     "invasiveImages/ageratina_adenophora.jpg",
     "invasiveImages/ageratum_conyzoides.jpg",
     "invasiveImages/chromolaena_odorata.jpg",
@@ -17,6 +20,8 @@
     "invasiveImages/salvinia_molesta.jpg",
     "invasiveImages/senna_spectabilis.jpg",
     "invasiveImages/tithonia_diversifolia.jpg",
+    "appAboutProject.html",
+    "appNativeSpecies.html",
     "appDailyReport.html",
     "appDashboard.html",
     "asha_plantation.geojson",
@@ -29,7 +34,7 @@
     "appNurseryDashboard.html",
     "appNurseryDashboard_Arun_v1.html",
     "appSurveyManager.html",
-    "survey_schema_v9.json"
+    "survey_schema_v10.json"
   ],
-  "zip_size": 4313800
+  "zip_size": 4379156
 }
