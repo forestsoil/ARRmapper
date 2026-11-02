@@ -1,4 +1,6 @@
-// ARR Project Suite — Service Worker v12
+// ARR Project Suite — Service Worker v14
+// v14: appInvasives / appNativeSpecies / appAboutProject; CCB survey schema + species JSON;
+//      survey_schema v9 + v10 served from bundle.
 // OPFS intercept: applet HTML is read from OPFS (desktop/Android) or IDB (iOS) and returned directly.
 // Static files (index, launcher, css, icons) served normally from network/cache.
 // bundle.bin, bundle_ver.json and ?net=1 requests always go to network (not intercepted).
@@ -6,7 +8,7 @@
 //      network-first shell with timeout, appARRMapper.html name fix,
 //      bundle miss on navigation → index reinstall (no 404).
 
-const CACHE_NAME = 'arrm-shell-854a9ed';
+const CACHE_NAME = 'arrm-shell-v12';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
@@ -30,6 +32,9 @@ const OPFS_APPLETS = [
   'appSoilMapper.html',
   'appVectorTool.html',
   'appCCBSDG.html',
+  'appInvasives.html',
+  'appNativeSpecies.html',
+  'appAboutProject.html',
   'appDailyReport.html',
   'appDashboard.html',
   'appDocumentReport.html',
@@ -48,6 +53,10 @@ const OPFS_ASSETS = [
   'inv_manifest.json',
   'staff_list_asha.json',
   'survey_schema_v7.json',
+  'survey_schema_v9.json',
+  'survey_schema_v10.json',
+  'ccb_survey_schema_v1.json',
+  'ccb_species_v1.json',
 ];
 
 const ALL_OPFS = [...OPFS_APPLETS, ...OPFS_ASSETS];
