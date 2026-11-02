@@ -1,6 +1,5 @@
 {
   "files": [
-    "launcher.html",
     "staff_list_asha.json",
     "manifest.json",
     "appARRMapper.html",
@@ -36,5 +35,5 @@
     "appSurveyManager.html",
     "survey_schema_v10.json"
   ],
-  "zip_size": 4379789
+  "zip_size": 4366128
 }

@@ -15,8 +15,8 @@
 <script>
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v46</title>
-<!-- launcher_landing_v46.html — background bundle update, revalidation, timed staff lookup -->
+<title>ARR Project Suite v47</title>
+<!-- launcher_landing_v47.html — Office row 1: About Project · Project Species · Know Your Invasives -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{ --card-name: var(--forest); }
@@ -277,6 +277,39 @@ footer a:hover{color:var(--canopy)}
 <main id="pane-office" style="display:none">
 
   <div class="grid">
+
+    <a class="app-card" href="appAboutProject.html" style="--accent:#1a5c38">
+      <div class="card-icon">ℹ️</div>
+      <div class="card-name">About Project</div>
+      <div class="card-sub">Project facts, districts, standards and FAQs — Asha 1, Asha 2, Arun, Banani</div>
+      <div class="card-tags">
+        <span class="tag">Open</span>
+        <span class="tag new">New</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a class="app-card" href="appNativeSpecies.html" style="--accent:#15803d">
+      <div class="card-icon">🌳</div>
+      <div class="card-name">Project Species</div>
+      <div class="card-sub">Planted species, wildlife checklist with IUCN / WPA status, and invasives by project</div>
+      <div class="card-tags">
+        <span class="tag ccb">CCB</span>
+        <span class="tag new">New</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a class="app-card" href="appInvasives.html" style="--accent:#0d9488">
+      <div class="card-icon">🌿</div>
+      <div class="card-name">Know Your Invasives</div>
+      <div class="card-sub">Identify invasive plants and report sightings straight into the CCB dashboard</div>
+      <div class="card-tags">
+        <span class="tag ccb">CCB</span>
+        <span class="tag new">New</span>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
 
     <a class="app-card" href="appARRMapper.html?mode=vec" style="--accent:#2d6a4f">
       <div class="card-icon">∟</div>
@@ -583,6 +616,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Feature list ──────────────────────────────────────────────────
 const FEAT_APPLETS = [
+  { key:'about',  label:'ℹ️ About Project',            access:'Fully open — no sign-in required',
+    features:['Project facts: state, districts, area, start year, standard, VCS ID','Project FAQs for Asha 1, Asha 2, Arun, Banani','Opens on the project selected in the launcher']},
+  { key:'species',label:'🌳 Project Species',          access:'Fully open — no sign-in required',
+    features:['Planted species per project with native / exotic flag','Wildlife checklist with IUCN, WPA schedule and CITES appendix','English, Assamese and Bengali names; search in any','CSV export']},
+  { key:'invasives',label:'🌿 Know Your Invasives',    access:'Open; reporting a sighting requires sign-in',
+    features:['12 invasive plants with photos, threat level and ID tips','One-tap “Report sighting” pre-fills the CCB sighting form']},
   { key:'vec',    label:'∟ Vector Tool',            access:'Full block — sign-in required',
     features:['GPS walk & manual tap capture of POIs, paths, and polygons','Polygon lifecycle tagging: eligibility → final → revised','Audit fields on all exports: operator_email, operator_name, project, captured_ts, gps_accuracy_m','FAM-style 3-step sidebar: Shape → Method → Details & Start','Floating live stats panel during drawing','OPFS file queue with Drive sync; offline-first with IDB session persistence','KML export with ExtendedData audit fields','Files tab: on-device OPFS browser, GeoJSON → KML conversion','Legacy Plot Sync: pulls 2024–2026 fencing polygons from Drive _legacy/','Trilingual UI: English / Hindi / Bengali']},
   { key:'plant',  label:'🌳 Plantation Mapper',      access:'Full block — sign-in required',
@@ -596,15 +635,15 @@ const FEAT_APPLETS = [
   { key:'nursery', label:'🌱 Nursery Dashboard',       access:'Partial — view open; data entry requires sign-in',
     features:['Sapling dispatch tracking across districts','Seed tree provenance mapping','Plan vs actual sapling count','Nursery inspection records','Offline queue with patch-back']},
   { key:'ccb',    label:'🦋 CCB & SDG Dashboard',     access:'Partial — view open; upload requires sign-in',
-    features:['Biodiversity sightings map with EXIF GPS extraction','Cloud Vision API species identification from uploaded photos','Know Your Invasives modal (12 species)','SDG co-benefit indicators: 17-goal chip grid','Labour equity metrics and FPIC & events records']},
+    features:['Biodiversity sightings map with EXIF GPS extraction','Structured surveys (CCB v3.1 B1/B2/B4): line transect, point count, camera trap, regeneration plot, HWC incident, threat log','Effort-standardised encounter rates by site role × stratum × season; repeat coverage','Trigger-species (GL3) log, HWC map, household panel & grievance SLA','CSV / GeoJSON exports; offline outbox; audit trail in CCB_Audit','SDG co-benefit indicators: 17-goal chip grid','Labour equity metrics and FPIC & events records']},
   { key:'dashboard', label:'🌡️ Plantation Dashboard', access:'Fully open — no sign-in required',
     features:['Interactive Leaflet map with year-coded plantation polygons (2024–2026)','Filter bar: Year, District, Block, GP, Gender, SSCAT, LPC/Name/DBC search','Stats bar: plots, hectares, beneficiaries, saplings, tribal count, female %','Species pool bar chart + diversity indices (Shannon/Simpson/Pielou/Richness)','LPC drill-down panel: location, area, date planted, species breakdown']},
   { key:'hotspot', label:'🔥 Land Hot-spotter',         access:'Full block — sign-in required',
     features:['COG-based land suitability viewer (Cloud-Optimised GeoTIFF)','3-band RGB composite: R=drought stress, G=soil suitability, B=flood frequency','District/block cascade dropdowns with SOI village boundary overlays','No runtime GEE API calls — fully static frontend']},
   { key:'inventory', label:'📦 Inventory & Resources',  access:'Full block — sign-in required',
     features:['Stock tracking: receive and dispatch materials per district and plot','Transaction types: stock-in, issue-out, return, audit','Materials: bamboo poles, netting, wire, fertilisers, tools and nursery inputs','Offline queue with outbox badge; network-aware sync']},
-  { key:'docs',   label:'📚 Documentation & Reports',   access:'FAQs open — project documents require sign-in',
-    features:['Project FAQs: open to all (no sign-in)','Verification reports, SOPs, project agreements (sign-in required)','Land document store and baseline documents (sign-in required)','Multi-project tabs: Asha 1, Asha 2, Arun, Banani']},
+  { key:'docs',   label:'📚 Documentation & Reports',   access:'Project documents require sign-in',
+    features:['Weekly / monthly DOCX and EcoAct PPTX field reports','Verification reports, SOPs, project agreements (sign-in required)','Land document store and baseline documents (sign-in required)','Multi-project tabs: Asha 1, Asha 2, Arun, Banani']},
 ];
 
 function openFeatList() {
