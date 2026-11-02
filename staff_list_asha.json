@@ -669,7 +669,7 @@
     "email": "satyajitchakraborty@tomorrowsfoundation.in",
     "name": "Satyajit Chakraborty",
     "district": "HO",
-    "designation": "GIS Lead",
+    "designation": "GIS/MIS Lead",
     "affiliation": "TSLPL",
     "cluster": "Project",
     "supervisor": "Nirmalya Chatterjee"
@@ -1042,5 +1042,14 @@
     "affiliation": "TSLPL",
     "cluster": "Matiali",
     "supervisor": "Goutam Dhar"
+  }
+  {
+    "email": "badal@tomorrowsfoundation.in",
+    "name": "Badal Mahato",
+    "district": "HO",
+    "designation": "GIS/MIS officer",
+    "affiliation": "TSLPL",
+    "cluster": "Project",
+    "supervisor": "Satyajit Chakraborty"
   }
 ]
