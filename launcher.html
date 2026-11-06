@@ -15,8 +15,8 @@
 <script>
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v47</title>
-<!-- launcher_landing_v47.html — Office row 1: About Project · Project Species · Know Your Invasives -->
+<title>ARR Project Suite v49</title>
+<!-- launcher_landing_v49.html — appDocumentReport renamed appDocumentation -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{ --card-name: var(--forest); }
@@ -357,7 +357,7 @@ footer a:hover{color:var(--canopy)}
       <div class="card-arrow">→</div>
     </a>
 
-    <a class="app-card" href="appDocumentReport.html" style="--accent:#374151">
+    <a class="app-card" href="appDocumentation.html" style="--accent:#374151">
       <div class="card-icon">📚</div>
       <div class="card-name">Documentation &amp; Reports</div>
       <div class="card-sub">Verification reports, SOPs, project agreements, land document store and baseline documents</div>
@@ -628,6 +628,8 @@ const FEAT_APPLETS = [
     features:['Species-based sapling grid placement (20-species Asha/Banani, 11-species Arun pilot)','Configurable grid spacing and sapling count per block','Screenshot export with species legend and north arrow','KML + SHP + JPG export in one ZIP','Overlay layer support (load GeoJSON from Files)','Files tab: on-device OPFS browser','Trilingual UI: English / Hindi / Bengali']},
   { key:'soil',   label:'⛏️ Soil Mapper',             access:'Full block — sign-in required',
     features:['Hand-drawn soil type polygons (5 texture classes + Lowland/Organic)','Soil group aggregation and KML export','SHP export of assessed soil polygons','Overlay layer support','Files tab: on-device OPFS browser','Trilingual UI: English / Hindi / Bengali']},
+  { key:'daily',  label:'🗒️ Daily Reporting Tool',    access:'Full block — sign-in required; Reports/Attendance/Analysis tabs restricted',
+    features:['Daily work report with hierarchical visit types (tap group → sub-types), GPS, photos and field track','Attendance and leave submission; offline outbox','Analysis: visit types, unique plot visits, cluster and individual staff performance, staff not reporting, report tracker map','Weekly / monthly DOCX and EcoAct PPTX field reports; Analysis XLSX']},
   { key:'survey', label:'📋 Survey Forms Manager',    access:'Full block — sign-in required',
     features:['Seven form types: Beneficiary Baseline, Plantation Details, Fencing, Event Record, Biomass (Tree & Plot), Nursery Mapping, Grievance','Mortality / Plot Evaluation and Leakage Assessment forms','Offline-first with OPFS file queue and row-first submission queue','Photo capture: 3MP/80% JPEG compression, EXIF preserved','Login-based surveyor_name auto-fill','Trilingual UI: English / Hindi / Bengali']},
   { key:'monitoring', label:'🌿 Monitoring Dashboard', access:'Partial — view open; MRV form requires sign-in',
@@ -643,7 +645,7 @@ const FEAT_APPLETS = [
   { key:'inventory', label:'📦 Inventory & Resources',  access:'Full block — sign-in required',
     features:['Stock tracking: receive and dispatch materials per district and plot','Transaction types: stock-in, issue-out, return, audit','Materials: bamboo poles, netting, wire, fertilisers, tools and nursery inputs','Offline queue with outbox badge; network-aware sync']},
   { key:'docs',   label:'📚 Documentation & Reports',   access:'Project documents require sign-in',
-    features:['Weekly / monthly DOCX and EcoAct PPTX field reports','Verification reports, SOPs, project agreements (sign-in required)','Land document store and baseline documents (sign-in required)','Multi-project tabs: Asha 1, Asha 2, Arun, Banani']},
+    features:['Field reports (DOCX / PPTX) moved to Daily Report → Analysis','Verification reports, SOPs, project agreements (sign-in required)','Land document store and baseline documents (sign-in required)','Multi-project tabs: Asha 1, Asha 2, Arun, Banani']},
 ];
 
 function openFeatList() {

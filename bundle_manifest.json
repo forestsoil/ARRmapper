@@ -24,7 +24,7 @@
     "appDailyReport.html",
     "appDashboard.html",
     "asha_plantation.geojson",
-    "appDocumentReport.html",
+    "appDocumentation.html",
     "appHotspot.html",
     "appInventory.html",
     "appInventory_Arun_v1.html",
@@ -35,5 +35,5 @@
     "appSurveyManager.html",
     "survey_schema_v10.json"
   ],
-  "zip_size": 4388112
+  "zip_size": 4399708
 }
