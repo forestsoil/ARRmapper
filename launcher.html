@@ -15,8 +15,8 @@
 <script>
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v53</title>
-<!-- launcher_landing_v53.html — About Suite refreshed; Privacy Policy + Terms merged into About -->
+<title>ARR Project Suite v54</title>
+<!-- launcher_landing_v54.html — About Suite access labels: All / Restricted project users -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{ --card-name: var(--forest); }
@@ -623,36 +623,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Feature list ──────────────────────────────────────────────────
 const FEAT_APPLETS = [
-  { key:'about',  label:'ℹ️ About Project',            access:'Fully open — no sign-in required',
+  { key:'about',  label:'ℹ️ About Project',            access:'All project users',
     features:['Project facts: state, districts, area, start year, standard, VCS ID','Project FAQs for Asha 1, Asha 2, Arun, Banani','Opens on the project selected in the launcher']},
-  { key:'species',label:'🌳 Project Species',          access:'Fully open — no sign-in required',
+  { key:'species',label:'🌳 Project Species',          access:'All project users',
     features:['Planted species per project with native / exotic flag','Wildlife checklist with IUCN, WPA schedule and CITES appendix','English, Assamese and Bengali names; search in any','Invasives listed by project','CSV export']},
-  { key:'invasives',label:'🌿 Know Your Invasives',    access:'Open; reporting a sighting requires sign-in',
+  { key:'invasives',label:'🌿 Know Your Invasives',    access:'All project users',
     features:['12 invasive plants with photos, threat level and ID tips','One-tap “Report sighting” pre-fills the CCB sighting form']},
-  { key:'vec',    label:'∟ Vector Tool',            access:'Full block — sign-in required',
+  { key:'vec',    label:'∟ Vector Tool',            access:'All project users',
     features:['GPS walk & manual tap capture of POIs, paths, and polygons','Polygon lifecycle tagging: eligibility → final → revised','Audit fields on all exports: operator_email, operator_name, project, captured_ts, gps_accuracy_m','FAM-style 3-step sidebar: Shape → Method → Details & Start','Floating live stats panel during drawing','OPFS file queue with Drive sync; offline-first with IDB session persistence','KML export with ExtendedData audit fields','Files tab: on-device OPFS browser, GeoJSON → KML conversion','Legacy Plot Sync: pulls 2024–2026 fencing polygons from Drive _legacy/','Trilingual UI: English / Hindi / Bengali']},
-  { key:'plant',  label:'🌳 Plantation Mapper',      access:'Full block — sign-in required',
+  { key:'plant',  label:'🌳 Plantation Mapper',      access:'All project users',
     features:['Species-based sapling grid placement (20-species Asha/Banani, 11-species Arun pilot)','Configurable grid spacing and sapling count per block','Screenshot export with species legend and north arrow','KML + SHP + JPG export in one ZIP','Overlay layer support (load GeoJSON from Files)','Files tab: on-device OPFS browser','Trilingual UI: English / Hindi / Bengali']},
-  { key:'soil',   label:'⛏️ Soil Mapper',             access:'Full block — sign-in required',
+  { key:'soil',   label:'⛏️ Soil Mapper',             access:'All project users',
     features:['Hand-drawn soil type polygons (5 texture classes + Lowland/Organic)','Soil group aggregation and KML export','SHP export of assessed soil polygons','Overlay layer support','Files tab: on-device OPFS browser','Trilingual UI: English / Hindi / Bengali']},
-  { key:'daily',  label:'🗒️ Daily Reporting Tool',    access:'Full block — sign-in required; Reports/Attendance/Analysis tabs restricted',
+  { key:'daily',  label:'🗒️ Daily Reporting Tool',    access:'All project users; Reports, Attendance and Analysis tabs restricted',
     features:['Daily work report with hierarchical visit types (tap group → sub-types), GPS, photos and field track','Attendance and leave submission; offline outbox','Reports tab: Report Locations map and Report Tracks (staff field-track viewer) as sub-tabs','Analysis: visit types, unique plot visits, cluster and individual staff performance, staff not reporting','Weekly / monthly DOCX and EcoAct PPTX field reports; Analysis XLSX']},
-  { key:'survey', label:'📋 Survey Forms Manager',    access:'Full block — sign-in required',
+  { key:'survey', label:'📋 Survey Forms Manager',    access:'All project users',
     features:['Seven form types: Beneficiary Baseline, Plantation Details, Fencing, Event Record, Biomass (Tree & Plot), Nursery Mapping, Grievance','Mortality / Plot Evaluation and Leakage Assessment forms','Offline-first with OPFS file queue and row-first submission queue','Photo capture: 3MP/80% JPEG compression, EXIF preserved','Login-based surveyor_name auto-fill from the staff list','Trilingual UI: English / Hindi / Bengali']},
-  { key:'monitoring', label:'🌿 Monitoring Dashboard', access:'Partial — view open; MRV form requires sign-in',
+  { key:'monitoring', label:'🌿 Monitoring Dashboard', access:'All project users',
     features:['Full-screen Leaflet map with District/Block/LPC filter cascades on 511-polygon Asha 1 dataset','MRV Tool: stratified random sampling, centroid walk (monthly) and exhaustive density-tiered (annual)','MRV composite score: 6 plot metrics (42%) + sapling observations (58%) = 0–100, A+→D grading','Height/DBH entry, quarterly photos, Drive upload per visit','Plantation survival and species health charts','Plot condition and leakage tracking','IDB caching for offline dashboard view']},
-  { key:'nursery', label:'🌱 Nursery Dashboard',       access:'Partial — view open; data entry requires sign-in',
+  { key:'nursery', label:'🌱 Nursery Dashboard',       access:'All project users',
     features:['Sapling dispatch tracking across districts','Seed tree provenance mapping','Plan vs actual sapling count','Nursery inspection records','Offline queue with patch-back','Separate Arun edition: opens automatically when the Arun project is selected in the launcher']},
-  { key:'ccb',    label:'🦋 CCB & SDG Dashboard',     access:'Partial — view open; upload requires sign-in',
+  { key:'ccb',    label:'🦋 CCB & SDG Dashboard',     access:'All project users',
     features:['Biodiversity sightings map with EXIF GPS extraction','Structured surveys (CCB v3.1 B1/B2/B4): line transect, point count, camera trap, regeneration plot, HWC incident, threat log','Effort-standardised encounter rates by site role × stratum × season; repeat coverage','Trigger-species (GL3) log, HWC map, household panel & grievance SLA','CSV / GeoJSON exports; offline outbox; audit trail in CCB_Audit','SDG co-benefit indicators: 17-goal chip grid','Labour equity metrics and FPIC & events records']},
-  { key:'dashboard', label:'🌡️ Plantation Dashboard', access:'Fully open — no sign-in required',
+  { key:'dashboard', label:'🌡️ Plantation Dashboard', access:'All project users',
     features:['Interactive Leaflet map with year-coded plantation polygons (2024–2026)','Filter bar: Year, District, Block, GP, Gender, SSCAT, LPC/Name/DBC search','Stats bar: plots, hectares, beneficiaries, saplings, tribal count, female %','Species pool bar chart + diversity indices (Shannon/Simpson/Pielou/Richness)','LPC drill-down panel: location, area, date planted, species breakdown']},
-  { key:'hotspot', label:'🔥 Land Hot-spotter',         access:'Full block — sign-in required',
+  { key:'hotspot', label:'🔥 Land Hot-spotter',         access:'All project users',
     features:['COG-based land suitability viewer (Cloud-Optimised GeoTIFF)','3-band RGB composite: R=drought stress, G=soil suitability, B=flood frequency','District/block cascade dropdowns with SOI village boundary overlays','No runtime GEE API calls — fully static frontend']},
-  { key:'inventory', label:'📦 Inventory & Resources',  access:'Full block — sign-in required',
+  { key:'inventory', label:'📦 Inventory & Resources',  access:'All project users',
     features:['Stock tracking: receive and dispatch materials per district and plot','Transaction types: stock-in, issue-out, return, audit','Materials: bamboo poles, netting, wire, fertilisers, tools and nursery inputs','Offline queue with outbox badge; network-aware sync','Separate Arun edition: opens automatically when the Arun project is selected in the launcher']},
-  { key:'docs',   label:'📚 Project Documentation',   access:'Project documents require sign-in',
-    features:['Field reports (DOCX / PPTX) are in Daily Report → Analysis','Verification reports, SOPs, project agreements (sign-in required)','Land document store and baseline documents (sign-in required)','Multi-project tabs: Asha 1, Asha 2, Arun, Banani']},
+  { key:'docs',   label:'📚 Project Documentation',   access:'Restricted project users',
+    features:['Field reports (DOCX / PPTX) are in Daily Report → Analysis','Verification reports, SOPs, project agreements','Land document store and baseline documents','Multi-project tabs: Asha 1, Asha 2, Arun, Banani']},
   { sep:'Legal' },
   { key:'privacy', label:'🔒 Privacy Policy', access:'Last updated: June 2026', html:`
 <p>ARRMapper Field Tool (“the Tool”) is a web-based field data collection application developed by <strong>Nirmalya Chatterjee</strong> for use by Tomorrow's Foundation, Tomorrow's Skills and Livelihoods Plc., and other authorised project partners engaged in afforestation, reforestation, and revegetation (ARR) carbon projects.</p>
