@@ -6,7 +6,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Mal, Matiali, Kranti",
-    "supervisor": "Goutam Dhar"
+    "supervisor": "Goutam Dhar",
+    "restricted_access": true
   },
   {
     "email": "roya79298@gmail.com",
@@ -15,7 +16,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "amit@tomorrowsfoundation.org",
@@ -24,7 +26,8 @@
     "designation": "QC/QA Lead",
     "affiliation": "TF",
     "cluster": "Project",
-    "supervisor": "Swarup Ghosh"
+    "supervisor": "Swarup Ghosh",
+    "restricted_access": true
   },
   {
     "email": "apuashatslpl@gmail.com",
@@ -33,7 +36,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Mal, Matiali, Kranti",
-    "supervisor": "Goutam Dhar"
+    "supervisor": "Goutam Dhar",
+    "restricted_access": false
   },
   {
     "email": "arolinalakra332@gmail.com",
@@ -42,7 +46,8 @@
     "designation": "Driver",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar West",
-    "supervisor": "Shanti Oraon"
+    "supervisor": "Shanti Oraon",
+    "restricted_access": false
   },
   {
     "email": "ashamanjonbarman@gmail.com",
@@ -51,7 +56,8 @@
     "designation": "Nursery Lead",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar East",
-    "supervisor": "Pampi Mohanta Saha"
+    "supervisor": "Pampi Mohanta Saha",
+    "restricted_access": true
   },
   {
     "email": "babitachhetri531@gmail.com",
@@ -60,7 +66,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "baldeoashatslpl@gmail.com",
@@ -69,7 +76,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Nagrakata",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": true
   },
   {
     "email": "bhairab@tomorrowsfoundation.org",
@@ -78,7 +86,8 @@
     "designation": "Logistics Lead",
     "affiliation": "TF",
     "cluster": "Project",
-    "supervisor": "Swarup Ghosh"
+    "supervisor": "Swarup Ghosh",
+    "restricted_access": true
   },
   {
     "email": "bikylakara5676@gmail.com",
@@ -87,7 +96,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Nagrakata",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "bilashoraon60@gmail.com",
@@ -96,7 +106,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Madarihat",
-    "supervisor": "Roshni Subba"
+    "supervisor": "Roshni Subba",
+    "restricted_access": false
   },
   {
     "email": "roybipati71@gmail.com",
@@ -105,7 +116,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "bipulmahato78@gmail.com",
@@ -114,7 +126,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Kumargram",
-    "supervisor": "Suvojit Bose"
+    "supervisor": "Suvojit Bose",
+    "restricted_access": false
   },
   {
     "email": "bishalkalibari@gmail.com",
@@ -123,7 +136,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "biswjitbarman29@gmail.com",
@@ -132,7 +146,8 @@
     "designation": "Driver",
     "affiliation": "TSLPL",
     "cluster": "Jalpaiguri",
-    "supervisor": "Pampi Mohanta Saha"
+    "supervisor": "Pampi Mohanta Saha",
+    "restricted_access": false
   },
   {
     "email": "bdas1525@gmail.com",
@@ -141,7 +156,8 @@
     "designation": "CC Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 2, Coochbehar",
-    "supervisor": "Kartik Barman"
+    "supervisor": "Kartik Barman",
+    "restricted_access": true
   },
   {
     "email": "roybiswajit735206@gmail.com",
@@ -150,7 +166,8 @@
     "designation": "Driver",
     "affiliation": "TSLPL",
     "cluster": "Mal, Matiali, Kranti",
-    "supervisor": "Goutam Dhar"
+    "supervisor": "Goutam Dhar",
+    "restricted_access": false
   },
   {
     "email": "roybiswajitrupali2025@gmail.com",
@@ -159,7 +176,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "chanchalbiswas7580@gmail.com",
@@ -168,7 +186,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 2",
-    "supervisor": "Suvojit Palit"
+    "supervisor": "Suvojit Palit",
+    "restricted_access": false
   },
   {
     "email": "debanandoraon270@gmail.com",
@@ -177,7 +196,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Madarihat",
-    "supervisor": "Roshni Subba"
+    "supervisor": "Roshni Subba",
+    "restricted_access": false
   },
   {
     "email": "debajyotiroyashatslpl@gmail.com",
@@ -186,7 +206,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Mal, Matiali, Kranti",
-    "supervisor": "Goutam Dhar"
+    "supervisor": "Goutam Dhar",
+    "restricted_access": true
   },
   {
     "email": "majhidebi769@gmail.com",
@@ -195,7 +216,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "debranjan@tomorrowsfoundation.org",
@@ -204,7 +226,8 @@
     "designation": "District Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Jalpaiguri",
-    "supervisor": "Swarup Ghosh"
+    "supervisor": "Swarup Ghosh",
+    "restricted_access": true
   },
   {
     "email": "bhowmickroy537@gmail.com",
@@ -213,7 +236,8 @@
     "designation": "Driver",
     "affiliation": "TSLPL",
     "cluster": "Mal, Matiali, Kranti",
-    "supervisor": "Goutam Dhar"
+    "supervisor": "Goutam Dhar",
+    "restricted_access": false
   },
   {
     "email": "donasen8944@gmail.com",
@@ -222,7 +246,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 2",
-    "supervisor": "Suvojit Palit"
+    "supervisor": "Suvojit Palit",
+    "restricted_access": false
   },
   {
     "email": "gaganbiswakarma14@gmail.com",
@@ -231,7 +256,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Kalchini",
-    "supervisor": "Susma Tirkey"
+    "supervisor": "Susma Tirkey",
+    "restricted_access": false
   },
   {
     "email": "gayatrimajhi720@gmail.com",
@@ -240,7 +266,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Nagrakata",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "goutamashatslpl@gmail.com",
@@ -249,7 +276,8 @@
     "designation": "Cluster Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Mal, Matiali, Kranti",
-    "supervisor": "Debranjan Banerjee"
+    "supervisor": "Debranjan Banerjee",
+    "restricted_access": true
   },
   {
     "email": "goutammunda1311@gmail.com",
@@ -258,7 +286,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 1",
-    "supervisor": "Shanti Oraon"
+    "supervisor": "Shanti Oraon",
+    "restricted_access": false
   },
   {
     "email": "hritikkerketta777@gmail.com",
@@ -267,7 +296,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Kumargram",
-    "supervisor": "Suvojit Bose"
+    "supervisor": "Suvojit Bose",
+    "restricted_access": false
   },
   {
     "email": "jayaashatslpl@gmail.com",
@@ -276,7 +306,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 2",
-    "supervisor": "Panchali Dutta Biswas"
+    "supervisor": "Panchali Dutta Biswas",
+    "restricted_access": false
   },
   {
     "email": "jewelpatowary1514@gmail.com",
@@ -285,7 +316,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Nagrakata",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "jtoppo632@gmail.com",
@@ -294,7 +326,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
-    "supervisor": "Suvojit Bose"
+    "supervisor": "Suvojit Bose",
+    "restricted_access": false
   },
   {
     "email": "kroy72696@gmail.com",
@@ -303,7 +336,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Mal, Matiali, Kranti",
-    "supervisor": "Goutam Dhar"
+    "supervisor": "Goutam Dhar",
+    "restricted_access": false
   },
   {
     "email": "kanaibiswas6295@gmail.com",
@@ -312,7 +346,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 2",
-    "supervisor": "Suvojit Palit"
+    "supervisor": "Suvojit Palit",
+    "restricted_access": false
   },
   {
     "email": "kartikashatslpl@gmail.com",
@@ -321,7 +356,8 @@
     "designation": "Cluster Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar East, Coochbehar",
-    "supervisor": "Panchali Dutta Biswas"
+    "supervisor": "Panchali Dutta Biswas",
+    "restricted_access": true
   },
   {
     "email": "kazi@tomorrowsfoundation.in",
@@ -330,7 +366,8 @@
     "designation": "Soil Expert",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar West",
-    "supervisor": "Nirmalya Chatterjee"
+    "supervisor": "Nirmalya Chatterjee",
+    "restricted_access": true
   },
   {
     "email": "k46342260@gmail.com",
@@ -339,7 +376,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 1",
-    "supervisor": "Yogesh Gosai"
+    "supervisor": "Yogesh Gosai",
+    "restricted_access": false
   },
   {
     "email": "kc3109194@gmail.com",
@@ -348,7 +386,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "laxmipanna44@gmail.com",
@@ -357,7 +396,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "mahadevbiswas78900@gmail.com",
@@ -366,7 +406,8 @@
     "designation": "Driver",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar Coochbehar",
-    "supervisor": "Panchali Dutta Biswas"
+    "supervisor": "Panchali Dutta Biswas",
+    "restricted_access": false
   },
   {
     "email": "mr2649715@gmail.com",
@@ -375,7 +416,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Alipurduar 2",
-    "supervisor": "Suvojit Palit"
+    "supervisor": "Suvojit Palit",
+    "restricted_access": false
   },
   {
     "email": "methuselahbaskey777@gmail.com",
@@ -384,7 +426,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Alipurduar 2",
-    "supervisor": "Suvojit Palit"
+    "supervisor": "Suvojit Palit",
+    "restricted_access": false
   },
   {
     "email": "mdanisul0855@gmail.com",
@@ -393,7 +436,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Mal, Matiali, Kranti",
-    "supervisor": "Goutam Dhar"
+    "supervisor": "Goutam Dhar",
+    "restricted_access": false
   },
   {
     "email": "mrppkujur1112@gmail.com",
@@ -402,7 +446,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
-    "supervisor": "Suvojit Bose"
+    "supervisor": "Suvojit Bose",
+    "restricted_access": false
   },
   {
     "email": "nirajashatslps@gmail.com",
@@ -411,7 +456,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": true
   },
   {
     "email": "nirmalya@tomorrowsfoundation.in",
@@ -420,7 +466,8 @@
     "designation": "Carbon Science Lead",
     "affiliation": "TSLPL",
     "cluster": "Project",
-    "supervisor": "Swarup Ghosh"
+    "supervisor": "Swarup Ghosh",
+    "restricted_access": true
   },
   {
     "email": "ni6893946@gmail.com",
@@ -429,7 +476,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Alipurduar 1",
-    "supervisor": "Yogesh Gosai"
+    "supervisor": "Yogesh Gosai",
+    "restricted_access": false
   },
   {
     "email": "pampao617@gmail.com",
@@ -438,16 +486,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
-    "supervisor": "Suvojit Bose"
-  },
-  {
-    "email": "pampi@tomorrowsfoundation.in",
-    "name": "Pampi Mohanta Saha",
-    "district": "APDW",
-    "designation": "Nursery, Land Acquisition & Project Lead",
-    "affiliation": "TSLPL",
-    "cluster": "Project",
-    "supervisor": "Swarup Ghosh"
+    "supervisor": "Suvojit Bose",
+    "restricted_access": false
   },
   {
     "email": "panchali@tomorrowsfoundation.in",
@@ -456,7 +496,8 @@
     "designation": "District Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar East, Coochbehar",
-    "supervisor": "Swarup Ghosh"
+    "supervisor": "Swarup Ghosh",
+    "restricted_access": true
   },
   {
     "email": "prachi@tomorrowsfoundation.in",
@@ -465,7 +506,18 @@
     "designation": "Forestry Expert",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar East, Coochbehar",
-    "supervisor": "Nirmalya Chatterjee"
+    "supervisor": "Nirmalya Chatterjee",
+    "restricted_access": true
+  },
+  {
+    "email": "pradip.banerjee@tomorrowsfoundation.in",
+    "name": "Pradip Banerjee",
+    "district": "HO",
+    "designation": "Finance Lead 2",
+    "affiliation": "TSLPL",
+    "cluster": "Project",
+    "supervisor": "Swarup Ghosh",
+    "restricted_access": true
   },
   {
     "email": "pranishac588@gmail.com",
@@ -474,7 +526,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
-    "supervisor": "Suvojit Bose"
+    "supervisor": "Suvojit Bose",
+    "restricted_access": false
   },
   {
     "email": "kujurpriya179@gmail.com",
@@ -483,7 +536,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Madarihat",
-    "supervisor": "Roshni Subba"
+    "supervisor": "Roshni Subba",
+    "restricted_access": false
   },
   {
     "email": "oraonpuja663@gmail.com",
@@ -492,7 +546,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "ps3353446@gmail.com",
@@ -501,7 +556,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
-    "supervisor": "Suvojit Bose"
+    "supervisor": "Suvojit Bose",
+    "restricted_access": false
   },
   {
     "email": "islamr20117@gmail.com",
@@ -510,7 +566,8 @@
     "designation": "Driver",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar East, Coochbehar",
-    "supervisor": "Panchali Dutta Biswas"
+    "supervisor": "Panchali Dutta Biswas",
+    "restricted_access": false
   },
   {
     "email": "rajeshroy7994@gmail.com",
@@ -519,7 +576,18 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
+  },
+  {
+    "email": "rajib@ashaproject.in",
+    "name": "Rajib Banerjee",
+    "district": "HO",
+    "designation": "Finance Lead 1",
+    "affiliation": "TSLPL",
+    "cluster": "Project",
+    "supervisor": "Swarup Ghosh",
+    "restricted_access": true
   },
   {
     "email": "biswasrakhi35561@gmail.com",
@@ -528,7 +596,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 2",
-    "supervisor": "Suvojit Palit"
+    "supervisor": "Suvojit Palit",
+    "restricted_access": false
   },
   {
     "email": "ranaganguly2717@gmail.com",
@@ -537,7 +606,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
-    "supervisor": "Suvojit Bose"
+    "supervisor": "Suvojit Bose",
+    "restricted_access": true
   },
   {
     "email": "sikharanjan1983@gmail.com",
@@ -546,7 +616,8 @@
     "designation": "Driver",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar East, Coochbehar",
-    "supervisor": "Panchali Dutta Biswas"
+    "supervisor": "Panchali Dutta Biswas",
+    "restricted_access": false
   },
   {
     "email": "minjreshonaminj@gmail.com",
@@ -555,7 +626,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
-    "supervisor": "Suvojit Bose"
+    "supervisor": "Suvojit Bose",
+    "restricted_access": false
   },
   {
     "email": "roshniashatslpl@gmail.com",
@@ -564,7 +636,8 @@
     "designation": "Cluster Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Madarihat",
-    "supervisor": "Shanti Oraon"
+    "supervisor": "Shanti Oraon",
+    "restricted_access": true
   },
   {
     "email": "sabnur114@gmail.com",
@@ -573,7 +646,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Mal, Matiali, Kranti",
-    "supervisor": "Goutam Dhar"
+    "supervisor": "Goutam Dhar",
+    "restricted_access": false
   },
   {
     "email": "sadhurammandal37@gmail.com",
@@ -582,7 +656,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar West",
-    "supervisor": "Shanti Oraon"
+    "supervisor": "Shanti Oraon",
+    "restricted_access": false
   },
   {
     "email": "hussainsahid8319@gmail.com",
@@ -591,7 +666,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Nagrakata",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "sakhioraon50@gmail.com",
@@ -600,7 +676,8 @@
     "designation": "Driver",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar West",
-    "supervisor": "Shanti Oraon"
+    "supervisor": "Shanti Oraon",
+    "restricted_access": false
   },
   {
     "email": "salimali80161@gmail.com",
@@ -609,7 +686,8 @@
     "designation": "CC Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Nagrakata",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": true
   },
   {
     "email": "samanibarman7@gmail.com",
@@ -618,7 +696,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Coochbehar",
-    "supervisor": "Kartik Barman"
+    "supervisor": "Kartik Barman",
+    "restricted_access": false
   },
   {
     "email": "sm2592108@gmail.com",
@@ -627,7 +706,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Alipurduar 1",
-    "supervisor": "Yogesh Gosai"
+    "supervisor": "Yogesh Gosai",
+    "restricted_access": false
   },
   {
     "email": "sanjayray7364063408@gmail.com",
@@ -636,7 +716,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Alipurduar 1",
-    "supervisor": "Yogesh Gosai"
+    "supervisor": "Yogesh Gosai",
+    "restricted_access": false
   },
   {
     "email": "rabhaglory03@gmail.com",
@@ -645,7 +726,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Madarihat",
-    "supervisor": "Roshni Subba"
+    "supervisor": "Roshni Subba",
+    "restricted_access": false
   },
   {
     "email": "sarbanandaashatslpl@gmail.com",
@@ -654,7 +736,8 @@
     "designation": "Cluster Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Coochbehar",
-    "supervisor": "Shanti Oraon"
+    "supervisor": "Shanti Oraon",
+    "restricted_access": true
   },
   {
     "email": "bmksatyajit5233@gmail.com",
@@ -663,16 +746,18 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
-    "supervisor": "Suvojit Bose"
+    "supervisor": "Suvojit Bose",
+    "restricted_access": false
   },
   {
     "email": "satyajitchakraborty@tomorrowsfoundation.in",
     "name": "Satyajit Chakraborty",
     "district": "HO",
-    "designation": "GIS/MIS Lead",
+    "designation": "GIS Lead",
     "affiliation": "TSLPL",
     "cluster": "Project",
-    "supervisor": "Nirmalya Chatterjee"
+    "supervisor": "Nirmalya Chatterjee",
+    "restricted_access": true
   },
   {
     "email": "shanti@tomorrowsfoundation.in",
@@ -681,16 +766,8 @@
     "designation": "District Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar West, Coochbehar",
-    "supervisor": "Swarup Ghosh"
-  },
-  {
-    "email": "bhagatsumit210@gmail.com",
-    "name": "Sumit Bhagat",
-    "district": "JPG",
-    "designation": "Climate Captain",
-    "affiliation": "Vendor",
-    "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Swarup Ghosh",
+    "restricted_access": true
   },
   {
     "email": "bhagatshyam775@gmail.com",
@@ -699,7 +776,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Alipurduar 1",
-    "supervisor": "Yogesh Gosai"
+    "supervisor": "Yogesh Gosai",
+    "restricted_access": false
   },
   {
     "email": "sritir08@gmail.com",
@@ -708,7 +786,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 1",
-    "supervisor": "Yogesh Gosai"
+    "supervisor": "Yogesh Gosai",
+    "restricted_access": false
   },
   {
     "email": "subbadeo6@gmail.com",
@@ -717,7 +796,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Kumargram",
-    "supervisor": "Suvojit Bose"
+    "supervisor": "Suvojit Bose",
+    "restricted_access": false
   },
   {
     "email": "ravasubhash3@gmail.com",
@@ -726,7 +806,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Alipurduar 1",
-    "supervisor": "Yogesh Gosai"
+    "supervisor": "Yogesh Gosai",
+    "restricted_access": false
   },
   {
     "email": "s66559102@gmail.com",
@@ -735,7 +816,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Coochbehar",
-    "supervisor": "Sarbananda Barman"
+    "supervisor": "Sarbananda Barman",
+    "restricted_access": false
   },
   {
     "email": "sujan161997@gmail.com",
@@ -744,7 +826,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "sujitatoppo612@gmail.com",
@@ -753,16 +836,18 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Kalchini",
-    "supervisor": "Susma Tirkey"
+    "supervisor": "Susma Tirkey",
+    "restricted_access": false
   },
   {
-    "email": "sukra0329@gmail.com",
+    "email": "sukraoraon910905@gmail.com",
     "name": "Sukra Oraon",
     "district": "JPG",
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "vidosuman6@gmail.com",
@@ -771,7 +856,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Nagrakata",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "sumansutradhar1666@gmail.com",
@@ -780,7 +866,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Tufanganj",
-    "supervisor": "Kartik Barman"
+    "supervisor": "Kartik Barman",
+    "restricted_access": false
   },
   {
     "email": "sumitrachhh048@gmail.com",
@@ -789,7 +876,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
   },
   {
     "email": "sushmatirkey602@gmail.com",
@@ -798,7 +886,8 @@
     "designation": "CC Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Kalchini",
-    "supervisor": "Shanti Oraon"
+    "supervisor": "Shanti Oraon",
+    "restricted_access": true
   },
   {
     "email": "sboseashatslpl@gmail.com",
@@ -807,7 +896,8 @@
     "designation": "Cluster Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Kumargram",
-    "supervisor": "Panchali Dutta Biswas"
+    "supervisor": "Panchali Dutta Biswas",
+    "restricted_access": true
   },
   {
     "email": "suvoashatslpl@gmail.com",
@@ -816,7 +906,18 @@
     "designation": "Cluster Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 2",
-    "supervisor": "Panchali Dutta Biswas"
+    "supervisor": "Panchali Dutta Biswas",
+    "restricted_access": true
+  },
+  {
+    "email": "swarup@tomorrowsfoundation.in",
+    "name": "Swarup Ghosh",
+    "district": "HO",
+    "designation": "CEO",
+    "affiliation": "TF",
+    "cluster": "Project",
+    "supervisor": "Swarup Ghosh",
+    "restricted_access": true
   },
   {
     "email": "tanumunda211@gmail.com",
@@ -825,7 +926,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Banarhat",
-    "supervisor": "Ujjwal Barman"
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": true
   },
   {
     "email": "tapanroy123ltp@gmail.com",
@@ -834,7 +936,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "Coochbehar",
-    "supervisor": "Sarbananda Barman"
+    "supervisor": "Sarbananda Barman",
+    "restricted_access": false
   },
   {
     "email": "ujjwalashatslpl@gmail.com",
@@ -843,7 +946,8 @@
     "designation": "Cluster Coordinator",
     "affiliation": "TSLPL",
     "cluster": "Nagrakata, Banarhat",
-    "supervisor": "Debranjan Banerjee"
+    "supervisor": "Debranjan Banerjee",
+    "restricted_access": true
   },
   {
     "email": "umaoroan@gmail.com",
@@ -852,7 +956,8 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Madarihat",
-    "supervisor": "Roshni Subba"
+    "supervisor": "Roshni Subba",
+    "restricted_access": false
   },
   {
     "email": "urmilabarman319@gmail.com",
@@ -861,7 +966,18 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 1",
-    "supervisor": "Kartik Barman"
+    "supervisor": "Kartik Barman",
+    "restricted_access": false
+  },
+  {
+    "email": "vaswati@tomorrowsfoundation.in",
+    "name": "Vaswati Banerjee",
+    "district": "HO",
+    "designation": "HR",
+    "affiliation": "TF",
+    "cluster": "Project",
+    "supervisor": "Swarup Ghosh",
+    "restricted_access": true
   },
   {
     "email": "yogeshgosai495@gmail.com",
@@ -870,7 +986,8 @@
     "designation": "Field Executive",
     "affiliation": "TSLPL",
     "cluster": "Alipurduar 1",
-    "supervisor": "Shanti Oraon"
+    "supervisor": "Shanti Oraon",
+    "restricted_access": true
   },
   {
     "email": "anupamkujur143@gmail.com",
@@ -879,7 +996,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "kartiksahu05056@gmail.com",
@@ -888,7 +1006,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "riju09738@gmail.com",
@@ -897,7 +1016,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "wilsontoppo123@gmail.com",
@@ -906,7 +1026,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "nayansarkar325@gmail.com",
@@ -915,7 +1036,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "garialtari016@gmail.com",
@@ -924,7 +1046,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "bikkyyonzon@gmail.com",
@@ -933,7 +1056,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "kiranlohar1334@gmail.com",
@@ -942,7 +1066,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "r47003305@gmail.com",
@@ -951,7 +1076,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "ashoktirkey1209@gmail.com",
@@ -960,7 +1086,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "kujurmiron@gmail.com",
@@ -969,7 +1096,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "--",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "gopalgowala751@gmail.com",
@@ -978,7 +1106,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "APD West",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "kujurrohan0@gmail.com",
@@ -987,7 +1116,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "APD West",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "diprajmangar639@gmail.com",
@@ -996,7 +1126,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "APD West",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "mistermiya901@gmail.com",
@@ -1005,7 +1136,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "APD West",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "sushantabarman71683@gmail.com",
@@ -1014,7 +1146,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "APD West",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "koilashbarman610@gmail.com",
@@ -1023,7 +1156,8 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "APD West",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
   },
   {
     "email": "mintunamadas60@gmail.com",
@@ -1032,7 +1166,38 @@
     "designation": "Plantation Field Assistant",
     "affiliation": "Vendor",
     "cluster": "APD West",
-    "supervisor": "--"
+    "supervisor": "--",
+    "restricted_access": false
+  },
+  {
+    "email": "bhagatsumit210@gmail.com",
+    "name": "Sumit Bhagat",
+    "district": "JPG",
+    "designation": "Climate Captain",
+    "affiliation": "TSLPL",
+    "cluster": "Banarhat",
+    "supervisor": "Ujjwal Barman",
+    "restricted_access": false
+  },
+  {
+    "email": "badal@tomorrowsfoundation.in",
+    "name": "Badal Mahato",
+    "district": "HO",
+    "designation": "Junior GIS/MIS officer",
+    "affiliation": "TSLPL",
+    "cluster": "Project",
+    "supervisor": "Satyajit Chakraborty",
+    "restricted_access": true
+  },
+  {
+    "email": "pampi@tomorrowsfoundation.in",
+    "name": "Pampi Mohanta Saha",
+    "district": "APDW",
+    "designation": "Nursery, Land Acquisition & Project Lead",
+    "affiliation": "TSLPL",
+    "cluster": "Project",
+    "supervisor": "Swarup Ghosh",
+    "restricted_access": false
   },
   {
     "email": "akhilibegum432@gmail.com",
@@ -1041,15 +1206,7 @@
     "designation": "Climate Captain",
     "affiliation": "TSLPL",
     "cluster": "Matiali",
-    "supervisor": "Goutam Dhar"
-  }
-  {
-    "email": "badal@tomorrowsfoundation.in",
-    "name": "Badal Mahato",
-    "district": "HO",
-    "designation": "GIS/MIS officer",
-    "affiliation": "TSLPL",
-    "cluster": "Project",
-    "supervisor": "Satyajit Chakraborty"
+    "supervisor": "Goutam Dhar",
+    "restricted_access": false
   }
 ]

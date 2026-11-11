@@ -15,8 +15,8 @@
 <script>
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v50</title>
-<!-- launcher_landing_v49.html — appDocumentReport renamed appDocumentation -->
+<title>ARR Project Suite v51</title>
+<!-- launcher_landing_v51.html — appDocumentReport renamed appDocumentation -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{ --card-name: var(--forest); }
@@ -420,8 +420,9 @@ const ARR_AUTH_TS_KEY    = 'arr_auth_ts';
 function arrAuthGet() {
   const email = localStorage.getItem(ARR_AUTH_EMAIL_KEY);
   const name  = localStorage.getItem(ARR_AUTH_NAME_KEY) || '';
+  const display = localStorage.getItem('arr_user_display') || name;
   if (!email) return null;
-  return { email, name };
+  return { email, name, display };
 }
 function arrAuthSet(email, name) {
   localStorage.setItem(ARR_AUTH_EMAIL_KEY, email);
@@ -431,6 +432,7 @@ function arrAuthSet(email, name) {
 function arrAuthClear() {
   localStorage.removeItem(ARR_AUTH_EMAIL_KEY);
   localStorage.removeItem(ARR_AUTH_NAME_KEY);
+  localStorage.removeItem('arr_user_display');
   localStorage.removeItem(ARR_AUTH_TS_KEY);
 }
 function arrAuthCheck(redirectIfMissing = true) {
@@ -556,7 +558,7 @@ async function launcherBackground(auth) {
     }
     const name = (s.name && s.name !== '--') ? s.name : auth.name;
     arrLoaderAuthSet(auth.email, name, false);
-    if (name !== auth.name) showSignedIn({ email: auth.email, name });
+    showSignedIn({ email: auth.email, name });
   });
 
   const chk = await arrCheckUpdate();
@@ -592,7 +594,7 @@ function launcherForcedUpdate() {
 }
 
 function showSignedIn(auth) {
-  const display = auth.name || auth.email;
+  const display = localStorage.getItem('arr_user_display') || auth.name || auth.email;
   document.getElementById('auth-status').textContent = '';
   document.getElementById('gsi-btn-wrap').style.display = 'none';
   const pill = document.getElementById('auth-user-pill');
