@@ -27,13 +27,13 @@
     "appDocumentation.html",
     "appHotspot.html",
     "appInventory.html",
-    "appInventory_Arun_v1.html",
+    "appInventory_Arun.html",
     "inv_manifest.json",
     "appMonitoringDashboard.html",
     "appNurseryDashboard.html",
-    "appNurseryDashboard_Arun_v1.html",
+    "appNurseryDashboard_Arun.html",
     "appSurveyManager.html",
     "survey_schema_v10.json"
   ],
-  "zip_size": 4432779
+  "zip_size": 4441597
 }
