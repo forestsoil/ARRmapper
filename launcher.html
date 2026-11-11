@@ -15,8 +15,8 @@
 <script>
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
-<title>ARR Project Suite v52</title>
-<!-- launcher_landing_v52.html — appDocumentReport renamed appDocumentation -->
+<title>ARR Project Suite v53</title>
+<!-- launcher_landing_v53.html — About Suite refreshed; Privacy Policy + Terms merged into About -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{ --card-name: var(--forest); }
@@ -111,6 +111,10 @@ main{max-width:960px;margin:0 auto;padding:20px 20px 48px}
 #feat-content h3{font-size:12px;font-weight:700;color:var(--canopy);margin:0 0 8px}
 #feat-content ul{padding-left:16px;margin:0 0 8px}
 #feat-content li{margin-bottom:3px}
+.feat-sep{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mid);padding:10px 12px 4px;margin-top:6px;border-top:1px solid var(--rule)}
+#feat-content h4{font-size:12px;font-weight:700;color:var(--canopy);margin:14px 0 4px}
+#feat-content p{margin:0 0 8px}
+#feat-content a{color:var(--canopy)}
 .cl-ver{font-weight:700;color:var(--ink);font-size:11px;margin:10px 0 3px}
 .cl-date{font-weight:400;color:var(--dim);font-size:10px;margin-left:6px}
 #feat-content .f-sub{font-size:10px;color:var(--mid);margin-bottom:10px}
@@ -622,7 +626,7 @@ const FEAT_APPLETS = [
   { key:'about',  label:'ℹ️ About Project',            access:'Fully open — no sign-in required',
     features:['Project facts: state, districts, area, start year, standard, VCS ID','Project FAQs for Asha 1, Asha 2, Arun, Banani','Opens on the project selected in the launcher']},
   { key:'species',label:'🌳 Project Species',          access:'Fully open — no sign-in required',
-    features:['Planted species per project with native / exotic flag','Wildlife checklist with IUCN, WPA schedule and CITES appendix','English, Assamese and Bengali names; search in any','CSV export']},
+    features:['Planted species per project with native / exotic flag','Wildlife checklist with IUCN, WPA schedule and CITES appendix','English, Assamese and Bengali names; search in any','Invasives listed by project','CSV export']},
   { key:'invasives',label:'🌿 Know Your Invasives',    access:'Open; reporting a sighting requires sign-in',
     features:['12 invasive plants with photos, threat level and ID tips','One-tap “Report sighting” pre-fills the CCB sighting form']},
   { key:'vec',    label:'∟ Vector Tool',            access:'Full block — sign-in required',
@@ -632,13 +636,13 @@ const FEAT_APPLETS = [
   { key:'soil',   label:'⛏️ Soil Mapper',             access:'Full block — sign-in required',
     features:['Hand-drawn soil type polygons (5 texture classes + Lowland/Organic)','Soil group aggregation and KML export','SHP export of assessed soil polygons','Overlay layer support','Files tab: on-device OPFS browser','Trilingual UI: English / Hindi / Bengali']},
   { key:'daily',  label:'🗒️ Daily Reporting Tool',    access:'Full block — sign-in required; Reports/Attendance/Analysis tabs restricted',
-    features:['Daily work report with hierarchical visit types (tap group → sub-types), GPS, photos and field track','Attendance and leave submission; offline outbox','Analysis: visit types, unique plot visits, cluster and individual staff performance, staff not reporting, report tracker map','Weekly / monthly DOCX and EcoAct PPTX field reports; Analysis XLSX']},
+    features:['Daily work report with hierarchical visit types (tap group → sub-types), GPS, photos and field track','Attendance and leave submission; offline outbox','Reports tab: Report Locations map and Report Tracks (staff field-track viewer) as sub-tabs','Analysis: visit types, unique plot visits, cluster and individual staff performance, staff not reporting','Weekly / monthly DOCX and EcoAct PPTX field reports; Analysis XLSX']},
   { key:'survey', label:'📋 Survey Forms Manager',    access:'Full block — sign-in required',
-    features:['Seven form types: Beneficiary Baseline, Plantation Details, Fencing, Event Record, Biomass (Tree & Plot), Nursery Mapping, Grievance','Mortality / Plot Evaluation and Leakage Assessment forms','Offline-first with OPFS file queue and row-first submission queue','Photo capture: 3MP/80% JPEG compression, EXIF preserved','Login-based surveyor_name auto-fill','Trilingual UI: English / Hindi / Bengali']},
+    features:['Seven form types: Beneficiary Baseline, Plantation Details, Fencing, Event Record, Biomass (Tree & Plot), Nursery Mapping, Grievance','Mortality / Plot Evaluation and Leakage Assessment forms','Offline-first with OPFS file queue and row-first submission queue','Photo capture: 3MP/80% JPEG compression, EXIF preserved','Login-based surveyor_name auto-fill from the staff list','Trilingual UI: English / Hindi / Bengali']},
   { key:'monitoring', label:'🌿 Monitoring Dashboard', access:'Partial — view open; MRV form requires sign-in',
     features:['Full-screen Leaflet map with District/Block/LPC filter cascades on 511-polygon Asha 1 dataset','MRV Tool: stratified random sampling, centroid walk (monthly) and exhaustive density-tiered (annual)','MRV composite score: 6 plot metrics (42%) + sapling observations (58%) = 0–100, A+→D grading','Height/DBH entry, quarterly photos, Drive upload per visit','Plantation survival and species health charts','Plot condition and leakage tracking','IDB caching for offline dashboard view']},
   { key:'nursery', label:'🌱 Nursery Dashboard',       access:'Partial — view open; data entry requires sign-in',
-    features:['Sapling dispatch tracking across districts','Seed tree provenance mapping','Plan vs actual sapling count','Nursery inspection records','Offline queue with patch-back']},
+    features:['Sapling dispatch tracking across districts','Seed tree provenance mapping','Plan vs actual sapling count','Nursery inspection records','Offline queue with patch-back','Separate Arun edition: opens automatically when the Arun project is selected in the launcher']},
   { key:'ccb',    label:'🦋 CCB & SDG Dashboard',     access:'Partial — view open; upload requires sign-in',
     features:['Biodiversity sightings map with EXIF GPS extraction','Structured surveys (CCB v3.1 B1/B2/B4): line transect, point count, camera trap, regeneration plot, HWC incident, threat log','Effort-standardised encounter rates by site role × stratum × season; repeat coverage','Trigger-species (GL3) log, HWC map, household panel & grievance SLA','CSV / GeoJSON exports; offline outbox; audit trail in CCB_Audit','SDG co-benefit indicators: 17-goal chip grid','Labour equity metrics and FPIC & events records']},
   { key:'dashboard', label:'🌡️ Plantation Dashboard', access:'Fully open — no sign-in required',
@@ -646,25 +650,87 @@ const FEAT_APPLETS = [
   { key:'hotspot', label:'🔥 Land Hot-spotter',         access:'Full block — sign-in required',
     features:['COG-based land suitability viewer (Cloud-Optimised GeoTIFF)','3-band RGB composite: R=drought stress, G=soil suitability, B=flood frequency','District/block cascade dropdowns with SOI village boundary overlays','No runtime GEE API calls — fully static frontend']},
   { key:'inventory', label:'📦 Inventory & Resources',  access:'Full block — sign-in required',
-    features:['Stock tracking: receive and dispatch materials per district and plot','Transaction types: stock-in, issue-out, return, audit','Materials: bamboo poles, netting, wire, fertilisers, tools and nursery inputs','Offline queue with outbox badge; network-aware sync']},
-  { key:'docs',   label:'📚 Documentation & Reports',   access:'Project documents require sign-in',
-    features:['Field reports (DOCX / PPTX) moved to Daily Report → Analysis','Verification reports, SOPs, project agreements (sign-in required)','Land document store and baseline documents (sign-in required)','Multi-project tabs: Asha 1, Asha 2, Arun, Banani']},
+    features:['Stock tracking: receive and dispatch materials per district and plot','Transaction types: stock-in, issue-out, return, audit','Materials: bamboo poles, netting, wire, fertilisers, tools and nursery inputs','Offline queue with outbox badge; network-aware sync','Separate Arun edition: opens automatically when the Arun project is selected in the launcher']},
+  { key:'docs',   label:'📚 Project Documentation',   access:'Project documents require sign-in',
+    features:['Field reports (DOCX / PPTX) are in Daily Report → Analysis','Verification reports, SOPs, project agreements (sign-in required)','Land document store and baseline documents (sign-in required)','Multi-project tabs: Asha 1, Asha 2, Arun, Banani']},
+  { sep:'Legal' },
+  { key:'privacy', label:'🔒 Privacy Policy', access:'Last updated: June 2026', html:`
+<p>ARRMapper Field Tool (“the Tool”) is a web-based field data collection application developed by <strong>Nirmalya Chatterjee</strong> for use by Tomorrow's Foundation, Tomorrow's Skills and Livelihoods Plc., and other authorised project partners engaged in afforestation, reforestation, and revegetation (ARR) carbon projects.</p>
+<h4>1. What data we collect</h4>
+<ul>
+<li><strong>Google account email address</strong> — used solely to identify which staff member is uploading field data, and to name your personal folder in the project Google Drive. Your email is not stored on any external server; it is held only in your browser's local storage (IndexedDB) on your device.</li>
+<li><strong>Field mapping data</strong> — plantation layouts, soil assessments, GPS coordinates, and vector features (POIs, paths, polygons) that you create using the Tool. This data is uploaded to the project Google Drive account associated with your assigned project.</li>
+<li><strong>Device GPS location</strong> — used only when you actively use GPS-based tools (GPS POI, GPS path, GPS polygon, or GPS boundary walk). Location data is not logged, transmitted, or stored beyond what you explicitly export.</li>
+</ul>
+<h4>2. How we use your data</h4>
+<ul>
+<li>Field data is used exclusively for carbon project monitoring, reporting, and verification (MRV).</li>
+<li>Your email address is used to organise uploaded files into your named folder in Google Drive.</li>
+<li>No data is sold, shared with third parties, or used for advertising purposes.</li>
+</ul>
+<h4>3. Data storage</h4>
+<p>All field data is stored in Google Drive accounts managed by the respective project organisation. Google's own privacy policy applies to data stored in Google Drive: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a>.</p>
+<p>Session information (your name and selected project) is stored locally in your browser's IndexedDB and is never transmitted to any server other than Google's authentication services.</p>
+<h4>4. Google Sign-In</h4>
+<p>The Tool uses Google Sign-In (Google Identity Services) to verify your identity. This process is governed by Google's Terms of Service and Privacy Policy. The Tool receives only your email address and display name from Google — no other account data is accessed.</p>
+<h4>5. Data retention</h4>
+<p>Field data uploaded to Google Drive is retained indefinitely for audit and verification purposes, as required by carbon methodology standards. Only project administrators can delete uploaded data.</p>
+<h4>6. Your rights</h4>
+<p>If you wish to request access to, correction of, or deletion of your data, please contact the project administrator for your assigned project.</p>
+<h4>7. Changes to this policy</h4>
+<p>This policy may be updated from time to time. The “Last updated” date will reflect any changes.</p>
+<h4>8. Contact</h4>
+<p>Nirmalya Chatterjee (Developer) · <a href="mailto:tfcarbondata@gmail.com">tfcarbondata@gmail.com</a></p>` },
+  { key:'terms', label:'📄 Terms of Service', access:'Last updated: June 2026', html:`
+<p>These Terms of Service govern your use of the ARRMapper Field Tool (“the Tool”), a web-based field data collection application developed by <strong>Nirmalya Chatterjee</strong> for Tomorrow's Foundation, Tomorrow's Skills and Livelihoods Plc., and other authorised project partners engaged in ARR carbon projects.</p>
+<h4>1. Eligibility</h4>
+<p>The Tool is intended for use exclusively by authorised field staff and project personnel assigned to ARR carbon projects by Tomorrow's Foundation, Tomorrow's Skills and Livelihoods Plc., or other authorised project partners. Access is provided by project administrators via a shared link distributed through official project communication channels. Unauthorised use is prohibited.</p>
+<h4>2. Permitted use</h4>
+<p>You may use the Tool solely for the purpose of collecting, mapping, and uploading field data related to your assigned ARR project. You agree not to:</p>
+<ul>
+<li>Use the Tool for any purpose outside your assigned project activities</li>
+<li>Attempt to access, modify, or delete data belonging to other staff members or projects</li>
+<li>Share your access link or Google account credentials with unauthorised persons</li>
+<li>Attempt to reverse-engineer, copy, or redistribute the Tool or its source code</li>
+</ul>
+<h4>3. Intellectual property</h4>
+<p>The Tool, including its code, design, and methodology, is the intellectual property of Nirmalya Chatterjee. It is licensed for use by Tomorrow's Foundation, Tomorrow's Skills and Livelihoods Plc., and other authorised project partners. No rights to the source code are granted to end users by these Terms.</p>
+<h4>4. Data accuracy</h4>
+<p>You are responsible for the accuracy of the field data you upload. Uploaded data is used for carbon project monitoring, reporting, and verification (MRV) and may form part of official audit records. Deliberately falsifying field data is strictly prohibited.</p>
+<h4>5. Data ownership</h4>
+<p>All field data uploaded through the Tool remains the property of the respective project organisation (Tomorrow's Foundation, Tomorrow's Skills and Livelihoods Plc., or the relevant authorised partner) and their project partners.</p>
+<h4>6. Availability</h4>
+<p>The Tool is provided on an “as available” basis. No guarantee of continuous availability is made, and no liability is accepted for data loss, interruption of service, or GPS inaccuracy in field conditions.</p>
+<h4>7. Account suspension</h4>
+<p>Project administrators may revoke a staff member's upload access at any time, including upon termination of employment or project assignment. Previously uploaded data will remain in the project Drive and is not deleted upon access revocation.</p>
+<h4>8. Third-party services</h4>
+<ul>
+<li><a href="https://policies.google.com/terms" target="_blank" rel="noopener">Google Identity Services</a> — authentication</li>
+<li><a href="https://policies.google.com/terms" target="_blank" rel="noopener">Google Drive API</a> — data storage</li>
+<li><a href="https://cloud.google.com/maps-platform/terms" target="_blank" rel="noopener">Google Maps Static API</a> — satellite imagery in exported maps</li>
+</ul>
+<h4>9. Changes to these Terms</h4>
+<p>These Terms may be updated at any time. Continued use of the Tool after changes are posted constitutes acceptance of the updated Terms.</p>
+<h4>10. Contact</h4>
+<p>Nirmalya Chatterjee (Developer) · <a href="mailto:tfcarbondata@gmail.com">tfcarbondata@gmail.com</a></p>` },
 ];
 
 function openFeatList() {
   document.getElementById('feat-overlay').classList.add('open');
   document.getElementById('feat-tabs').innerHTML = FEAT_APPLETS.map((a,i) =>
-    `<button class="feat-tab${i===0?' sel':''}" onclick="featTab(${i})">${a.label}</button>`
+    a.sep ? `<div class="feat-sep">${a.sep}</div>`
+          : `<button class="feat-tab" data-i="${i}" onclick="featTab(${i})">${a.label}</button>`
   ).join('');
   featTab(0);
 }
 function closeFeatList() { document.getElementById('feat-overlay').classList.remove('open'); }
 function featTab(i) {
-  document.querySelectorAll('.feat-tab').forEach((b,j) => b.classList.toggle('sel', j===i));
+  document.querySelectorAll('.feat-tab').forEach(b => b.classList.toggle('sel', +b.dataset.i === i));
   const a = FEAT_APPLETS[i];
-  let html = `<div class="f-sub">Access: ${a.access}</div>`;
-  html += `<h3>Features</h3><ul>${a.features.map(f=>`<li>${f}</li>`).join('')}</ul>`;
-  document.getElementById('feat-content').innerHTML = html;
+  let html = `<div class="f-sub">${a.html ? '' : 'Access: '}${a.access}</div>`;
+  html += a.html ? a.html : `<h3>Features</h3><ul>${a.features.map(f=>`<li>${f}</li>`).join('')}</ul>`;
+  const c = document.getElementById('feat-content');
+  c.innerHTML = html; c.scrollTop = 0;
 }
 </script>
 
@@ -681,8 +747,8 @@ function featTab(i) {
       <div id="feat-content"></div>
     </div>
     <div class="legal-bar">
-      <a href="privacy_policy.html" target="_blank">Privacy Policy</a>
-      <a href="terms_of_service.html" target="_blank">Terms of Service</a>
+      <a href="#" onclick="featTab(FEAT_APPLETS.findIndex(x=>x.key==='privacy'));return false">Privacy Policy</a>
+      <a href="#" onclick="featTab(FEAT_APPLETS.findIndex(x=>x.key==='terms'));return false">Terms of Service</a>
       <span>&copy; 2025–2026 Nirmalya Chatterjee</span>
     </div>
   </div>
