@@ -1209,14 +1209,4 @@
     "supervisor": "Goutam Dhar",
     "restricted_access": false
   }
-    {
-    "email": "poulomi@tomorrowsfoundation.in",
-    "name": "Poulomi Karmakar",
-    "district": "JPG",
-    "designation": "GIS Analyst II",
-    "affiliation": "TSLPL",
-    "cluster": "Project",
-    "supervisor": "Satyajit Chakraborty",
-    "restricted_access": true
-  }
 ]
