@@ -16,7 +16,7 @@
 (function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
 </script>
 <title>ARR Project Suite</title>
-<!-- index_v9.html — no TTL, timed staff lookup, skip reinstall, watchdog -->
+<!-- index_v11.html — v11: arr-icons.js (Lucide theme icon); v9: no TTL, timed staff lookup, skip reinstall, watchdog -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;background:var(--bg,#f0fdf4)}
@@ -79,6 +79,7 @@ footer{text-align:center;font-size:.72rem;color:#aaa;padding:16px;margin-top:aut
 
 <footer>ARR Project Suite · Developed by Nirmalya Chatterjee · For use by authorised project partners, funders &amp; clients only</footer>
 
+<script src="arr-icons.js"></script>
 <script src="arr-loader.js"></script>
 <script>
 const LAUNCHER_URL = './launcher.html';
@@ -91,12 +92,17 @@ function toggleTheme() {
   if (next === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   else document.documentElement.removeAttribute('data-theme');
   localStorage.setItem('arr_theme', next);
-  document.getElementById('theme-btn').textContent = next === 'dark' ? '☀️' : '🌙';
+  setThemeBtn(next === 'dark');
   document.getElementById('suite-logo').src = next === 'dark' ? 'logo_dark.png' : 'logo_light.png';
+}
+function setThemeBtn(isDark) {
+  const b = document.getElementById('theme-btn');
+  if (typeof arrIcon === 'function') b.innerHTML = arrIcon(isDark ? 'theme-light' : 'theme-dark', 16);
+  else b.textContent = isDark ? '☀️' : '🌙';
 }
 (function applyTheme(){
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  document.getElementById('theme-btn').textContent = isDark ? '☀️' : '🌙';
+  setThemeBtn(isDark);
   document.getElementById('suite-logo').src = isDark ? 'logo_dark.png' : 'logo_light.png';
 })();
 

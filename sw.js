@@ -1,4 +1,5 @@
-// ARR Project Suite — Service Worker v14
+// ARR Project Suite — Service Worker v15
+// v15: Arun applets served unversioned (appInventory_Arun, appNurseryDashboard_Arun).
 // v14: appInvasives / appNativeSpecies / appAboutProject; CCB survey schema + species JSON;
 //      survey_schema v9 + v10 served from bundle.
 // OPFS intercept: applet HTML is read from OPFS (desktop/Android) or IDB (iOS) and returned directly.
@@ -8,7 +9,7 @@
 //      network-first shell with timeout, appARRMapper.html name fix,
 //      bundle miss on navigation → index reinstall (no 404).
 
-const CACHE_NAME = 'arrm-shell-e33ac5b';
+const CACHE_NAME = 'arrm-shell-v12';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
@@ -40,10 +41,10 @@ const OPFS_APPLETS = [
   'appDocumentation.html',
   'appHotspot.html',
   'appInventory.html',
-  'appInventory_Arun_v1.html',
+  'appInventory_Arun.html',
   'appMonitoringDashboard.html',
   'appNurseryDashboard.html',
-  'appNurseryDashboard_Arun_v1.html',
+  'appNurseryDashboard_Arun.html',
   'appSurveyManager.html',
 ];
 

@@ -15,7 +15,7 @@ const ARR_STALE_MAX_S = 7 * 86400;
 
 const ARR_K = {
   email: 'arr_user_email', name: 'arr_user_name', ts: 'arr_auth_ts',
-  prov: 'arr_auth_provisional',
+  prov: 'arr_auth_provisional', disp: 'arr_user_display',
   ready: 'arr_opfs_ready', store: 'arr_bundle_store',
   ver: 'arr_bundle_ver', built: 'arr_bundle_built', installed: 'arr_bundle_installed_ts',
   staff: 'arr_staff_cache', checked: 'arr_update_checked_ts',
@@ -42,16 +42,39 @@ function arrDecodeJwt(tok) {
   return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
 }
 
+// ── Display name: first name; "First L" if another staff shares the first name;
+//    full name if first name AND last initial both clash. Honorifics/brackets ignored.
+function arrDisplayName(full, email, list) {
+  full = (full || '').trim();
+  if (!full || full.includes('@')) return full;
+  const toks = n => {
+    const t = n.replace(/\([^)]*\)/g, ' ').split(/\s+/).filter(Boolean);
+    while (t.length > 1 && /^(md|mohd|mohammad|mr|mrs|ms|dr|shri|smt)\.?$/i.test(t[0])) t.shift();
+    return t;
+  };
+  const me = toks(full), first = me[0], f = first.toLowerCase();
+  const em = (email || '').trim().toLowerCase();
+  const peers = (list || [])
+    .filter(s => s.name && s.name !== '--' && (s.email || '').trim().toLowerCase() !== em)
+    .map(s => toks(s.name))
+    .filter(t => t[0].toLowerCase() === f);
+  if (!peers.length || me.length < 2) return first;
+  const init = me[me.length - 1][0].toUpperCase();
+  const clash = peers.some(t => t.length > 1 && t[t.length - 1][0].toUpperCase() === init);
+  return clash ? full : first + ' ' + init;
+}
+
 // ── Auth (no expiry) ──────────────────────────────────────────────
 function arrLoaderAuthSet(email, name, provisional) {
   localStorage.setItem(ARR_K.email, email);
   localStorage.setItem(ARR_K.name, name || '');
+  localStorage.setItem(ARR_K.disp, arrDisplayName(name, email, arrStaffCacheGet()));
   localStorage.setItem(ARR_K.ts, String(Date.now()));
   if (provisional) localStorage.setItem(ARR_K.prov, '1');
   else localStorage.removeItem(ARR_K.prov);
 }
 function arrLoaderAuthClear() {
-  [ARR_K.email, ARR_K.name, ARR_K.ts, ARR_K.prov].forEach(k => localStorage.removeItem(k));
+  [ARR_K.email, ARR_K.name, ARR_K.disp, ARR_K.ts, ARR_K.prov].forEach(k => localStorage.removeItem(k));
 }
 
 // ── Staff list ────────────────────────────────────────────────────

@@ -127,3 +127,66 @@ html, body {
 [data-theme="dark"] .arr-chip:hover {
   background: rgba(74,222,128,.22);
 }
+
+/* ── Extended tokens used by applets ───────────────────────────────── */
+/* These align applet-local names with arr-shared equivalents           */
+:root {
+  --text:  var(--ink);   /* applet alias → arr-shared --ink  */
+  --text2: var(--mid);   /* applet alias → arr-shared --mid  */
+  --surface:  var(--card);  /* applet alias → arr-shared --card */
+  --surface2: var(--mint);  /* applet alias → arr-shared --mint */
+  --accent:   var(--canopy); /* applet alias → arr-shared --canopy */
+  --accent2:  var(--leaf);   /* applet alias → arr-shared --leaf */
+  --warn:     var(--red);        /* applet alias → arr-shared --red */
+  --warn-bg:  var(--red-pale);   /* applet alias → arr-shared --red-pale */
+}
+/* Dark mode aliases inherit automatically from arr-shared dark overrides */
+
+/* ── Topbar / header overflow guard ────────────────────────────────── */
+/* Apply .arr-topbar to any sticky header to prevent mobile portrait    */
+/* wrapping. Items clip off-screen right rather than collapsing down.   */
+.arr-topbar {
+  flex-wrap: nowrap !important;
+  overflow: hidden !important;
+}
+.arr-topbar-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  margin-left: auto;
+}
+
+/* ── User chip — universal truncation ──────────────────────────────── */
+.arr-chip[id$="-chip"],
+.arr-chip[id="arr-user-chip"],
+#arr-user-chip,
+#user-chip {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Icons (arr-icons.js) ───────────────────────────────────────────────
+   Tile palette — light: #113311 on #99cc99 · dark: #99cc99 on #113311.
+   Used by .arr-ic-tile, launcher .card-icon and nursery .tile-icon.
+   Inline icons follow the surrounding text colour (stays legible on the
+   dark-green headers and keeps amber/red status colours).               */
+:root { --arr-icon-fg: #113311; --arr-icon-bg: #99cc99; }
+[data-theme="dark"] { --arr-icon-fg: #99cc99; --arr-icon-bg: #113311; }
+.arr-ic { flex: none; }
+.arr-ig { position: relative; display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em; line-height: 1; flex: none; }
+.arr-ig:not(:last-child) { margin-right: 0.2em; }
+.arr-ig > .arr-ic { display: block; width: 100%; height: 100%; }
+.arr-ig-t { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.arr-ic-txt { margin-left: 5px; }
+.arr-home { display: inline-flex; align-items: center; text-decoration: none; }
+.arr-ic-fg { color: var(--arr-icon-fg); }
+.arr-ic-tile, .card-icon, .tile-icon { display: inline-flex; align-items: center; justify-content: center;
+  background: var(--arr-icon-bg); color: var(--arr-icon-fg); border-radius: 10px; padding: 6px; }
+.tile-icon { padding: 8px; }
+.arr-ic-tile .arr-ig, .card-icon .arr-ig, .tile-icon .arr-ig { margin-right: 0; }
+.arr-ic-spin { animation: arr-ic-spin 1s linear infinite; }
+@keyframes arr-ic-spin { to { transform: rotate(360deg); } }
