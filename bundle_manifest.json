@@ -33,7 +33,7 @@
     "appNurseryDashboard.html",
     "appNurseryDashboard_Arun.html",
     "appSurveyManager.html",
-    "survey_schema_v10.json"
+    "survey_schema_v11.json"
   ],
-  "zip_size": 4454842
+  "zip_size": 4469091
 }
