@@ -1,4 +1,6 @@
-// ARR Project Suite — Service Worker v15
+// ARR Project Suite — Service Worker v16
+// v16: arr-icons.js precached; arr-shared.css + arr-icons.js network-first (no stale shell styling);
+//      survey_schema_v11.json served from bundle (was missing → 404); cache name bumped.
 // v15: Arun applets served unversioned (appInventory_Arun, appNurseryDashboard_Arun).
 // v14: appInvasives / appNativeSpecies / appAboutProject; CCB survey schema + species JSON;
 //      survey_schema v9 + v10 served from bundle.
@@ -9,13 +11,14 @@
 //      network-first shell with timeout, appARRMapper.html name fix,
 //      bundle miss on navigation → index reinstall (no 404).
 
-const CACHE_NAME = 'arrm-shell-b81326c';
+const CACHE_NAME = 'arrm-shell-v13';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
   '/ARRmapper/launcher.html',
   '/ARRmapper/arr-loader.js',
   '/ARRmapper/arr-shared.css',
+  '/ARRmapper/arr-icons.js',
   '/ARRmapper/manifest.json',
   '/ARRmapper/logo_dark.png',
   '/ARRmapper/logo_light.png',
@@ -56,6 +59,7 @@ const OPFS_ASSETS = [
   'survey_schema_v7.json',
   'survey_schema_v9.json',
   'survey_schema_v10.json',
+  'survey_schema_v11.json',
   'ccb_survey_schema_v1.json',
   'ccb_species_v1.json',
 ];
@@ -219,6 +223,8 @@ self.addEventListener('fetch', event => {
   if (url.pathname.endsWith('index.html') ||
       url.pathname.endsWith('launcher.html') ||
       url.pathname.endsWith('arr-loader.js') ||
+      url.pathname.endsWith('arr-shared.css') ||
+      url.pathname.endsWith('arr-icons.js') ||
       url.pathname === '/ARRmapper/' ||
       url.pathname === '/ARRmapper') {
     event.respondWith(networkFirst(event.request));
