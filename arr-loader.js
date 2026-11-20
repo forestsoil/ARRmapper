@@ -1,5 +1,6 @@
 /**
- * arr-loader.js v1 — ARR Suite root loader (NOT bundled)
+ * arr-loader.js v4 — ARR Suite root loader (NOT bundled)
+ * v4: unzip worker loads fflate from the repo root copy (written by the bundler) first, CDN as fallback.
  * Used by index.html and launcher.html.
  *   - timed fetches (never hang)
  *   - staff lookup: network → localStorage cache → bundle copy → provisional
@@ -12,6 +13,7 @@ const ARR_VER_URL     = './bundle_ver.json';
 const ARR_STAFF_URL   = './staff_list_asha.json';
 const ARR_AES_KEY_HEX = '94e9c442ac66d419e895949425e55f787052d1dfe3fbe522c868fdec22302d84';
 const ARR_STALE_MAX_S = 7 * 86400;
+const ARR_FFLATE_LOCAL = new URL('./lib_cdn.jsdelivr.net_npm_fflate_0.8.2_umd_index.js', location.href).href;
 
 const ARR_K = {
   email: 'arr_user_email', name: 'arr_user_name', ts: 'arr_auth_ts',
@@ -185,8 +187,11 @@ async function arrDecrypt(encrypted) {
 function arrUnzip(zipBuf, ms = 60000) {
   return new Promise((res, rej) => {
     const src = `
-      try { importScripts('https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js'); }
-      catch (e) { self.postMessage({error: 'unzip library failed to load'}); }
+      try { importScripts(${JSON.stringify(ARR_FFLATE_LOCAL)}); }
+      catch (e1) {
+        try { importScripts('https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js'); }
+        catch (e2) { self.postMessage({error: 'unzip library failed to load'}); }
+      }
       self.onmessage = function (e) {
         fflate.unzip(new Uint8Array(e.data), function (err, files) {
           if (err) { self.postMessage({error: String(err.message || err)}); return; }

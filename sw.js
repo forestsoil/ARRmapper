@@ -1,4 +1,6 @@
-// ARR Project Suite — Service Worker v16
+// ARR Project Suite — Service Worker v17
+// v17: lib_* files (vendored CDN libraries: Leaflet, Chart.js, Turf, proj4, SheetJS ...) served from the
+//      bundle (OPFS/IDB) so maps/charts/xlsx work offline; mimeType() knows .js/.svg/.woff2.
 // v16: arr-icons.js precached; arr-shared.css + arr-icons.js network-first (no stale shell styling);
 //      survey_schema_v11.json served from bundle (was missing → 404); cache name bumped.
 // v15: Arun applets served unversioned (appInventory_Arun, appNurseryDashboard_Arun).
@@ -11,7 +13,7 @@
 //      network-first shell with timeout, appARRMapper.html name fix,
 //      bundle miss on navigation → index reinstall (no 404).
 
-const CACHE_NAME = 'arrm-shell-c7cbd61';
+const CACHE_NAME = 'arrm-shell-v13';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
@@ -173,6 +175,9 @@ function mimeType(filename) {
   if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) return 'image/jpeg';
   if (filename.endsWith('.png')) return 'image/png';
   if (filename.endsWith('.css')) return 'text/css';
+  if (filename.endsWith('.js')) return 'text/javascript; charset=utf-8';
+  if (filename.endsWith('.svg')) return 'image/svg+xml';
+  if (filename.endsWith('.woff2')) return 'font/woff2';
   return 'application/octet-stream';
 }
 
@@ -196,7 +201,8 @@ self.addEventListener('fetch', event => {
   const isInvasive = url.pathname.includes('/invasiveImages/');
   const invasiveFile = isInvasive ? 'invasiveImages/' + filename : null;
 
-  if (ALL_OPFS.includes(filename) || isInvasive) {
+  const isLib = filename.startsWith('lib_');
+  if (ALL_OPFS.includes(filename) || isInvasive || isLib) {
     event.respondWith(
       readFromBundle(invasiveFile || filename)
         .then(file => new Response(file, {
