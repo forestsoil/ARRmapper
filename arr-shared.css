@@ -190,3 +190,12 @@ html, body {
 .arr-ic-tile .arr-ig, .card-icon .arr-ig, .tile-icon .arr-ig { margin-right: 0; }
 .arr-ic-spin { animation: arr-ic-spin 1s linear infinite; }
 @keyframes arr-ic-spin { to { transform: rotate(360deg); } }
+
+/* ── Toast (see toast() in arr-shared.js) ── */
+#toast { position: fixed; bottom: var(--arr-toast-bottom, 24px); left: 50%; transform: translateX(-50%);
+  background: #1a3d2b; color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 13px; z-index: 9999;
+  opacity: 0; transition: opacity .3s; pointer-events: none; max-width: 90vw; text-align: center; }
+#toast.show { opacity: 1; }
+#toast.success { background: #166534; }
+#toast.warn    { background: #92400e; }
+#toast.error   { background: #991b1b; }
