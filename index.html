@@ -9,35 +9,30 @@
 <link rel="icon" href="pwa_icon_light.png" media="(prefers-color-scheme: light)">
 <link rel="icon" href="pwa_icon_dark.png" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="pwa_icon_dark.png">
-<meta name="theme-color" content="#f0fdf4" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1a3d2b" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#1b3d24">
 <link rel="stylesheet" href="arr-shared.css">
 <script>
-(function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
+(function(){ try{localStorage.removeItem('arr_theme')}catch(e){} document.documentElement.removeAttribute('data-theme'); })();
 </script>
 <title>ARR Project Suite</title>
-<!-- index_v11.html — v11: arr-icons.js (Lucide theme icon); v9: no TTL, timed staff lookup, skip reinstall, watchdog -->
+<!-- index_v12.html — v11: arr-icons.js (Lucide theme icon); v9: no TTL, timed staff lookup, skip reinstall, watchdog -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;background:var(--bg,#f0fdf4)}
 
 /* Header */
 header{background:var(--leaf,#52b788);padding:14px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
-[data-theme="dark"] header{background:var(--forest,#1a3d2b)}
 header img{height:48px;width:48px;border-radius:8px;object-fit:contain}
 .hdr-text h1{font-size:1.2rem;font-weight:700;color:#fff}
 .hdr-text p{font-size:.78rem;color:rgba(255,255,255,.85);margin-top:2px}
 
 /* Login card */
 .login-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
-.login-card{background:var(--card-bg,#fff);border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.1);padding:36px 32px;max-width:380px;width:100%;text-align:center}
-[data-theme="dark"] .login-card{background:var(--card-dark,#1e3a2f)}
+.login-card{background:var(--card,#fff);border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.1);padding:36px 32px;max-width:380px;width:100%;text-align:center}
 .login-card h2{font-size:1.1rem;font-weight:600;color:var(--forest,#1a3d2b);margin-bottom:6px}
-[data-theme="dark"] .login-card h2{color:var(--mist,#d8f3dc)}
 .login-card p{font-size:.82rem;color:#666;margin-bottom:24px;line-height:1.5}
-[data-theme="dark"] .login-card p{color:#aaa}
 #gsi-btn-wrap{display:flex;justify-content:center;margin-bottom:16px}
-#auth-status{display:block;font-size:.8rem;min-height:20px;color:#888;margin-top:8px}
+#auth-status{display:block;font-size:.8rem;min-height:20px;color:var(--mid,#888);margin-top:8px}
 .status-error{color:#c0392b!important;font-weight:600}
 .status-ok{color:#27ae60!important;font-weight:600}
 #retry-btn{display:none;margin-top:14px;padding:8px 22px;border:none;border-radius:8px;background:var(--leaf,#52b788);color:#fff;font-size:.9rem;cursor:pointer}
@@ -47,11 +42,9 @@ header img{height:48px;width:48px;border-radius:8px;object-fit:contain}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* Theme toggle */
-.theme-btn{position:fixed;top:14px;right:16px;background:rgba(255,255,255,.2);border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-size:16px;color:#fff}
 
 /* Footer */
-footer{text-align:center;font-size:.72rem;color:#aaa;padding:16px;margin-top:auto}
-</style>
+footer{text-align:center;font-size:.72rem;color:var(--mid,#aaa);padding:16px;margin-top:auto}</style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -64,7 +57,6 @@ footer{text-align:center;font-size:.72rem;color:#aaa;padding:16px;margin-top:aut
   </div>
 </header>
 
-<button class="theme-btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
 
 <div class="login-wrap">
   <div class="login-card">
@@ -84,27 +76,6 @@ footer{text-align:center;font-size:.72rem;color:#aaa;padding:16px;margin-top:aut
 <script>
 const LAUNCHER_URL = './launcher.html';
 const OAUTH_CLIENT_ID = '712889656596-385d3fgsju3dfi5mdvub6ieqajuebi1g.apps.googleusercontent.com';
-
-// ── Theme ─────────────────────────────────────────────────────────
-function toggleTheme() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const next = isDark ? 'light' : 'dark';
-  if (next === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-  else document.documentElement.removeAttribute('data-theme');
-  localStorage.setItem('arr_theme', next);
-  setThemeBtn(next === 'dark');
-  document.getElementById('suite-logo').src = next === 'dark' ? 'logo_dark.png' : 'logo_light.png';
-}
-function setThemeBtn(isDark) {
-  const b = document.getElementById('theme-btn');
-  if (typeof arrIcon === 'function') b.innerHTML = arrIcon(isDark ? 'theme-light' : 'theme-dark', 16);
-  else b.textContent = isDark ? '☀️' : '🌙';
-}
-(function applyTheme(){
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  setThemeBtn(isDark);
-  document.getElementById('suite-logo').src = isDark ? 'logo_dark.png' : 'logo_light.png';
-})();
 
 // ── Status + watchdog ─────────────────────────────────────────────
 let _wd = null;

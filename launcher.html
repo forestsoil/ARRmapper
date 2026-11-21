@@ -9,29 +9,24 @@
 <link rel="icon" href="pwa_icon_light.png" media="(prefers-color-scheme: light)">
 <link rel="icon" href="pwa_icon_dark.png" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="pwa_icon_dark.png">
-<meta name="theme-color" content="#f0fdf4" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1a3d2b" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#1b3d24">
 <link rel="stylesheet" href="arr-shared.css">
 <script>
-(function(){ const t=localStorage.getItem('arr_theme')||'light'; if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); })();
+(function(){ try{localStorage.removeItem('arr_theme')}catch(e){} document.documentElement.removeAttribute('data-theme'); })();
 </script>
-<title>ARR Project Suite v55</title>
+<title>ARR Project Suite v56</title>
 <!-- launcher_landing_v55.html — About Suite access labels: All / Restricted project users -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{ --card-name: var(--forest); }
-[data-theme="dark"]{ --card-name: var(--mist); }
 body{background:var(--bg);color:var(--ink);min-height:100vh;transition:background .2s,color .2s}
 header{background:var(--mint);padding:20px 32px;display:flex;flex-direction:row;
   align-items:center;justify-content:center;border-bottom:3px solid var(--leaf);transition:background .2s}
-[data-theme="dark"] header{background:var(--forest)}
 .hdr-inner{display:flex;align-items:center;gap:18px;width:100%;max-width:960px;justify-content:center}
 header img{width:110px;height:110px;object-fit:contain;flex-shrink:0}
 .hdr-text{display:flex;flex-direction:column;gap:4px}
 .hdr-text h1{font-size:26px;font-weight:700;color:var(--forest);letter-spacing:-.01em;line-height:1.2;transition:color .2s}
-[data-theme="dark"] .hdr-text h1{color:var(--mist)}
 .hdr-text p{font-size:12px;color:var(--forest);opacity:.7;line-height:1.6;max-width:340px;transition:color .2s}
-[data-theme="dark"] .hdr-text p{color:var(--mist)}
 .auth-bar{background:var(--forest);display:flex;align-items:center;
   padding:8px 20px;font-size:12px;color:var(--mist);justify-content:center;
   transition:background .2s,color .2s;border-bottom:1px solid var(--rule)}
@@ -79,13 +74,13 @@ main{max-width:960px;margin:0 auto;padding:20px 20px 48px}
 .card-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
 .tag{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
   padding:2px 6px;border-radius:20px;background:var(--mint);color:var(--canopy)}
-.tag.new{background:#fef9c3;color:#854d0e}
-.tag.soon{background:#f3f4f6;color:#9ca3af}
-.tag.field{background:#dbeafe;color:#1e40af}
-.tag.ccb{background:#fce7f3;color:#9d174d}
-.tag.analysis{background:#e0f4f7;color:#0e5f6e}
-.tag.monitoring{background:#f3e8ff;color:#6b21a8}
-.tag.operations{background:#fef3e2;color:#92400e}
+.tag.new{background:var(--amber-pale,#fef9c3);color:#854d0e}
+.tag.soon{background:var(--mint,#f3f4f6);color:var(--mid,#9ca3af)}
+.tag.field{background:var(--blue-pale,#dbeafe);color:#1e40af}
+.tag.ccb{background:var(--violet-pale,#fce7f3);color:#9d174d}
+.tag.analysis{background:var(--teal-pale,#e0f4f7);color:#0e5f6e}
+.tag.monitoring{background:var(--violet-pale,#f3e8ff);color:#6b21a8}
+.tag.operations{background:var(--amber-pale,#fef3e2);color:#92400e}
 .card-arrow{position:absolute;bottom:14px;right:14px;font-size:14px;
   color:var(--accent,var(--leaf));opacity:0;transition:opacity .15s,transform .15s}
 .app-card:hover .card-arrow{opacity:1;transform:translateX(3px)}
@@ -133,9 +128,7 @@ footer a:hover{color:var(--canopy)}
   main{padding:16px 12px 40px}
   .grid{grid-template-columns:1fr}
   
-  #feat-box{width:95vw;height:80vh;min-width:unset}
-}
-</style>
+  #feat-box{width:95vw;height:80vh;min-width:unset}}</style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 /* arr-icons.js — inlined by make_bundle.py v10 */
@@ -297,7 +290,6 @@ function arrIconSweep(root) {
     <span id="auth-user-pill" class="user-pill" style="display:none"></span>
     <button id="auth-signout-btn" onclick="launcherSignOut()" style="display:none;font-size:11px;padding:4px 10px;background:rgba(82,183,136,.15);border:1px solid var(--leaf);border-radius:20px;color:var(--mist);cursor:pointer">Sign out</button>
     <div class="auth-bar-right">
-      <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
       <button class="theme-toggle" onclick="openFeatList()" title="About">ℹ️ About Suite</button>
     </div>
   </div>
@@ -597,25 +589,7 @@ const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
 // ── Launcher auth ─────────────────────────────────────────────────
 const OAUTH_CLIENT_ID = '712889656596-385d3fgsju3dfi5mdvub6ieqajuebi1g.apps.googleusercontent.com';
 
-function toggleTheme() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const next = isDark ? 'light' : 'dark';
-  if (next === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-  else document.documentElement.removeAttribute('data-theme');
-  localStorage.setItem('arr_theme', next);
-  document.getElementById('theme-toggle-btn').textContent = next === 'dark' ? '☀️' : '🌙';
-  const logo = document.getElementById('suite-logo');
-  if (logo) logo.src = next === 'dark' ? 'logo_dark.png' : 'logo_light.png';
-}
 
-function applyStoredTheme() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const btn = document.getElementById('theme-toggle-btn');
-  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
-  const logo = document.getElementById('suite-logo');
-  if (logo) logo.src = isDark ? 'logo_dark.png' : 'logo_light.png';
-}
-applyStoredTheme();
 
 function launcherInit() {
   const params   = new URLSearchParams(window.location.search);

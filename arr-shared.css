@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════
    arr-shared.css  —  ARR Suite shared design tokens & base styles
    Served from GitHub Pages root. Included by all applets.
-   v1 · 2026-08-21
+   v5 · mid-tone only (light/dark removed; +--green-pale, --field)
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── Google Fonts ──────────────────────────────────────────────────── */
@@ -11,32 +11,34 @@
 :root {
   /* Brand greens */
   --forest: #1b3d24;
-  --canopy: #2d6940;
-  --leaf:   #4a9e5c;
+  --canopy: #1f5233;
+  --leaf:   #2f7d44;
   --mist:   #d8f3dc;   /* text/chip on dark green surfaces */
-  --mint:   #e8f3e9;   /* light background tint: headers, card surfaces */
-  --pale:   #f2f5f1;
+  --mint:   #a0b9a3;   /* mid surface tint: headers, card surfaces */
+  --pale:   #93ad96;
 
   /* Semantic surface + text */
   --bg:     var(--pale);
-  --card:   #ffffff;
-  --ink:    #0f1c0e;
-  --mid:    #4a6741;
-  --dim:    #7a9e7e;
-  --rule:   rgba(74,158,92,.18);
-  --border: #c8ddd2;
+  --card:   #aec4b0;
+  --ink:    #0c180c;
+  --mid:    #243d27;
+  --dim:    #3f5f43;   /* 3.9:1 on card — decorative/meta only */
+  --rule:   rgba(31,82,51,.25);
+  --border: #7a957e;
 
   /* Status colours */
-  --amber:       #b45a0c;
-  --amber-pale:  #fef3e2;
-  --red:         #9b1c1c;
-  --red-pale:    #fde8e8;
-  --teal:        #0e5f6e;
-  --teal-pale:   #e0f4f7;
-  --violet:      #5b21b6;
-  --violet-pale: #ede9fe;
-  --blue:        #1e40af;
-  --blue-pale:   #dbeafe;
+  --amber:       #7a3a05;
+  --amber-pale:  #d4c08e;
+  --red:         #7f1414;
+  --red-pale:    #d4a5a0;
+  --teal:        #0e4a56;
+  --teal-pale:   #9cc7c4;
+  --violet:      #4c1d95;
+  --violet-pale: #b9aedb;
+  --blue:        #1a3478;
+  --blue-pale:   #a9bfd9;
+  --green-pale:  #9cc7a8;
+  --field:       #c3d4c4;   /* input / inset field surface */
 
   /* Project identity */
   --asha1:  #1a5c38;
@@ -46,42 +48,11 @@
 
   /* Layout */
   --radius: 10px;
-  --shadow: 0 2px 10px rgba(0,0,0,.07);
+  --shadow: 0 2px 10px rgba(0,0,0,.15);
 
   /* Typography */
   --font: 'Noto Sans', 'Segoe UI', system-ui, sans-serif;
   --mono: 'Cascadia Code', 'Fira Mono', monospace;
-}
-
-/* ── Dark mode overrides ────────────────────────────────────────────── */
-[data-theme="dark"] {
-  --forest: #0d2414;
-  --canopy: #2d6a4f;
-  --leaf:   #4ade80;
-  --mist:   #d8f3dc;
-  --mint:   #1a3020;   /* dark-mode equivalent of light mint surface */
-  --pale:   #0f1c14;
-
-  --bg:     var(--pale);
-  --card:   #1c2a17;
-  --ink:    #e8f4e8;
-  --mid:    #a0ccaa;
-  --dim:    #5a8060;
-  --rule:   rgba(74,222,128,.15);
-  --border: #2a3d20;
-
-  --amber:       #fbbf24;
-  --amber-pale:  #2a1e08;
-  --red:         #fca5a5;
-  --red-pale:    #3b0d0d;
-  --teal:        #6ee7b7;
-  --teal-pale:   #0e2a30;
-  --violet:      #c4b5fd;
-  --violet-pale: #2e1a4a;
-  --blue:        #93c5fd;
-  --blue-pale:   #1e3060;
-
-  --shadow: 0 2px 10px rgba(0,0,0,.35);
 }
 
 /* ── Base reset ─────────────────────────────────────────────────────── */
@@ -102,7 +73,7 @@ html, body {
 /* Used for: 🏠 Suite link, user chip, theme toggle, back links        */
 .arr-chip {
   font-size: 11px;
-  background: rgba(74,158,92,.12);
+  background: rgba(31,82,51,.14);
   border: 1px solid var(--leaf);
   border-radius: 20px;
   padding: 4px 11px;
@@ -117,15 +88,7 @@ html, body {
   line-height: 1.6;
 }
 .arr-chip:hover {
-  background: rgba(74,158,92,.25);
-}
-[data-theme="dark"] .arr-chip {
-  color: var(--mist);
-  background: rgba(74,222,128,.10);
-  border-color: var(--leaf);
-}
-[data-theme="dark"] .arr-chip:hover {
-  background: rgba(74,222,128,.22);
+  background: rgba(31,82,51,.26);
 }
 
 /* ── Extended tokens used by applets ───────────────────────────────── */
@@ -140,7 +103,6 @@ html, body {
   --warn:     var(--red);        /* applet alias → arr-shared --red */
   --warn-bg:  var(--red-pale);   /* applet alias → arr-shared --red-pale */
 }
-/* Dark mode aliases inherit automatically from arr-shared dark overrides */
 
 /* ── Topbar / header overflow guard ────────────────────────────────── */
 /* Apply .arr-topbar to any sticky header to prevent mobile portrait    */
@@ -170,12 +132,11 @@ html, body {
 }
 
 /* ── Icons (arr-icons.js) ───────────────────────────────────────────────
-   Tile palette — light: #113311 on #99cc99 · dark: #99cc99 on #113311.
+   Tile palette — mid: #e3f5e6 on #1f5233.
    Used by .arr-ic-tile, launcher .card-icon and nursery .tile-icon.
    Inline icons follow the surrounding text colour (stays legible on the
    dark-green headers and keeps amber/red status colours).               */
-:root { --arr-icon-fg: #113311; --arr-icon-bg: #99cc99; }
-[data-theme="dark"] { --arr-icon-fg: #99cc99; --arr-icon-bg: #113311; }
+:root { --arr-icon-fg: #e3f5e6; --arr-icon-bg: #1f5233; }
 .arr-ic { flex: none; }
 .arr-ig { position: relative; display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em; line-height: 1; flex: none; }
 .arr-ig:not(:last-child) { margin-right: 0.2em; }
@@ -199,3 +160,6 @@ html, body {
 #toast.success { background: #166534; }
 #toast.warn    { background: #92400e; }
 #toast.error   { background: #991b1b; }
+
+/* ── Single theme: hide legacy light/dark toggles ───────────────────── */
+.theme-toggle#theme-toggle-btn, #theme-toggle-btn, [data-arr-theme-toggle] { display: none !important; }
