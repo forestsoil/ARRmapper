@@ -1,4 +1,5 @@
-// ARR Project Suite — Service Worker v17
+// ARR Project Suite — Service Worker v18
+// v18: nativeImages/ (planted-species photos) served from the bundle like invasiveImages/ (was falling through to network → 404).
 // v17: lib_* files (vendored CDN libraries: Leaflet, Chart.js, Turf, proj4, SheetJS ...) served from the
 //      bundle (OPFS/IDB) so maps/charts/xlsx work offline; mimeType() knows .js/.svg/.woff2.
 // v16: arr-icons.js precached; arr-shared.css + arr-icons.js network-first (no stale shell styling);
@@ -13,7 +14,7 @@
 //      network-first shell with timeout, appARRMapper.html name fix,
 //      bundle miss on navigation → index reinstall (no 404).
 
-const CACHE_NAME = 'arrm-shell-70c5f3c';
+const CACHE_NAME = 'arrm-shell-v13';
 
 const SHELL_URLS = [
   '/ARRmapper/index.html',
@@ -67,6 +68,9 @@ const OPFS_ASSETS = [
 ];
 
 const ALL_OPFS = [...OPFS_APPLETS, ...OPFS_ASSETS];
+
+// Subfolders of bundled images (add new folders here)
+const IMG_DIRS = ['invasiveImages', 'nativeImages'];
 
 // Never cache — always network
 const NETWORK_ONLY_HOSTS = [
@@ -197,14 +201,14 @@ self.addEventListener('fetch', event => {
   const filename = url.pathname.split('/').pop();
   const pathEnd  = url.pathname.replace('/ARRmapper/', '');
 
-  // invasiveImages assets
-  const isInvasive = url.pathname.includes('/invasiveImages/');
-  const invasiveFile = isInvasive ? 'invasiveImages/' + filename : null;
+  // bundled image folders (invasiveImages/, nativeImages/)
+  const imgDir = IMG_DIRS.find(d => url.pathname.includes('/' + d + '/'));
+  const imgFile = imgDir ? imgDir + '/' + filename : null;
 
   const isLib = filename.startsWith('lib_');
-  if (ALL_OPFS.includes(filename) || isInvasive || isLib) {
+  if (ALL_OPFS.includes(filename) || imgDir || isLib) {
     event.respondWith(
-      readFromBundle(invasiveFile || filename)
+      readFromBundle(imgFile || filename)
         .then(file => new Response(file, {
           status: 200,
           headers: {'Content-Type': mimeType(filename)}
