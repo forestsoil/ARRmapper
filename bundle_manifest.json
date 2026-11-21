@@ -19,6 +19,24 @@
     "invasiveImages/salvinia_molesta.jpg",
     "invasiveImages/senna_spectabilis.jpg",
     "invasiveImages/tithonia_diversifolia.jpg",
+    "nativeImages/chikrashi_01.jpg",
+    "nativeImages/chikrashi_02.jpg",
+    "nativeImages/gamar_01.jpg",
+    "nativeImages/gamar_02.jpg",
+    "nativeImages/jam_01.jpg",
+    "nativeImages/jam_02.jpg",
+    "nativeImages/jarul_01.jpg",
+    "nativeImages/jarul_02.jpg",
+    "nativeImages/khayer_01.jpg",
+    "nativeImages/khayer_02.jpg",
+    "nativeImages/mahagoni_01.jpg",
+    "nativeImages/mahagoni_02.jpg",
+    "nativeImages/neem_01.jpg",
+    "nativeImages/neem_02.jpg",
+    "nativeImages/shegun_01.jpg",
+    "nativeImages/shegun_02.jpg",
+    "nativeImages/shimul_01.jpg",
+    "nativeImages/shimul_02.jpg",
     "appAboutProject.html",
     "appNativeSpecies.html",
     "appDailyReport.html",
@@ -74,5 +92,5 @@
     "lib_unpkg.com_leaflet_1.9.4_dist_leaflet.css",
     "lib_unpkg.com_leaflet_1.9.4_dist_leaflet.js"
   ],
-  "zip_size": 7092299
+  "zip_size": 8641141
 }
